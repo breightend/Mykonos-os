@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@plugin "daisyui"
+{
+    themes: cupcake --default, dim;
+}
+@plugin "daisyui/theme" {
+    name: "cupcake";
+    default: true;
+    --color-primary: orange;
+    --color-primary-content:
+    --color-secondary: teal;
+    --color-secondary-content:
+    --color-accent: #37cdbe;
+    --color-accent-content:
+  }
+  @plugin "daisyui/theme" {
+    name: "dim";
+    default: false;
+    --color-primary: orange;
+    --color-primary-content:
+    --color-secondary: teal;
+    --color-secondary-content:
+    --color-accent: #37cdbe;
+    --color-accent-content:
+  }
