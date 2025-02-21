@@ -16,7 +16,7 @@ export default function Settings() {
           </div>
           <div className="text-black">
             <p>Aca van a ir las configuraciones</p>
-                          {/* A partir de aca se controla el tema */}
+            {/* A partir de aca se controla el tema */}
             <label className="swap swap-rotate">
               {/* this hidden checkbox controls the state */}
               <input type="checkbox" className="theme-controller" value="dim" />
