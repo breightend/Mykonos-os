@@ -1,8 +1,12 @@
+import  Settings  from './components/settings'
 function App() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-cover bg-center" 
-         style={{ backgroundImage: "url('./src/images/background.jpg')" }}>
-      <div className="card flex-row w-[32rem] bg-gray-800 bg-opacity-50 text-white shadow-xl p-6 rounded-lg">
+    <div
+      className="flex items-center justify-center min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: "url('./src/images/background.jpg')" }}
+    >
+      <div className="card glass flex-row w-[32rem] bg-gray-800 bg-opacity-50 text-white shadow-xl p-6 rounded-lg">
+        <Settings />
         {/* Imagen alineada a la izquierda */}
         <figure className="flex items-center justify-center px-4">
           <div className="avatar">
@@ -38,7 +42,7 @@ function App() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
