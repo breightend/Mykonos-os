@@ -11,11 +11,11 @@ export default function Login() {
           alt="bgImage"
           className="w-full h-full rounded-none dark:hidden"
         />
-         <img
+        <img
           src="./src/images/night-wallpaper.jpg"
           alt="bgImage"
           className="w-full h-full rounded-none hidden dark:block"
-        /> 
+        />
       </figure>
 
       <div className="relative z-20 flex items-center justify-center min-h-screen">
@@ -42,7 +42,7 @@ export default function Login() {
             />
             <input
               type="password"
-              className="input input-bordered w-full mb-4 text-base-content "
+              className="input input-bordered w-full mb-4 text-base-content"
               required
               placeholder="Contraseña"
               minLength="8"
