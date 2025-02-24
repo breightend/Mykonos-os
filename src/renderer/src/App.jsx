@@ -5,6 +5,7 @@ import Ventas from './components/ventas'
 import Inventario from './components/inventario'
 import NuevoProducto from './components/nuevoProducto'
 
+
 function App() {
   return (
     <Switch>

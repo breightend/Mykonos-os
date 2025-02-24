@@ -9,12 +9,12 @@ export default function Login() {
         <img
           src="./src/images/sunset2.jpg"
           alt="bgImage"
-          className="w-full h-full rounded-none dark:hidden"
+          className="w-full h-full rounded-none night:hidden"
         />
         <img
           src="./src/images/night-wallpaper.jpg"
           alt="bgImage"
-          className="w-full h-full rounded-none hidden dark:block"
+          className="w-full h-full rounded-none hidden night:block"
         />
       </figure>
 
@@ -33,7 +33,7 @@ export default function Login() {
             <h2 className="text-center text-2xl font-semibold mb-2">Iniciar Sesión</h2>
             <input
               type="text"
-              className="input input-bordered w-full mb-2 text-base-content"
+              className="input input-bordered w-full mb-2 text-base-content "
               required
               placeholder="Usuario"
               pattern="[A-Za-z][A-Za-z0-9\-]*"

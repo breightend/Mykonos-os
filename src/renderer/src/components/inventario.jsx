@@ -5,10 +5,10 @@ export default function Inventario() {
   return (
     <>
       <h2>Inventario: </h2>
-      <button className="btn btn-accent" onClick={setLocation('/home')}>
+      <button className="btn btn-accent" onClick={() => setLocation('/home')}>
         Volver
       </button>
-      <button className="btn btn-accent" onClick={setLocation('/nuevoProducto')}>
+      <button className="btn btn-accent" onClick={() => setLocation('/nuevoProducto')}>
         Nuevo producto
       </button>
     </>
