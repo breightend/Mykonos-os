@@ -4,7 +4,7 @@ export default function Settings() {
   return (
     <div>
       <button
-        className="btn btn-square "
+        className="btn btn-circle "
         onClick={() => document.getElementById('settings').showModal()}
       >
         <Cog size={64} className="transition-transform hover:rotate-180" />
@@ -19,7 +19,7 @@ export default function Settings() {
             {/* A partir de aca se controla el tema */}
             <label className="swap swap-rotate">
               {/* this hidden checkbox controls the state */}
-              <input type="checkbox" className="theme-controller" value="dim" />
+              <input type="checkbox" className="theme-controller" value="night" />
 
               {/* sun icon */}
               <svg

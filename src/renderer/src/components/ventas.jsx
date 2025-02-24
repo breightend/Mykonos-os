@@ -1,4 +1,3 @@
-
 function Ventas() {
   return (
     <div>
