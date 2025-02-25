@@ -1,4 +1,4 @@
-import Settings from './settings'
+import Settings from '../componentes especificos/settings'
 import { useLocation } from 'wouter'
 
 export default function Login() {
