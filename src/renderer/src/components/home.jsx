@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Package,
   Factory,
+  ClipboardType,
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useState } from 'react';
@@ -86,6 +87,15 @@ export default function Home() {
               onClick={() => setLocation('/estadisticas')}
             >
               <ChartLine />
+              {isMenuOpen && <span className="ml-2">Estadísticas</span>}
+            </button>
+          </li>
+          <li className="flex items-center">
+            <button
+              className="btn btn-ghost justify-start w-full"
+              onClick={() => setLocation('/informes')}
+            >
+              <ClipboardType />
               {isMenuOpen && <span className="ml-2">Estadísticas</span>}
             </button>
           </li>
