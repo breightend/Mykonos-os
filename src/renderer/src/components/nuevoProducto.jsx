@@ -8,6 +8,30 @@ export default function NuevoProducto() {
   const [cantidad, setCantidad] = useState(0)
   const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: 0 }] }])
   const [, setLocation] = useLocation()
+  const [talleSeleccionado, setTalleSeleccionado] = useState("");
+  const [coloresPorTalle, setColoresPorTalle] = useState({});
+
+  const manejarCambioTalle = (nuevoTalle) => {
+    setTalleSeleccionado(nuevoTalle);
+    if (!coloresPorTalle[nuevoTalle]) {
+      setColoresPorTalle((prev) => ({
+        ...prev,
+        [nuevoTalle]: [...coloresPredefinidos],
+      }));
+    }
+  };
+
+    // Maneja la selección de un color
+    const manejarSeleccionColor = (color) => {
+      if (!talleSeleccionado) return;
+  
+      setColoresPorTalle((prev) => ({
+        ...prev,
+        [talleSeleccionado]: prev[talleSeleccionado].filter((c) => c !== color),
+      }));
+    };
+  
+  
 
   // Opciones predefinidas
   const marcas = ['Nike', 'Adidas', 'Puma', "Levi's", 'Zara']
@@ -107,7 +131,6 @@ export default function NuevoProducto() {
         </div>
 
         {/* Precio */}
-
         <div>
           <label className="block text-sm font-medium mb-1">Precio</label>
           <span className="flex gap-2">
@@ -192,8 +215,8 @@ export default function NuevoProducto() {
 
         {/* Botón para agregar un nuevo talle */}
         <div className="flex justify-between">
-          <button type="button" onClick={agregarTalle} className="btn btn-outline ">
-            Agregar Talle
+          <button type="button" onClick={agregarTalle} className="btn btn-outline badge badge-secondary badge-outline">
+            + Agregar Talle
           </button>
 
           {/* Botón para enviar el formulario */}

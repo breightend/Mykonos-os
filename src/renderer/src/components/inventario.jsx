@@ -1,4 +1,4 @@
-import { PackagePlus, Search, House, Edit } from 'lucide-react'
+import { PackagePlus, Search, House, Edit, Info } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState } from 'react'
 import MenuVertical from '../componentes especificos/menuVertical'
@@ -10,9 +10,11 @@ export default function Inventario() {
   const [editedData, setEditedData] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
   const [searchById, setSearchById] = useState(false)
+  const [showData, setShowData] = useState(false)
+  const [modalShowDataOpen, setModalShowDataOpen] = useState(false)
 
-  // Datos de ejemplo para la tabla
   const data = [
+    // Datos de ejemplo para la tabla
     {
       id: 1,
       producto: 'Remera',
@@ -64,10 +66,20 @@ export default function Inventario() {
     }
   })
 
+  const handleRowClickShow = (row) => {
+    setSelectedRow(row.id)
+    setShowData(row)
+  }
+
+  const handleInfoClick = () => {
+    if (selectedRow) {
+      setModalShowDataOpen(true)
+    }
+  }
   // Función para seleccionar una fila
   const handleRowClick = (row) => {
     setSelectedRow(row.id)
-    setEditedData(row) // Cargar los datos de la fila seleccionada en el estado de edición
+    setEditedData(row)
   }
 
   // Función para abrir el modal
@@ -123,6 +135,17 @@ export default function Inventario() {
                 onClick={() => setLocation('/nuevoProducto')}
               >
                 <PackagePlus className="w-7 h-7" />
+              </button>
+            </li>
+            <li>
+              {/* Informacion del producto */}
+              <button
+                className="tooltip tooltip-bottom"
+                data-tip="Informacion del producto "
+                onClick={handleInfoClick}
+                disabled={!selectedRow}
+              >
+                <Info className="w-7 h-7" />
               </button>
             </li>
           </ul>
@@ -184,7 +207,33 @@ export default function Inventario() {
             </tbody>
           </table>
         </div>
-
+        {modalShowDataOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+            <div className="bg-base-100 p-6 rounded-lg w-96">
+              <h3 className="text-lg font-bold mb-4">Información del Producto</h3>
+              <p>
+                <strong>Producto:</strong> {showData.producto}
+              </p>
+              <p>
+                <strong>Marca:</strong> {showData.marca}
+              </p>
+              <p>
+                <strong>Cantidad:</strong> {showData.cantidad}
+              </p>
+              <p>
+                <strong>Colores:</strong> {showData.colores}
+              </p>
+              <p>
+                <strong>Fecha de edición:</strong> {showData.fecha}
+              </p>
+              <div className="flex justify-end gap-2 mt-4">
+                <button className="btn btn-ghost" onClick={() => setModalShowDataOpen(false)}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Modal de edición */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">

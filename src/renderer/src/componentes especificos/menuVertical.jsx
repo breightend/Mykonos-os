@@ -8,10 +8,10 @@ import {
   ChartLine,
   ClipboardType,
   Menu,
-  Cog,
   X,
   NotebookTabs
 } from 'lucide-react'
+import SettingsLog from '../components/settingsLog'
 
 export default function MenuVertical({ currentPath }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -107,14 +107,8 @@ export default function MenuVertical({ currentPath }) {
             {isMenuOpen && <span className="ml-2">Informe</span>}
           </button>
         </li>
-        <li className="flex items-center">
-          <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/configuraciones' ? 'bg-blue-500' : ''}`}
-            onClick={() => setLocation('/configuraciones')}
-          >
-            <Cog />
-            {isMenuOpen && <span className="ml-2">Configuraciones</span>}
-          </button>
+        <li className=" items-center ">
+          <SettingsLog  />
         </li>
       </ul>
     </div>
