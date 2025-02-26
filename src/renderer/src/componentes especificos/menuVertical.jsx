@@ -13,11 +13,10 @@ import {
   NotebookTabs
 } from 'lucide-react'
 
-export default function MenuVertical(currentPath) {
+export default function MenuVertical({ currentPath }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
   const setLocation = (path) => {
     window.location.href = path
@@ -25,7 +24,9 @@ export default function MenuVertical(currentPath) {
 
   return (
     <div
-      className={`fixed left-0 top-0 h-screen bg-base-300 transition-all duration-300 ease-in-out ${isMenuOpen ? 'w-48' : 'w-16'}`}
+      className={`fixed left-0 top-0 h-screen bg-primary/70 transition-all duration-300 ease-in-out ${isMenuOpen ? 'w-48' : 'w-16'}`}
+      onMouseEnter={() => setIsMenuOpen(true)}
+      onMouseLeave={() => setIsMenuOpen(false)}
     >
       <label className="btn btn-circle swap swap-rotate m-2">
         <input type="checkbox" checked={isMenuOpen} onChange={toggleMenu} />
