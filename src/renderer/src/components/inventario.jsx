@@ -52,10 +52,8 @@ export default function Inventario() {
   // Función para filtrar los datos
   const filteredData = data.filter((row) => {
     if (searchById) {
-      // Buscar solo por ID
       return row.id.toString().includes(searchTerm)
     } else {
-      // Buscar en todos los campos
       return (
         row.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -66,36 +64,28 @@ export default function Inventario() {
     }
   })
 
-  const handleRowClickShow = (row) => {
-    setSelectedRow(row.id)
-    setShowData(row)
-  }
-
   const handleInfoClick = () => {
     if (selectedRow) {
       setModalShowDataOpen(true)
     }
   }
-  // Función para seleccionar una fila
+
   const handleRowClick = (row) => {
     setSelectedRow(row.id)
     setEditedData(row)
   }
 
-  // Función para abrir el modal
   const handleEditClick = () => {
     if (selectedRow) {
       setIsModalOpen(true)
     }
   }
 
-  // Función para guardar los cambios
   const handleSaveChanges = () => {
     console.log('Datos guardados:', editedData)
-    setIsModalOpen(false) // Cerrar el modal después de guardar
+    setIsModalOpen(false)
   }
 
-  // Función para manejar cambios en los campos del modal
   const handleInputChange = (field, value) => {
     setEditedData((prev) => ({ ...prev, [field]: value }))
   }
@@ -104,96 +94,95 @@ export default function Inventario() {
     <div className="p-6 bg-base-100 min-h-screen">
       <MenuVertical currentPath="/inventario" />
       <div className="flex-1 ml-20">
-        <h2 className="text-2xl font-bold mb-6">Inventario</h2>
+        <h2 className="text-2xl font-bold mb-6 text-warning">Inventario</h2>
 
         {/* Barra de navegación */}
-        <div className="columns-3 gap-2 flex  items-center mb-6">
-          <ul className="menu menu-horizontal bg-base-200 w-4xs gap-2 rounded-box">
+        <div className="flex items-center justify-between mb-6">
+          <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
             <li>
               <button
-                className="tooltip tooltip-bottom"
+                className="btn btn-ghost tooltip tooltip-bottom"
                 data-tip="Inicio"
                 onClick={() => setLocation('/home')}
               >
-                <House className="w-7 h-7" />
+                <House className="w-5 h-5" />
               </button>
             </li>
             <li>
               <button
-                className="tooltip tooltip-bottom"
+                className="btn btn-ghost tooltip tooltip-bottom"
                 data-tip="Editar producto"
                 onClick={handleEditClick}
                 disabled={!selectedRow}
               >
-                <Edit className="w-7 h-7" />
+                <Edit className="w-5 h-5" />
               </button>
             </li>
             <li>
               <button
-                className="tooltip tooltip-bottom"
+                className="btn btn-ghost tooltip tooltip-bottom"
                 data-tip="Nuevo producto"
                 onClick={() => setLocation('/nuevoProducto')}
               >
-                <PackagePlus className="w-7 h-7" />
+                <PackagePlus className="w-5 h-5" />
               </button>
             </li>
             <li>
-              {/* Informacion del producto */}
               <button
-                className="tooltip tooltip-bottom"
-                data-tip="Informacion del producto "
+                className="btn btn-ghost tooltip tooltip-bottom"
+                data-tip="Información del producto"
                 onClick={handleInfoClick}
                 disabled={!selectedRow}
               >
-                <Info className="w-7 h-7" />
+                <Info className="w-5 h-5" />
               </button>
             </li>
           </ul>
 
           {/* Barra de búsqueda */}
-          <div className=" items-center  col-span-2">
+          <div className="flex items-center gap-4">
             <label className="input input-bordered flex items-center gap-2 input-warning">
               <input
                 type="text"
                 placeholder="Buscar..."
-                className="grow w-max"
+                className="grow"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <Search className="w-4 h-4" />
             </label>
-            <div className="form-control">
-              <label className="label cursor-pointer">
-                <span className="label-text">Buscar solo por código de barra</span>
-                <input
-                  type="checkbox"
-                  checked={searchById}
-                  onChange={(e) => setSearchById(e.target.checked)}
-                  className="checkbox checkbox-warning"
-                />
-              </label>
-            </div>
+            <label className="label cursor-pointer gap-2">
+              <span className="label-text">Buscar solo por ID</span>
+              <input
+                type="checkbox"
+                checked={searchById}
+                onChange={(e) => setSearchById(e.target.checked)}
+                className="checkbox checkbox-warning"
+              />
+            </label>
           </div>
         </div>
 
         {/* Tabla de inventario */}
-        <div className="overflow-x-auto bg-base-200 rounded-lg shadow">
-          <table className="table">
-            <thead>
+        <div className="overflow-x-auto bg-base-200 rounded-lg shadow-lg">
+          <table className="table w-full">
+            <thead className="bg-warning/10">
               <tr>
-                <th>#</th>
-                <th>Producto</th>
-                <th>Marca</th>
-                <th>Cantidad</th>
-                <th>Colores</th>
-                <th>Fecha de edición</th>
+                <th className="text-warning">#</th>
+                <th className="text-warning">Producto</th>
+                <th className="text-warning">Marca</th>
+                <th className="text-warning">Cantidad</th>
+                <th className="text-warning">Colores</th>
+                <th className="text-warning">Fecha de edición</th>
               </tr>
             </thead>
             <tbody>
               {filteredData.map((row) => (
                 <tr
                   key={row.id}
-                  className={`cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
+                  className={`hover:bg-warning/10 cursor-pointer ${
+                    selectedRow === row.id ? 'bg-warning/20' : ''
+                  }`}
                   onClick={() => handleRowClick(row)}
                 >
                   <th>{row.id}</th>
@@ -207,38 +196,43 @@ export default function Inventario() {
             </tbody>
           </table>
         </div>
+
+        {/* Modal de información */}
         {modalShowDataOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-base-100 p-6 rounded-lg w-96">
-              <h3 className="text-lg font-bold mb-4">Información del Producto</h3>
-              <p>
-                <strong>Producto:</strong> {showData.producto}
-              </p>
-              <p>
-                <strong>Marca:</strong> {showData.marca}
-              </p>
-              <p>
-                <strong>Cantidad:</strong> {showData.cantidad}
-              </p>
-              <p>
-                <strong>Colores:</strong> {showData.colores}
-              </p>
-              <p>
-                <strong>Fecha de edición:</strong> {showData.fecha}
-              </p>
-              <div className="flex justify-end gap-2 mt-4">
-                <button className="btn btn-ghost" onClick={() => setModalShowDataOpen(false)}>
+            <div className="bg-base-100 p-6 rounded-lg w-96 shadow-2xl">
+              <h3 className="text-lg font-bold mb-4 text-warning">Información del Producto</h3>
+              <div className="space-y-2">
+                <p>
+                  <strong>Producto:</strong> {showData.producto}
+                </p>
+                <p>
+                  <strong>Marca:</strong> {showData.marca}
+                </p>
+                <p>
+                  <strong>Cantidad:</strong> {showData.cantidad}
+                </p>
+                <p>
+                  <strong>Colores:</strong> {showData.colores}
+                </p>
+                <p>
+                  <strong>Fecha de edición:</strong> {showData.fecha}
+                </p>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button className="btn btn-warning" onClick={() => setModalShowDataOpen(false)}>
                   Cerrar
                 </button>
               </div>
             </div>
           </div>
         )}
+
         {/* Modal de edición */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-base-100 p-6 rounded-lg w-96">
-              <h3 className="text-lg font-bold mb-4">Editar Producto</h3>
+            <div className="bg-base-100 p-6 rounded-lg w-96 shadow-2xl">
+              <h3 className="text-lg font-bold mb-4 text-warning">Editar Producto</h3>
               <form className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Producto</label>
@@ -285,7 +279,7 @@ export default function Inventario() {
                     className="input input-bordered w-full"
                   />
                 </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 mt-4">
                   <button
                     type="button"
                     className="btn btn-ghost"

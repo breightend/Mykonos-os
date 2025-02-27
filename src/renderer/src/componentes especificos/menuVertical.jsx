@@ -24,7 +24,7 @@ export default function MenuVertical({ currentPath }) {
 
   return (
     <div
-      className={`fixed left-0 top-0 h-screen bg-primary/70 transition-all duration-300 ease-in-out ${isMenuOpen ? 'w-48' : 'w-16'}`}
+      className={`fixed left-0 top-0 h-screen bg-accent z-50  transition-all duration-300 ease-in-out ${isMenuOpen ? 'w-48' : 'w-16'}`}
       onMouseEnter={() => setIsMenuOpen(true)}
       onMouseLeave={() => setIsMenuOpen(false)}
     >
@@ -34,7 +34,7 @@ export default function MenuVertical({ currentPath }) {
         <X className="swap-on fill-current" />
       </label>
 
-      <ul className="flex flex-col space-y-2 p-2">
+      <ul className="flex flex-col space-y-2 p-2 mt-2">
         <li className="flex items-center">
           <button
             className={`btn btn-ghost justify-start w-full ${currentPath === '/usuario' ? 'bg-blue-500' : ''}`}
@@ -101,13 +101,13 @@ export default function MenuVertical({ currentPath }) {
         <li className="flex items-center">
           <button
             className={`btn btn-ghost justify-start w-full ${currentPath === '/informes' ? 'bg-blue-500' : ''}`}
-            onClick={() => setLocation('/informes')}
+            onClick={() => setLocation('/informe')}
           >
             <ClipboardType />
             {isMenuOpen && <span className="ml-2">Informe</span>}
           </button>
         </li>
-        <li className=" items-center ">
+        <li className=" items-center absolute bottom-0 ">
           <SettingsLog  />
         </li>
       </ul>
