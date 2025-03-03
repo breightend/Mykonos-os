@@ -2,6 +2,7 @@ import { Cog } from 'lucide-react'
 /* Aca van a ir las configuraciones que vayan adentro de las
  */
 export default function SettingsLog() {
+
   return (
     <div>
       <div className="tooltip tooltip-right" data-tip="Configuraciones">

@@ -9,20 +9,23 @@ import Proveedores from './components/proveedores'
 import Clientes from './components/clientes'
 import Estadisticas from './components/estadisticas'
 import Informe from './components/informe'
+import { ThemeProvider } from './contexts/themeContext'
 
 function App() {
   return (
     <Switch>
-      <Route path="/" component={Login} />
-      <Route path="/home" component={Home} />
-      <Route path="/ventas" component={Ventas} />
-      <Route path="/inventario" component={Inventario} />
-      <Route path="/nuevoProducto" component={NuevoProducto} />
-      <Route path="/usuario" component={Usuario} />
-      <Route path="/proveedores" component={Proveedores} />
-      <Route path="/clientes" component={Clientes} />
-      <Route path="/estadisticas" component={Estadisticas} />
-      <Route path="/informe" component={Informe} />
+      <ThemeProvider>
+        <Route path="/" component={Login} />
+        <Route path="/home" component={Home} />
+        <Route path="/ventas" component={Ventas} />
+        <Route path="/inventario" component={Inventario} />
+        <Route path="/nuevoProducto" component={NuevoProducto} />
+        <Route path="/usuario" component={Usuario} />
+        <Route path="/proveedores" component={Proveedores} />
+        <Route path="/clientes" component={Clientes} />
+        <Route path="/estadisticas" component={Estadisticas} />
+        <Route path="/informe" component={Informe} />
+      </ThemeProvider>
     </Switch>
   )
 }
