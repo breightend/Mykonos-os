@@ -108,7 +108,7 @@ export default function MenuVertical({ currentPath }) {
           </button>
         </li>
         <li className=" items-center absolute bottom-0 ">
-          <SettingsLog  />
+          <SettingsLog />
         </li>
       </ul>
     </div>
