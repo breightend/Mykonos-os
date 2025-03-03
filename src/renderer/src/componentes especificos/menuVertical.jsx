@@ -11,7 +11,7 @@ import {
   X,
   NotebookTabs
 } from 'lucide-react'
-import SettingsLog from '../components/settingsLog'
+import SettingsLog from './settingsLog'
 
 export default function MenuVertical({ currentPath }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)

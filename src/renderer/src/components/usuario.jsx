@@ -1,9 +1,8 @@
-import React from 'react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import { useLocation } from 'wouter'
 
 export default function Usuario() {
-  const [location, setLocation] = useLocation()
+  const [, setLocation] = useLocation()
   return (
     <div className="flex">
       <MenuVertical currentPath="/usuario" />
