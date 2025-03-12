@@ -148,7 +148,7 @@ export default function NuevoProducto() {
             {/* Campo para el talle */}
             <div className="flex justify-end">
               <div className="tooltip" data-tip="Eliminar Talle">
-                <button className="btn " onClick={() => handleDeleteTalle(talleIndex)}>
+                <button className="btn btn-neutral" onClick={() => handleDeleteTalle(talleIndex)}>
                   <Trash2 />
                 </button>
               </div>
