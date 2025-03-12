@@ -197,7 +197,7 @@ export default function NuevoProducto() {
                         parseInt(e.target.value, 10)
                       )
                     }
-                    className="input input-bordered flex-1 "
+                    className="input input-bordered flex-1 w-2 "
                     required
                   />
                 </div>
