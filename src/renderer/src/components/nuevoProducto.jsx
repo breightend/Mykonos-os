@@ -5,33 +5,10 @@ import { ArrowLeft } from 'lucide-react'
 export default function NuevoProducto() {
   // Estados para manejar los datos del formulario
   const [marca, setMarca] = useState('')
-  const [cantidad, setCantidad] = useState(0)
+  const [cantidad] = useState(0)
   const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: 0 }] }])
   const [, setLocation] = useLocation()
-  const [talleSeleccionado, setTalleSeleccionado] = useState("");
-  const [coloresPorTalle, setColoresPorTalle] = useState({});
-
-  const manejarCambioTalle = (nuevoTalle) => {
-    setTalleSeleccionado(nuevoTalle);
-    if (!coloresPorTalle[nuevoTalle]) {
-      setColoresPorTalle((prev) => ({
-        ...prev,
-        [nuevoTalle]: [...coloresPredefinidos],
-      }));
-    }
-  };
-
-    // Maneja la selección de un color
-    const manejarSeleccionColor = (color) => {
-      if (!talleSeleccionado) return;
-  
-      setColoresPorTalle((prev) => ({
-        ...prev,
-        [talleSeleccionado]: prev[talleSeleccionado].filter((c) => c !== color),
-      }));
-    };
-  
-  
+  const [cantidadTotal, setCantidadTotal] = useState(0)
 
   // Opciones predefinidas
   const marcas = ['Nike', 'Adidas', 'Puma', "Levi's", 'Zara']
@@ -75,6 +52,17 @@ export default function NuevoProducto() {
     const nuevosTalles = [...talles]
     nuevosTalles[talleIndex].colores[colorIndex][field] = value
     setTalles(nuevosTalles)
+    handleCantidadTotal()
+  }
+
+  const handleCantidadTotal = () => {
+    let cantidadTotal = 0
+    talles.forEach((talle) => {
+      talle.colores.forEach((color) => {
+        cantidadTotal += color.cantidad
+      })
+    })
+    setCantidadTotal(cantidadTotal)
   }
 
   return (
@@ -132,20 +120,20 @@ export default function NuevoProducto() {
 
         {/* Precio */}
         <div>
-          <label className="block text-sm font-medium mb-1">Precio</label>
-          <span className="flex gap-2">
+          <label className="block text-sm  font-medium mb-1">Precio</label>
+          <span className="flex gap-2 items-center">
             $
-            <input type="number" name="" placeholder="####" id="" />
+            <input type="number" name="" placeholder="####" id="" className="input w-1/5" />
           </span>
         </div>
 
         {/* Sección para talles, colores y cantidades */}
         <h2 className="text-lg font-semibold mb-2">Talles, Colores y Cantidades</h2>
         {talles.map((talle, talleIndex) => (
-          <div key={talleIndex} className="mb-4 p-4 bg-base-200 rounded-lg">
+          <div key={talleIndex} className="mb-4 p-4 bg-primary/20 rounded-lg">
             {/* Campo para el talle */}
             <div className="mb-2">
-              <label className="block text-sm font-medium mb-1">Talle</label>
+              <label className="block text-md font-medium mb-2">Talle</label>
               <select
                 value={talle.talle}
                 onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
@@ -165,9 +153,9 @@ export default function NuevoProducto() {
 
             {/* Sección para colores */}
             <div>
-              <h3 className="text-md font-medium mb-2">Colores</h3>
+              <h2 className="text-md font-medium mb-2">Colores</h2>
               {talle.colores.map((color, colorIndex) => (
-                <div key={colorIndex} className="flex space-x-2 mb-2">
+                <div key={colorIndex} className="space-x-2 mb-2">
                   <select
                     value={color.color}
                     onChange={(e) =>
@@ -197,7 +185,7 @@ export default function NuevoProducto() {
                         parseInt(e.target.value, 10)
                       )
                     }
-                    className="input input-bordered flex-1 "
+                    className="input input-bordered w-1/5 "
                     required
                   />
                 </div>
@@ -213,9 +201,18 @@ export default function NuevoProducto() {
           </div>
         ))}
 
+        <div className=" flex justify-end">
+          <p className="bg-blue-200 rounded-2xl p-2 px-2">
+            Cantidad de prendas agregadas: <span className="font-semibold">{cantidadTotal}</span>
+          </p>
+        </div>
         {/* Botón para agregar un nuevo talle */}
         <div className="flex justify-between">
-          <button type="button" onClick={agregarTalle} className="btn btn-outline badge badge-secondary badge-outline">
+          <button
+            type="button"
+            onClick={agregarTalle}
+            className="btn btn-outline badge badge-secondary badge-outline"
+          >
             + Agregar Talle
           </button>
 
