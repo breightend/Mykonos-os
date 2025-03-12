@@ -9,17 +9,17 @@ export default function Login() {
         <img
           src="./src/images/sunset2.jpg"
           alt="bgImage"
-          className="w-full h-full rounded-none night:hidden"
+          className="w-full h-full rounded-none dark:hidden"
         />
         <img
           src="./src/images/night-wallpaper.jpg"
           alt="bgImage"
-          className="w-full h-full rounded-none hidden night:block"
+          className="w-full h-full rounded-none hidden dark:block"
         />
       </figure>
 
       <div className="relative z-20 flex items-center justify-center min-h-screen">
-        <div className="card glass flex-row w-[32rem] bg-gray-800 bFg-opacity-50 text-white shadow-xl p-2 rounded-lg">
+        <div className="card glass flex-row w-[32rem] bg-gray-800 bg-opacity-50 text-white shadow-xl p-2 rounded-lg">
           <Settings />
           <figure className="flex items-center justify-center px-4">
             <div className="avatar">
@@ -57,7 +57,7 @@ export default function Login() {
         </div>
       </div>
       <div className="absolute bottom-0 left-0 p-4">
-        <p className="font-bold text-6xl text-white "> Mykonos-OS</p>
+        <p className="font-bold text-6xl dark:text-white text-red-900 "> Mykonos-OS</p>
       </div>
     </div>
   )
