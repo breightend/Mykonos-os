@@ -11,7 +11,7 @@ import {
   X,
   NotebookTabs
 } from 'lucide-react'
-import SettingsLog from '../components/settingsLog'
+import SettingsLog from './settingsLog'
 
 export default function MenuVertical({ currentPath }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -37,7 +37,7 @@ export default function MenuVertical({ currentPath }) {
       <ul className="flex flex-col space-y-2 p-2 mt-2">
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/usuario' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/usuario' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/usuario')}
           >
             <User />
@@ -46,7 +46,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/home' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/home' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/home')}
           >
             <NotebookTabs />
@@ -55,7 +55,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/ventas' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/ventas' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/ventas')}
           >
             <ShoppingCart />
@@ -64,7 +64,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/inventario' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/inventario' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/inventario')}
           >
             <Package />
@@ -73,7 +73,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/proveedores' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/proveedores' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/proveedores')}
           >
             <Factory />
@@ -82,7 +82,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/clientes' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/clientes' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/clientes')}
           >
             <Users />
@@ -91,7 +91,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/estadisticas' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/estadisticas' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/estadisticas')}
           >
             <ChartLine />
@@ -100,7 +100,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/informes' ? 'bg-blue-500' : ''}`}
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/informes' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/informe')}
           >
             <ClipboardType />
@@ -108,7 +108,7 @@ export default function MenuVertical({ currentPath }) {
           </button>
         </li>
         <li className=" items-center absolute bottom-0 ">
-          <SettingsLog  />
+          <SettingsLog />
         </li>
       </ul>
     </div>

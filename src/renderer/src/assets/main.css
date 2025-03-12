@@ -1,23 +1,16 @@
-@import "tailwindcss";
-@custom-variant night (&:where([data-theme=night], [data-theme=night] *));
-@plugin "daisyui"
-{
-    themes:  "night" ,"dark", "cupcake" --default;
+@import 'tailwindcss';
+@custom-variant dark (&:where([data-theme=night], [data-theme=night] *));
+@plugin "daisyui" {
+  themes:
+    'night',
+    'cupcake' --default;
 }
 @plugin "daisyui/theme" {
-    name: "cupcake";
-    default: true;
-    --color-primary: #fdba74;
-    --color-primary-content: #202020:
-    --color-secondary: #fed7aa;
-  --color-secondary-content:
-    --color-accent: #37cdbe;
-    --color-accent-content:
-  }
-
-  @plugin "daisyui/theme" {
-    name: "dim";
-    default: false;
-
-  }
-
+  name: 'cupcake';
+  default: true;
+  --color-primary: #fdba74;
+  --color-primary-content: #202020: --color-secondary: #fed7aa;
+  --color-secondary-content: --color-accent: #37cdbe;
+  --color-accent-content: ;
+  --color-error: #f37372  ;
+}
