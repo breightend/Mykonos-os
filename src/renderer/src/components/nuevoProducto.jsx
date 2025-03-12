@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Trash2 } from 'lucide-react'
 
 export default function NuevoProducto() {
   // Estados para manejar los datos del formulario
@@ -63,6 +63,13 @@ export default function NuevoProducto() {
       })
     })
     setCantidadTotal(cantidadTotal)
+  }
+  
+  const handleDeleteColor = (talleIndex, colorIndex) => {
+    const nuevosTalles = [...talles]
+    nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
+    setTalles(nuevosTalles)
+    handleCantidadTotal()
   }
 
   return (
@@ -155,7 +162,7 @@ export default function NuevoProducto() {
             <div>
               <h2 className="text-md font-medium mb-2">Colores</h2>
               {talle.colores.map((color, colorIndex) => (
-                <div key={colorIndex} className="space-x-2 mb-2">
+                <div key={colorIndex} className="space-x-4 flex items-center mb-2">
                   <select
                     value={color.color}
                     onChange={(e) =>
@@ -188,6 +195,9 @@ export default function NuevoProducto() {
                     className="input input-bordered w-1/5 "
                     required
                   />
+                  <button className='btn btn-error'>
+                  <Trash2  />
+                  </button>
                 </div>
               ))}
               <button
@@ -202,7 +212,7 @@ export default function NuevoProducto() {
         ))}
 
         <div className=" flex justify-end">
-          <p className="bg-blue-200 rounded-2xl p-2 px-2">
+          <p className="bg-blue-200 rounded-2xl p-2 px-2 dark:text-black dark:bg-blue-300">
             Cantidad de prendas agregadas: <span className="font-semibold">{cantidadTotal}</span>
           </p>
         </div>

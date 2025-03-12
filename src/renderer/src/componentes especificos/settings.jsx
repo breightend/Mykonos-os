@@ -28,7 +28,7 @@ export default function Settings() {
                 onChange={toggleDarkMode} // Cambiar el tema al hacer clic
               />
               <SunMedium className="swap-off h-10 w-10 fill-current" />
-              <Moon className="swap-on h-10 w-10 fill-current" />
+              <Moon className="swap-on h-10 w-10 fill-current " />
             </label>
           </div>
           <div className="modal-action">
