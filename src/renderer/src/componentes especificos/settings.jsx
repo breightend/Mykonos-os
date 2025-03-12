@@ -24,8 +24,8 @@ export default function Settings() {
               <input
                 type="checkbox"
                 className="theme-controller"
-                checked={isDarkMode} // Usar el estado del tema
-                onChange={toggleDarkMode} // Cambiar el tema al hacer clic
+                checked={isDarkMode} 
+                onChange={toggleDarkMode} 
               />
               <SunMedium className="swap-off h-10 w-10 fill-current" />
               <Moon className="swap-on h-10 w-10 fill-current " />

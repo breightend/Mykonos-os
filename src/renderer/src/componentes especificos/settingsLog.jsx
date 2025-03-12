@@ -21,18 +21,18 @@ export default function SettingsLog() {
           <div className="modal-header bg-gray-800 p-4 rounded-2xl flex justify-between items-center mb-4">
             <h3 className="font-bold text-2xl">Configuraciones</h3>
           </div>
-          <div className="text-black">
-            <p>Aca van a ir las configuraciones</p>
-            {/* A partir de aca se controla el tema */}
+          <div className="text-base-content">
+            <p>Aquí van a ir las configuraciones</p>
+            {/* Control del tema */}
             <label className="swap swap-rotate">
               <input
                 type="checkbox"
                 className="theme-controller"
-                checked={isDarkMode} // Usar el estado del tema
-                onChange={toggleDarkMode} // Cambiar el tema al hacer clic
+                checked={isDarkMode} 
+                onChange={toggleDarkMode} 
               />
               <SunMedium className="swap-off h-10 w-10 fill-current" />
-              <Moon className="swap-on h-10 w-10 fill-current" />
+              <Moon className="swap-on h-10 w-10 fill-current " />
             </label>
           </div>
           <div className="modal-action">
