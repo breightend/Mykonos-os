@@ -6,7 +6,7 @@ export default function NuevoProducto() {
   // Estados para manejar los datos del formulario
   const [marca, setMarca] = useState('')
   const [cantidad] = useState(0)
-  const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: 0 }] }])
+  const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
 
@@ -16,6 +16,12 @@ export default function NuevoProducto() {
   const coloresPredefinidos = ['Negro', 'Blanco', 'Azul', 'Rojo', 'Verde']
   const tallesPredefinidos = ['S', 'M', 'L', 'XL', 'XXL']
 
+  const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState(
+    tallesPredefinidos.reduce((acc, talle) => {
+      acc[talle] = [...coloresPredefinidos]
+      return acc
+    }, {})
+  )
   // Función para manejar el envío del formulario
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -25,12 +31,12 @@ export default function NuevoProducto() {
       talles
     }
     console.log('Prenda agregada:', nuevaPrenda)
-    // Aquí podrías enviar los datos a una API o manejarlos como necesites
+    // Aca se pueden enviar los datos a donde se necesite
   }
 
-  // Función para agregar un nuevo talle
+  // Función para agregar un nuevo talle, la cantidad tengo que modificar
   const agregarTalle = () => {
-    setTalles([...talles, { talle: '', colores: [{ color: '', cantidad: 0 }] }])
+    setTalles([...talles, { talle: tallesPredefinidos[0], colores: [{ color: '', cantidad: 0 }] }])
   }
 
   // Función para manejar cambios en los talles
@@ -43,14 +49,36 @@ export default function NuevoProducto() {
   // Función para agregar un color a un talle específico
   const agregarColor = (talleIndex) => {
     const nuevosTalles = [...talles]
-    nuevosTalles[talleIndex].colores.push({ color: '', cantidad: 0 })
+    nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
     setTalles(nuevosTalles)
   }
 
   // Función para manejar cambios en los colores
   const handleColorChange = (talleIndex, colorIndex, field, value) => {
     const nuevosTalles = [...talles]
-    nuevosTalles[talleIndex].colores[colorIndex][field] = value
+
+    if (field === 'color') {
+      const talleActual = nuevosTalles[talleIndex].talle
+      const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
+      const nuevoColor = value
+
+      // Restaurar el color anterior a la lista de disponibles para este talle
+      if (colorAnterior) {
+        setColoresDisponiblesPorTalle((prev) => ({
+          ...prev,
+          [talleActual]: [...prev[talleActual], colorAnterior]
+        }))
+      }
+
+      // Eliminar el nuevo color de la lista de disponibles para este talle
+      setColoresDisponiblesPorTalle((prev) => ({
+        ...prev,
+        [talleActual]: prev[talleActual].filter((color) => color !== nuevoColor)
+      }))
+    }
+
+    nuevosTalles[talleIndex].colores[colorIndex][field] =
+      field === 'cantidad' ? parseInt(value, 10) || 0 : value
     setTalles(nuevosTalles)
     handleCantidadTotal()
   }
@@ -67,6 +95,17 @@ export default function NuevoProducto() {
 
   const handleDeleteColor = (talleIndex, colorIndex) => {
     const nuevosTalles = [...talles]
+    const colorEliminado = nuevosTalles[talleIndex].colores[colorIndex].color
+    const talleActual = nuevosTalles[talleIndex].talle
+
+    // Restaurar el color eliminado a la lista de disponibles
+    if (colorEliminado) {
+      setColoresDisponiblesPorTalle((prev) => ({
+        ...prev,
+        [talleActual]: [...prev[talleActual], colorEliminado]
+      }))
+    }
+
     nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
     setTalles(nuevosTalles)
     handleCantidadTotal()
@@ -74,6 +113,18 @@ export default function NuevoProducto() {
 
   const handleDeleteTalle = (talleIndex) => {
     const nuevosTalles = [...talles]
+    const talleEliminado = nuevosTalles[talleIndex]
+
+    // Restaurar todos los colores del talle eliminado
+    talleEliminado.colores.forEach((color) => {
+      if (color.color) {
+        setColoresDisponiblesPorTalle((prev) => ({
+          ...prev,
+          [talleEliminado.talle]: [...prev[talleEliminado.talle], color.color]
+        }))
+      }
+    })
+
     nuevosTalles.splice(talleIndex, 1)
     setTalles(nuevosTalles)
     handleCantidadTotal()
@@ -146,15 +197,19 @@ export default function NuevoProducto() {
         {talles.map((talle, talleIndex) => (
           <div key={talleIndex} className="mb-4 p-4 bg-primary/20 rounded-lg">
             {/* Campo para el talle */}
-            <div className="flex justify-end">
-              <div className="tooltip" data-tip="Eliminar Talle">
-                <button className="btn " onClick={() => handleDeleteTalle(talleIndex)}>
-                  <Trash2 />
-                </button>
-              </div>
-            </div>
+            <div className="flex justify-end"></div>
             <div className="mb-2">
-              <label className="block text-md font-medium mb-2">Talle</label>
+              <span className=" text-md flex justify-between font-medium text-2xl mb-2">
+                Talle
+                <div className="tooltip" data-tip="Eliminar Talle">
+                  <button
+                    className="btn btn-neutral p-4 "
+                    onClick={() => handleDeleteTalle(talleIndex)}
+                  >
+                    <Trash2 />
+                  </button>
+                </div>
+              </span>
               <select
                 value={talle.talle}
                 onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
@@ -178,7 +233,7 @@ export default function NuevoProducto() {
               {talle.colores.map((color, colorIndex) => (
                 <div key={colorIndex} className="space-x-4 flex items-center mb-2">
                   <select
-                    value={color.color}
+                    value={color.color} // Asegúrate de que esto esté correctamente vinculado
                     onChange={(e) =>
                       handleColorChange(talleIndex, colorIndex, 'color', e.target.value)
                     }
@@ -188,7 +243,7 @@ export default function NuevoProducto() {
                     <option value="" disabled>
                       Seleccione un color
                     </option>
-                    {coloresPredefinidos.map((color, index) => (
+                    {coloresDisponiblesPorTalle[talle.talle]?.map((color, index) => (
                       <option key={index} value={color}>
                         {color}
                       </option>
@@ -209,12 +264,14 @@ export default function NuevoProducto() {
                     className="input input-bordered w-1/5 "
                     required
                   />
-                  <button
-                    className="btn btn-error"
-                    onClick={() => handleDeleteColor(talleIndex, colorIndex)}
-                  >
-                    <Trash2 />
-                  </button>
+                  <div className="tooltip" data-tip="Eliminar Color">
+                    <button
+                      className="btn btn-error"
+                      onClick={() => handleDeleteColor(talleIndex, colorIndex)}
+                    >
+                      <Trash2 />
+                    </button>
+                  </div>
                 </div>
               ))}
               <button
