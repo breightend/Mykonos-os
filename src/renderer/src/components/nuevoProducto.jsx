@@ -3,14 +3,13 @@ import { useLocation } from 'wouter'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 
 export default function NuevoProducto() {
-  // Estados para manejar los datos del formulario
   const [marca, setMarca] = useState('')
   const [cantidad] = useState(0)
   const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
 
-  // Opciones predefinidas
+  // Opciones predefinidas, esto vuela con la implementacion de la bd.
   const marcas = ['Nike', 'Adidas', 'Puma', "Levi's", 'Zara']
   const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo']
   const coloresPredefinidos = ['Negro', 'Blanco', 'Azul', 'Rojo', 'Verde']
@@ -22,6 +21,7 @@ export default function NuevoProducto() {
       return acc
     }, {})
   )
+  //Crea una lista de colres disponibles que son todos, dependiendo del talle en que esta
   // Función para manejar el envío del formulario
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -53,32 +53,46 @@ export default function NuevoProducto() {
     setTalles(nuevosTalles)
   }
 
-  // Función para manejar cambios en los colores
   const handleColorChange = (talleIndex, colorIndex, field, value) => {
     const nuevosTalles = [...talles]
+    const talleActual = nuevosTalles[talleIndex].talle
+    const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
 
+    // Si el campo modificado es un color
     if (field === 'color') {
-      const talleActual = nuevosTalles[talleIndex].talle
-      const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
       const nuevoColor = value
 
-      // Restaurar el color anterior a la lista de disponibles para este talle
-      if (colorAnterior) {
-        setColoresDisponiblesPorTalle((prev) => ({
-          ...prev,
-          [talleActual]: [...prev[talleActual], colorAnterior]
-        }))
-      }
+      // Solo actualizamos los disponibles si el color realmente cambió
+      if (nuevoColor !== colorAnterior) {
+        setColoresDisponiblesPorTalle((prev) => {
+          // Restaurar el color anterior solo si no está siendo usado en otro select
+          const coloresUsados = nuevosTalles[talleIndex].colores
+            .filter((_, i) => i !== colorIndex) // excluimos el que está cambiando
+            .map((c) => c.color)
 
-      // Eliminar el nuevo color de la lista de disponibles para este talle
-      setColoresDisponiblesPorTalle((prev) => ({
-        ...prev,
-        [talleActual]: prev[talleActual].filter((color) => color !== nuevoColor)
-      }))
+          const coloresActualesDisponibles = prev[talleActual] ?? []
+
+          // Restaurar color anterior solo si no está repetido
+          const debeRestaurar = colorAnterior && !coloresUsados.includes(colorAnterior)
+
+          const nuevosDisponibles = [
+            ...(debeRestaurar
+              ? [...coloresActualesDisponibles, colorAnterior]
+              : coloresActualesDisponibles)
+          ].filter((c) => c !== nuevoColor) // remover nuevo color
+
+          return {
+            ...prev,
+            [talleActual]: nuevosDisponibles
+          }
+        })
+      }
     }
 
+    // Actualizar el valor en el array de talles
     nuevosTalles[talleIndex].colores[colorIndex][field] =
       field === 'cantidad' ? parseInt(value, 10) || 0 : value
+
     setTalles(nuevosTalles)
     handleCantidadTotal()
   }
@@ -244,12 +258,10 @@ export default function NuevoProducto() {
                     className="select select-bordered flex-1"
                     required
                   >
-                    <option value="" disabled>
-                      Seleccione un color
-                    </option>
-                    {coloresDisponiblesPorTalle[talle.talle]?.map((color, index) => (
-                      <option key={index} value={color}>
-                        {color}
+                    <option disabled={true}>Seleccione un color</option>
+                    {coloresDisponiblesPorTalle[talle.talle]?.map((colorDisponible, index) => (
+                      <option key={index} value={colorDisponible}>
+                        {colorDisponible}
                       </option>
                     ))}
                   </select>
