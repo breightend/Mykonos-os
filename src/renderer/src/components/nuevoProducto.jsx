@@ -15,88 +15,6 @@ export default function NuevoProducto() {
   const coloresPredefinidos = ['Negro', 'Blanco', 'Azul', 'Rojo', 'Verde']
   const tallesPredefinidos = ['S', 'M', 'L', 'XL', 'XXL']
 
-  const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState(
-    tallesPredefinidos.reduce((acc, talle) => {
-      acc[talle] = [...coloresPredefinidos]
-      return acc
-    }, {})
-  )
-  //Crea una lista de colres disponibles que son todos, dependiendo del talle en que esta
-  // Función para manejar el envío del formulario
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const nuevaPrenda = {
-      marca,
-      cantidad,
-      talles
-    }
-    console.log('Prenda agregada:', nuevaPrenda)
-    // Aca se pueden enviar los datos a donde se necesite
-  }
-
-  // Función para agregar un nuevo talle, la cantidad tengo que modificar
-  const agregarTalle = () => {
-    setTalles([...talles, { talle: tallesPredefinidos[0], colores: [{ color: '', cantidad: 0 }] }])
-  }
-
-  // Función para manejar cambios en los talles
-  const handleTalleChange = (talleIndex, value) => {
-    const nuevosTalles = [...talles]
-    nuevosTalles[talleIndex].talle = value
-    setTalles(nuevosTalles)
-  }
-
-  // Función para agregar un color a un talle específico
-  const agregarColor = (talleIndex) => {
-    const nuevosTalles = [...talles]
-    nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
-    setTalles(nuevosTalles)
-  }
-
-  const handleColorChange = (talleIndex, colorIndex, field, value) => {
-    const nuevosTalles = [...talles]
-    const talleActual = nuevosTalles[talleIndex].talle
-    const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
-
-    // Si el campo modificado es un color
-    if (field === 'color') {
-      const nuevoColor = value
-
-      // Solo actualizamos los disponibles si el color realmente cambió
-      if (nuevoColor !== colorAnterior) {
-        setColoresDisponiblesPorTalle((prev) => {
-          // Restaurar el color anterior solo si no está siendo usado en otro select
-          const coloresUsados = nuevosTalles[talleIndex].colores
-            .filter((_, i) => i !== colorIndex) // excluimos el que está cambiando
-            .map((c) => c.color)
-
-          const coloresActualesDisponibles = prev[talleActual] ?? []
-
-          // Restaurar color anterior solo si no está repetido
-          const debeRestaurar = colorAnterior && !coloresUsados.includes(colorAnterior)
-
-          const nuevosDisponibles = [
-            ...(debeRestaurar
-              ? [...coloresActualesDisponibles, colorAnterior]
-              : coloresActualesDisponibles)
-          ].filter((c) => c !== nuevoColor) // remover nuevo color
-
-          return {
-            ...prev,
-            [talleActual]: nuevosDisponibles
-          }
-        })
-      }
-    }
-
-    // Actualizar el valor en el array de talles
-    nuevosTalles[talleIndex].colores[colorIndex][field] =
-      field === 'cantidad' ? parseInt(value, 10) || 0 : value
-
-    setTalles(nuevosTalles)
-    handleCantidadTotal()
-  }
-
   const handleCantidadTotal = () => {
     let cantidadTotal = 0
     talles.forEach((talle) => {
@@ -140,6 +58,89 @@ export default function NuevoProducto() {
     })
 
     nuevosTalles.splice(talleIndex, 1)
+    setTalles(nuevosTalles)
+    handleCantidadTotal()
+  }
+
+  const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState(
+    tallesPredefinidos.reduce((acc, talle) => {
+      acc[talle] = [...coloresPredefinidos]
+      return acc
+    }, {})
+  )
+  //Crea una lista de colres disponibles que son todos, dependiendo del talle en que esta
+  // Función para manejar el envío del formulario
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const nuevaPrenda = {
+      marca,
+      cantidad,
+      talles
+    }
+    console.log('Prenda agregada:', nuevaPrenda)
+    // Aca se pueden enviar los datos a donde se necesite
+  }
+
+  // Función para agregar un nuevo talle, la cantidad tengo que modificar
+  const agregarTalle = () => {
+    setTalles([...talles, { talle: tallesPredefinidos[0], colores: [{ color: '', cantidad: 0 }] }])
+  }
+
+  // Función para manejar cambios en los talles
+  const handleTalleChange = (talleIndex, value) => {
+    const nuevosTalles = [...talles]
+    nuevosTalles[talleIndex].talle = value
+    setTalles(nuevosTalles)
+  }
+
+  // Función para agregar un color a un talle específico
+  const agregarColor = (talleIndex) => {
+    const nuevosTalles = [...talles]
+    nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
+    setTalles(nuevosTalles)
+  }
+  
+//Aca no deberia ser on change sino en submit. 
+  const handleColorChange = (talleIndex, colorIndex, field, value) => {
+    const nuevosTalles = [...talles]
+    const talleActual = nuevosTalles[talleIndex].talle
+    const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
+
+    // Si el campo modificado es un color
+    if (field === 'color') {
+      const nuevoColor = value
+
+      // Solo actualizamos los disponibles si el color realmente cambió
+      if (nuevoColor !== colorAnterior) {
+        setColoresDisponiblesPorTalle((prev) => {
+          // Restaurar el color anterior solo si no está siendo usado en otro select
+          const coloresUsados = nuevosTalles[talleIndex].colores
+            .filter((_, i) => i !== colorIndex) // excluimos el que está cambiando
+            .map((c) => c.color)
+
+          const coloresActualesDisponibles = prev[talleActual] ?? []
+
+          // Restaurar color anterior solo si no está repetido
+          const debeRestaurar = colorAnterior && !coloresUsados.includes(colorAnterior)
+
+          const nuevosDisponibles = [
+            ...(debeRestaurar
+              ? [...coloresActualesDisponibles, colorAnterior]
+              : coloresActualesDisponibles)
+          ].filter((c) => c !== nuevoColor) // remover nuevo color
+
+          return {
+            ...prev,
+            [talleActual]: nuevosDisponibles
+          }
+        })
+      }
+    }
+
+    // Actualizar el valor en el array de talles
+    nuevosTalles[talleIndex].colores[colorIndex][field] =
+      field === 'cantidad' ? parseInt(value, 10) || 0 : value
+
     setTalles(nuevosTalles)
     handleCantidadTotal()
   }
@@ -211,11 +212,10 @@ export default function NuevoProducto() {
         </div>
 
         {/* Sección para talles, colores y cantidades */}
-        <h2 className="text-lg font-semibold mb-2">Talles, Colores y Cantidades</h2>
+        <h2 className="text-xl font-semibold mb-2">Talles, Colores y Cantidades</h2>
         {talles.map((talle, talleIndex) => (
           <div key={talleIndex} className="mb-4 p-4 bg-primary/20 rounded-lg">
             {/* Campo para el talle */}
-            <div className="flex justify-end"></div>
             <div className="mb-2">
               <span className=" text-md flex justify-between font-medium text-2xl mb-2">
                 Talle

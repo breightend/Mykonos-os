@@ -57,7 +57,7 @@ export default function Login() {
         </div>
       </div>
       <div className="absolute bottom-0 left-0 p-4">
-        <p className="font-bold text-6xl dark:text-white text-red-900 "> Mykonos-OS</p>
+        <p className="font-bold text-6xl dark:text-white text-black "> Mykonos-OS</p>
       </div>
     </div>
   )
