@@ -1,3 +1,4 @@
+import { KeyRound, UserRound } from 'lucide-react'
 import Settings from '../componentes especificos/settings'
 import { useLocation } from 'wouter'
 
@@ -19,7 +20,7 @@ export default function Login() {
       </figure>
 
       <div className="relative z-20 flex items-center justify-center min-h-screen">
-        <div className="card glass flex-row w-[32rem] bg-gray-800 bg-opacity-50 text-white shadow-xl p-2 rounded-lg">
+        <div className="card glass flex-row w-[32rem] bg-gray-800 bg-opacity-50  shadow-xl p-2 rounded-lg">
           <Settings />
           <figure className="flex items-center justify-center px-4">
             <div className="avatar">
@@ -30,24 +31,40 @@ export default function Login() {
           </figure>
 
           <div className="card-body flex-1">
-            <h2 className="text-center text-2xl font-semibold mb-2">Iniciar Sesión</h2>
-            <input
-              type="text"
-              className="input input-bordered w-full mb-2 text-base-content "
-              required
-              placeholder="Usuario"
-              pattern="[A-Za-z][A-Za-z0-9\-]*"
-              minLength="3"
-              maxLength="30"
-            />
-            <input
-              type="password"
-              className="input input-bordered w-full mb-4 text-base-content"
-              required
-              placeholder="Contraseña"
-              minLength="8"
-              pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-            />
+            <h2 className="text-center text-2xl font-semibold mb-2 text-white">Iniciar Sesión</h2>
+            <label className="input validator">
+              <UserRound className="opacity-50 " />
+              <input
+                type="text"
+                className=" w-full  text-base-content "
+                required
+                placeholder="Usuario"
+                pattern="[A-Za-z][A-Za-z0-9\-]*"
+                minLength="3"
+                maxLength="30"
+              />
+            </label>
+            <label className="input validator">
+              <KeyRound className="opacity-50 " />
+              <input
+                type="password"
+                required
+                placeholder="Contraseña"
+                minLength="8"
+                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
+                className="text-base-content"
+              />
+            </label>
+            <p className="validator-hint hidden">
+              Must be more than 8 characters, including
+              <br />
+              At least one number
+              <br />
+              At least one lowercase letter
+              <br />
+              At least one uppercase letter
+            </p>
             <div className="card-actions flex justify-end">
               <button className="btn btn-primary text-black" onClick={() => setLocation('/home')}>
                 Iniciar

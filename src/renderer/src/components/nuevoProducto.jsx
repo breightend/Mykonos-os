@@ -99,10 +99,13 @@ export default function NuevoProducto() {
     nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
     setTalles(nuevosTalles)
   }
-  
-//Aca no deberia ser on change sino en submit. 
+
+  //Aca no deberia ser on change sino en submit.
+  //Field: campo que esta cambiando, value: valor que se esta cambiando
   const handleColorChange = (talleIndex, colorIndex, field, value) => {
+    //copia del array de talles
     const nuevosTalles = [...talles]
+    //Obtener el talle actual y el color anterior
     const talleActual = nuevosTalles[talleIndex].talle
     const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
 
@@ -207,7 +210,13 @@ export default function NuevoProducto() {
           <label className="block text-sm  font-medium mb-1">Precio</label>
           <span className="flex gap-2 items-center">
             $
-            <input type="number" name="" placeholder="####" id="" className="input w-1/5" />
+            <input
+              type="number"
+              name=""
+              placeholder="####"
+              id=""
+              className="input w-1/5 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
           </span>
         </div>
 
@@ -219,7 +228,7 @@ export default function NuevoProducto() {
             <div className="mb-2">
               <span className=" text-md flex justify-between font-medium text-2xl mb-2">
                 Talle
-                <div className="tooltip" data-tip="Eliminar Talle">
+                <div className="tooltip" data-tip="Eliminar talle">
                   <button
                     className="btn btn-neutral p-4 "
                     onClick={() => handleDeleteTalle(talleIndex)}
@@ -251,14 +260,14 @@ export default function NuevoProducto() {
               {talle.colores.map((color, colorIndex) => (
                 <div key={colorIndex} className="space-x-4 flex items-center mb-2">
                   <select
-                    value={color.color} // Asegúrate de que esto esté correctamente vinculado
+                    value={color.color}
                     onChange={(e) =>
                       handleColorChange(talleIndex, colorIndex, 'color', e.target.value)
                     }
                     className="select select-bordered flex-1"
                     required
                   >
-                    <option disabled={true}>Seleccione un color</option>
+                    <option disabled>Seleccione un color</option>
                     {coloresDisponiblesPorTalle[talle.talle]?.map((colorDisponible, index) => (
                       <option key={index} value={colorDisponible}>
                         {colorDisponible}
@@ -302,24 +311,25 @@ export default function NuevoProducto() {
         ))}
 
         <div className=" flex justify-end">
-          <p className="bg-blue-200 rounded-2xl p-2 px-2 dark:text-black dark:bg-blue-300">
-            Cantidad de prendas agregadas: <span className="font-semibold">{cantidadTotal}</span>
-          </p>
-        </div>
-        {/* Botón para agregar un nuevo talle */}
-        <div className="flex justify-between">
           <button
             type="button"
             onClick={agregarTalle}
-            className="btn btn-outline badge badge-secondary badge-outline"
+            className="btn btn-outline badge badge-secondary badge-outline p-4"
           >
             + Agregar Talle
           </button>
-
-          {/* Botón para enviar el formulario */}
-          <button type="submit" className="btn btn-success mt-10 justify-end">
-            Agregar Prenda
-          </button>
+        </div>
+        {/* Botón para agregar un nuevo talle */}
+        <div className="flex ">
+          <p className="bg-blue-200 rounded-2xl p-2 px-2 dark:text-black dark:bg-blue-300">
+            Cantidad de prendas agregadas: <span className="font-semibold">{cantidadTotal}</span>
+          </p>
+          <div className="flex justify-end">
+            {/* Botón para enviar el formulario */}
+            <button type="submit" className="btn btn-success  justify-end">
+              Agregar Prenda
+            </button>
+          </div>
         </div>
       </form>
     </div>
