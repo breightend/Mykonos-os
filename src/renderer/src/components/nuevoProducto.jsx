@@ -286,7 +286,7 @@ export default function NuevoProducto() {
                         parseInt(e.target.value, 10)
                       )
                     }
-                    className="input input-bordered w-1/5 "
+                    className="input input-bordered w-1/5 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none "
                     required
                   />
                   <div className="tooltip" data-tip="Eliminar Color">
