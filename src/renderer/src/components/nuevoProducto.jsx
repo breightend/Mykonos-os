@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Trash2 } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function NuevoProducto() {
   const [marca, setMarca] = useState('')
@@ -101,6 +102,19 @@ export default function NuevoProducto() {
     const nuevosTalles = [...talles]
     nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
     setTalles(nuevosTalles)
+  }
+
+  const [selectedColors, setSelectedColors] = useState([])
+
+  const handleColorSelect = (talleIndex, colorIndex, field, value) => {
+    if (field === 'color') {
+      if (selectedColors.includes(value)) {
+        toast.error('El color que está agregando ya se encuentra seleccionado')
+        return
+      }
+      setSelectedColors([...selectedColors, value])
+    }
+    handleColorChange(talleIndex, colorIndex, field, value)
   }
 
   //Field: campo que esta cambiando, value: valor que se esta cambiando
@@ -268,7 +282,7 @@ export default function NuevoProducto() {
                   <select
                     value={color.color}
                     onChange={(e) =>
-                      handleColorChange(talleIndex, colorIndex, 'color', e.target.value)
+                      handleColorSelect(talleIndex, colorIndex, 'color', e.target.value)
                     }
                     className="select select-bordered flex-1"
                     required
@@ -280,6 +294,7 @@ export default function NuevoProducto() {
                       </option>
                     ))}
                   </select>
+                  <Toaster position="bottom-right" reverseOrder={false} />
                   <input
                     type="number"
                     placeholder="Cantidad"
