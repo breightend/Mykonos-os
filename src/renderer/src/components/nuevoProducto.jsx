@@ -38,8 +38,9 @@ export default function NuevoProducto() {
         [talleActual]: [...prev[talleActual], colorEliminado]
       }))
     }
-
+    console.log('antes: ', nuevosTalles)
     nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
+    console.log('redes: ', nuevosTalles)
     setTalles(nuevosTalles)
     handleCantidadTotal()
   }
@@ -147,11 +148,11 @@ export default function NuevoProducto() {
             ...nuevosDisponiblesUnicos, // primero los disponibles
             ...coloresUsados // luego los usados
           ]
-          console.log('coloresUsados', coloresUsados)
-          console.log('nuevosColorsToShow', nuevosColorsToShow)
+          // console.log('coloresUsados', coloresUsados)
+          // console.log('nuevosColorsToShow', nuevosColorsToShow)
           setColorsToShow(nuevosColorsToShow)
 
-          console.log('coloresDisponiblesPorTalle', coloresDisponiblesPorTalle)
+          // console.log('coloresDisponiblesPorTalle', coloresDisponiblesPorTalle)
           return {
             ...prev,
             [talleActual]: colorsToShow
@@ -167,6 +168,8 @@ export default function NuevoProducto() {
     setTalles(nuevosTalles)
     handleCantidadTotal()
   }
+
+  console.log('talles', talles)
 
   return (
     <div className="p-6 bg-base-100 min-h-screen">
@@ -277,22 +280,41 @@ export default function NuevoProducto() {
             {/* Sección para colores */}
             <div>
               <h2 className="text-md font-medium mb-2">Colores</h2>
+              {console.log(coloresDisponiblesPorTalle[talle.talle])}
               {talle.colores.map((color, colorIndex) => (
                 <div key={colorIndex} className="space-x-4 flex items-center mb-2">
                   <select
-                    value={color.color}
+                    // value={color.color}
                     onChange={(e) =>
                       handleColorSelect(talleIndex, colorIndex, 'color', e.target.value)
                     }
                     className="select select-bordered flex-1"
                     required
+                    defaultValue="Seleccione un color"
                   >
                     <option disabled>Seleccione un color</option>
-                    {coloresDisponiblesPorTalle[talle.talle]?.map((colorDisponible, index) => (
-                      <option key={index} value={colorDisponible}>
-                        {colorDisponible}
+                    {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
+                      allColors.map((color, index) => {
+                        if (!coloresDisponiblesPorTalle[talle.talle].includes(color)) {
+                          coloresDisponiblesPorTalle.pop(color)
+                          return (
+                            <option key={index} value={color} disabled>
+                              {color}
+                            </option>
+                          )
+                        } else {
+                          return (
+                            <option key={index} value={color}>
+                              {color}
+                            </option>
+                          )
+                        }
+                      })
+                    ) : (
+                      <option value="No hay colores disponibles">
+                        No hay más colores disponibles
                       </option>
-                    ))}
+                    )}
                   </select>
                   <Toaster position="bottom-right" reverseOrder={false} />
                   <input
@@ -321,7 +343,7 @@ export default function NuevoProducto() {
                 </div>
               ))}
               <div>
-                <button onClick={() => agregarColor(talleIndex)}>+ Agregar color</button>
+                <button type='button' onClick={() => agregarColor(talleIndex)}>+ Agregar color</button>
               </div>
             </div>
           </div>
