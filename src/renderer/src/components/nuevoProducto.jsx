@@ -108,13 +108,13 @@ export default function NuevoProducto() {
   const [selectedColors, setSelectedColors] = useState([])
 
   const handleColorSelect = (talleIndex, colorIndex, field, value) => {
-    if (field === 'color') {
-      if (selectedColors.includes(value)) {
-        toast.error('El color que está agregando ya se encuentra seleccionado')
-        return
-      }
-      setSelectedColors([...selectedColors, value])
-    }
+    // if (field === 'color') {
+    //   if (selectedColors.includes(value)) {
+    //     toast.error('El color que está agregando ya se encuentra seleccionado')
+    //     return
+    //   }
+    //   setSelectedColors([...selectedColors, value])
+    // }
     handleColorChange(talleIndex, colorIndex, field, value)
   }
 
@@ -136,28 +136,23 @@ export default function NuevoProducto() {
           const coloresUsados = nuevosTalles[talleIndex].colores.map((c) => c.color)
           const disponiblesActuales = prev[talleActual] ?? []
 
-          // Restauramos el color anterior si no está siendo usado
+          // Restaurar el color anterior si ya no está en uso
           const debeRestaurar = colorAnterior && !coloresUsados.includes(colorAnterior)
-          const nuevosDisponibles = [
-            ...(debeRestaurar ? [...disponiblesActuales, colorAnterior] : disponiblesActuales)
-          ].filter((c) => c !== nuevoColor)
+          let nuevosDisponibles = debeRestaurar
+            ? [...disponiblesActuales, colorAnterior]
+            : [...disponiblesActuales]
 
-          // Evitamos duplicados
-          const nuevosDisponiblesUnicos = Array.from(new Set(nuevosDisponibles))
-          const nuevosColorsToShow = [
-            ...nuevosDisponiblesUnicos, // primero los disponibles
-            ...coloresUsados // luego los usados
-          ]
-          // console.log('coloresUsados', coloresUsados)
-          // console.log('nuevosColorsToShow', nuevosColorsToShow)
-          setColorsToShow(nuevosColorsToShow)
+          // Eliminar el nuevo color seleccionado
+          nuevosDisponibles = nuevosDisponibles.filter((c) => c !== nuevoColor)
 
-          // console.log('coloresDisponiblesPorTalle', coloresDisponiblesPorTalle)
           return {
             ...prev,
-            [talleActual]: colorsToShow
+            [talleActual]: nuevosDisponibles // Aquí se mantiene la consistencia del array
           }
         })
+
+        // Llamar a removeColorFromTalle solo si el color cambió
+        removeColorFromTalle(talleActual, nuevoColor)
       }
     }
 
@@ -169,7 +164,16 @@ export default function NuevoProducto() {
     handleCantidadTotal()
   }
 
-  console.log('talles', talles)
+  // console.log('talles', talles)
+
+  const removeColorFromTalle = (talle, color) => {
+    console.log('Color a borrar:', color)
+
+    setColoresDisponiblesPorTalle((prev) => ({
+      ...prev,
+      [talle]: prev[talle].filter((c) => c !== color)
+    }))
+  }
 
   return (
     <div className="p-6 bg-base-100 min-h-screen">
@@ -295,16 +299,18 @@ export default function NuevoProducto() {
                     <option disabled>Seleccione un color</option>
                     {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
                       allColors.map((color, index) => {
-                        if (!coloresDisponiblesPorTalle[talle.talle].includes(color)) {
-                          coloresDisponiblesPorTalle.pop(color)
+                        console.log(color)
+                        // console.log(coloresDisponiblesPorTalle[talle.talle].includes(color))
+                        if (coloresDisponiblesPorTalle[talle.talle].includes(color)) {
+                          // coloresDisponiblesPorTalle[talle.talle].pop(color)
                           return (
-                            <option key={index} value={color} disabled>
+                            <option key={index} value={color}>
                               {color}
                             </option>
                           )
                         } else {
                           return (
-                            <option key={index} value={color}>
+                            <option key={index} value={color} disabled>
                               {color}
                             </option>
                           )
@@ -312,7 +318,7 @@ export default function NuevoProducto() {
                       })
                     ) : (
                       <option value="No hay colores disponibles">
-                        No hay más colores disponibles
+                        Seleccione un talle primero
                       </option>
                     )}
                   </select>
@@ -334,6 +340,7 @@ export default function NuevoProducto() {
                   />
                   <div className="tooltip" data-tip="Eliminar Color">
                     <button
+                      type="button"
                       className="btn btn-error"
                       onClick={() => handleDeleteColor(talleIndex, colorIndex)}
                     >
@@ -343,7 +350,9 @@ export default function NuevoProducto() {
                 </div>
               ))}
               <div>
-                <button type='button' onClick={() => agregarColor(talleIndex)}>+ Agregar color</button>
+                <button type="button" onClick={() => agregarColor(talleIndex)}>
+                  + Agregar color
+                </button>
               </div>
             </div>
           </div>
