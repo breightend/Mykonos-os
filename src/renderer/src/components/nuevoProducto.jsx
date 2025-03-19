@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-
+//TODO corregir el tema que se puedan crear multiples talles
 export default function NuevoProducto() {
   const [marca, setMarca] = useState('')
   const [cantidad] = useState(0)
@@ -72,6 +72,8 @@ export default function NuevoProducto() {
 
   //Crea una lista de colres disponibles que son todos, dependiendo del talle en que esta
   // Función para manejar el envío del formulario
+  //TODO ver como crear una nueva prenda 
+
   const handleSubmit = (e) => {
     e.preventDefault()
     const nuevaPrenda = {

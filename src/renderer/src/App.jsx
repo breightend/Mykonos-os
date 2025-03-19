@@ -10,6 +10,7 @@ import Clientes from './components/clientes'
 import Estadisticas from './components/estadisticas'
 import Informe from './components/informe'
 import FormasPago from './components/formasPago'
+import confirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
       <Route path="/estadisticas" component={Estadisticas} />
       <Route path="/informe" component={Informe} />
       <Route path="/formaPago" component={FormasPago} />
+      <Route path="/confirmacionDatosDeCompra" component={confirmacionDatosDeCompra} />
     </Switch>
   )
 }
