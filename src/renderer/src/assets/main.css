@@ -14,6 +14,7 @@
   --color-secondary-content: --color-accent: #37cdbe;
   --color-accent-content: ;
   --color-error: #f37372  ;
+  --color-success: #a1d89b;
 }
 
 @plugin "daisyui/theme" {

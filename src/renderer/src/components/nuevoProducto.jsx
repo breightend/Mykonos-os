@@ -251,7 +251,7 @@ export default function NuevoProducto() {
                 Talle
                 <div className="tooltip" data-tip="Eliminar talle">
                   <button
-                    className="btn btn-neutral p-4 "
+                    className="btn btn-ghost p-4"
                     onClick={() => handleDeleteTalle(talleIndex)}
                   >
                     <Trash2 />
@@ -352,17 +352,17 @@ export default function NuevoProducto() {
           <button
             type="button"
             onClick={agregarTalle}
-            className="btn btn-outline badge badge-secondary badge-outline p-4"
+            className="btn btn-outline badge badge-secondary badge-outline p-6 transform hover:scale-105"
           >
             + Agregar Talle
           </button>
         </div>
-        <div className="flex ">
-          <p className="bg-blue-200 rounded-2xl p-2 px-2 dark:text-black dark:bg-blue-300">
-            Cantidad de prendas agregadas: <span className="font-semibold">{cantidadTotal}</span>
+        <div className="flex justify-between mt-8">
+          <p className="bg-secondary/20 rounded-2xl p-2 px-2 dark:text-black dark:bg-blue-300">
+            Cantidad de unidades agregadas: <span className="font-semibold">{cantidadTotal}</span>
           </p>
-          <div className="flex justify-end">
-            <button type="submit" className="btn btn-success  justify-end">
+          <div className="flex ">
+            <button type="submit" className="btn btn-success justify-end transform hover:scale-105">
               Agregar Prenda
             </button>
           </div>
