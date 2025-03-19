@@ -9,6 +9,7 @@ import Proveedores from './components/proveedores'
 import Clientes from './components/clientes'
 import Estadisticas from './components/estadisticas'
 import Informe from './components/informe'
+import FormasPago from './components/formasPago'
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
       <Route path="/clientes" component={Clientes} />
       <Route path="/estadisticas" component={Estadisticas} />
       <Route path="/informe" component={Informe} />
+      <Route path="/formaPago" component={FormasPago} />
     </Switch>
   )
 }

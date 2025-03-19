@@ -62,7 +62,12 @@ function Ventas() {
           </div>
           <p className="font-bold ">Total: </p>
           <div className="flex justify-end">
-            <button className="btn btn-success  justify-end">Aceptar</button>
+            <button
+              className="btn btn-success  justify-end"
+              onClick={() => setLocation('/formaPago')}
+            >
+              Aceptar
+            </button>
           </div>
         </div>
       </div>
