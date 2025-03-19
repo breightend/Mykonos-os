@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-import toast, { Toaster } from 'react-hot-toast'
 
 export default function NuevoProducto() {
   const [marca, setMarca] = useState('')
@@ -38,11 +37,11 @@ export default function NuevoProducto() {
         [talleActual]: [...prev[talleActual], colorEliminado]
       }))
     }
-    console.log('antes: ', nuevosTalles)
     nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
-    console.log('redes: ', nuevosTalles)
+    
     setTalles(nuevosTalles)
     handleCantidadTotal()
+    console.log('color eliminado', colorEliminado)
   }
 
   const handleDeleteTalle = (talleIndex) => {
@@ -165,9 +164,8 @@ export default function NuevoProducto() {
   }
 
   // console.log('talles', talles)
-
+//Esto anda bien, el tema es como se muestra!!!!! AAAAH 
   const removeColorFromTalle = (talle, color) => {
-    console.log('Color a borrar:', color)
 
     setColoresDisponiblesPorTalle((prev) => ({
       ...prev,
@@ -284,7 +282,6 @@ export default function NuevoProducto() {
             {/* Sección para colores */}
             <div>
               <h2 className="text-md font-medium mb-2">Colores</h2>
-              {console.log(coloresDisponiblesPorTalle[talle.talle])}
               {talle.colores.map((color, colorIndex) => (
                 <div key={colorIndex} className="space-x-4 flex items-center mb-2">
                   <select
@@ -299,7 +296,6 @@ export default function NuevoProducto() {
                     <option disabled>Seleccione un color</option>
                     {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
                       allColors.map((color, index) => {
-                        console.log(color)
                         // console.log(coloresDisponiblesPorTalle[talle.talle].includes(color))
                         if (coloresDisponiblesPorTalle[talle.talle].includes(color)) {
                           // coloresDisponiblesPorTalle[talle.talle].pop(color)
@@ -322,7 +318,6 @@ export default function NuevoProducto() {
                       </option>
                     )}
                   </select>
-                  <Toaster position="bottom-right" reverseOrder={false} />
                   <input
                     type="number"
                     placeholder="Cantidad"

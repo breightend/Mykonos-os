@@ -9,9 +9,16 @@
   name: 'cupcake';
   default: true;
   --color-primary: #fdba74;
-  --color-primary-content: #202020: --color-secondary: #fed7aa;
+  --color-primary-content: #202020; 
+  --color-secondary: #7284ea;
   --color-secondary-content: --color-accent: #37cdbe;
   --color-accent-content: ;
   --color-error: #f37372  ;
 }
 
+@plugin "daisyui/theme" {
+  name: 'night';
+
+  --color-base-100: #111820;
+
+}
