@@ -38,7 +38,7 @@ export default function NuevoProducto() {
       }))
     }
     nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
-    
+
     setTalles(nuevosTalles)
     handleCantidadTotal()
     console.log('color eliminado', colorEliminado)
@@ -69,7 +69,6 @@ export default function NuevoProducto() {
       return acc
     }, {})
   )
-  const [colorsToShow, setColorsToShow] = useState(allColors)
 
   //Crea una lista de colres disponibles que son todos, dependiendo del talle en que esta
   // Función para manejar el envío del formulario
@@ -103,8 +102,6 @@ export default function NuevoProducto() {
     nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
     setTalles(nuevosTalles)
   }
-
-  const [selectedColors, setSelectedColors] = useState([])
 
   const handleColorSelect = (talleIndex, colorIndex, field, value) => {
     // if (field === 'color') {
@@ -164,9 +161,8 @@ export default function NuevoProducto() {
   }
 
   // console.log('talles', talles)
-//Esto anda bien, el tema es como se muestra!!!!! AAAAH 
+  //Esto anda bien, el tema es como se muestra!!!!! AAAAH
   const removeColorFromTalle = (talle, color) => {
-
     setColoresDisponiblesPorTalle((prev) => ({
       ...prev,
       [talle]: prev[talle].filter((c) => c !== color)
@@ -285,7 +281,6 @@ export default function NuevoProducto() {
               {talle.colores.map((color, colorIndex) => (
                 <div key={colorIndex} className="space-x-4 flex items-center mb-2">
                   <select
-                    // value={color.color}
                     onChange={(e) =>
                       handleColorSelect(talleIndex, colorIndex, 'color', e.target.value)
                     }
@@ -296,9 +291,7 @@ export default function NuevoProducto() {
                     <option disabled>Seleccione un color</option>
                     {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
                       allColors.map((color, index) => {
-                        // console.log(coloresDisponiblesPorTalle[talle.talle].includes(color))
                         if (coloresDisponiblesPorTalle[talle.talle].includes(color)) {
-                          // coloresDisponiblesPorTalle[talle.talle].pop(color)
                           return (
                             <option key={index} value={color}>
                               {color}
@@ -333,15 +326,17 @@ export default function NuevoProducto() {
                     className="input input-bordered w-1/5 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none "
                     required
                   />
-                  <div className="tooltip" data-tip="Eliminar Color">
-                    <button
-                      type="button"
-                      className="btn btn-error"
-                      onClick={() => handleDeleteColor(talleIndex, colorIndex)}
-                    >
-                      <Trash2 />
-                    </button>
-                  </div>
+                  {colorIndex === talle.colores.length - 1 && (
+                    <div className="tooltip" data-tip="Eliminar Color">
+                      <button
+                        type="button"
+                        className="btn btn-error"
+                        onClick={() => handleDeleteColor(talleIndex, colorIndex)}
+                      >
+                        <Trash2 />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
               <div>
