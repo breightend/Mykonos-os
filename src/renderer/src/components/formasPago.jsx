@@ -64,12 +64,12 @@ export default function FormasPago() {
       <div className="flex items-center gap-3 mb-8">
         <button
           type="button"
-          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+          className="p-2 rounded-full bg-gray-100 dark:bg-base-300 hover:bg-gray-200 dark:hover:bg-base-100 transition hover:scale-105"
           onClick={() => setLocation('/ventas')}
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-3xl font-bold text-gray-800">Formas de Pago</h1>
+        <h1 className="text-3xl font-bold ">Formas de Pago</h1>
       </div>
 
       {/* Opciones de pago */}
@@ -81,25 +81,24 @@ export default function FormasPago() {
             className={`flex flex-col items-center gap-2 p-6 rounded-2xl shadow-md hover:shadow-lg transition hover:scale-105
               ${
                 metodosSeleccionados.includes(metodo.id)
-                  ? 'border-4 border-green-500 bg-green-50'
-                  : 'bg-white'
+                  ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
+                  : 'bg-white dark:bg-base-300'
               }
             `}
           >
             {metodo.icon}
-            <span className="text-sm font-semibold text-gray-700">{metodo.label}</span>
+            <span className="text-sm font-semibold text-gray-700 dark:text-white">{metodo.label}</span>
           </button>
         ))}
       </div>
 
-      {/* Cliente seleccionado (si hay) */}
+      {/* Cliente seleccionado */}
       {metodosSeleccionados.includes('cuenta_corriente') && clienteCuentaCorriente && (
         <p className="mb-6 text-green-700 font-medium">
           Cliente seleccionado: {clienteCuentaCorriente.name}
         </p>
       )}
 
-      {/* Botón Aceptar */}
       <div className="flex justify-end">
         <button
           type="submit"
@@ -112,7 +111,7 @@ export default function FormasPago() {
               metodosSeleccionados.length > 0 &&
               (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
                 ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-base-300 text-gray-500 cursor-not-allowed'
             }
           `}
           onClick={handleSubmit}
