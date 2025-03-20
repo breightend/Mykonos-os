@@ -1,43 +1,137 @@
 import { ArrowLeft, CreditCard, HandCoins, Landmark, WalletCards } from 'lucide-react'
 import { useLocation } from 'wouter'
+import { useState, useEffect } from 'react'
+import CuentaCorrienteClientesFP from '../componentes especificos/CuentaCorrienteClientesFP'
+
 
 export default function FormasPago() {
   const [, setLocation] = useLocation()
+  const [metodosSeleccionados, setMetodosSeleccionados] = useState('')
+  const [clienteCuentaCorriente, setClienteCuentaCorriente] = useState(null)
+  const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
+
+  const metodos = [
+    { id: 'contado', label: 'Contado', icon: <HandCoins className="w-10 h-10 text-primary" /> },
+    {
+      id: 'transferencia',
+      label: 'Transferencia',
+      icon: <Landmark className="w-10 h-10 text-primary" />
+    },
+    { id: 'tarjeta', label: 'Tarjeta', icon: <CreditCard className="w-10 h-10 text-primary" /> },
+    {
+      id: 'cuenta_corriente',
+      label: 'Cuenta Corriente',
+      icon: <WalletCards className="w-10 h-10 text-primary" />
+    }
+  ]
+
+  const toggleMetodo = (id) => {
+    setMetodosSeleccionados((prev) => {
+      const updated = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
+
+      // Si se selecciona cuenta corriente y no está ya abierto el modal
+      if (id === 'cuenta_corriente' && !prev.includes(id)) {
+        setMostrarModalCliente(true)
+      }
+
+      // Si se deselecciona cuenta corriente, limpiamos el cliente
+      if (id === 'cuenta_corriente' && prev.includes(id)) {
+        setClienteCuentaCorriente(null)
+      }
+
+      return updated
+    })
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    // Verificamos que si está seleccionada cuenta corriente, también haya un cliente
+    if (
+      metodosSeleccionados.length > 0 &&
+      (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
+    ) {
+      // Podrías guardar los datos en algún estado global o localStorage si hace falta
+      console.log('Métodos seleccionados:', metodosSeleccionados)
+      console.log('Cliente cuenta corriente:', clienteCuentaCorriente)
+      setLocation('/confirmacionDatosDeCompra')
+    }
+  }
+
   return (
-    <div>
-      <div className="flex mt-4 gap-2">
-        <button type="button" className="btn btn-icon " onClick={() => setLocation('/ventas')}>
-          <ArrowLeft />
+    <div className="p-6 max-w-4xl mx-auto">
+      {/* Encabezado */}
+      <div className="flex items-center gap-3 mb-8">
+        <button
+          type="button"
+          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+          onClick={() => setLocation('/ventas')}
+        >
+          <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="font-bold text-3xl">Formas de Pago</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Formas de Pago</h1>
       </div>
-      <div className="flex justify-center mt-10 items-center">
-        <div className="tooltip" data-tip="Contado">
-          <button type="button" className="btn btn-icon p-10">
-            <HandCoins />
+
+      {/* Opciones de pago */}
+      <div className="grid sm:grid-cols-4 gap-4 mb-12">
+        {metodos.map((metodo) => (
+          <button
+            key={metodo.id}
+            onClick={() => toggleMetodo(metodo.id)}
+            className={`flex flex-col items-center gap-2 p-6 rounded-2xl shadow-md hover:shadow-lg transition hover:scale-105
+              ${
+                metodosSeleccionados.includes(metodo.id)
+                  ? 'border-4 border-green-500 bg-green-50'
+                  : 'bg-white'
+              }
+            `}
+          >
+            {metodo.icon}
+            <span className="text-sm font-semibold text-gray-700">{metodo.label}</span>
           </button>
-        </div>
-        <div className="tooltip" data-tip="Tranferencia">
-          <button type="button" className="btn btn-icon p-10">
-            <Landmark />
-          </button>
-        </div>
-        <div className="tooltip" data-tip="Tarjeta">
-          <button type="button" className="btn btn-icon p-10">
-            <CreditCard />
-          </button>
-        </div>
-        <div className="tooltip" data-tip="Cuenta Corriente">
-          <button type="button" className="btn btn-icon p-10">
-            <WalletCards />
-          </button>
-        </div>
-        <div className='flex'>
-          <button type="submit" className="btn btn-success" onClick={()=> setLocation("")}>
-            Aceptar
-          </button>
-        </div>
+        ))}
       </div>
+
+      {/* Cliente seleccionado (si hay) */}
+      {metodosSeleccionados.includes('cuenta_corriente') && clienteCuentaCorriente && (
+        <p className="mb-6 text-green-700 font-medium">
+          Cliente seleccionado: {clienteCuentaCorriente.name}
+        </p>
+      )}
+
+      {/* Botón Aceptar */}
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={
+            metodosSeleccionados.length === 0 ||
+            (metodosSeleccionados.includes('cuenta_corriente') && !clienteCuentaCorriente)
+          }
+          className={`px-6 py-3 rounded-xl font-semibold shadow-md transition
+            ${
+              metodosSeleccionados.length > 0 &&
+              (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }
+          `}
+          onClick={handleSubmit}
+        >
+          Aceptar
+        </button>
+      </div>
+
+      {/* Modal Cliente Cuenta Corriente */}
+      {mostrarModalCliente && (
+        <CuentaCorrienteClientesFP
+          isOpen={mostrarModalCliente}
+          onClose={() => setMostrarModalCliente(false)}
+          onSelectClient={(cliente) => {
+            setClienteCuentaCorriente(cliente)
+            setMostrarModalCliente(false)
+          }}
+        />
+      )}
     </div>
   )
 }
