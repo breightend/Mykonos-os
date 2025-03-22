@@ -35,6 +35,7 @@ function Ventas() {
   const [codigoInput, setCodigoInput] = useState('')
   const [productos, setProductos] = useState([]) // lista de productos en la venta
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
+  const [cantidadAEliminar, setCantidadAEliminar] = useState(0)
 
   const agregarProducto = () => {
     const productoEncontrado = mockProductosDB[codigoInput.trim()]
@@ -55,13 +56,14 @@ function Ventas() {
     }
   }
 
-  const eliminarProducto = () => {
+  const eliminarProducto = (cantidadAEliminar) => {
     if (!productoSeleccionado) return
 
     const index = productos.findIndex((p) => p.codigo === productoSeleccionado.codigo)
     if (index >= 0) {
       const cantidadAEliminar = parseInt(
         prompt(
+
           `¿Cuántas unidades de "${productoSeleccionado.descripcion}" querés eliminar? (Cantidad actual: ${productos[index].cantidad})`,
           '1'
         ),
@@ -120,12 +122,42 @@ function Ventas() {
                 <dialog id="eliminarProducto" className="modal">
                   <div className="modal-box">
                     <h3 className="text-lg font-bold">Eliminar producto</h3>
-                    <p>Descripcion de la prenda</p>
-                    <p className="py-4">Cantidad de productos a eliminar:</p>
-                    <p>{productos[].cantidad}</p>
+                    {productos.map((producto) => (
+                      <p key={producto.codigo}>
+                        {productoSeleccionado?.codigo === producto.codigo && (
+                          <p>
+                            <span></span>
+                            <span></span>
+                            <span> </span>
+                            <span>{producto.precio.toLocaleString()}</span>
+                            <span>{producto.tipo}</span>
+                            <table className=" justify-center w-full table-auto items-center border-none">
+                              <thead className=''>
+                                <tr>
+                                  <th className="">{producto.descripcion}</th>
+                                </tr>
+                              </thead>
+                              <tbody className='items-center text-center'>
+                                <tr>
+                                  <td className="">Codigo: {producto.codigo}</td>
+                                </tr>
+                                <tr>
+                                  <td className="">Cantidad: {producto.cantidad}</td>
+                                </tr>
+                                <tr>
+                                  <td className="b"></td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </p>
+                        )}
+                        
+                      </p>
+                    ))}
+
                     <div className="modal-action">
                       <form method="dialog">
-                        <button className="" onClick={eliminarProducto}>Aceptar</button>
+                        <button className="btn btn-primary" onClick={eliminarProducto}>Aceptar</button>
                       </form>
                     </div>
                   </div>
