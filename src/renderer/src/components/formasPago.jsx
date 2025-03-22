@@ -3,7 +3,6 @@ import { useLocation } from 'wouter'
 import { useState, useEffect } from 'react'
 import CuentaCorrienteClientesFP from '../componentes especificos/CuentaCorrienteClientesFP'
 
-
 export default function FormasPago() {
   const [, setLocation] = useLocation()
   const [metodosSeleccionados, setMetodosSeleccionados] = useState('')
@@ -11,17 +10,17 @@ export default function FormasPago() {
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
 
   const metodos = [
-    { id: 'contado', label: 'Contado', icon: <HandCoins className="w-10 h-10 text-primary" /> },
+    { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
     {
       id: 'transferencia',
       label: 'Transferencia',
-      icon: <Landmark className="w-10 h-10 text-primary" />
+      icon: <Landmark className="text-primary h-10 w-10" />
     },
-    { id: 'tarjeta', label: 'Tarjeta', icon: <CreditCard className="w-10 h-10 text-primary" /> },
+    { id: 'tarjeta', label: 'Tarjeta', icon: <CreditCard className="text-primary h-10 w-10" /> },
     {
       id: 'cuenta_corriente',
       label: 'Cuenta Corriente',
-      icon: <WalletCards className="w-10 h-10 text-primary" />
+      icon: <WalletCards className="text-primary h-10 w-10" />
     }
   ]
 
@@ -51,7 +50,7 @@ export default function FormasPago() {
       metodosSeleccionados.length > 0 &&
       (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
     ) {
-      // Podrías guardar los datos en algún estado global o localStorage si hace falta
+      // Podría guardar los datos en algún estado global o localStorage si hace falta
       console.log('Métodos seleccionados:', metodosSeleccionados)
       console.log('Cliente cuenta corriente:', clienteCuentaCorriente)
       setLocation('/confirmacionDatosDeCompra')
@@ -59,42 +58,42 @@ export default function FormasPago() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl p-6">
       {/* Encabezado */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="mb-8 flex items-center gap-3">
         <button
           type="button"
-          className="p-2 rounded-full bg-gray-100 dark:bg-base-300 hover:bg-gray-200 dark:hover:bg-base-100 transition hover:scale-105"
+          className="dark:bg-base-300 dark:hover:bg-base-100 rounded-full bg-gray-100 p-2 transition hover:scale-105 hover:bg-gray-200"
           onClick={() => setLocation('/ventas')}
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-3xl font-bold ">Formas de Pago</h1>
+        <h1 className="text-3xl font-bold">Formas de Pago</h1>
       </div>
 
       {/* Opciones de pago */}
-      <div className="grid sm:grid-cols-4 gap-4 mb-12">
+      <div className="mb-12 grid gap-4 sm:grid-cols-4">
         {metodos.map((metodo) => (
           <button
             key={metodo.id}
             onClick={() => toggleMetodo(metodo.id)}
-            className={`flex flex-col items-center gap-2 p-6 rounded-2xl shadow-md hover:shadow-lg transition hover:scale-105
-              ${
-                metodosSeleccionados.includes(metodo.id)
-                  ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
-                  : 'bg-white dark:bg-base-300'
-              }
-            `}
+            className={`flex flex-col items-center gap-2 rounded-2xl p-6 shadow-md transition hover:scale-105 hover:shadow-lg ${
+              metodosSeleccionados.includes(metodo.id)
+                ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
+                : 'dark:bg-base-300 bg-white'
+            } `}
           >
             {metodo.icon}
-            <span className="text-sm font-semibold text-gray-700 dark:text-white">{metodo.label}</span>
+            <span className="text-sm font-semibold text-gray-700 dark:text-white">
+              {metodo.label}
+            </span>
           </button>
         ))}
       </div>
 
       {/* Cliente seleccionado */}
       {metodosSeleccionados.includes('cuenta_corriente') && clienteCuentaCorriente && (
-        <p className="mb-6 text-green-700 font-medium">
+        <p className="mb-6 font-medium text-green-700">
           Cliente seleccionado: {clienteCuentaCorriente.name}
         </p>
       )}
@@ -106,14 +105,12 @@ export default function FormasPago() {
             metodosSeleccionados.length === 0 ||
             (metodosSeleccionados.includes('cuenta_corriente') && !clienteCuentaCorriente)
           }
-          className={`px-6 py-3 rounded-xl font-semibold shadow-md transition
-            ${
-              metodosSeleccionados.length > 0 &&
-              (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-base-300 text-gray-500 cursor-not-allowed'
-            }
-          `}
+          className={`rounded-xl px-6 py-3 font-semibold shadow-md transition ${
+            metodosSeleccionados.length > 0 &&
+            (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
+              ? 'bg-green-600 text-white hover:bg-green-700'
+              : 'bg-base-300 cursor-not-allowed text-gray-500'
+          } `}
           onClick={handleSubmit}
         >
           Aceptar

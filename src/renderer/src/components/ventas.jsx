@@ -151,7 +151,9 @@ function Ventas() {
 
           <div className="flex justify-between items-center mt-4">
             <p className="font-bold text-xl">Total: ${total.toLocaleString()}</p>
-            <button className="btn btn-success" onClick={() => setLocation('/formaPago')}>
+            <button className=`btn btn-success ${productoSeleccionado>0 &&(
+              
+            ) }` onClick={() => setLocation('/formaPago')}>
               Confirmar venta
             </button>
           </div>
