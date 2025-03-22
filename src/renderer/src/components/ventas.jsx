@@ -7,28 +7,27 @@ import toast, { Toaster } from 'react-hot-toast'
 //TODO: Arreglar mejor selector
 //TODO: arreglar eliminar productos
 const mockProductosDB = {
-  '1': {
+  1: {
     codigo: '1',
     descripcion: 'Pantalón deportivo',
     tipo: 'Pantalón',
     precio: 5000,
-    marca: 'Nike',
+    marca: 'Nike'
   },
-  '2': {
+  2: {
     codigo: '2',
     descripcion: 'Remera básica',
     tipo: 'Remera',
     precio: 2500,
-    marca: 'Adidas',
+    marca: 'Adidas'
   },
-  '3': {
+  3: {
     codigo: '3',
     descripcion: 'Remera estampada',
     tipo: 'Remera',
     precio: 500,
-    marca: 'Adidas',
-  },
-
+    marca: 'Adidas'
+  }
 }
 
 function Ventas() {
@@ -51,7 +50,7 @@ function Ventas() {
       setCodigoInput('')
     } else {
       toast.error('Producto no encontrado', {
-        duration: 2000,
+        duration: 2000
       })
     }
   }
@@ -68,7 +67,7 @@ function Ventas() {
         ),
         10
       )
-      console.log("Cantidad a eliminar: ",cantidadAEliminar)
+      console.log('Cantidad a eliminar: ', cantidadAEliminar)
       if (isNaN(cantidadAEliminar) || cantidadAEliminar <= 0) return
 
       const nuevosProductos = [...productos]
@@ -79,7 +78,7 @@ function Ventas() {
       }
       setProductos(nuevosProductos)
       setProductoSeleccionado(null)
-      console.log("Productos: ",productos)
+      console.log('Productos: ', productos)
     }
   }
 
@@ -88,13 +87,13 @@ function Ventas() {
   return (
     <div>
       <MenuVertical currentPath="/ventas" />
-      <div className="flex-1 wl-20">
+      <div className="wl-20 flex-1">
         <button className="btn btn-circle" onClick={() => setLocation('/home')}>
           <ArrowLeft />
         </button>
 
-        <div className="flex-1 ml-20">
-          <div className="card bg-base-200 shadow-sm p-10">
+        <div className="ml-20 flex-1">
+          <div className="card bg-base-200 p-10 shadow-sm">
             <div className="card-title">
               <h1>Ventas</h1>
             </div>
@@ -112,27 +111,28 @@ function Ventas() {
                   Aceptar
                 </button>
                 <button
-                  className={`btn btn-error ${!productoSeleccionado ? 'opacity-50 pointer-events-none' : ''}`}
-                  onClick={eliminarProducto}
+                  className={`btn btn-error ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
+                  onClick={() => document.getElementById('eliminarProducto').showModal()}
                 >
                   <Trash2 />
                 </button>
-                <button className="btn" onClick={()=>document.getElementById('my_modal_1').showModal()}>open modal</button>
-<dialog id="my_modal_1" className="modal">
-  <div className="modal-box">
-    <h3 className="font-bold text-lg">Hello!</h3>
-    <p className="py-4">Press ESC key or click the button below to close</p>
-    <div className="modal-action">
-      <form method="dialog">
-        {/* if there is a button in form, it will close the modal */}
-        <button className="btn">Close</button>
-      </form>
-    </div>
-  </div>
-</dialog>
+
+                <dialog id="eliminarProducto" className="modal">
+                  <div className="modal-box">
+                    <h3 className="text-lg font-bold">Eliminar producto</h3>
+                    <p>Descripcion de la prenda</p>
+                    <p className="py-4">Cantidad de productos a eliminar:</p>
+                    <p>{productos[].cantidad}</p>
+                    <div className="modal-action">
+                      <form method="dialog">
+                        <button className="" onClick={eliminarProducto}>Aceptar</button>
+                      </form>
+                    </div>
+                  </div>
+                </dialog>
               </div>
 
-              <div className="overflow-x-auto mt-6">
+              <div className="mt-6 overflow-x-auto">
                 <table className="table">
                   <thead>
                     <tr>
@@ -150,7 +150,7 @@ function Ventas() {
                         key={producto.codigo}
                         className={
                           productoSeleccionado?.codigo === producto.codigo
-                            ? 'bg-secondary/20 rounded-3xl cursor-pointer'
+                            ? 'bg-secondary/20 cursor-pointer rounded-3xl'
                             : 'cursor-pointer'
                         }
                         onClick={() => setProductoSeleccionado(producto)}
@@ -169,15 +169,15 @@ function Ventas() {
             </div>
           </div>
 
-          <div className="flex justify-between items-center mt-4">
-            <p className="font-bold text-xl">Total: ${total.toLocaleString()}</p>
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-xl font-bold">Total: ${total.toLocaleString()}</p>
             <button
               className={` ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
               onClick={() => setLocation('/formaPago')}
             >
               Confirmar venta
             </button>
-            <Toaster position='bottom-right' />
+            <Toaster position="bottom-right" />
           </div>
         </div>
       </div>
