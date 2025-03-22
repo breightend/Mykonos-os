@@ -2,7 +2,10 @@ import { useLocation } from 'wouter'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import { useState } from 'react'
+import toast, { Toaster } from 'react-hot-toast'
 
+//TODO: Arreglar mejor selector
+//TODO: arreglar eliminar productos
 const mockProductosDB = {
   '1': {
     codigo: '1',
@@ -47,7 +50,9 @@ function Ventas() {
       }
       setCodigoInput('')
     } else {
-      alert('Producto no encontrado')
+      toast.error('Producto no encontrado', {
+        duration: 2000,
+      })
     }
   }
 
@@ -63,6 +68,7 @@ function Ventas() {
         ),
         10
       )
+      console.log("Cantidad a eliminar: ",cantidadAEliminar)
       if (isNaN(cantidadAEliminar) || cantidadAEliminar <= 0) return
 
       const nuevosProductos = [...productos]
@@ -73,6 +79,7 @@ function Ventas() {
       }
       setProductos(nuevosProductos)
       setProductoSeleccionado(null)
+      console.log("Productos: ",productos)
     }
   }
 
@@ -110,6 +117,19 @@ function Ventas() {
                 >
                   <Trash2 />
                 </button>
+                <button className="btn" onClick={()=>document.getElementById('my_modal_1').showModal()}>open modal</button>
+<dialog id="my_modal_1" className="modal">
+  <div className="modal-box">
+    <h3 className="font-bold text-lg">Hello!</h3>
+    <p className="py-4">Press ESC key or click the button below to close</p>
+    <div className="modal-action">
+      <form method="dialog">
+        {/* if there is a button in form, it will close the modal */}
+        <button className="btn">Close</button>
+      </form>
+    </div>
+  </div>
+</dialog>
               </div>
 
               <div className="overflow-x-auto mt-6">
@@ -130,7 +150,7 @@ function Ventas() {
                         key={producto.codigo}
                         className={
                           productoSeleccionado?.codigo === producto.codigo
-                            ? 'bg-red-100 cursor-pointer'
+                            ? 'bg-secondary/20 rounded-3xl cursor-pointer'
                             : 'cursor-pointer'
                         }
                         onClick={() => setProductoSeleccionado(producto)}
@@ -151,11 +171,13 @@ function Ventas() {
 
           <div className="flex justify-between items-center mt-4">
             <p className="font-bold text-xl">Total: ${total.toLocaleString()}</p>
-            <button className=`btn btn-success ${productoSeleccionado>0 &&(
-              
-            ) }` onClick={() => setLocation('/formaPago')}>
+            <button
+              className={` ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
+              onClick={() => setLocation('/formaPago')}
+            >
               Confirmar venta
             </button>
+            <Toaster position='bottom-right' />
           </div>
         </div>
       </div>
