@@ -1,6 +1,6 @@
 import { Route, Switch } from 'wouter'
 import Login from './components/login'
-import Home from './components/home'
+import Home from './components/registroVentas'
 import Ventas from './components/ventas'
 import Inventario from './components/inventario'
 import NuevoProducto from './components/nuevoProducto'
@@ -11,6 +11,7 @@ import Estadisticas from './components/estadisticas'
 import Informe from './components/informe'
 import FormasPago from './components/formasPago'
 import confirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
+
 
 function App() {
   return (

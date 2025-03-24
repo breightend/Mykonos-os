@@ -22,7 +22,9 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@tailwindcss/postcss": "^4.0.6",
     "lucide-react": "^0.475.0",
+    "pikaday": "^1.8.2",
     "postcss": "^8.5.2",
+    "react-day-picker": "^9.6.3",
     "react-hot-toast": "^2.5.2",
     "tailwindcss": "^4.0.6",
     "wouter": "^3.6.0"

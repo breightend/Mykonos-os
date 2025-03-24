@@ -2,6 +2,7 @@ import { PackagePlus, Search, House, Edit, Info } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState } from 'react'
 import MenuVertical from '../componentes especificos/menuVertical'
+import Navbar from '../componentes especificos/navbar'
 
 export default function Inventario() {
   const [, setLocation] = useLocation()
@@ -91,11 +92,12 @@ export default function Inventario() {
   }
 
   return (
-    <div className="p-6 bg-base-100 min-h-screen">
+    <div className=" bg-base-100 min-h-screen">
       <MenuVertical currentPath="/inventario" />
+      <Navbar />
       <div className="flex-1 ml-20">
         <h2 className="text-2xl font-bold mb-6 text-warning">Inventario</h2>
-
+        
         {/* Barra de navegación */}
         <div className="flex items-center justify-between mb-6">
           <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">

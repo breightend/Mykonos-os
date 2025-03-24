@@ -3,6 +3,7 @@ import { ArrowLeft, Trash2 } from 'lucide-react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import { useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import Navbar from '../componentes especificos/navbar'
 
 //TODO: Arreglar mejor selector
 //TODO: arreglar eliminar productos
@@ -83,7 +84,7 @@ function Ventas() {
       console.log('Productos: ', productos)
     }
   }
-  
+
   const handleEliminarProducto = (cantidadAEliminar) => {
     setCantidadAEliminar(cantidadAEliminar)
     console.log('Cantidad a eliminar: ', cantidadAEliminar)
@@ -94,37 +95,37 @@ function Ventas() {
   return (
     <div>
       <MenuVertical currentPath="/ventas" />
+      <Navbar />
       <div className="wl-20 flex-1">
         <button className="btn btn-circle" onClick={() => setLocation('/home')}>
           <ArrowLeft />
         </button>
 
-        <div className="ml-20 flex-1">
-          <div className="card bg-base-200 p-10 shadow-sm">
-            <div className="card-title">
-              <h1>Ventas</h1>
-            </div>
-            <div className="card-body">
-              <div className="flex flex-row items-center gap-4">
-                <p>Ingrese o escanee el código:</p>
+        <div className="ml-20 flex-1 mr-3 ">
+        <h2 className="text-2xl font-bold mb-6 text-warning">Venta</h2>
+
+          <div className="card bg-base-200 p-5 shadow-xl ">
+            <div className="card-body pt-0.5">
+              <p>Ingrese o escanee el código:</p>
+              <div className="flex flex-row items-center gap-6">
                 <input
                   type="text"
                   placeholder="##########"
                   value={codigoInput}
                   onChange={(e) => setCodigoInput(e.target.value)}
                   className="input input-bordered input-accent w-full max-w-xs"
+                  onKeyDown={(e) => e.key === 'Enter' && agregarProducto()}
                 />
                 <button className="btn btn-accent" onClick={agregarProducto}>
                   Aceptar
                 </button>
-                
                 <button
                   className={`btn btn-error ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
                   onClick={() => document.getElementById('eliminarProducto').showModal()}
                 >
                   <Trash2 />
                 </button>
-
+                {/* Modal eliminar producto seleccionado */}
                 <dialog id="eliminarProducto" className="modal">
                   <div className="modal-box">
                     <h3 className="text-lg font-bold">Eliminar producto</h3>
@@ -148,29 +149,33 @@ function Ventas() {
                                   <td className="">Cantidad: {producto.cantidad}</td>
                                 </tr>
                                 <tr>
-                                  <td className="b">Marca: {producto.marca}</td>
+                                  <td className="">Tipo: {producto.tipo}</td>
                                 </tr>
                                 <tr>
-                                  <td className="b">tipo: {producto.tipo}</td>
+                                  <td className="">Marca: {producto.marca}</td>
                                 </tr>
                                 <tr>
-                                  <td className="b">Precio: {producto.precio}</td>
+                                  <td className="">Precio: ${producto.precio}</td>
                                 </tr>
+
                               </tbody>
                             </table>
-                            <div />
-                            <label> Ingresa cantidad a eliminar</label>
-                            <input type="number" />
+                            <div className='flex space-x-4 grid-cols-2 mt-4 items-center'>
+                              <label htmlFor="">Ingresa la cantidad a eliminar:</label>
+                              <div className='w-1/5'>
+                                <input type="text" className='input' placeholder='#####' />
+                              </div>
+                            </div>
                           </p>
                         )}
-
                       </p>
                     ))}
-
                     <div className="modal-action">
                       <form method="dialog">
-                        <button className='btn btn-neutral'>Cancelar</button>
-                        <button className="btn btn-primary" onClick={eliminarProducto(cantidadAEliminar)}>Aceptar</button>
+                        <div className=' flex space-x-4'>
+                          <button className='btn btn-neutral'>Cancelar</button>
+                          <button className="btn btn-primary" onClick={eliminarProducto}>Aceptar</button>
+                        </div>
                       </form>
                     </div>
                   </div>
@@ -214,14 +219,16 @@ function Ventas() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4 ">
             <p className="text-xl font-bold">Total: ${total.toLocaleString()}</p>
-            <button
-              className={` ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
-              onClick={() => setLocation('/formaPago')}
-            >
-              Confirmar venta
-            </button>
+            <div className='flex justify-end'>
+              <button
+                className={`flex justify-end  ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
+                onClick={() => setLocation('/formaPago')}
+              >
+                Confirmar venta
+              </button>
+            </div>
             <Toaster position="bottom-right" />
           </div>
         </div>
