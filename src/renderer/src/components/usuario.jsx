@@ -21,7 +21,7 @@ export default function Usuario() {
             <div className="badge badge-primary badge-outline text-lg p-3">Rol: Administrador</div>
             <div className="card-actions mt-4">
 
-              <select defaultValue="Cambiar sucursal" className="select w-10/12">
+              <select defaultValue="Cambiar sucursal" className="select select-primary w-10/12">
                 <option disabled={true}>Cambiar sucursal</option>
                 <option>Peatonal, San Martin, Paraná</option>
                 <option>Concordia, A del Valle</option>

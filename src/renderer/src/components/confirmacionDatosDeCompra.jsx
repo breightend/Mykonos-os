@@ -10,10 +10,10 @@ export default function ConfirmacionDatosDeCompra() {
     <div>
       <h1 className="text-3xl font-bold">Datos de la compra</h1>
       <div>
-        <button className="btn" onClick={() => setLocation('/formaPago')}>
+        <button className="btn btn-accent" onClick={() => setLocation('/formaPago')}>
           Cancelar
         </button>
-        <button className="btn btn-success" onClick={handeleSubmit()}>Confirmar compra!</button>
+        <button className="btn btn-success" onClick={() => handeleSubmit()}>Confirmar compra!</button>
       </div>
     </div>
   )

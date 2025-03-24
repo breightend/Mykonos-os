@@ -1,6 +1,6 @@
 import { ArrowLeft, CreditCard, HandCoins, Landmark, WalletCards } from 'lucide-react'
 import { useLocation } from 'wouter'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import CuentaCorrienteClientesFP from '../componentes especificos/CuentaCorrienteClientesFP'
 
 export default function FormasPago() {
@@ -45,12 +45,10 @@ export default function FormasPago() {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // Verificamos que si está seleccionada cuenta corriente, también haya un cliente
     if (
       metodosSeleccionados.length > 0 &&
       (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
     ) {
-      // Podría guardar los datos en algún estado global o localStorage si hace falta
       console.log('Métodos seleccionados:', metodosSeleccionados)
       console.log('Cliente cuenta corriente:', clienteCuentaCorriente)
       setLocation('/confirmacionDatosDeCompra')
