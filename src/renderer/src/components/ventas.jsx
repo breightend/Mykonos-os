@@ -57,38 +57,29 @@ function Ventas() {
     }
   }
 
-  const eliminarProducto = (cantidadAEliminar) => {
-    if (!productoSeleccionado) return
+  const eliminarProducto = () => {
+    if (!productoSeleccionado) return;
 
-    const index = productos.findIndex((p) => p.codigo === productoSeleccionado.codigo)
-    if (index >= 0) {
-      const cantidadAEliminar = parseInt(
-        prompt(
+    const index = productos.findIndex((p) => p.codigo === productoSeleccionado.codigo);
+    if (index === -1) return;
 
-          `¿Cuántas unidades de "${productoSeleccionado.descripcion}" querés eliminar? (Cantidad actual: ${productos[index].cantidad})`,
-          '1'
-        ),
-        10
-      )
-      console.log('Cantidad a eliminar: ', cantidadAEliminar)
-      if (isNaN(cantidadAEliminar) || cantidadAEliminar <= 0) return
+    let cantidadEliminar = cantidadAEliminar || 1; // Si no se ingresó cantidad, se elimina 1 por defecto
+    const eliminarTodos = document.getElementById('eliminarTodosCheckbox')?.checked;
 
-      const nuevosProductos = [...productos]
-      if (cantidadAEliminar >= nuevosProductos[index].cantidad) {
-        nuevosProductos.splice(index, 1)
-      } else {
-        nuevosProductos[index].cantidad -= cantidadAEliminar
-      }
-      setProductos(nuevosProductos)
-      setProductoSeleccionado(null)
-      console.log('Productos: ', productos)
+    if (eliminarTodos || cantidadEliminar >= productos[index].cantidad) {
+      // Elimina el producto completamente si está marcado el checkbox o la cantidad a eliminar es igual/mayor a la cantidad total
+      setProductos(productos.filter((p) => p.codigo !== productoSeleccionado.codigo));
+    } else {
+      // Resta la cantidad indicada
+      const nuevosProductos = [...productos];
+      nuevosProductos[index].cantidad -= cantidadEliminar;
+      setProductos(nuevosProductos);
     }
-  }
 
-  const handleEliminarProducto = (cantidadAEliminar) => {
-    setCantidadAEliminar(cantidadAEliminar)
-    console.log('Cantidad a eliminar: ', cantidadAEliminar)
-  }
+    setProductoSeleccionado(null);
+    setCantidadAEliminar(0); // Resetea el input de cantidad
+  };
+
 
   const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0)
 
@@ -102,7 +93,7 @@ function Ventas() {
         </button>
 
         <div className="ml-20 flex-1 mr-3 ">
-        <h2 className="text-2xl font-bold mb-6 text-warning">Venta</h2>
+          <h2 className="text-2xl font-bold mb-6 text-warning">Venta</h2>
 
           <div className="card bg-base-200 p-5 shadow-xl ">
             <div className="card-body pt-0.5">
@@ -129,56 +120,54 @@ function Ventas() {
                 <dialog id="eliminarProducto" className="modal">
                   <div className="modal-box">
                     <h3 className="text-lg font-bold">Eliminar producto</h3>
-                    {productos.map((producto) => (
-                      <p key={producto.codigo}>
-                        {productoSeleccionado?.codigo === producto.codigo && (
-                          <p>
-                            <span>{producto.precio.toLocaleString()}</span>
-                            <span>{producto.tipo}</span>
-                            <table className=" justify-center w-full table-auto items-center border-none">
-                              <thead className=''>
-                                <tr>
-                                  <th className="">{producto.descripcion}</th>
-                                </tr>
-                              </thead>
-                              <tbody className='items-center text-center'>
-                                <tr>
-                                  <td className="">Codigo: {producto.codigo}</td>
-                                </tr>
-                                <tr>
-                                  <td className="">Cantidad: {producto.cantidad}</td>
-                                </tr>
-                                <tr>
-                                  <td className="">Tipo: {producto.tipo}</td>
-                                </tr>
-                                <tr>
-                                  <td className="">Marca: {producto.marca}</td>
-                                </tr>
-                                <tr>
-                                  <td className="">Precio: ${producto.precio}</td>
-                                </tr>
-
-                              </tbody>
-                            </table>
-                            <div className='flex space-x-4 grid-cols-2 mt-4 items-center'>
-                              <label htmlFor="">Ingresa la cantidad a eliminar:</label>
-                              <div className='w-1/5'>
-                                <input type="text" className='input' placeholder='#####' />
-                              </div>
-                            </div>
-                          </p>
+                    {productoSeleccionado && (
+                      <div>
+                        <p>{productoSeleccionado.descripcion}</p>
+                        <p>Cantidad: {productoSeleccionado.cantidad}</p>
+                        {productoSeleccionado.cantidad > 1 && (
+                          <div className="mt-4">
+                            <label htmlFor="cantidadInput">Ingresa la cantidad a eliminar:</label>
+                            <input
+                              type="number"
+                              id="cantidadInput"
+                              className="input w-20 ml-2"
+                              min="1"
+                              max={productoSeleccionado.cantidad}
+                              value={cantidadAEliminar}
+                              onChange={(e) => {
+                                setCantidadAEliminar(Number(e.target.value));
+                                document.getElementById('eliminarTodosCheckbox').checked = false; // Desmarca el checkbox si el usuario ingresa una cantidad
+                              }}
+                            />
+                            <label className="ml-4 cursor-pointer flex items-center">
+                              <input
+                                type="checkbox"
+                                id="eliminarTodosCheckbox"
+                                className="checkbox checkbox-warning"
+                                defaultChecked={true}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setCantidadAEliminar(productoSeleccionado.cantidad);
+                                  }
+                                }}
+                              />
+                              <span className="ml-2">Eliminar todos</span>
+                            </label>
+                          </div>
                         )}
-                      </p>
-                    ))}
+                      </div>
+                    )}
                     <div className="modal-action">
                       <form method="dialog">
                         <div className=' flex space-x-4'>
-                          <button className='btn btn-neutral'>Cancelar</button>
+                          <button className='btn btn-neutral' onClick={() => document.getElementById('eliminarProducto').close()}>Cancelar</button>
                           <button className="btn btn-primary" onClick={eliminarProducto}>Aceptar</button>
                         </div>
                       </form>
                     </div>
                   </div>
+
+
                 </dialog>
               </div>
 
@@ -232,8 +221,8 @@ function Ventas() {
             <Toaster position="bottom-right" />
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
 

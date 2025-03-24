@@ -20,13 +20,21 @@ export default function Usuario() {
             <h2 className="card-title text-2xl font-bold ">Usuario</h2>
             <div className="badge badge-primary badge-outline text-lg p-3">Rol: Administrador</div>
             <div className="card-actions mt-4">
+
+              <select defaultValue="Cambiar sucursal" className="select w-10/12">
+                <option disabled={true}>Cambiar sucursal</option>
+                <option>Peatonal, San Martin, Paraná</option>
+                <option>Concordia, A del Valle</option>
+              </select>
               <button className="btn btn-primary btn-wide shadow-md">Editar Perfil</button>
+
               <button
                 className="btn btn-accent btn-wide shadow-md"
                 onClick={() => setLocation('/')}
               >
                 Cerrar sesión
               </button>
+
             </div>
           </div>
         </div>

@@ -33,10 +33,10 @@ export default function Login() {
           <div className="card-body flex-1">
             <h2 className="text-center text-2xl font-semibold mb-2 text-white">Iniciar Sesión</h2>
             <label className="input validator">
-              <UserRound className="opacity-50 " />
+              <UserRound className="opacity-50" />
               <input
                 type="text"
-                className=" w-full  text-base-content "
+                className=" w-full text-base-content"
                 required
                 placeholder="Usuario"
                 pattern="[A-Za-z][A-Za-z0-9\-]*"
@@ -65,6 +65,11 @@ export default function Login() {
               <br />
               At least one uppercase letter
             </p>
+            <select defaultValue="Sucursal" className="select">
+              <option disabled={true}>Sucursal</option>
+              <option>Peatonal, San Martin, Paraná</option>
+              <option>Concordia, A del Valle</option>
+            </select>
             <div className="card-actions flex justify-end">
               <button className="btn btn-primary text-black" onClick={() => setLocation('/home')}>
                 Iniciar
@@ -74,7 +79,7 @@ export default function Login() {
         </div>
       </div>
       <div className="absolute bottom-0 left-0 p-4">
-        <p className="font-bold text-6xl dark:text-white text-black "> Mykonos-OS</p>
+        <p className="font-bold text-6xl dark:text-white text-black">Mykonos-OS</p>
       </div>
     </div>
   )

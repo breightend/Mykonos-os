@@ -15,7 +15,6 @@ export default function Home() {
       <Navbar />
       <div className={`transition-all duration-300 ease-in-out`}>
         <div className="flex-1 ml-20">
-
           {/* Aca resto del contenido*/}
           <div className='flex justify-end mr-4'>
             <div className="stats shadow">
@@ -47,7 +46,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <h2 className="text-2xl font-bold mb-6 text-warning">Registro de ventas</h2>
+          <h2 className="text-3xl font-bold mb-6 mt-4 text-warning">Registro de ventas</h2>
           <div className='flex auto-cols-fr gap-4'>
             <label className="input input-bordered flex items-center gap-2 input-warning">
               <input
