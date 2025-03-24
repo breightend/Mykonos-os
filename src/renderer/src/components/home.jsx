@@ -8,11 +8,7 @@ export default function Home() {
       <MenuVertical currentPath="/home" />
       <div className={`transition-all duration-300 ease-in-out`}>
         <div className="flex-1 ml-20">
-          <div className="navbar">
-            <div className="flex-1">
-              <a className="btn btn-ghost text-3xl">Mykonos OS HOME</a>
-            </div>
-          </div>
+          
           {/* Aca resto del contenido*/}
           <div>
             <div className="stats shadow">

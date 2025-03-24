@@ -3,6 +3,7 @@ import { ArrowLeft, Trash2 } from 'lucide-react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import { useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import Navbar from '../componentes especificos/navbar'
 
 //TODO: Arreglar mejor selector
 //TODO: arreglar eliminar productos
@@ -89,6 +90,7 @@ function Ventas() {
   return (
     <div>
       <MenuVertical currentPath="/ventas" />
+      <Navbar />
       <div className="wl-20 flex-1">
         <button className="btn btn-circle" onClick={() => setLocation('/home')}>
           <ArrowLeft />
@@ -108,6 +110,7 @@ function Ventas() {
                   value={codigoInput}
                   onChange={(e) => setCodigoInput(e.target.value)}
                   className="input input-bordered input-accent w-full max-w-xs"
+                  onKeyDown={(e) => e.key === 'Enter' && agregarProducto()}
                 />
                 <button className="btn btn-accent" onClick={agregarProducto}>
                   Aceptar
@@ -118,7 +121,7 @@ function Ventas() {
                 >
                   <Trash2 />
                 </button>
-
+                {/* Modal eliminar producto seleccionado */}
                 <dialog id="eliminarProducto" className="modal">
                   <div className="modal-box">
                     <h3 className="text-lg font-bold">Eliminar producto</h3>
@@ -126,9 +129,6 @@ function Ventas() {
                       <p key={producto.codigo}>
                         {productoSeleccionado?.codigo === producto.codigo && (
                           <p>
-                            <span></span>
-                            <span></span>
-                            <span> </span>
                             <span>{producto.precio.toLocaleString()}</span>
                             <span>{producto.tipo}</span>
                             <table className=" justify-center w-full table-auto items-center border-none">
@@ -145,19 +145,33 @@ function Ventas() {
                                   <td className="">Cantidad: {producto.cantidad}</td>
                                 </tr>
                                 <tr>
-                                  <td className="b"></td>
+                                  <td className="">Tipo: {producto.tipo}</td>
                                 </tr>
+                                <tr>
+                                  <td className="">Marca: {producto.marca}</td>
+                                </tr>
+                                <tr>
+                                  <td className="">Precio: ${producto.precio}</td>
+                                </tr>
+
                               </tbody>
                             </table>
+                            <div className='flex space-x-4 grid-cols-2 mt-4 items-center'>
+                              <label htmlFor="">Ingresa la cantidad a eliminar:</label>
+                              <div className='w-1/5'>
+                                <input type="text" className='input' placeholder='#####' />
+                              </div>
+                            </div>
                           </p>
                         )}
-                        
                       </p>
                     ))}
-
                     <div className="modal-action">
                       <form method="dialog">
-                        <button className="btn btn-primary" onClick={eliminarProducto}>Aceptar</button>
+                        <div className=' flex space-x-4'>
+                          <button className='btn btn-neutral'>Cancelar</button>
+                          <button className="btn btn-primary" onClick={eliminarProducto}>Aceptar</button>
+                        </div>
                       </form>
                     </div>
                   </div>
