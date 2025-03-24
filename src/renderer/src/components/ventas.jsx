@@ -83,6 +83,11 @@ function Ventas() {
       console.log('Productos: ', productos)
     }
   }
+  
+  const handleEliminarProducto = (cantidadAEliminar) => {
+    setCantidadAEliminar(cantidadAEliminar)
+    console.log('Cantidad a eliminar: ', cantidadAEliminar)
+  }
 
   const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0)
 
@@ -112,6 +117,7 @@ function Ventas() {
                 <button className="btn btn-accent" onClick={agregarProducto}>
                   Aceptar
                 </button>
+                
                 <button
                   className={`btn btn-error ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
                   onClick={() => document.getElementById('eliminarProducto').showModal()}
@@ -126,9 +132,6 @@ function Ventas() {
                       <p key={producto.codigo}>
                         {productoSeleccionado?.codigo === producto.codigo && (
                           <p>
-                            <span></span>
-                            <span></span>
-                            <span> </span>
                             <span>{producto.precio.toLocaleString()}</span>
                             <span>{producto.tipo}</span>
                             <table className=" justify-center w-full table-auto items-center border-none">
@@ -145,19 +148,29 @@ function Ventas() {
                                   <td className="">Cantidad: {producto.cantidad}</td>
                                 </tr>
                                 <tr>
-                                  <td className="b"></td>
+                                  <td className="b">Marca: {producto.marca}</td>
+                                </tr>
+                                <tr>
+                                  <td className="b">tipo: {producto.tipo}</td>
+                                </tr>
+                                <tr>
+                                  <td className="b">Precio: {producto.precio}</td>
                                 </tr>
                               </tbody>
                             </table>
+                            <div />
+                            <label> Ingresa cantidad a eliminar</label>
+                            <input type="number" />
                           </p>
                         )}
-                        
+
                       </p>
                     ))}
 
                     <div className="modal-action">
                       <form method="dialog">
-                        <button className="btn btn-primary" onClick={eliminarProducto}>Aceptar</button>
+                        <button className='btn btn-neutral'>Cancelar</button>
+                        <button className="btn btn-primary" onClick={eliminarProducto(cantidadAEliminar)}>Aceptar</button>
                       </form>
                     </div>
                   </div>
