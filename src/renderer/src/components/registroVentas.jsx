@@ -6,7 +6,15 @@ import { useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { es } from 'react-day-picker/locale';
 export default function Home() {
-  const [date, setDate] = useState(new Date());
+  const [range, setRange] = useState(null);
+
+  // Obtener el texto que se mostrará en el botón
+  const getLabel = () => {
+    if (!range) return "Seleccionar fecha";
+    if (range.from && !range.to) return `Desde: ${range.from.toLocaleDateString()}`;
+    if (range.from && range.to) return `${range.from.toLocaleDateString()} - ${range.to.toLocaleDateString()}`;
+    return "Seleccionar fecha";
+  };
 
   return (
     <>
@@ -57,13 +65,30 @@ export default function Home() {
               <Search className="w-4 h-4" />
             </label>
             {/* calendario de seleccionar fecha:  */}
-            <button popoverTarget="rdp-popover" className="input input-border" style={{ anchorName: "--rdp" }}>
-              {date ? date.toLocaleDateString() : "Pick a date"}
-            </button>
-            <div popover="auto" id="rdp-popover" className="dropdown" style={{ positionAnchor: "--rdp" }}>
-              <DayPicker className="react-day-picker" mode="single" selected={date} onSelect={setDate} locale={es} />
+            <div>
+              {/* Botón que abre el calendario */}
+              <button popoverTarget="rdp-popover" className="input input-border"  style={{ positionAnchor: "--rdp" }}>
+                {getLabel()}
+              </button>
+              <div popover="auto" id="rdp-popover" className="dropdown" style={{ positionAnchor: "--rdp" }}>
+                <DayPicker
+                  classNames={{
+                    root:`react-day-picker`,  
+                    today: `border-amber-500`, // Add a border to today's date
+                    selected: `bg-amber-500 border-amber-500 text-white`,
+                  }}
+                  mode="range" 
+                  selected={range}
+                  onSelect={setRange}
+                  locale={es}
+                  disabled={{ after: new Date() }}
+                />
+              </div>
             </div>
-            <button className="btn btn-primary">Filtrar</button>
+
+
+            <button className="btn btn-primary" type='submit'>Filtrar</button>
+
           </div>
 
           <div className="overflow-x-auto mt-4  bg-base-100 shadow-2xs" >
