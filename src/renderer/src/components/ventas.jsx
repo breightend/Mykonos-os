@@ -87,7 +87,7 @@ function Ventas() {
     <div>
       <MenuVertical currentPath="/ventas" />
       <Navbar />
-      <div className="wl-20 flex-1">
+      <div className="wl-20">
         <button className="btn btn-circle" onClick={() => setLocation('/home')}>
           <ArrowLeft />
         </button>
