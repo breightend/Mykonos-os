@@ -5,6 +5,7 @@ def create_admin():
     """
     Crea un usuario por defecto 'admin' con contraseña 'admin' si no existe.
     """
+    print("Hola, me ejecute")
     db = Database()
 
     # Verificar si el usuario admin ya existe
@@ -24,3 +25,4 @@ def create_admin():
 
 if __name__ == "__main__":
     create_admin()
+

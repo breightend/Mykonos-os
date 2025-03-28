@@ -115,9 +115,9 @@ DATABASE_TABLES = {
     TABLES.USERS: {
         "columns": {
             "id":            "INTEGER PRIMARY KEY AUTOINCREMENT",            # Identificador único para cada usuario, se incrementa automáticamente.
-            "username":      "TEXT NOT NULL UNIQUE",                         # Nombre de usuario, debe ser único y no nulo.
-            "fullname":      "TEXT NOT NULL",                                # Nombre completo del usuario, requerido.
-            "password":      "TEXT NOT NULL",                                # Contraseña del usuario, requerida.
+            "username":      "TEXT UNIQUE",                         # Nombre de usuario, debe ser único y no nulo.
+            "fullname":      "TEXT",                                # Nombre completo del usuario, requerido.
+            "password":      "TEXT",                                # Contraseña del usuario, requerida.
             "email":         "TEXT",                                         # Correo electrónico del usuario.
             "phone":         "TEXT",                                         # Número de teléfono del usuario.
             "role":          "TEXT",                                         # Rol del usuario (ejemplo: admin, usuario normal).
@@ -413,7 +413,7 @@ DATABASE_TABLES = {
     }
 }
 
-DATABASE_PATH = "mykonos.db"
+DATABASE_PATH = "./src/backend/database/mykonos.db"
 
 class Database:
     def __init__(self, db_path=DATABASE_PATH):
