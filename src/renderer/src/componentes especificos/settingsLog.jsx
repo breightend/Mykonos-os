@@ -1,10 +1,13 @@
 import { Cog, Moon, SunMedium } from 'lucide-react'
 import { useTheme } from '../contexts/themeContext'
 import { useRef } from 'react'
+import { useLocation } from 'wouter'
+
 
 export default function Settings() {
   const { isDarkMode, toggleDarkMode } = useTheme()
   const dialogRef = useRef(null)
+  const [, setLocation ] = useLocation()
 
   const handleOutsideClick = (e) => {
     if (e.target === dialogRef.current) {

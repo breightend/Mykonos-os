@@ -1,6 +1,6 @@
 import webbrowser
 import threading
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from commons import create_admin
 
@@ -19,6 +19,12 @@ def get_data():
 
 def open_browser():
     webbrowser.open_new("http://127.0.0.1:5000/")
+
+@app.route('/api/data', methods=['POST'])
+def getData():
+    data=request.json()
+    print(data)
+    return jsonify({"mensaje": "Hola desde Flask", "status": "éxito"})
 
 if __name__ == '__main__':
     # Inicia un temporizador para abrir el navegador después de 1 segundo
