@@ -22,7 +22,7 @@ def open_browser():
 
 @app.route('/api/data', methods=['POST'])
 def getData():
-    data=request.json()
+    data=request.json
     print(data)
     return jsonify({"mensaje": "Hola desde Flask", "status": "éxito"})
 
