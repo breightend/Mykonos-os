@@ -1,9 +1,9 @@
 import { Cog, Moon, SunMedium } from 'lucide-react'
 import { useTheme } from '../contexts/themeContext'
-
+import { useLocation } from 'wouter'
 export default function Settings() {
   const { isDarkMode, toggleDarkMode } = useTheme()
-
+  const [location, setLocation] = useLocation()
   return (
     <div>
       <button
@@ -35,6 +35,7 @@ export default function Settings() {
             <form method="dialog">
               <button className="btn btn-primary">Cerrar</button>
             </form>
+            <button className='btn btn-primary' onClick={()=> setLocation("/createUser")}>Crear usuario</button>
           </div>
         </div>
       </dialog>

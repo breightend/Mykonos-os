@@ -1,9 +1,12 @@
 import webbrowser
 import threading
 from flask import Flask, jsonify
+from flask_cors import CORS
 from commons import create_admin
 
 app = Flask(__name__)
+
+CORS(app)  # Habilitar CORS para todas las rutas
 
 @app.route('/')
 def index():

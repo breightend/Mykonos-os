@@ -11,6 +11,8 @@ import Estadisticas from './components/estadisticas'
 import Informe from './components/informe'
 import FormasPago from './components/formasPago'
 import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
+import CreateUser from './components/createUser'
+
 
 
 function App() {
@@ -28,6 +30,7 @@ function App() {
       <Route path="/informe" component={Informe} />
       <Route path="/formaPago" component={FormasPago} />
       <Route path="/confirmacionDatosDeCompra" component={ConfirmacionDatosDeCompra} />
+      <Route path="/createUser" component={CreateUser} />
     </Switch>
   )
 }

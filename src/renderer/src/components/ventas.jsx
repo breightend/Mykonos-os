@@ -1,8 +1,8 @@
-import { useLocation } from 'wouter'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-import MenuVertical from '../componentes especificos/menuVertical'
 import { useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import { useLocation } from 'wouter'
+import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 
 //TODO: Arreglar mejor selector
@@ -166,8 +166,6 @@ function Ventas() {
                       </form>
                     </div>
                   </div>
-
-
                 </dialog>
               </div>
 
