@@ -15,6 +15,7 @@ export default function Home() {
     if (range.from && range.to) return `${range.from.toLocaleDateString()} - ${range.to.toLocaleDateString()}`;
     return "Seleccionar fecha";
   };
+  //TODO: Cambiar color de seleccion de fecha en el calendario.
 
   return (
     <>
@@ -67,17 +68,17 @@ export default function Home() {
             {/* calendario de seleccionar fecha:  */}
             <div>
               {/* Botón que abre el calendario */}
-              <button popoverTarget="rdp-popover" className="input input-border"  style={{ positionAnchor: "--rdp" }}>
+              <button popoverTarget="rdp-popover" className="input input-border" style={{ positionAnchor: "--rdp" }}>
                 {getLabel()}
               </button>
               <div popover="auto" id="rdp-popover" className="dropdown" style={{ positionAnchor: "--rdp" }}>
                 <DayPicker
                   classNames={{
-                    root:`react-day-picker`,  
+                    root: `react-day-picker`,
                     today: `border-amber-500`, // Add a border to today's date
                     selected: `bg-amber-500 border-amber-500 text-white`,
                   }}
-                  mode="range" 
+                  mode="range"
                   selected={range}
                   onSelect={setRange}
                   locale={es}

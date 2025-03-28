@@ -20,7 +20,7 @@ export default function Usuario() {
             <h2 className="card-title text-2xl font-bold ">Usuario</h2>
             <div className="badge badge-primary badge-outline text-lg p-3">Rol: Administrador</div>
             <div className="card-actions mt-4">
-
+              {/* Aca va a ir si el rol es administrador:  */}
               <select defaultValue="Cambiar sucursal" className="select select-primary w-10/12">
                 <option disabled={true}>Cambiar sucursal</option>
                 <option>Peatonal, San Martin, Paraná</option>
