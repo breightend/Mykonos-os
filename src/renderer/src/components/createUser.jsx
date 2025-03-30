@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
-import { prueba, enviarData } from '../services/pruebita'
-
+import { useState } from 'react'
+import { enviarData } from '../services/pruebita'
+import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft } from 'lucide-react'
 import { useLocation } from 'wouter'
+import { se } from 'react-day-picker/locale'
+
 
 
 function CreateUser() {
@@ -18,32 +20,75 @@ function CreateUser() {
     password: '',
     confirmPassword: ''
   })
+  const [previewImage, setPreviewImage] = useState(null);
+
   //Esto va al form data, y lo que ha cambiado le cambia el valor
   const onChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value
-    }))
-
+    const { name, value, files } = e.target
+    if (name === "foto") {
+      const file = files[0]
+      setFormData((prevState) => ({
+        ...prevState,
+        [name]: value,
+        foto: file,
+      }))
+      setPreviewImage(URL.createObjectURL(file))
+    }
+    else {
+      setFormData((prevState) => ({
+        ...prevState,
+        [name]: value,
+      }))
+    }
   }
-  /*   useEffect(() => {
-      prueba().then(() => {
-        console.log("Me ejecute una vez")
-      }).catch((error) => {
-        console.error('Error fetching data:', error)
-      })
-      // Aquí puedes hacer algo con la respuesta, como actualizar el estado o mostrarla en la interfaz de usuario
-    }, []) */
+
+  const isFormComplete = Object.values(formData).every(value => value.trim() !== "");
 
   const handleSubmit = () => {
+    if (isFormComplete) {
+      const data = new FormData();
+      // Añadir cada propiedad del objeto formData al FormData de JavaScript
+      for (const key in formData) {
+        if (formData[key] !== null) {
+          data.append(key, formData[key]);
+        }
+      }
 
-    enviarData(formData).then(() => {
-      console.log("Me ejecute una vez")
-    }).catch((error) => {
-      console.error('Error fetching data:', error)
-    })
+      enviarData(data).then(() => {
+        console.log("Se enviaron los datos con éxito");
+        toast.success("Usuario creado con éxito", {
+          position: "top-right",
+          duration: 3000,
+          style: {
+            background: "#4caf50",
+            color: "#fff",
+          },
+        });
+        setLocation("/home");
+      }).catch((error) => {
+        console.error("Error al enviar los datos:", error);
+        toast.error("Ocurrió un error al enviar los datos", {
+          position: "top-right",
+          duration: 3000,
+          style: {
+            background: "#f44336",
+            color: "#fff",
+          },
+        });
+      });
+
+    } else {
+      toast.error("Por favor complete todos los campos", {
+        position: "top-right",
+        duration: 3000,
+        style: {
+          background: "#f44336",
+          color: "#fff",
+        },
+      });
+    }
   }
+
 
   return (
     <div className="max-w-md mx-auto p-6  rounded-lg shadow-md mt-4 bg-base-100">
@@ -57,6 +102,27 @@ function CreateUser() {
       <div className="space-y-4 mt-4">
         <div>
           <input type="text" />
+        </div>
+        {/* Foto de perfil */}
+        <div className="form-control">
+          <label className="block text-sm font-medium mb-1">Foto de Perfil</label>
+          {previewImage && (
+            <div className='flex justify-center'>
+
+              <div className="avatar mb-4 justify-center">
+                <div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                  <img src={previewImage} alt="Vista previa de la imagen" />
+                </div>
+              </div>
+            </div>
+          )}
+          <input
+            type="file"
+            name="foto"
+            accept="image/*"
+            onChange={onChange}
+            className="file-input file-input-bordered file-input-primary w-full"
+          />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -81,15 +147,15 @@ function CreateUser() {
           </div>
         </div>
         <div>
-            <label className="block text-sm font-medium  mb-1">Username</label>
-            <input
-              name="username"
-              onChange={onChange}
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ingrese su nombre"
-            />
-          </div>
+          <label className="block text-sm font-medium  mb-1">Username</label>
+          <input
+            name="username"
+            onChange={onChange}
+            type="text"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ingrese su nombre"
+          />
+        </div>
 
         <div>
           <label className="block text-sm font-medium  mb-1">Email</label>
@@ -165,6 +231,7 @@ function CreateUser() {
       <button type="button" onClick={handleSubmit} className="btn btn-primary w-full mt-6  bg-primary font-medium py-2 px-4 rounded-md transition duration-300">
         Registrar Usuario
       </button>
+      <Toaster />
     </div>
   )
 }

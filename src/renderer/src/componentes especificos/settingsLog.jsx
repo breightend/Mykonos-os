@@ -18,7 +18,7 @@ export default function Settings() {
   return (
     <div>
       <button
-        className="btn btn-circle mb-2"
+        className="btn btn-ghost btn-circle mb-2"
         onClick={() => dialogRef.current.showModal()}
       >
         <Cog size={30} className="transition-transform hover:rotate-180" />

@@ -1,12 +1,13 @@
 import MenuVertical from '../componentes especificos/menuVertical'
 import { useLocation } from 'wouter'
+import Navbar from '../componentes especificos/navbar'
 
 export default function Usuario() {
   const [, setLocation] = useLocation()
   return (
-    <div className="flex">
+    <div>
       <MenuVertical currentPath="/usuario" />
-
+      <Navbar />
       <div className="flex flex-col items-center justify-center w-full h-screen">
         <div className="card bg-base-100 w-96 shadow-xl bg-gradient-to-br from-base-200 to-base-300 p-6 transform transition-all hover:scale-105">
           <figure className="px-10 pt-6">

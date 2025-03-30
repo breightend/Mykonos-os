@@ -12,6 +12,7 @@ import Informe from './components/informe'
 import FormasPago from './components/formasPago'
 import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
 import CreateUser from './components/createUser'
+import Empleados from './components/empleados'
 
 
 
@@ -31,6 +32,7 @@ function App() {
       <Route path="/formaPago" component={FormasPago} />
       <Route path="/confirmacionDatosDeCompra" component={ConfirmacionDatosDeCompra} />
       <Route path="/createUser" component={CreateUser} />
+      <Route path="/empleados" component={Empleados} />
     </Switch>
   )
 }

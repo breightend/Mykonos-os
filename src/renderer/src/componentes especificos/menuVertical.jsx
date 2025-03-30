@@ -9,7 +9,8 @@ import {
   ClipboardType,
   Menu,
   X,
-  NotebookTabs
+  NotebookTabs,
+  BriefcaseBusiness
 } from 'lucide-react'
 import SettingsLog from './settingsLog'
 
@@ -87,6 +88,15 @@ export default function MenuVertical({ currentPath }) {
           >
             <Users />
             {isMenuOpen && <span className="ml-2">Clientes</span>}
+          </button>
+        </li>
+        <li className="flex items-center">
+          <button
+            className={`btn btn-ghost justify-start w-full ${currentPath === '/empleados' ? 'bg-primary' : ''}`}
+            onClick={() => setLocation('/empleados')}
+          >
+            <BriefcaseBusiness />
+            {isMenuOpen && <span className="ml-2">Empleados</span>}
           </button>
         </li>
         <li className="flex items-center">
