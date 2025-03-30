@@ -10,6 +10,7 @@ function CreateUser() {
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
+    username: '',
     email: '',
     telefono: '',
     rol: '',
@@ -76,6 +77,16 @@ function CreateUser() {
             />
           </div>
         </div>
+        <div>
+            <label className="block text-sm font-medium  mb-1">Username</label>
+            <input
+              name="username"
+              onChange={onChange}
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ingrese su nombre"
+            />
+          </div>
 
         <div>
           <label className="block text-sm font-medium  mb-1">Email</label>

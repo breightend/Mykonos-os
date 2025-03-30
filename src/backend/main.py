@@ -3,9 +3,12 @@ import threading
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from commons import create_admin
+from database.database import Database
+from werkzeug.security import generate_password_hash
+from routes.usuario_router import usuario_router
 
 app = Flask(__name__)
-
+app.register_blueprint(usuario_router, url_prefix='/api/data')
 CORS(app)  # Habilitar CORS para todas las rutas
 
 @app.route('/')
@@ -20,11 +23,12 @@ def get_data():
 def open_browser():
     webbrowser.open_new("http://127.0.0.1:5000/")
 
-@app.route('/api/data', methods=['POST'])
+""" @app.route('/api/data', methods=['POST'])
 def getData():
     data=request.json
     print(data)
-    return jsonify({"mensaje": "Hola desde Flask", "status": "éxito"})
+    return jsonify({"mensaje": "Hola desde Flask", "status": "éxito"}) """
+
 
 if __name__ == '__main__':
     # Inicia un temporizador para abrir el navegador después de 1 segundo
