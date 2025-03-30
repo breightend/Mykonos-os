@@ -3,11 +3,10 @@ import { enviarData } from '../services/pruebita'
 import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft } from 'lucide-react'
 import { useLocation } from 'wouter'
-import { se } from 'react-day-picker/locale'
-
 
 
 function CreateUser() {
+
   const [, setLocation] = useLocation()
   const [formData, setFormData] = useState({
     nombre: '',
@@ -20,27 +19,18 @@ function CreateUser() {
     password: '',
     confirmPassword: ''
   })
-  const [previewImage, setPreviewImage] = useState(null);
 
   //Esto va al form data, y lo que ha cambiado le cambia el valor
   const onChange = (e) => {
-    const { name, value, files } = e.target
-    if (name === "foto") {
-      const file = files[0]
-      setFormData((prevState) => ({
-        ...prevState,
-        [name]: value,
-        foto: file,
-      }))
-      setPreviewImage(URL.createObjectURL(file))
-    }
-    else {
-      setFormData((prevState) => ({
-        ...prevState,
-        [name]: value,
-      }))
-    }
+    const { name, value } = e.target
+
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }))
   }
+
+
 
   const isFormComplete = Object.values(formData).every(value => value.trim() !== "");
 
@@ -55,7 +45,7 @@ function CreateUser() {
       }
 
       enviarData(data).then(() => {
-        console.log("Se enviaron los datos con éxito");
+        console.log('Se enviaron los datos con éxito')
         toast.success("Usuario creado con éxito", {
           position: "top-right",
           duration: 3000,
@@ -85,9 +75,10 @@ function CreateUser() {
           background: "#f44336",
           color: "#fff",
         },
-      });
+      })
     }
   }
+
 
 
   return (
@@ -103,27 +94,7 @@ function CreateUser() {
         <div>
           <input type="text" />
         </div>
-        {/* Foto de perfil */}
-        <div className="form-control">
-          <label className="block text-sm font-medium mb-1">Foto de Perfil</label>
-          {previewImage && (
-            <div className='flex justify-center'>
 
-              <div className="avatar mb-4 justify-center">
-                <div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                  <img src={previewImage} alt="Vista previa de la imagen" />
-                </div>
-              </div>
-            </div>
-          )}
-          <input
-            type="file"
-            name="foto"
-            accept="image/*"
-            onChange={onChange}
-            className="file-input file-input-bordered file-input-primary w-full"
-          />
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium  mb-1">Nombre</label>
