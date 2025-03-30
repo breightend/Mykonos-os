@@ -53,7 +53,10 @@ function CreateUser() {
         <h2 className="text-2xl font-bold">Registro de Usuario</h2>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 mt-4">
+        <div>
+          <input type="text" />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium  mb-1">Nombre</label>
@@ -148,7 +151,7 @@ function CreateUser() {
         </div>
       </div>
 
-      <button type="button" onClick={handleSubmit} className="w-full mt-6  bg-primary font-medium py-2 px-4 rounded-md transition duration-300">
+      <button type="button" onClick={handleSubmit} className="btn btn-primary w-full mt-6  bg-primary font-medium py-2 px-4 rounded-md transition duration-300">
         Registrar Usuario
       </button>
     </div>
