@@ -1,8 +1,18 @@
 import { useState } from 'react'
-import { enviarData } from '../services/pruebita'
+import { enviarData } from '../services/usuarioService'
 import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft } from 'lucide-react'
 import { useLocation } from 'wouter'
+import { useDropzone } from 'react-dropzone';
+
+const convertToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+};
 
 function CreateUser() {
   const [, setLocation] = useLocation()
@@ -15,14 +25,15 @@ function CreateUser() {
     rol: '',
     sucursal: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    avatar: null
   })
   const [errors, setErrors] = useState({})
 
   const validateForm = () => {
     const newErrors = {}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    
+
     // Check all fields are filled
     for (const key in formData) {
       if (!formData[key].trim()) {
@@ -60,7 +71,7 @@ function CreateUser() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       toast.error("Por favor corrija los errores en el formulario", {
         position: "top-right",
@@ -76,7 +87,7 @@ function CreateUser() {
     try {
       const data = new FormData()
       for (const key in formData) {
-        if (formData[key] !== null) {
+        if (formData[key] !== null && formData[key] !== undefined) {
           data.append(key, formData[key])
         }
       }
@@ -104,12 +115,23 @@ function CreateUser() {
     }
   }
 
+
+    const { getRootProps, getInputProps } = useDropzone({
+      accept: 'image/*',
+      onDrop: async (acceptedFiles) => {
+        const file = acceptedFiles[0];
+        const base64 = await convertToBase64(file);
+        setFormData({ ...formData, avatar: base64 });
+      }
+    })
+  
+
   return (
     <div className="max-w-md mx-auto p-6 rounded-lg shadow-md mt-4 bg-base-100">
       <div className='flex items-center gap-4 '>
-        <button 
-          onClick={() => setLocation("/home")} 
-          type='button' 
+        <button
+          onClick={() => setLocation("/home")}
+          type='button'
           className='flex items-center justify-cente btn btn-icon btn-circle bg-base-300'
         >
           <ArrowLeft className="w-6 h-6 cursor-pointer" />
@@ -118,6 +140,31 @@ function CreateUser() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="label-text">Foto de perfil</span>
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFormData({ ...formData, avatar: e.target.files[0] })}
+            className="file-input file-input-bordered w-full"
+          />
+          {formData.avatar && (
+            <div className="mt-2">
+              <div className="avatar">
+                <div className="w-24 rounded-full">
+                  <img src={URL.createObjectURL(formData.avatar)} alt="Preview" />
+                </div>
+              </div>
+              <span className="text-sm">{formData.avatar.name}</span>
+            </div>
+          )}
+        </div>
+        <div {...getRootProps()} className="border-2 border-dashed p-4 rounded-lg">
+          <input {...getInputProps()} />
+          <p>Arrastra tu imagen aquí o haz click</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Nombre</label>
@@ -144,7 +191,7 @@ function CreateUser() {
             {errors.apellido && <p className="text-red-500 text-xs mt-1">{errors.apellido}</p>}
           </div>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium mb-1">Username</label>
           <input
@@ -198,7 +245,7 @@ function CreateUser() {
           </select>
           {errors.rol && <p className="text-red-500 text-xs mt-1">{errors.rol}</p>}
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium mb-1">Sucursal</label>
           <select
@@ -241,8 +288,8 @@ function CreateUser() {
           </div>
         </div>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="btn btn-primary w-full mt-6 bg-primary font-medium py-2 px-4 rounded-md transition duration-300"
         >
           Registrar Usuario
