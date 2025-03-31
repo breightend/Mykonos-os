@@ -124,6 +124,51 @@ function CreateUser() {
         setFormData({ ...formData, avatar: base64 });
       }
     })
+
+  console.log({formData})
+
+/**
+ * Converts a base64 image to a Blob and creates an object URL
+ * @param base64Data The base64 encoded image data (with or without data URI prefix)
+ * @returns The object URL that can be used as an image source
+ */
+ function base64ToObjectUrl(base64Data) {
+  // Extract content type and base64 data
+  let contentType = 'image/png'; // default
+  let base64WithoutPrefix = base64Data;
+  
+  // Check if it's a data URI and extract content type
+  if (base64Data.startsWith('data:')) {
+      const matches = base64Data.match(/^data:(.+?);/);
+      if (matches && matches[1]) {
+          contentType = matches[1];
+      }
+      base64WithoutPrefix = base64Data.split(';base64,').pop();
+  }
+  
+  // Convert base64 to raw binary data
+  const byteCharacters = atob(base64WithoutPrefix);
+  const byteArrays = [];
+  
+  // Convert each character to byte array
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+      const slice = byteCharacters.slice(offset, offset + 512);
+      const byteNumbers = new Array(slice.length);
+      
+      for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+      }
+      
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+  }
+  
+  // Create blob from byte arrays
+  const blob = new Blob(byteArrays, { type: contentType });
+  
+  // Create and return object URL
+  return URL.createObjectURL(blob);
+}
   
 
   return (
@@ -154,7 +199,7 @@ function CreateUser() {
             <div className="mt-2">
               <div className="avatar">
                 <div className="w-24 rounded-full">
-                  <img src={URL.createObjectURL(formData.avatar)} alt="Preview" />
+                  <img src={base64ToObjectUrl(formData.avatar)} alt="Preview" />
                 </div>
               </div>
               <span className="text-sm">{formData.avatar.name}</span>
