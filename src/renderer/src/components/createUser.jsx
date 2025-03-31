@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { enviarData } from '../services/usuarioService'
 import toast, { Toaster } from 'react-hot-toast'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Eye } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useDropzone } from 'react-dropzone';
 
@@ -116,60 +116,69 @@ function CreateUser() {
   }
 
 
-    const { getRootProps, getInputProps } = useDropzone({
-      accept: 'image/*',
-      onDrop: async (acceptedFiles) => {
-        const file = acceptedFiles[0];
-        const base64 = await convertToBase64(file);
-        setFormData({ ...formData, avatar: base64 });
-      }
-    })
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: 'image/*',
+    onDrop: async (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      const base64 = await convertToBase64(file);
+      setFormData({ ...formData, avatar: base64 });
+    }
+  })
 
-  console.log({formData})
+  console.log({ formData })
 
-/**
- * Converts a base64 image to a Blob and creates an object URL
- * @param base64Data The base64 encoded image data (with or without data URI prefix)
- * @returns The object URL that can be used as an image source
- */
- function base64ToObjectUrl(base64Data) {
-  // Extract content type and base64 data
-  let contentType = 'image/png'; // default
-  let base64WithoutPrefix = base64Data;
-  
-  // Check if it's a data URI and extract content type
-  if (base64Data.startsWith('data:')) {
+  /**
+   * Converts a base64 image to a Blob and creates an object URL
+   * @param base64Data The base64 encoded image data (with or without data URI prefix)
+   * @returns The object URL that can be used as an image source
+   */
+  function base64ToObjectUrl(base64Data) {
+    // Extract content type and base64 data
+    let contentType = 'image/png'; // default
+    let base64WithoutPrefix = base64Data;
+
+    // Check if it's a data URI and extract content type
+    if (base64Data.startsWith('data:')) {
       const matches = base64Data.match(/^data:(.+?);/);
       if (matches && matches[1]) {
-          contentType = matches[1];
+        contentType = matches[1];
       }
       base64WithoutPrefix = base64Data.split(';base64,').pop();
-  }
-  
-  // Convert base64 to raw binary data
-  const byteCharacters = atob(base64WithoutPrefix);
-  const byteArrays = [];
-  
-  // Convert each character to byte array
-  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    }
+
+    // Convert base64 to raw binary data
+    const byteCharacters = atob(base64WithoutPrefix);
+    const byteArrays = [];
+
+    // Convert each character to byte array
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
       const slice = byteCharacters.slice(offset, offset + 512);
       const byteNumbers = new Array(slice.length);
-      
+
       for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
+        byteNumbers[i] = slice.charCodeAt(i);
       }
-      
+
       const byteArray = new Uint8Array(byteNumbers);
       byteArrays.push(byteArray);
+    }
+
+    // Create blob from byte arrays
+    const blob = new Blob(byteArrays, { type: contentType });
+
+    // Create and return object URL
+    return URL.createObjectURL(blob);
   }
-  
-  // Create blob from byte arrays
-  const blob = new Blob(byteArrays, { type: contentType });
-  
-  // Create and return object URL
-  return URL.createObjectURL(blob);
-}
-  
+
+  const [seePassword, setSeePassword] = useState(false)
+  const [seeValidatePassword, setSeeValidatePassword] = useState(false)
+  const handleWatchPassword = () => {
+    setSeePassword(!seePassword)
+  }
+  const handleWatchValidatePassword = () => {
+    setSeeValidatePassword(!seeValidatePassword)
+  }
+
 
   return (
     <div className="max-w-md mx-auto p-6 rounded-lg shadow-md mt-4 bg-base-100">
@@ -189,16 +198,11 @@ function CreateUser() {
           <label className="label">
             <span className="label-text">Foto de perfil</span>
           </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFormData({ ...formData, avatar: e.target.files[0] })}
-            className="file-input file-input-bordered w-full"
-          />
+
           {formData.avatar && (
-            <div className="mt-2">
-              <div className="avatar">
-                <div className="w-24 rounded-full">
+            <div className="mt-2 flex justify-center items-center flex-col">
+              <div className="avatar justify-center">
+                <div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
                   <img src={base64ToObjectUrl(formData.avatar)} alt="Preview" />
                 </div>
               </div>
@@ -324,14 +328,21 @@ function CreateUser() {
             <input
               name="confirmPassword"
               onChange={onChange}
-              type="password"
+
+              type={seeValidatePassword ? 'text' : 'password'}
               className={`w-full px-3 py-2 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
               placeholder="••••••••"
               value={formData.confirmPassword}
             />
+
+
             {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
           </div>
         </div>
+        <button type='btn' onClick={handleWatchValidatePassword} className='absolute right-3 top-10'>
+          {seeValidatePassword ? <Eye className='text-primary' /> : <Eye className='text-gray-400' />}
+          <Eye />
+        </button>
 
         <button
           type="submit"
