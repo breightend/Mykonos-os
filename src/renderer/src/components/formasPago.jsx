@@ -8,6 +8,7 @@ export default function FormasPago() {
   const [metodosSeleccionados, setMetodosSeleccionados] = useState('')
   const [clienteCuentaCorriente, setClienteCuentaCorriente] = useState(null)
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
+  const [total, setTotal] = useState(0)
 
   const metodos = [
     { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
@@ -23,7 +24,9 @@ export default function FormasPago() {
       icon: <WalletCards className="text-primary h-10 w-10" />
     }
   ]
+/*   const calcularTotal(cantidadAbonar) = {
 
+  }  */
   const toggleMetodo = (id) => {
     setMetodosSeleccionados((prev) => {
       const updated = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
@@ -75,11 +78,10 @@ export default function FormasPago() {
           <button
             key={metodo.id}
             onClick={() => toggleMetodo(metodo.id)}
-            className={`flex flex-col items-center gap-2 rounded-2xl p-6 shadow-md transition hover:scale-105 hover:shadow-lg ${
-              metodosSeleccionados.includes(metodo.id)
-                ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
-                : 'dark:bg-base-300 bg-white'
-            } `}
+            className={`flex flex-col items-center gap-2 rounded-2xl p-6 shadow-md transition hover:scale-105 hover:shadow-lg ${metodosSeleccionados.includes(metodo.id)
+              ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
+              : 'dark:bg-base-300 bg-white'
+              } `}
           >
             {metodo.icon}
             <span className="text-sm font-semibold text-gray-700 dark:text-white">
@@ -103,12 +105,11 @@ export default function FormasPago() {
             metodosSeleccionados.length === 0 ||
             (metodosSeleccionados.includes('cuenta_corriente') && !clienteCuentaCorriente)
           }
-          className={`rounded-xl px-6 py-3 font-semibold shadow-md transition ${
-            metodosSeleccionados.length > 0 &&
+          className={`rounded-xl px-6 py-3 font-semibold shadow-md transition ${metodosSeleccionados.length > 0 &&
             (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
-              ? 'bg-green-600 text-white hover:bg-green-700'
-              : 'bg-base-300 cursor-not-allowed text-gray-500'
-          } `}
+            ? 'bg-green-600 text-white hover:bg-green-700'
+            : 'bg-base-300 cursor-not-allowed text-gray-500'
+            } `}
           onClick={handleSubmit}
         >
           Aceptar
@@ -126,6 +127,19 @@ export default function FormasPago() {
           }}
         />
       )}
+      {/* Detalles de forma de pago */}
+      <div>
+        <h2 className='text-2xl font-bold'>Total:#### </h2>
+{/*         {metodosSeleccionados.map((metodo) => (
+          metodo === 'contado' ? (
+            <div>
+              <label htmlFor="" className=''>Cantidad a abonar</label>
+              <input type="number" className='input ' />
+              <label htmlFor="">Cantidad de descuento: </label>
+            </div>
+          ) ) 
+          } */}
+      </div>
     </div>
   )
 }
