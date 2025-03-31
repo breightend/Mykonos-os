@@ -9,6 +9,24 @@ export default function FormasPago() {
   const [clienteCuentaCorriente, setClienteCuentaCorriente] = useState(null)
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
   const [total, setTotal] = useState(0)
+  const [descuento, setDescuento] = useState(0)
+  const [cantidadAbonar, setCantidadAbonar] = useState(0)
+  const [monstrarDetalle, setMostrarDetalle] = useState(false)
+
+  const handleDescuento = (e) => {
+    const valor = e.target.value
+    setCantidadAbonar(valor)
+    setDescuento(valor - total)
+    setMostrarDetalle(true)
+  }
+  const [paymentAmounts, setPaymentAmounts] = useState({});
+
+  const handlePaymentAmountChange = (methodId, amount) => {
+    setPaymentAmounts(prev => ({
+      ...prev,
+      [methodId]: amount ? parseFloat(amount) : 0
+    }));
+  };
 
   const metodos = [
     { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
@@ -24,9 +42,9 @@ export default function FormasPago() {
       icon: <WalletCards className="text-primary h-10 w-10" />
     }
   ]
-/*   const calcularTotal(cantidadAbonar) = {
-
-  }  */
+  /*   const calcularTotal(cantidadAbonar) = {
+  
+    }  */
   const toggleMetodo = (id) => {
     setMetodosSeleccionados((prev) => {
       const updated = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
@@ -98,23 +116,7 @@ export default function FormasPago() {
         </p>
       )}
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={
-            metodosSeleccionados.length === 0 ||
-            (metodosSeleccionados.includes('cuenta_corriente') && !clienteCuentaCorriente)
-          }
-          className={`rounded-xl px-6 py-3 font-semibold shadow-md transition ${metodosSeleccionados.length > 0 &&
-            (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
-            ? 'bg-green-600 text-white hover:bg-green-700'
-            : 'bg-base-300 cursor-not-allowed text-gray-500'
-            } `}
-          onClick={handleSubmit}
-        >
-          Aceptar
-        </button>
-      </div>
+
 
       {/* Modal Cliente Cuenta Corriente */}
       {mostrarModalCliente && (
@@ -127,18 +129,68 @@ export default function FormasPago() {
           }}
         />
       )}
-      {/* Detalles de forma de pago */}
+      {/* Detalles de forma de pago, aca va a depender de la forma que es lo que paso */}
       <div>
-        <h2 className='text-2xl font-bold'>Total:#### </h2>
-{/*         {metodosSeleccionados.map((metodo) => (
-          metodo === 'contado' ? (
-            <div>
-              <label htmlFor="" className=''>Cantidad a abonar</label>
-              <input type="number" className='input ' />
-              <label htmlFor="">Cantidad de descuento: </label>
-            </div>
-          ) ) 
-          } */}
+        <h2 className='text-2xl font-bold items-center'>Total: {total} </h2>
+        <div className='space-x-2'>
+          <div className='space-x-2'>
+            {metodosSeleccionados.length > 1 ? (
+              // Multiple payment methods case
+              <div className="space-y-4">
+                {metodosSeleccionados.map((metodo, index) => (
+                  <div key={metodo.id} className="flex items-center space-x-2">
+                    <label>{metodo.label}: $</label>
+                    <input
+                      type="number"
+                      className='input w-2/12'
+                      value={paymentAmounts[metodo.id] || ''}
+                      onChange={(e) => handlePaymentAmountChange(metodo.id, e.target.value)}
+                    />
+                  </div>
+                ))}
+                <button onClick={handleDescuento} type='button' className='btn btn-primary'>
+                  Aceptar
+                </button>
+                {monstrarDetalle && (
+                  <div>
+                    <span>Descuento: {descuento}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Single payment method case
+              <div className="flex items-center space-x-2">
+                <label>Cantidad abonar: $</label>
+                <input type="number" className='input w-2/12' />
+                <button onClick={handleDescuento} type='button' className='btn btn-primary'>
+                  Aceptar
+                </button>
+                {monstrarDetalle && (
+                  <div>
+                    <span>Descuento: {descuento}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={
+            metodosSeleccionados.length === 0 ||
+            (metodosSeleccionados.includes('cuenta_corriente') && !clienteCuentaCorriente) || monstrarDetalle
+          }
+          className={`rounded-xl px-6 py-3 font-semibold shadow-md transition ${metodosSeleccionados.length > 0 &&
+            (!metodosSeleccionados.includes('cuenta_corriente') || clienteCuentaCorriente)
+            ? 'bg-green-600 text-white hover:bg-green-700'
+            : 'bg-base-300 cursor-not-allowed text-gray-500'
+            } `}
+          onClick={handleSubmit}
+        >
+          Aceptar
+        </button>
       </div>
     </div>
   )
