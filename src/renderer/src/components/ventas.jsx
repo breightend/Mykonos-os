@@ -4,6 +4,7 @@ import toast, { Toaster } from 'react-hot-toast'
 import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
+import { useSellContext } from '../contexts/sellContext'
 
 //TODO conectarlo con la bd.
 const mockProductosDB = {
@@ -36,6 +37,7 @@ function Ventas() {
   const [productos, setProductos] = useState([]) // lista de productos en la venta
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
   const [cantidadAEliminar, setCantidadAEliminar] = useState(0)
+  const { saleData, setSaleData } = useSellContext();
 
   const agregarProducto = () => {
     const productoEncontrado = mockProductosDB[codigoInput.trim()]
@@ -77,8 +79,26 @@ function Ventas() {
 
     setProductoSeleccionado(null);
     setCantidadAEliminar(0); // Resetea el input de cantidad
-  };
+  }
 
+  const handleSubmit = () => {
+    const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0);
+
+    setSaleData(prev => ({
+      ...prev,  // Conserva el estado existente
+      products: productos.map(p => ({
+        id: p.codigo,
+        description: p.descripcion,
+        brand: p.marca,
+        price: p.precio,
+        quantity: p.cantidad
+      })),
+      total: total
+    }));
+
+
+    setLocation('/formaPago');
+  };
 
   const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0)
 
@@ -210,7 +230,7 @@ function Ventas() {
             <div className='flex justify-end'>
               <button
                 className={`flex justify-end  ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
-                onClick={() => setLocation('/formaPago')}
+                onClick={handleSubmit}
               >
                 Confirmar venta
               </button>

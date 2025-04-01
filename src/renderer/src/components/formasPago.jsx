@@ -2,6 +2,7 @@ import { ArrowLeft, CreditCard, HandCoins, Landmark, WalletCards } from 'lucide-
 import { useLocation } from 'wouter'
 import { useState } from 'react'
 import CuentaCorrienteClientesFP from '../componentes especificos/CuentaCorrienteClientesFP'
+import { useSellContext } from '../contexts/sellContext'
 
 export default function FormasPago() {
   const [, setLocation] = useLocation()
@@ -12,6 +13,8 @@ export default function FormasPago() {
   const [descuento, setDescuento] = useState(0)
   const [cantidadAbonar, setCantidadAbonar] = useState(0)
   const [monstrarDetalle, setMostrarDetalle] = useState(false)
+
+  const { saleData, setSaleDate } = useSellContext()
 
   const handleDescuento = (e) => {
     const valor = e.target.value
@@ -76,6 +79,8 @@ export default function FormasPago() {
     }
   }
 
+  const totalVenta = saleData.total
+
   return (
     <div className="mx-auto max-w-4xl p-6">
       {/* Encabezado */}
@@ -131,7 +136,7 @@ export default function FormasPago() {
       )}
       {/* Detalles de forma de pago, aca va a depender de la forma que es lo que paso */}
       <div>
-        <h2 className='text-2xl font-bold items-center'>Total: {total} </h2>
+        <h2 className='text-2xl font-bold items-center'>Total: {totalVenta} </h2>
         <div className='space-x-2'>
           <div className='space-x-2'>
             {metodosSeleccionados.length > 1 ? (

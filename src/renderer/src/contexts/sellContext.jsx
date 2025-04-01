@@ -1,11 +1,53 @@
-import  { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useState, useContext } from 'react';
 
-const sellContext = createContext();
-//TODO: ver el tema de colocar vendedor
+const SellContext = createContext();
+
 export const SellProvider = ({ children }) => {
-    const [sell, setSell] = useState('')
-    const [products, setProducts] = useState([])
-    const [formaPago, setFormaPago] = useState('')
-    const [total, setTotal] = useState(0)
-    const [cliente, setCliente] = useState('')
-    const [vendedor, setVendedor] = useState('')
+    const [saleData, setSaleData] = useState({
+        products: [],
+        payments: [],
+        customer: null,
+        total: 0,
+        // otros campos que necesites
+    });
+
+    const addProduct = (product) => {
+        setSaleData(prev => ({
+            ...prev,
+            products: [...prev.products, product],
+            total: prev.total + (product.price * product.quantity)
+        }));
+    };
+
+    const addPayment = (payment) => {
+        setSaleData(prev => ({
+            ...prev,
+            payments: [...prev.payments, payment]
+        }));
+    };
+
+    const resetSale = () => {
+        setSaleData({
+            products: [],
+            payments: [],
+            customer: null,
+            total: 0,
+        });
+    };
+
+    return (
+        <SellContext.Provider
+            value={{
+                saleData,
+                setSaleData, // Asegúrate de exponer esta función
+                addProduct,
+                addPayment,
+                resetSale
+            }}
+        >
+            {children}
+        </SellContext.Provider>
+    );
+};
+
+export const useSellContext = () => useContext(SellContext);

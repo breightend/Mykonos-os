@@ -133,14 +133,6 @@ function CreateUser() {
     }
   });
 
-  const { getRootProps, getInputProps } = useDropzone({
-    accept: 'image/*',
-    onDrop: async (acceptedFiles) => {
-      const file = acceptedFiles[0];
-      const base64 = await convertToBase64(file);
-      setFormData({ ...formData, avatar: base64 });
-    }
-  })
 
   console.log({ formData })
 
@@ -189,9 +181,9 @@ function CreateUser() {
 
   const [seePassword, setSeePassword] = useState(false)
   const [seeValidatePassword, setSeeValidatePassword] = useState(false)
-  const handleWatchPassword = () => {
-    setSeePassword(!seePassword)
-  }
+  /*   const handleWatchPassword = () => {
+      setSeePassword(!seePassword)
+    } */
   const handleWatchValidatePassword = () => {
     setSeeValidatePassword(!seeValidatePassword)
   }
