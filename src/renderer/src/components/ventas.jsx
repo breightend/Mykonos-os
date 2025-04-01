@@ -5,8 +5,7 @@ import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 
-//TODO: Arreglar mejor selector
-//TODO: arreglar eliminar productos
+//TODO conectarlo con la bd.
 const mockProductosDB = {
   1: {
     codigo: '1',
