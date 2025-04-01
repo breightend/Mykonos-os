@@ -29,18 +29,16 @@ export default function FormasPago() {
   };
 
   const metodos = [
-    { id: 'contado', label: 'Contado', monto: 0, icon: <HandCoins className="text-primary h-10 w-10" /> },
+    { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
     {
       id: 'transferencia',
       label: 'Transferencia',
-      monto: 0,
       icon: <Landmark className="text-primary h-10 w-10" />
     },
-    { id: 'tarjeta', label: 'Tarjeta', monto: 0, icon: <CreditCard className="text-primary h-10 w-10" /> },
+    { id: 'tarjeta', label: 'Tarjeta', icon: <CreditCard className="text-primary h-10 w-10" /> },
     {
       id: 'cuenta_corriente',
       label: 'Cuenta Corriente',
-      monto: 0,
       icon: <WalletCards className="text-primary h-10 w-10" />
     }
   ]
@@ -139,14 +137,13 @@ export default function FormasPago() {
             {metodosSeleccionados.length > 1 ? (
               // Multiple payment methods case
               <div className="space-y-4">
-                {metodosSeleccionados.map((metodo) => (
+                {metodosSeleccionados.map((metodo, index) => (
                   <div key={metodo.id} className="flex items-center space-x-2">
                     <label>{metodo.label}: $</label>
-                    {console.log(metodo.label)}
                     <input
                       type="number"
                       className='input w-2/12'
-                      value={paymentAmounts[metodo.monto] || ''}
+                      value={paymentAmounts[metodo.id] || ''}
                       onChange={(e) => handlePaymentAmountChange(metodo.id, e.target.value)}
                     />
                   </div>
