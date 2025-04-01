@@ -3,6 +3,7 @@ import { enviarData } from '../services/pruebita'
 import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft } from 'lucide-react'
 import { useLocation } from 'wouter'
+import { useDropzone } from 'react-dropzone'
 
 
 function CreateUser() {
@@ -79,6 +80,23 @@ function CreateUser() {
     }
   }
 
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: 'image/*',
+    onDrop: async (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      const base64 = await convertToBase64(file);
+      setFormData({ ...formData, avatar: base64 });
+    }
+  });
 
 
   return (
@@ -89,6 +107,16 @@ function CreateUser() {
         </button>
         <h2 className="text-2xl font-bold">Registro de Usuario</h2>
       </div>
+
+      <div {...getRootProps()} className="border-2 border-dashed p-4 rounded-lg">
+        <input {...getInputProps()}  />
+        <p>Arrastra tu imagen aquí o haz click</p>
+      </div>
+      {formData.avatar && (
+        <div className="mt-4 avatar ringed-full ring-primary ring-offset-base-100 ring-offset-2">
+          <img src={formData.avatar} alt="Avatar" className="w-32 h-32 rounded-full" />
+        </div>
+      )}
 
       <div className="space-y-4 mt-4">
         <div>
