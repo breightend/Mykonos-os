@@ -4,16 +4,16 @@ import { useState } from 'react'
 import { postData } from '../services/proveedores/proveedorService'
 
 function CreateProvider() {
-    const [location, setLocation] = useLocation()
+    const [, setLocation] = useLocation()
     const [formData, setFormData] = useState({
         entity_name: '',
-        entity_type: '', //No me tengo que olvidar de poner proveedor
+        entity_type: 'proveedor', //No me tengo que olvidar de poner proveedor
         razon_social: '',
         responsabilidad_iva: '',
         domicilio_comercial: '',
         cuit: '',
         inicio_actividad: '', //Colocar la fecha que es creada
-        ingreso_brutos: '',//se setea en 0 
+        ingreso_brutos: '0',//se setea en 0 
         contact_name: '',
         phone_number: '',
         email: '',
@@ -21,7 +21,10 @@ function CreateProvider() {
     })
     const [errors, setErrors] = useState({})
     const handleSubmit = async (e) => {
+
         e.preventDefault()
+        formData.inicio_actividad = new Date().toISOString().split('T')[0] // Formato YYYY-MM-DD
+        console.log(formData)
         try {
             const response = await postData(formData)
             console.log(response)
@@ -56,7 +59,7 @@ function CreateProvider() {
                         { label: 'Nombres de contacto', name: 'contact_name', type: 'text', placeholder: 'Ingrese el nombre de contacto' },
                         { label: 'Número de celular', name: 'phone_number', type: 'text', placeholder: 'Ingrese número de celular' },
                         { label: 'Email', name: 'email', type: 'email', placeholder: 'ejemplo@correo.com' },
-                        { label: 'Observaciones', name: 'observaciones', type: 'text', placeholder: 'Ingrese observaciones (opcional)' }
+                        { label: 'Observaciones', name: 'observation', type: 'text', placeholder: 'Ingrese observaciones (opcional)' }
                     ].map((field, index) => (
                         <div key={index}>
                             <label className="block text-sm font-medium mb-1">{field.label}</label>
