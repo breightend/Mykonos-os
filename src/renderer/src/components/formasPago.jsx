@@ -4,17 +4,15 @@ import { useState } from 'react'
 import CuentaCorrienteClientesFP from '../componentes especificos/CuentaCorrienteClientesFP'
 import { useSellContext } from '../contexts/sellContext'
 
+
 export default function FormasPago() {
   const [, setLocation] = useLocation()
   const [metodosSeleccionados, setMetodosSeleccionados] = useState([])
   const [clienteCuentaCorriente, setClienteCuentaCorriente] = useState(null)
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
-  const [total, setTotal] = useState(0)
-  const [descuento, setDescuento] = useState(0)
-  const [cantidadAbonar, setCantidadAbonar] = useState(0)
   const [monstrarDetalle, setMostrarDetalle] = useState(false)
-
   const { saleData, setSaleData } = useSellContext()
+
 
   const metodos = [
     { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
@@ -26,21 +24,21 @@ export default function FormasPago() {
   // Función corregida para alternar métodos
   const toggleMetodo = (metodo) => {
     setMetodosSeleccionados(prev => {
-      const existe = prev.some(m => m.id === metodo.id)
+      const existe = prev.some(m => m.id === metodo.id);
 
       if (existe) {
         if (metodo.id === 'cuenta_corriente') {
-          setClienteCuentaCorriente(null)
+          setClienteCuentaCorriente(null);
         }
-        return prev.filter(m => m.id !== metodo.id)
+        return prev.filter(m => m.id !== metodo.id);
       } else {
         if (metodo.id === 'cuenta_corriente') {
-          setMostrarModalCliente(true)
+          setMostrarModalCliente(true);
         }
-        return [...prev, { ...metodo, monto: 0 }]
+        return [...prev, { ...metodo, monto: totalVenta }]; // Inicializa con el totalVenta
       }
-    })
-  }
+    });
+  };
 
   // Función para manejar cambios en los montos
   const handlePaymentAmountChange = (methodId, amount) => {
@@ -67,7 +65,7 @@ export default function FormasPago() {
         payments: metodosSeleccionados.map(m => ({
           method: m.id,
           amount: m.monto,
-          costumer: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
+          costumer: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null,
         }))
       }))
 
@@ -156,7 +154,8 @@ export default function FormasPago() {
                   type="number"
                   className="w-5/12 p-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   onChange={(e) => handlePaymentAmountChange(metodosSeleccionados[0].id, e.target.value)}
-                  value={metodosSeleccionados[0].monto || totalVenta}
+                  value={metodosSeleccionados[0].monto || ''}
+                  defaultValue={totalVenta}
                   min="0"
                   step="0.01"
                 />

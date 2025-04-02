@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter'
 import { useSellContext } from '../contexts/sellContext'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
@@ -8,12 +9,15 @@ export default function ConfirmacionDatosDeCompra() {
 
   const handleSubmit = () => {
     setLocation('/ventas')
+    toast.success('Venta finalizada con éxito', {
+      duration: 2000
+    })
   }
 
   return (
-<div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-3xl font-bold text-center mb-6">Resumen de Venta</h1>
-      
+
       <div className="bg-base-100 rounded-lg shadow-lg p-6 mb-6">
         {/* Resumen General */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -23,14 +27,14 @@ export default function ConfirmacionDatosDeCompra() {
               <div className="stat-value">${saleData.total.toFixed(2)}</div>
             </div>
           </div>
-          
+
           <div className="stats bg-secondary text-secondary-content">
             <div className="stat">
               <div className="stat-title">Descuento</div>
               <div className="stat-value">${saleData.discount.toFixed(2)}</div>
             </div>
           </div>
-          
+
           <div className="stats bg-accent text-accent-content">
             <div className="stat">
               <div className="stat-title">Total a Pagar</div>
@@ -118,9 +122,15 @@ export default function ConfirmacionDatosDeCompra() {
       </div>
 
       {/* Botón de acción (puedes personalizar según necesidades) */}
+      <div className="flex justify-between mb-6">
+        <button className='btn btn-neutral' onClick={() => setLocation('/ventas')}>
+          Cancelar
+        </button>
+      </div>
       <div className="flex justify-center">
         <button className="btn btn-primary" onClick={handleSubmit}>Finalizar Venta</button>
       </div>
+      <Toaster />
     </div>
 
 
