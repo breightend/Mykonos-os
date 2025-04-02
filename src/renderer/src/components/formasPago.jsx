@@ -27,7 +27,7 @@ export default function FormasPago() {
   const toggleMetodo = (metodo) => {
     setMetodosSeleccionados(prev => {
       const existe = prev.some(m => m.id === metodo.id)
-      
+
       if (existe) {
         if (metodo.id === 'cuenta_corriente') {
           setClienteCuentaCorriente(null)
@@ -53,19 +53,13 @@ export default function FormasPago() {
     )
   }
 
-  const handleDescuento = (e) => {
-    const valor = parseFloat(e.target.value) || 0
-    setCantidadAbonar(valor)
-    setDescuento(valor - saleData.total)
-    setMostrarDetalle(true)
-  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     // Validación corregida
     const cuentaCorrienteValida = !metodosSeleccionados.some(m => m.id === 'cuenta_corriente') || clienteCuentaCorriente
-    
+
     if (metodosSeleccionados.length > 0 && cuentaCorrienteValida) {
       // Guardar en el contexto
       setSaleData(prev => ({
@@ -76,7 +70,7 @@ export default function FormasPago() {
           details: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
         }))
       }))
-      
+
       setLocation('/confirmacionDatosDeCompra')
     }
   }
@@ -102,12 +96,11 @@ export default function FormasPago() {
         {metodos.map(metodo => (
           <button
             key={metodo.id}
-            onClick={() => toggleMetodo(metodo)} 
-            className={`flex flex-col items-center gap-2 rounded-2xl p-6 shadow-md transition hover:scale-105 hover:shadow-lg ${
-              metodosSeleccionados.some(m => m.id === metodo.id)
-                ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
-                : 'dark:bg-base-300 bg-white'
-            }`}
+            onClick={() => toggleMetodo(metodo)}
+            className={`flex flex-col items-center gap-2 rounded-2xl p-6 shadow-md transition hover:scale-105 hover:shadow-lg ${metodosSeleccionados.some(m => m.id === metodo.id)
+              ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
+              : 'dark:bg-base-300 bg-white'
+              }`}
           >
             {metodo.icon}
             <span className="text-sm font-semibold text-gray-700 dark:text-white">
@@ -135,34 +128,35 @@ export default function FormasPago() {
 
       {/* Detalles de pago */}
       <div>
-        <h2 className='text-2xl font-bold items-center'>Total: {totalVenta}</h2>
+        <h2 className='text-3xl font-bold items-center mb-4'>Total: {totalVenta}</h2>
         <div className='space-x-2'>
           <div className=''>
-            <h2 className='text-2xl font-semibold mb-2'>Cantidad a abonar</h2>
+            <h2 className='text-xl font-semibold mb-2'>Cantidad a abonar</h2>
             {metodosSeleccionados.length > 1 ? (
               <div className="space-y-4">
                 {metodosSeleccionados.map((metodo, index) => (
-                  <div key={index} className="items-center space-x-2">
-                    <label>{metodo.label}</label>
+                  <div key={index} className="flex items-center justify-between p-2 mb-2 rounded-xl bg-white text-gray-700 dark:text-white dark:bg-base-200 shadow-sm w-4/12 hover:shadow-md transition-shadow duration-300">
+                    <label className="text-sm font-medium  ">{metodo.label}: $</label>
                     <input
                       type="number"
-                      className='input w-2/12'
+                      className="w-5/12 p-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       onChange={(e) => handlePaymentAmountChange(metodo.id, e.target.value)}
                       value={metodo.monto || ''}
                       min="0"
                       step="0.01"
                     />
                   </div>
+
                 ))}
               </div>
             ) : metodosSeleccionados.length === 1 && (
-              <div className="items-center space-x-2">
-                <label>{metodosSeleccionados[0].label}</label>
+              <div className="flex items-center justify-between p-2 mb-2 rounded-xl bg-white text-gray-700 dark:text-white dark:bg-base-200 shadow-sm w-4/12 hover:shadow-md transition-shadow duration-300">
+                <label className='text-sm font-medium'>{metodosSeleccionados[0].label}: $</label>
                 <input
                   type="number"
-                  className='input w-2/12'
+                  className="w-5/12 p-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   onChange={(e) => handlePaymentAmountChange(metodosSeleccionados[0].id, e.target.value)}
-                  value={metodosSeleccionados[0].monto || ''}
+                  value={metodosSeleccionados[0].monto || totalVenta}
                   min="0"
                   step="0.01"
                 />
@@ -178,7 +172,7 @@ export default function FormasPago() {
               </button>
             </div>
             {monstrarDetalle && (
-              <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+              <div className="mt-4 p-4 bg-gray-100 dark:bg-blue-950 rounded-lg">
                 <p>Total: {totalVenta}</p>
                 <p>Total abonado: {metodosSeleccionados.reduce((sum, m) => sum + (m.monto || 0), 0)}</p>
                 <p>Diferencia: {totalVenta - metodosSeleccionados.reduce((sum, m) => sum + (m.monto || 0), 0)}</p>
@@ -195,12 +189,11 @@ export default function FormasPago() {
             metodosSeleccionados.length === 0 ||
             (metodosSeleccionados.some(m => m.id === 'cuenta_corriente') && !clienteCuentaCorriente)
           }
-          className={`rounded-xl px-6 py-3 font-semibold shadow-md transition ${
-            metodosSeleccionados.length > 0 &&
+          className={`rounded-xl px-6 py-3 font-semibold shadow-md transition ${metodosSeleccionados.length > 0 &&
             (!metodosSeleccionados.some(m => m.id === 'cuenta_corriente') || clienteCuentaCorriente)
-              ? 'bg-green-600 text-white hover:bg-green-700'
-              : 'bg-base-300 cursor-not-allowed text-gray-500'
-          }`}
+            ? 'bg-green-600 text-white hover:bg-green-700'
+            : 'bg-base-300 cursor-not-allowed text-gray-500'
+            }`}
           onClick={handleSubmit}
         >
           Aceptar

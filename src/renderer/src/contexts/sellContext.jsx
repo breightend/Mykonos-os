@@ -8,9 +8,11 @@ export const SellProvider = ({ children }) => {
         payments: [],
         customer: null,
         total: 0,
-        // otros campos que necesites
+        discount: 0,
+        paymentMethods: [] // Nuevo campo para métodos de pago
     });
 
+    // Métodos para productos (se mantienen igual)
     const addProduct = (product) => {
         setSaleData(prev => ({
             ...prev,
@@ -19,19 +21,64 @@ export const SellProvider = ({ children }) => {
         }));
     };
 
-    const addPayment = (payment) => {
+    // Método mejorado para pagos
+    const addPaymentMethod = (method) => {
+        setSaleData(prev => {
+            // Verificar si el método ya existe
+            const existingIndex = prev.paymentMethods.findIndex(m => m.id === method.id);
+            
+            let updatedMethods;
+            if (existingIndex >= 0) {
+                // Actualizar método existente
+                updatedMethods = [...prev.paymentMethods];
+                updatedMethods[existingIndex] = method;
+            } else {
+                // Agregar nuevo método
+                updatedMethods = [...prev.paymentMethods, method];
+            }
+            
+            // Calcular nuevo total pagado
+            const totalPaid = updatedMethods.reduce((sum, m) => sum + m.amount, 0);
+            
+            return {
+                ...prev,
+                paymentMethods: updatedMethods,
+                payments: updatedMethods, // Mantener compatibilidad
+                discount: prev.total - totalPaid
+            };
+        });
+    };
+
+    // Método para establecer múltiples métodos de pago a la vez
+    const setPaymentMethods = (methods) => {
+        const totalPaid = methods.reduce((sum, m) => sum + m.amount, 0);
+        
         setSaleData(prev => ({
             ...prev,
-            payments: [...prev.payments, payment]
+            paymentMethods: methods,
+            payments: methods, // Mantener compatibilidad
+            discount: prev.total - totalPaid
         }));
+    };
+
+    // Mantener métodos existentes para compatibilidad
+    const addPayment = (payment) => {
+        addPaymentMethod({
+            id: payment.method,
+            type: payment.method,
+            amount: payment.amount,
+            details: payment.details || null
+        });
     };
 
     const resetSale = () => {
         setSaleData({
             products: [],
             payments: [],
+            paymentMethods: [], // Nuevo campo
             customer: null,
             total: 0,
+            discount: 0
         });
     };
 
@@ -39,9 +86,11 @@ export const SellProvider = ({ children }) => {
         <SellContext.Provider
             value={{
                 saleData,
-                setSaleData, // Asegúrate de exponer esta función
+                setSaleData,
                 addProduct,
                 addPayment,
+                addPaymentMethod, // Nuevo método
+                setPaymentMethods, // Nuevo método
                 resetSale
             }}
         >
