@@ -67,7 +67,7 @@ export default function FormasPago() {
         payments: metodosSeleccionados.map(m => ({
           method: m.id,
           amount: m.monto,
-          details: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
+          costumer: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
         }))
       }))
 
