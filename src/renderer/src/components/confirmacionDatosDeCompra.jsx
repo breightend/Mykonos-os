@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter'
 import { useSellContext } from '../contexts/sellContext'
 import toast, { Toaster } from 'react-hot-toast'
+import { useEffect, useState } from 'react'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
@@ -13,6 +14,35 @@ export default function ConfirmacionDatosDeCompra() {
       duration: 2000
     })
   }
+
+
+  console.log("Productos")
+  console.log(saleData.products)
+
+  const totalAbonado = saleData.payments.reduce((sum, payment) => sum + payment.amount, 0);
+
+  const [discount, setDiscount] = useState(0)
+  const [change, setChange] = useState(0)
+
+  const handleChange = () => {
+    if (totalAbonado > saleData.total) {
+      setChange(totalAbonado - saleData.total)
+    } else {
+      setChange(0)
+    }
+  }
+
+  const handleDiscount = () => {
+    if(totalAbonado <= saleData.total){
+      setDiscount((totalAbonado - saleData.total).toFixed(2))
+  }
+}
+
+  useEffect(() => {
+    handleChange()
+    handleDiscount()
+  }, [totalAbonado, saleData.total])
+
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -31,14 +61,14 @@ export default function ConfirmacionDatosDeCompra() {
           <div className="stats bg-secondary text-secondary-content">
             <div className="stat">
               <div className="stat-title">Descuento</div>
-              <div className="stat-value">${saleData.discount.toFixed(2)}</div>
+              <div className="stat-value">${discount}</div>
             </div>
           </div>
 
           <div className="stats bg-accent text-accent-content">
             <div className="stat">
-              <div className="stat-title">Total a Pagar</div>
-              <div className="stat-value">${(saleData.total - saleData.discount).toFixed(2)}</div>
+              <div className="stat-title">Total abonado</div>
+              <div className="stat-value">${totalAbonado.toFixed(2)}</div>
             </div>
           </div>
         </div>
@@ -65,6 +95,7 @@ export default function ConfirmacionDatosDeCompra() {
               <thead>
                 <tr>
                   <th>Producto</th>
+                  <th>Marca</th>
                   <th>Cantidad</th>
                   <th>Precio Unit.</th>
                   <th>Subtotal</th>
@@ -73,7 +104,8 @@ export default function ConfirmacionDatosDeCompra() {
               <tbody>
                 {saleData.products.map((product, index) => (
                   <tr key={index}>
-                    <td>{product.name}</td>
+                    <td>{product.description}</td>
+                    <td>{product.brand}</td>
                     <td>{product.quantity}</td>
                     <td>${product.price.toFixed(2)}</td>
                     <td>${(product.price * product.quantity).toFixed(2)}</td>
@@ -88,14 +120,12 @@ export default function ConfirmacionDatosDeCompra() {
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-2">Métodos de Pago</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {saleData.paymentMethods.map((method, index) => (
+            {saleData.payments.map((method, index) => (
               <div key={index} className="card bg-base-200">
                 <div className="card-body p-4">
-                  <h3 className="card-title capitalize">{method.type}</h3>
+                  <h3 className="card-title capitalize">{method.method}</h3>
                   <p className="text-lg font-bold">${method.amount.toFixed(2)}</p>
-                  {method.details && (
-                    <p className="text-sm opacity-75">{method.details}</p>
-                  )}
+
                 </div>
               </div>
             ))}
@@ -111,11 +141,11 @@ export default function ConfirmacionDatosDeCompra() {
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="font-bold">Total Pagado:</span>
-              <span>${(saleData.total - saleData.discount).toFixed(2)}</span>
+              <span>${totalAbonado.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-lg font-bold mt-2">
               <span>Cambio:</span>
-              <span>${(saleData.discount < 0 ? Math.abs(saleData.discount).toFixed(2) : '0.00')}</span>
+              <span>${change.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -128,7 +158,7 @@ export default function ConfirmacionDatosDeCompra() {
         </button>
       </div>
       <div className="flex justify-center">
-        <button className="btn btn-primary" onClick={handleSubmit}>Finalizar Venta</button>
+        <button className="btn btn-success" onClick={handleSubmit}>Finalizar Venta</button>
       </div>
       <Toaster />
     </div>

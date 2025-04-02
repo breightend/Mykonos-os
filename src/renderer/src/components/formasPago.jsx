@@ -13,7 +13,7 @@ export default function FormasPago() {
   const [monstrarDetalle, setMostrarDetalle] = useState(false)
   const { saleData, setSaleData } = useSellContext()
 
-
+//TODO
   const metodos = [
     { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
     { id: 'transferencia', label: 'Transferencia', icon: <Landmark className="text-primary h-10 w-10" /> },
@@ -35,10 +35,17 @@ export default function FormasPago() {
         if (metodo.id === 'cuenta_corriente') {
           setMostrarModalCliente(true);
         }
-        return [...prev, { ...metodo, monto: totalVenta }]; // Inicializa con el totalVenta
+        if (metodosSeleccionados.length > 0) {
+          return [...prev, { ...metodo, monto: 0 }]; 
+        }
+        else{
+          return [...prev, { ...metodo, monto: totalVenta }]; // Inicializa con el totalVenta
+
+        }
       }
     });
   };
+
 
   // Función para manejar cambios en los montos
   const handlePaymentAmountChange = (methodId, amount) => {

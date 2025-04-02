@@ -9,7 +9,6 @@ export const SellProvider = ({ children }) => {
         customer: null,
         total: 0,
         discount: 0,
-        paymentMethods: [] // Nuevo campo para métodos de pago
     });
 
     // Métodos para productos (se mantienen igual)
@@ -67,7 +66,7 @@ export const SellProvider = ({ children }) => {
             id: payment.method,
             type: payment.method,
             amount: payment.amount,
-            details: payment.details || null
+
         });
     };
 
@@ -75,10 +74,8 @@ export const SellProvider = ({ children }) => {
         setSaleData({
             products: [],
             payments: [],
-            paymentMethods: [], // Nuevo campo
-            customer: null,
+            customer: 0, //Aca me gustaria que me pase el dni 
             total: 0,
-            discount: 0
         });
     };
 
