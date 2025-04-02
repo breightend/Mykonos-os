@@ -18,7 +18,7 @@ def index():
     create_admin.create_admin()
     return "¡Hola, mundo desde Flask!"
 
-@app.route('/api/data')
+@app.route('/saludo')
 def get_data():
     return jsonify({"mensaje": "Hola desde Flask", "status": "éxito"})
 

@@ -413,7 +413,7 @@ DATABASE_TABLES = {
     }
 }
 
-DATABASE_PATH = "./src/backend/database/mykonos.db"
+DATABASE_PATH = "./database/mykonos.db"
 
 class Database:
     def __init__(self, db_path=DATABASE_PATH):
@@ -455,7 +455,7 @@ class Database:
             """
             Crea la tabla si no existe y revisa si hay columnas faltantes o de más.
             """
-            print_debug(f"Creando o actualizando tabla: {table_name}")
+            # print_debug(f"Creando o actualizando tabla: {table_name}")
             
             # Verificar las columnas que ya existen en la tabla
             existing_columns = get_existing_columns(conn, table_name)
