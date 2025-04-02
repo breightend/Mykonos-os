@@ -38,6 +38,7 @@ def recibir_datos():
         "email": email,
         "observation": observation
     })
+    print(success)
     if success:
         return jsonify({"mensaje": "Proveedor creado con éxito", "status": "éxito"}), 200
     else:
