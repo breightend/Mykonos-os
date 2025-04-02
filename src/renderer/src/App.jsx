@@ -14,6 +14,7 @@ import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
 import CreateUser from './creats/createUser'
 import Empleados from './components/empleados'
 import CreateProvider from './creats/createProvider'
+import CreateClient from './creats/createClient'
 
 
 
@@ -36,6 +37,7 @@ function App() {
       <Route path="/createUser" component={CreateUser} />
       <Route path="/empleados" component={Empleados} />
       <Route path="/nuevoProveedor" component={CreateProvider} />
+      <Route path="/nuevoCliente" component={CreateClient} /> 
     </Switch>
   )
 }

@@ -7,6 +7,8 @@ import Navbar from '../componentes especificos/navbar'
 import { useSellContext } from '../contexts/sellContext'
 
 //TODO conectarlo con la bd.
+//TODO agregar el cliente a la venta
+//TODO agregar el vendedor a la venta
 const mockProductosDB = {
   1: {
     codigo: '1',
