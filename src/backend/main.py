@@ -7,6 +7,7 @@ from database.database import Database
 from werkzeug.security import generate_password_hash
 from routes.usuario_router import usuario_router
 from routes.provider_router import provider_router
+from routes.client_router import client_router
 
 app = Flask(__name__)
 app.register_blueprint(usuario_router, url_prefix='/api/data')
@@ -18,7 +19,7 @@ CORS(app, resources={
     }
 })  # Habilitar CORS para todas las rutas
 app.register_blueprint(provider_router, url_prefix='/api/provider')
-
+app.register_blueprint(client_router, url_prefix='/api/client')
 @app.route('/')
 def index():
     create_admin.create_admin()
