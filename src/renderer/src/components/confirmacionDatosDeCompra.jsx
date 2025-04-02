@@ -28,7 +28,7 @@ export default function ConfirmacionDatosDeCompra() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-4xl mx-auto p-6 bg-base-100 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center">Resumen de Venta</h2>
 
       {/* Sección de Productos */}
@@ -40,7 +40,7 @@ export default function ConfirmacionDatosDeCompra() {
               <div key={index} className="flex justify-between items-center border-b pb-2">
                 <div>
                   <p className="font-medium">{product.description}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-500">
                     {product.quantity} x ${product.price.toFixed(2)} | {product.brand}
                   </p>
                 </div>
@@ -56,7 +56,7 @@ export default function ConfirmacionDatosDeCompra() {
       </div>
 
       {/* Sección de Totales */}
-      <div className="mb-8 bg-gray-50 p-4 rounded-lg">
+      <div className="mb-8 bg-gray-50 dark:bg-base-300 p-4 rounded-lg">
         <h3 className="text-xl font-semibold mb-4">Totales</h3>
         <div className="space-y-2">
           <div className="flex justify-between">
