@@ -1,18 +1,10 @@
 import { useState } from 'react'
-import { enviarData } from '../services/usuarioService'
+import { enviarData } from '../services/usuario/usuarioService'
 import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft, Eye } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useDropzone } from 'react-dropzone';
 
-const convertToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-};
 
 function CreateUser() {
   const [, setLocation] = useLocation()

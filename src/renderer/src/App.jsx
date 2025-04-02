@@ -3,7 +3,7 @@ import Login from './components/login'
 import Home from './components/registroVentas'
 import Ventas from './components/ventas'
 import Inventario from './components/inventario'
-import NuevoProducto from './components/nuevoProducto'
+import NuevoProducto from './creats/nuevoProducto'
 import Usuario from './components/usuario'
 import Proveedores from './components/proveedores'
 import Clientes from './components/clientes'
@@ -11,8 +11,10 @@ import Estadisticas from './components/estadisticas'
 import Informe from './components/informe'
 import FormasPago from './components/formasPago'
 import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
-import CreateUser from './components/createUser'
+import CreateUser from './creats/createUser'
 import Empleados from './components/empleados'
+import CreateProvider from './creats/createProvider'
+
 
 
 
@@ -33,6 +35,7 @@ function App() {
       <Route path="/confirmacionDatosDeCompra" component={ConfirmacionDatosDeCompra} />
       <Route path="/createUser" component={CreateUser} />
       <Route path="/empleados" component={Empleados} />
+      <Route path="/nuevoProveedor" component={CreateProvider} />
     </Switch>
   )
 }

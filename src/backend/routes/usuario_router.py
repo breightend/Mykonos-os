@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash
-from database.database import Database  # Asegúrate de importar tu clase Database
+from database.database import Database  
 
 usuario_router = Blueprint('usuario_router', __name__)  # Creás un Blueprint
 
