@@ -5,124 +5,121 @@ export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
   const [, setLocation] = useLocation()
 
-  const calcularTotales = () => {
-    const subtotal = saleData.products.reduce((sum, product) =>
-      sum + (product.price * product.quantity), 0);
 
-    const totalPagado = saleData.paymentMethods.reduce((sum, method) =>
-      sum + method.amount, 0);
-
-    return {
-      subtotal,
-      descuento: saleData.discount,
-      total: saleData.total,
-      totalPagado,
-      pendiente: saleData.total - totalPagado
-    };
-  };
-
-  const { subtotal, descuento, total, totalPagado, pendiente } = calcularTotales()
-
-  const handeSubmit = () => {
+  const handleSubmit = () => {
     setLocation('/ventas')
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-base-100 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Resumen de Venta</h2>
-
-      {/* Sección de Productos */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4 border-b pb-2">Productos</h3>
-        {saleData.products.length > 0 ? (
-          <div className="space-y-4">
-            {saleData.products.map((product, index) => (
-              <div key={index} className="flex justify-between items-center border-b pb-2">
-                <div>
-                  <p className="font-medium">{product.description}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-500">
-                    {product.quantity} x ${product.price.toFixed(2)} | {product.brand}
-                  </p>
-                </div>
-                <p className="font-semibold">
-                  ${(product.price * product.quantity).toFixed(2)}
-                </p>
-              </div>
-            ))}
+<div className="container mx-auto p-4 max-w-4xl">
+      <h1 className="text-3xl font-bold text-center mb-6">Resumen de Venta</h1>
+      
+      <div className="bg-base-100 rounded-lg shadow-lg p-6 mb-6">
+        {/* Resumen General */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="stats bg-primary text-primary-content">
+            <div className="stat">
+              <div className="stat-title">Total Venta</div>
+              <div className="stat-value">${saleData.total.toFixed(2)}</div>
+            </div>
           </div>
-        ) : (
-          <p className="text-gray-500">No hay productos agregados</p>
-        )}
-      </div>
-
-      {/* Sección de Totales */}
-      <div className="mb-8 bg-gray-50 dark:bg-base-300 p-4 rounded-lg">
-        <h3 className="text-xl font-semibold mb-4">Totales</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>Subtotal:</span>
-            <span>${subtotal.toFixed(2)}</span>
+          
+          <div className="stats bg-secondary text-secondary-content">
+            <div className="stat">
+              <div className="stat-title">Descuento</div>
+              <div className="stat-value">${saleData.discount.toFixed(2)}</div>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Descuento:</span>
-            <span>${descuento.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg">
-            <span>Total:</span>
-            <span>${total.toFixed(2)}</span>
+          
+          <div className="stats bg-accent text-accent-content">
+            <div className="stat">
+              <div className="stat-title">Total a Pagar</div>
+              <div className="stat-value">${(saleData.total - saleData.discount).toFixed(2)}</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Sección de Pagos */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4 border-b pb-2">Formas de Pago</h3>
-        {saleData.paymentMethods.length > 0 ? (
-          <div className="space-y-3">
-            {saleData.paymentMethods.map((payment, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium capitalize">{payment.type}</p>
-                  {payment.details?.cliente && (
-                    <p className="text-sm text-gray-600">
-                      Cliente: {payment.details.cliente.name}
-                    </p>
-                  )}
-                </div>
-                <p className="font-semibold">${payment.amount.toFixed(2)}</p>
-              </div>
-            ))}
-            <div className="pt-4 border-t mt-2">
-              <div className="flex justify-between font-semibold">
-                <span>Total pagado:</span>
-                <span>${totalPagado.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span>Pendiente:</span>
-                <span className={pendiente > 0 ? "text-red-600" : "text-green-600"}>
-                  ${Math.abs(pendiente).toFixed(2)}
-                </span>
+        {/* Cliente */}
+        {saleData.customer && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Cliente</h2>
+            <div className="card bg-base-200">
+              <div className="card-body p-4">
+                <p><span className="font-bold">Nombre:</span> {saleData.customer.name}</p>
+                <p><span className="font-bold">Identificación:</span> {saleData.customer.id}</p>
+                <p><span className="font-bold">Contacto:</span> {saleData.customer.contact}</p>
               </div>
             </div>
           </div>
-        ) : (
-          <p className="text-gray-500">No se han registrado pagos</p>
         )}
+
+        {/* Productos */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">Productos ({saleData.products.length})</h2>
+          <div className="overflow-x-auto">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unit.</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {saleData.products.map((product, index) => (
+                  <tr key={index}>
+                    <td>{product.name}</td>
+                    <td>{product.quantity}</td>
+                    <td>${product.price.toFixed(2)}</td>
+                    <td>${(product.price * product.quantity).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Métodos de Pago */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">Métodos de Pago</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {saleData.paymentMethods.map((method, index) => (
+              <div key={index} className="card bg-base-200">
+                <div className="card-body p-4">
+                  <h3 className="card-title capitalize">{method.type}</h3>
+                  <p className="text-lg font-bold">${method.amount.toFixed(2)}</p>
+                  {method.details && (
+                    <p className="text-sm opacity-75">{method.details}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Resumen Final */}
+        <div className="card bg-base-200">
+          <div className="card-body">
+            <div className="flex justify-between border-b pb-2">
+              <span className="font-bold">Subtotal:</span>
+              <span>${saleData.total.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="font-bold">Total Pagado:</span>
+              <span>${(saleData.total - saleData.discount).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold mt-2">
+              <span>Cambio:</span>
+              <span>${(saleData.discount < 0 ? Math.abs(saleData.discount).toFixed(2) : '0.00')}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Información de Cliente */}
-      {saleData.customer && (
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="text-xl font-semibold mb-2">Cliente</h3>
-          <p>Nombre: {saleData.customer.name}</p>
-          <p>Documento: {saleData.customer.document}</p>
-          {/* Agrega más campos según necesites */}
-        </div>
-      )}
-
-      <div>
-        <button className='btn btn-neutral '>Cancelar</button>
-        <button className="btn btn-primary" onClick={handeSubmit}>Aceptar</button>
+      {/* Botón de acción (puedes personalizar según necesidades) */}
+      <div className="flex justify-center">
+        <button className="btn btn-primary" onClick={handleSubmit}>Finalizar Venta</button>
       </div>
     </div>
 

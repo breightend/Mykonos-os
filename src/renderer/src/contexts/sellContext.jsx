@@ -26,7 +26,7 @@ export const SellProvider = ({ children }) => {
         setSaleData(prev => {
             // Verificar si el método ya existe
             const existingIndex = prev.paymentMethods.findIndex(m => m.id === method.id);
-            
+
             let updatedMethods;
             if (existingIndex >= 0) {
                 // Actualizar método existente
@@ -36,10 +36,10 @@ export const SellProvider = ({ children }) => {
                 // Agregar nuevo método
                 updatedMethods = [...prev.paymentMethods, method];
             }
-            
+
             // Calcular nuevo total pagado
             const totalPaid = updatedMethods.reduce((sum, m) => sum + m.amount, 0);
-            
+
             return {
                 ...prev,
                 paymentMethods: updatedMethods,
@@ -52,7 +52,7 @@ export const SellProvider = ({ children }) => {
     // Método para establecer múltiples métodos de pago a la vez
     const setPaymentMethods = (methods) => {
         const totalPaid = methods.reduce((sum, m) => sum + m.amount, 0);
-        
+
         setSaleData(prev => ({
             ...prev,
             paymentMethods: methods,
