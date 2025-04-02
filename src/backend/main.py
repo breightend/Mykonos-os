@@ -10,7 +10,13 @@ from routes.provider_router import provider_router
 
 app = Flask(__name__)
 app.register_blueprint(usuario_router, url_prefix='/api/data')
-CORS(app)  # Habilitar CORS para todas las rutas
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "http://localhost:5173",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})  # Habilitar CORS para todas las rutas
 app.register_blueprint(provider_router, url_prefix='/api/provider')
 
 @app.route('/')
