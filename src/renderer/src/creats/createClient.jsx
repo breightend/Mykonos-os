@@ -28,29 +28,15 @@ function CreateClient() {
             newErrors.entity_name = 'El nombre del cliente es obligatorio.';
         }
 
-        if (!formData.razon_social || formData.razon_social.trim() === '') {
-            newErrors.razon_social = 'La razón social es obligatoria.';
-        }
-
-        if (!formData.responsabilidad_iva || isNaN(Number(formData.responsabilidad_iva))) {
-            newErrors.responsabilidad_iva = 'La responsabilidad IVA debe ser un número válido.';
-        }
-
-        if (!formData.domicilio_comercial || formData.domicilio_comercial.trim() === '') {
-            newErrors.domicilio_comercial = 'El domicilio es obligatorio.';
-        }
-
-        if (!formData.cuit || !/^\d{11}$/.test(formData.cuit)) {
-            newErrors.cuit = 'El CUIT debe contener exactamente 11 dígitos.';
+        if (!formData.cuit || !/^\d{7,11}$/.test(formData.cuit)) {
+            newErrors.cuit = 'El CUIT debe contener entre 7 y 10 dígitos.';
         }
 
         if (!formData.phone_number || !/^\d{10,15}$/.test(formData.phone_number)) {
             newErrors.phone_number = 'El número de celular debe contener entre 10 y 15 dígitos.';
         }
 
-        if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'El correo electrónico no es válido.';
-        }
+
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -103,7 +89,7 @@ function CreateClient() {
                 <div className="space-y-6">
                     {[
                         {
-                            label: 'Nombre comercial',
+                            label: 'Nombre y apellido*',
                             name: 'entity_name',
                             type: 'text',
                             placeholder: 'Ingrese el nombre del comercio'
@@ -121,20 +107,15 @@ function CreateClient() {
                             placeholder: '#####'
                         },
                         {
-                            label: 'Domicilio comercial',
+                            label: 'Domicilio',
                             name: 'domicilio_comercial',
                             type: 'text',
                             placeholder: 'Avenida Siempreviva 742.'
                         },
-                        { label: 'Cuit', name: 'cuit', type: 'text', placeholder: '#####' },
+                        { label: 'Cuit o DNI *', name: 'cuit', type: 'text', placeholder: '#####' },
+
                         {
-                            label: 'Nombres de contacto',
-                            name: 'contact_name',
-                            type: 'text',
-                            placeholder: 'Ingrese el nombre de contacto'
-                        },
-                        {
-                            label: 'Número de celular',
+                            label: 'Número de celular*',
                             name: 'phone_number',
                             type: 'text',
                             placeholder: 'Ingrese número de celular'
@@ -166,7 +147,7 @@ function CreateClient() {
                 <div className="mt-8 flex justify-end gap-6">
                     <button
                         className="btn btn-neutral hover:bg-neutral-focus rounded-xl px-6 py-2 transition"
-                        onClick={() => setLocation('/proveedores')}
+                        onClick={() => setLocation('/clientes')}
                     >
                         Cancelar
                     </button>
@@ -174,7 +155,7 @@ function CreateClient() {
                         className="btn btn-success hover:bg-success-focus rounded-xl px-6 py-2 transition"
                         onClick={handleSubmit}
                     >
-                        Agregar proveedor
+                        Agregar cliente
                     </button>
                 </div>
             </div>

@@ -1,11 +1,11 @@
 import axios from "axios";
 
-export async function fetchProveedores() {
+export async function fetchCliente() {
     try {
         const response = await axios.get("http://localhost:5000/api/client/");
         return response.data;
     } catch (error) {
-        console.error("Error fetching proveedores:", error);
+        console.error("Error fetching cliente:", error);
         throw error;
     }
 }

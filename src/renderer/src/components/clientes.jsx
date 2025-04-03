@@ -1,12 +1,26 @@
 import MenuVertical from "../componentes especificos/menuVertical"
 import Navbar from "../componentes especificos/navbar"
 import { useLocation } from 'wouter'
-import {  Edit,  Info, Search, UserPlus } from 'lucide-react'
+import { Edit, Info, Search, UserPlus } from 'lucide-react'
+import { fetchCliente } from "../services/clientes/clientsService"
+import { useEffect, useState } from "react"
 
 export default function Clientes() {
   const [location, setLocation] = useLocation()
 
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await fetchCliente()
+        console.log(data)
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      }
+    }
+    fetchData()
+  }, [])
 
+  
   return (
     <div>
       <Navbar />
@@ -70,7 +84,23 @@ export default function Clientes() {
           </label>
         </div>
       </div>
+      <div className="ml-20">
+        <h1>Registro de clientes</h1>
+        <table className="table w-full">
+          <thead className="bg-warning/10 text-warning">
+            <tr>
+
+              <th>#</th>
+              <th>Nombre y apellido</th>
+              <th>DNI o CUIT</th>
+              <th>Celular</th>
+              <th>Mail</th>
+              <th></th>
+            </tr>
+          </thead>
+        </table>
+      </div>
     </div>
-    
+
   )
 }

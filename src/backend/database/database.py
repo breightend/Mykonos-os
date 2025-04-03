@@ -849,31 +849,31 @@ class Database:
 
 
     # #TODO: devolver dict{sucess, message, record}
-    # def get_all_records_by_clause(self, table_name, search_clause, value):
-    #     """
-    #     Obtiene todos los registros de la base de datos en función de una cláusula de búsqueda personalizada.
+    def get_all_records_by_clause(self, table_name, search_clause, value):
+        """
+        Obtiene todos los registros de la base de datos en función de una cláusula de búsqueda personalizada.
 
-    #     Args:
-    #         table_name (str): El nombre de la tabla donde se realizará la búsqueda.
-    #         search_clause (str): La columna y el operador de búsqueda (ej: "username = ?", "email LIKE ?").
-    #         value: El valor a buscar en la columna especificada.
+        Args:
+            table_name (str): El nombre de la tabla donde se realizará la búsqueda.
+            search_clause (str): La columna y el operador de búsqueda (ej: "username = ?", "email LIKE ?").
+            value: El valor a buscar en la columna especificada.
 
-    #     Returns:
-    #         list[dict]: Una lista de diccionarios con los datos de cada registro, o una lista vacía si no se encontraron registros.
-    #     """
-    #     sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
-    #     try:
-    #         with self.create_connection() as conn:
-    #             conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
-    #             cur = conn.cursor()
-    #             cur.execute(sql, (value,))
-    #             rows = cur.fetchall()
-    #             if rows:
-    #                 return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
-    #             return []
-    #     except Exception as e:
-    #         print(f"Error al obtener registros de la tabla '{table_name}': {e}")
-    #         return []
+        Returns:
+            list[dict]: Una lista de diccionarios con los datos de cada registro, o una lista vacía si no se encontraron registros.
+        """
+        sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
+        try:
+            with self.create_connection() as conn:
+                conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
+                cur = conn.cursor()
+                cur.execute(sql, (value,))
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
+                return []
+        except Exception as e:
+            print(f"Error al obtener registros de la tabla '{table_name}': {e}")
+            return []
 
     # #TODO: devolver dict{sucess, message, record}
     # def get_all_records_by_clauses(self, table_name, search_clauses):
