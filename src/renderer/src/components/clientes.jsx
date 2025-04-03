@@ -6,6 +6,7 @@ import { fetchCliente } from "../services/clientes/clientsService"
 import { useEffect, useState } from "react"
 import InfoClientes from "../modals/infoCliente"
 
+//TODO: Modal de editar informacion del cliente. 
 export default function Clientes() {
   const [location, setLocation] = useLocation()
   const [clientes, setClientes] = useState([])
@@ -13,6 +14,7 @@ export default function Clientes() {
   const [selectedRow, setSelectedRow] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [searchById, setSearchById] = useState(false)
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -30,6 +32,7 @@ export default function Clientes() {
   const handleRowClick = (row) => {
     setSelectedRow(row.id)
     console.log("Cliente seleccionado:", row)
+    setClienteSeleccionado(row)
   }
 
   const handleSearch = (e) => {
@@ -74,7 +77,7 @@ export default function Clientes() {
             </button>
           </li>
           <li>
-            <InfoClientes clientes={selectedRow} />
+            <InfoClientes cliente={clienteSeleccionado} />
           </li>
         </ul>
 
@@ -93,7 +96,7 @@ export default function Clientes() {
         </div>
       </div>
       <div className="ml-20">
-        <h1>Registro de clientes</h1>
+        <h1 className="text-2xl font-medium ">Registro de clientes</h1>
         <table className="table w-full">
           <thead className="bg-warning/10 text-warning">
             <tr>
@@ -101,8 +104,8 @@ export default function Clientes() {
               <th>Nombre y apellido</th>
               <th>DNI o CUIT</th>
               <th>Celular</th>
+              <th>Domicilio</th>
               <th>Mail</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -117,6 +120,7 @@ export default function Clientes() {
                 <td>{index + 1}</td>
                 <td>{row.entity_name}</td>
                 <td>{row.cuit}</td>
+                <td>{row.phone_number}</td>
                 <td>{row.domicilio_comercial}</td>
                 <td>{row.email || 'Sin Email'}</td>
               </tr>
