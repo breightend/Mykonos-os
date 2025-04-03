@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash
 from database.database import Database 
 
-client_router = Blueprint('client_router', __name__)  # Creás un Blueprint
+client_router = Blueprint('client_router', __name__)
+#Este es el endpoint que recibe los datos del cliente y los guarda en la base de datos
 @client_router.route('/', methods=['POST'])
 def recibir_datos():
     data = request.json
@@ -44,7 +45,8 @@ def recibir_datos():
         return jsonify({"mensaje": "Proveedor creado con éxito", "status": "éxito"}), 200
     else:
         return jsonify({"mensaje": "Error al crear el proveedor", "status": "error"}), 500
-    
+
+#Lo que obtengo lo muestro en la tabla clientes    
 @client_router.route( '/' , methods=['GET'])
 def get_all_records():
     db = Database()

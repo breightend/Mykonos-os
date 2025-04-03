@@ -1,18 +1,25 @@
 import MenuVertical from "../componentes especificos/menuVertical"
 import Navbar from "../componentes especificos/navbar"
 import { useLocation } from 'wouter'
-import { Edit, Info, Search, UserPlus } from 'lucide-react'
+import { Edit,  Search, UserPlus } from 'lucide-react'
 import { fetchCliente } from "../services/clientes/clientsService"
 import { useEffect, useState } from "react"
+import InfoClientes from "../modals/infoCliente"
 
 export default function Clientes() {
   const [location, setLocation] = useLocation()
+  const [clientes, setClientes] = useState([])
+  const [filteredClientes, setFilteredClientes] = useState([])
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchById, setSearchById] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
       try {
         const data = await fetchCliente()
-        console.log(data)
+        setClientes(data)
+        setFilteredClientes(data) // Inicialmente mostrar todos
       } catch (error) {
         console.error("Error fetching data:", error)
       }
@@ -20,7 +27,25 @@ export default function Clientes() {
     fetchData()
   }, [])
 
-  
+  const handleRowClick = (row) => {
+    setSelectedRow(row.id)
+    console.log("Cliente seleccionado:", row)
+  }
+
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase()
+    setSearchTerm(term)
+
+    const filtered = clientes.filter(row => {
+      if (searchById) {
+        return row.id.toString().includes(term)
+      } else {
+        return row.entity_name.toLowerCase().includes(term) || row.cuit.includes(term)
+      }
+    })
+    setFilteredClientes(filtered)
+  }
+
   return (
     <div>
       <Navbar />
@@ -34,8 +59,7 @@ export default function Clientes() {
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
               data-tip="Editar cliente"
-            /*                 onClick={handleEditClick}
-                            disabled={!selectedRow} */
+              disabled={!selectedRow} // Deshabilitar si no hay nada seleccionado
             >
               <Edit className="w-5 h-5" />
             </button>
@@ -50,14 +74,7 @@ export default function Clientes() {
             </button>
           </li>
           <li>
-            <button
-              className="btn btn-ghost tooltip tooltip-bottom"
-              data-tip="Información del cliente"
-            /*                 onClick={handleInfoClick}
-                            disabled={!selectedRow} */
-            >
-              <Info className="w-5 h-5" />
-            </button>
+            <InfoClientes clientes={selectedRow} />
           </li>
         </ul>
 
@@ -68,19 +85,10 @@ export default function Clientes() {
               type="text"
               placeholder="Buscar..."
               className="grow"
-            /*                 value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)} */
+              value={searchTerm}
+              onChange={handleSearch}
             />
             <Search className="w-4 h-4" />
-          </label>
-          <label className="label cursor-pointer gap-2">
-            <span className="label-text">Buscar solo por ID</span>
-            <input
-              type="checkbox"
-              /*                 checked={searchById}
-                              onChange={(e) => setSearchById(e.target.checked)} */
-              className="checkbox checkbox-warning"
-            />
           </label>
         </div>
       </div>
@@ -89,7 +97,6 @@ export default function Clientes() {
         <table className="table w-full">
           <thead className="bg-warning/10 text-warning">
             <tr>
-
               <th>#</th>
               <th>Nombre y apellido</th>
               <th>DNI o CUIT</th>
@@ -98,9 +105,25 @@ export default function Clientes() {
               <th></th>
             </tr>
           </thead>
+          <tbody>
+            {filteredClientes.map((row, index) => (
+              <tr
+                key={row.id} // Usamos el id único del cliente como key
+                className={`hover:bg-warning/10 cursor-pointer ${
+                  selectedRow === row.id ? 'bg-warning/20' : ''
+                }`}
+                onClick={() => handleRowClick(row)}
+              >
+                <td>{index + 1}</td>
+                <td>{row.entity_name}</td>
+                <td>{row.cuit}</td>
+                <td>{row.domicilio_comercial}</td>
+                <td>{row.email || 'Sin Email'}</td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
     </div>
-
   )
 }

@@ -10,6 +10,16 @@ export async function fetchCliente() {
     }
 }
 
+export async function fetchClienteById(id) {
+    try {
+        const response = await axios.get(`http://localhost:5000/api/client/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching cliente by ID:", error);
+        throw error;
+    }
+}
+
 export async function postData(data) {
     try {
         const response = await axios.post("http://localhost:5000/api/client/", data);
