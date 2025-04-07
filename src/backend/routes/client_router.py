@@ -53,7 +53,8 @@ def get_all_records():
 #    records = db.get_all_records("entities")
     records = db.get_all_records_by_clause("entities", "entity_type LIKE ?", "client")
     return jsonify(records), 200
-#TODO: estoy viendo si esto anda
+
+
 @client_router.route( '/<client_id>' , methods=['GET'])
 def get_client_by_id(client_id):
     db = Database()
@@ -65,7 +66,7 @@ def get_client_by_id(client_id):
     
 #//TODO: Ver que onda si esto funciona bien
 @client_router.route( '/<client_id>' , methods=['PUT'])
-def update_client():
+def update_client(client_id):
     db = Database()
     client_id = request.args.get('id')
     data = request.json
@@ -102,3 +103,12 @@ def update_client():
         return jsonify({"mensaje": "Proveedor actualizado con éxito", "status": "éxito"}), 200
     else:
         return jsonify({"mensaje": "Error al actualizar el proveedor", "status": "error"}), 500
+    
+@client_router.route( '/<client_id>' , methods=['DELETE'])
+def delete_client(client_id):
+    db = Database()
+    success = db.delete_record_by_id("entities", client_id)
+    if success:
+        return jsonify({"mensaje": "Proveedor eliminado con éxito", "status": "éxito"}), 200
+    else:
+        return jsonify({"mensaje": "Error al eliminar el proveedor", "status": "error"}), 500

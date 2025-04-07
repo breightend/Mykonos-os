@@ -1,13 +1,13 @@
-import { ArrowLeft } from 'lucide-react'
-import { fetchClienteById } from '../services/clientes/clientsService'
-import { useEffect } from 'react'
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
-import { useState } from 'react'
-import EditarClienteModal from '../modals/modalsCliente/editarClienteModal'
 import AgregarCompraModal from '../modals/modalsCliente/agregarCompraModal'
 import AgregarPagoModal from '../modals/modalsCliente/agregarPagoModal'
+import EditarClienteModal from '../modals/modalsCliente/editarClienteModal'
 import VerOprecionModal from '../modals/modalsCliente/verOprecionModal'
+import { fetchClienteById } from '../services/clientes/clientsService'
 //TODO: ver operaciones va a ser con doble click
+//TODO : agregar eliminar el cliente
 export default function InfoClientes() {
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()
@@ -44,13 +44,21 @@ export default function InfoClientes() {
           </button>
           <h3 className="text-2xl font-bold">{cliente?.entity_name}</h3>
         </div>
-        <div className="flex w-full">
-          <div className="flex items-center justify-end">
+        <div className="w-full">
+          <div className="items-center justify-between gap-8 space-x-4">
             <button
               className="btn btn-dash mb-4 justify-end"
               onClick={() => document.getElementById('editandoCliente').showModal()}
             >
+              <Pencil />
               Editar cliente
+            </button>
+            <button
+              className="btn btn-error mb-4 justify-end"
+              onClick={() => document.getElementById('eliminandoCliente').showModal()}
+            >
+              <Trash2 className="" />
+              Eliminar cliente
             </button>
           </div>
         </div>

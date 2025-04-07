@@ -1,6 +1,8 @@
 import React from 'react'
+import { putData } from '../../services/clientes/clientsService'
 
 function EditarClienteModal({ cliente }) {
+  
   return (
     <div>
       <dialog id="editandoCliente" className="modal">

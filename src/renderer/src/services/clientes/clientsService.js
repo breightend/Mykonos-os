@@ -29,3 +29,23 @@ export async function postData(data) {
         throw error;
     }
 }
+
+export async function putData(id, data) {
+    try {
+        const response = await axios.put(`http://localhost:5000/api/client/${id}`, data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating data:", error);
+        throw error;
+    }
+}
+
+export async function deleteData(id) {
+    try {
+        const response = await axios.delete(`http://localhost:5000/api/client/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting data:", error);
+        throw error;
+    }
+}
