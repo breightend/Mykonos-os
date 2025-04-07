@@ -1,12 +1,12 @@
-import MenuVertical from "../componentes especificos/menuVertical"
-import Navbar from "../componentes especificos/navbar"
+import MenuVertical from '../componentes especificos/menuVertical'
+import Navbar from '../componentes especificos/navbar'
 import { useLocation } from 'wouter'
-import { Edit,  Search, UserPlus } from 'lucide-react'
-import { fetchCliente } from "../services/clientes/clientsService"
-import { useEffect, useState } from "react"
-import InfoClientes from "../modals/infoCliente"
+import { Edit, Search, UserPlus, Info } from 'lucide-react'
+import { fetchCliente } from '../services/clientes/clientsService'
+import { useEffect, useState } from 'react'
+import InfoClientes from './infoCliente'
 
-//TODO: Modal de editar informacion del cliente. 
+//TODO: Modal de editar informacion del cliente.
 export default function Clientes() {
   const [location, setLocation] = useLocation()
   const [clientes, setClientes] = useState([])
@@ -23,7 +23,7 @@ export default function Clientes() {
         setClientes(data)
         setFilteredClientes(data) // Inicialmente mostrar todos
       } catch (error) {
-        console.error("Error fetching data:", error)
+        console.error('Error fetching data:', error)
       }
     }
     fetchData()
@@ -31,7 +31,7 @@ export default function Clientes() {
 
   const handleRowClick = (row) => {
     setSelectedRow(row.id)
-    console.log("Cliente seleccionado:", row)
+    console.log('Cliente seleccionado:', row)
     setClienteSeleccionado(row)
   }
 
@@ -39,7 +39,7 @@ export default function Clientes() {
     const term = e.target.value.toLowerCase()
     setSearchTerm(term)
 
-    const filtered = clientes.filter(row => {
+    const filtered = clientes.filter((row) => {
       if (searchById) {
         return row.id.toString().includes(term)
       } else {
@@ -53,37 +53,35 @@ export default function Clientes() {
     <div>
       <Navbar />
       <MenuVertical currentPath="/clientes" />
-      <div className="flex-1 ml-20 ">
-        <h2 className="text-2xl font-bold mb-6 text-warning">Clientes</h2>
+      <div className="ml-20 flex-1">
+        <h2 className="text-warning mb-6 text-2xl font-bold">Clientes</h2>
       </div>
-      <div className="flex items-center justify-between mb-6 ml-20 mr-5">
+      <div className="mr-5 mb-6 ml-20 flex items-center justify-between">
         <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
-          <li>
-            <button
-              className="btn btn-ghost tooltip tooltip-bottom"
-              data-tip="Editar cliente"
-              disabled={!selectedRow} // Deshabilitar si no hay nada seleccionado
-            >
-              <Edit className="w-5 h-5" />
-            </button>
-          </li>
           <li>
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
               data-tip="Nuevo cliente"
               onClick={() => setLocation('/nuevoCliente')}
             >
-              <UserPlus className="w-5 h-5" />
+              <UserPlus className="h-5 w-5" />
             </button>
           </li>
           <li>
-            <InfoClientes cliente={clienteSeleccionado} />
+            <button
+              className="btn btn-ghost tooltip tooltip-bottom"
+              data-tip="Información del cliente"
+              onClick={() => setLocation(`/infoCliente?id=${2}`)}
+              disabled={!clienteSeleccionado}
+            >
+              <Info className="h-5 w-5" />
+            </button>
           </li>
         </ul>
 
         {/* Barra de búsqueda */}
         <div className="flex items-center gap-4">
-          <label className="input input-bordered flex items-center gap-2 input-warning">
+          <label className="input input-bordered input-warning flex items-center gap-2">
             <input
               type="text"
               placeholder="Buscar..."
@@ -91,12 +89,12 @@ export default function Clientes() {
               value={searchTerm}
               onChange={handleSearch}
             />
-            <Search className="w-4 h-4" />
+            <Search className="h-4 w-4" />
           </label>
         </div>
       </div>
       <div className="ml-20">
-        <h1 className="text-2xl font-medium ">Registro de clientes</h1>
+        <h1 className="text-2xl font-medium">Registro de clientes</h1>
         <table className="table w-full">
           <thead className="bg-warning/10 text-warning">
             <tr>

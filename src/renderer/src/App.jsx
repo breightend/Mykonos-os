@@ -15,9 +15,7 @@ import CreateUser from './creats/createUser'
 import Empleados from './components/empleados'
 import CreateProvider from './creats/createProvider'
 import CreateClient from './creats/createClient'
-
-
-
+import InfoClientes from './components/infoCliente'
 
 function App() {
   return (
@@ -37,7 +35,8 @@ function App() {
       <Route path="/createUser" component={CreateUser} />
       <Route path="/empleados" component={Empleados} />
       <Route path="/nuevoProveedor" component={CreateProvider} />
-      <Route path="/nuevoCliente" component={CreateClient} /> 
+      <Route path="/nuevoCliente" component={CreateClient} />
+      <Route path="/infoCliente" component={InfoClientes} />
     </Switch>
   )
 }

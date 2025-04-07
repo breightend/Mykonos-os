@@ -61,7 +61,7 @@ export default function ConfirmacionDatosDeCompra() {
           <div className="stats bg-secondary text-secondary-content">
             <div className="stat">
               <div className="stat-title">Descuento</div>
-              <div className="stat-value">${discount}</div>
+              <div className="stat-value">${Math.abs(discount)}</div>
             </div>
           </div>
 
