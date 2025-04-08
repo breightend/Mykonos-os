@@ -1,10 +1,9 @@
+import { Info, Search, UserPlus } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
-import { useLocation } from 'wouter'
-import { Edit, Search, UserPlus, Info } from 'lucide-react'
 import { fetchCliente } from '../services/clientes/clientsService'
-import { useEffect, useState } from 'react'
-import InfoClientes from './infoCliente'
 
 //TODO: Modal de editar informacion del cliente.
 export default function Clientes() {
