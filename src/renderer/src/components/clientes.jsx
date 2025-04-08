@@ -71,7 +71,7 @@ export default function Clientes() {
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
               data-tip="Información del cliente"
-              onClick={() => setLocation(`/infoCliente?id=${2}`)}
+              onClick={() => setLocation(`/infoCliente?id=${clienteSeleccionado.id}`)}
               disabled={!clienteSeleccionado}
             >
               <Info className="h-5 w-5" />
