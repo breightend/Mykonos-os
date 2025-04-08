@@ -13,6 +13,7 @@ export default function InfoClientes() {
   const [searchParams] = useSearchParams()
   const clientId = searchParams.get('id')
   const [cliente, setCliente] = useState(null)
+  const [operacionSeleccionada, setOperacionSeleccionada] = useState(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -30,6 +31,11 @@ export default function InfoClientes() {
   console.log('{Cliente}', { cliente })
   console.log('Nombre: ', cliente?.entity_name)
   console.log('Ciente: ', cliente)
+
+  const handleRowClick = (row) => {
+    setOperacionSeleccionada(row.id)
+    console.log('Cliente seleccionado:', row)
+  }
 
   return (
     <div>
@@ -80,7 +86,7 @@ export default function InfoClientes() {
                   </tr>
                 </thead>
                 <tbody className="">
-                  <tr>
+                  <tr onClick={() => handleRowClick(operacionSeleccionada)}>
                     <th>1</th>
                     <td>{cliente?.entity_name}</td>
                     <td>{cliente?.cuit}</td>
