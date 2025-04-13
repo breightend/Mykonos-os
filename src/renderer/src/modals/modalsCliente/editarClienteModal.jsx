@@ -36,26 +36,59 @@ function EditarClienteModal({ cliente }) {
     }
   }, [cliente])
 
-
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prevData) => ({
       ...prevData,
       [name]: value
     }))
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }))
+    }
   }
 
   const handleEdit = async (e) => {
     e.preventDefault()
+    const isValid = handleValidate()
+
+    if (!isValid) {
+      toast.error('Faltan campos obligatorios por completar o están mal formateados')
+      return
+    }
+
     try {
-      console.log('Datos a enviar:', formData)
       const response = await putData(cliente.id, formData)
-      console.log(response)
-      // Manejar la respuesta según sea necesario
+      toast.success('Cliente editado con éxito')
+      console.log('Respuesta:', response)
     } catch (error) {
       console.error('Error al editar el cliente:', error)
       toast.error('Error al editar el cliente')
     }
+  }
+  const [errors, setErrors] = useState({})
+  const handleValidate = () => {
+    const newErrors = {}
+
+    if (!formData.entity_name.trim()) {
+      newErrors.entity_name = 'El nombre del cliente es obligatorio.'
+    }
+
+    if (!formData.phone_number.trim()) {
+      newErrors.phone_number = 'El número de celular es obligatorio.'
+    } else if (!/^\d{10,15}$/.test(formData.phone_number)) {
+      newErrors.phone_number = 'Debe tener entre 10 y 15 dígitos numéricos.'
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'El email es obligatorio.'
+    } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)) {
+      newErrors.email = 'El email no tiene un formato válido.'
+    }
+
+    setErrors(newErrors)
+
+    // Retorna true si no hay errores
+    return Object.keys(newErrors).length === 0
   }
 
   return (
@@ -76,6 +109,7 @@ function EditarClienteModal({ cliente }) {
               value={formData.entity_name}
               onChange={handleChange}
             />
+            {errors.entity_name && <span className="text-red-500">{errors.entity_name}</span>}
             <label htmlFor="">Dirección: </label>
             <input
               type="text"
@@ -94,6 +128,7 @@ function EditarClienteModal({ cliente }) {
               value={formData.phone_number}
               onChange={handleChange}
             />
+            {errors.phone_number && <span className="text-red-500">{errors.phone_number}</span>}
             <label htmlFor="">Mail: </label>
             <input
               type="text"
@@ -103,6 +138,7 @@ function EditarClienteModal({ cliente }) {
               value={formData.email}
               onChange={handleChange}
             />
+            {errors.email && <span className="text-red-500">{errors.email}</span>}
             <label htmlFor="">Obervaciones: </label>
             <input
               type="text"

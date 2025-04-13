@@ -162,7 +162,7 @@ export default function InfoClientes() {
           </div>
         </div>
         <div className="mt-4 mr-4 flex justify-end">
-          <button className="btn btn-primary">Cerrar</button>
+          <button className="btn btn-primary" onClick={()=> setLocation('/clientes')}>Cerrar</button>
         </div>
       </div>
 
