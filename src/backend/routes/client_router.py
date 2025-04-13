@@ -64,7 +64,7 @@ def get_client_by_id(client_id):
     else:
         return jsonify({"mensaje": "Cliente no encontrado", "status": "error"}), 404
     
-#//TODO: Ver que onda si esto funciona bien
+#Anda! 
 @client_router.route( '/<client_id>' , methods=['PUT'])
 def update_client(client_id):
     db = Database()

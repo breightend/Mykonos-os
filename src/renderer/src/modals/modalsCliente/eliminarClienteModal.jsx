@@ -1,7 +1,18 @@
 import { deleteData } from '../../services/clientes/clientsService'
+import toast, { Toaster } from 'react-hot-toast'
+import { useLocation } from 'wouter'
 export default function EliminarClienteModal({ cliente }) {
-  const handleDeleteData = async () => {
-    deleteData(cliente.id)
+  const [setLocation] = useLocation()
+  const handleDelete = async () => {
+    try {
+      await deleteData(cliente.id)
+      console.log('Cliente eliminado:', cliente.id)
+      toast.success('Cliente eliminado correctamente')
+      setLocation('/clientes')
+    } catch (error) {
+      console.error('Error eliminando cliente:', error)
+      toast.error('Error eliminando cliente')
+    }
   }
   return (
     <div>
@@ -13,7 +24,10 @@ export default function EliminarClienteModal({ cliente }) {
             <form method="dialog">
               <div className="space-x-4">
                 <button className="btn btn-neutral">Cancelar</button>
-                <button className="btn btn-success">Aceptar</button>
+                <button className="btn btn-success" onClick={handleDelete}>
+                  Eliminar cliente
+                </button>
+                <Toaster position="bottom-right" />
               </div>
             </form>
           </div>
