@@ -1,5 +1,5 @@
 import axios from "axios";
-
+//Anda
 export async function fetchCliente() {
     try {
         const response = await axios.get("http://localhost:5000/api/client/");
@@ -9,7 +9,7 @@ export async function fetchCliente() {
         throw error;
     }
 }
-
+//Anda
 export async function fetchClienteById(id) {
     try {
         const response = await axios.get(`http://localhost:5000/api/client/${id}`,);
@@ -19,7 +19,7 @@ export async function fetchClienteById(id) {
         throw error;
     }
 }
-
+//Anda
 export async function postData(data) {
     try {
         const response = await axios.post("http://localhost:5000/api/client/", data);
@@ -29,7 +29,7 @@ export async function postData(data) {
         throw error;
     }
 }
-
+//En proceso de validar
 export async function putData(id, data) {
     try {
         const response = await axios.put(`http://localhost:5000/api/client/${id}`, data);

@@ -68,7 +68,7 @@ def get_client_by_id(client_id):
 @client_router.route( '/<client_id>' , methods=['PUT'])
 def update_client(client_id):
     db = Database()
-    client_id = request.args.get('id')
+    # client_id = request.args.get('client')
     data = request.json
     # Obtenemos los datos del frontend
     entity_name = data.get("entity_name")
@@ -84,7 +84,8 @@ def update_client(client_id):
     email = data.get("email")
     observation = data.get("observation")
 
-    success = db.update_record_by_id("entities", client_id, {
+    success = db.update_record("entities", {
+        "id": client_id,
         "entity_name": entity_name,
         "entity_type": entity_type,
         "razon_social": razon_social,
@@ -98,9 +99,9 @@ def update_client(client_id):
         "email": email,
         "observations": observation
     })
-    
+
     if success:
-        return jsonify({"mensaje": "Proveedor actualizado con éxito", "status": "éxito"}), 200
+        return jsonify({"mensaje": "Cliente actualizado con éxito", "status": "éxito"}), 200
     else:
         return jsonify({"mensaje": "Error al actualizar el proveedor", "status": "error"}), 500
     
