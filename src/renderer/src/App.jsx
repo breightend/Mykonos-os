@@ -16,6 +16,7 @@ import Empleados from './components/empleados'
 import CreateProvider from './creats/createProvider'
 import CreateClient from './creats/createClient'
 import InfoClientes from './components/infoCliente'
+import InfoProvider from './components/infoProvider'
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
       <Route path="/nuevoProveedor" component={CreateProvider} />
       <Route path="/nuevoCliente" component={CreateClient} />
       <Route path="/infoCliente" component={InfoClientes} />
+      <Route path="/infoProveedor" component={InfoProvider} />
     </Switch>
   )
 }

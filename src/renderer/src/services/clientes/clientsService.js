@@ -29,7 +29,7 @@ export async function postData(data) {
         throw error;
     }
 }
-//En proceso de validar
+//Anda
 export async function putData(id, data) {
     try {
         const response = await axios.put(`http://localhost:5000/api/client/${id}`, data);
@@ -39,7 +39,7 @@ export async function putData(id, data) {
         throw error;
     }
 }
-
+//Anda
 export async function   deleteData(id) {
     try {
         const response = await axios.delete(`http://localhost:5000/api/client/${id}`);

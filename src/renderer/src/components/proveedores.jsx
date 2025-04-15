@@ -1,12 +1,51 @@
+import { Info, Search, UserPlus } from 'lucide-react'
+import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
-import { useLocation } from 'wouter'
-import { Edit, Info, Search, UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetchProvider } from '../services/proveedores/proveedorService'
 
 export default function Proveedores() {
   const [location, setLocation] = useLocation()
+  const [proveedores, setProveedores] = useState([])
+  const [filteredProveedores, setFilteredProveedores] = useState([])
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchById, setSearchById] = useState(false)
+  const [proveedorSeleccionado, setProveedorSeleccionado] = useState(null)
+
+  const handleRowClick = (row) => {
+    setSelectedRow(row.id)
+    console.log('Proveedor seleccionado:', row)
+    setProveedorSeleccionado(row)
+  }
+
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase()
+    setSearchTerm(term)
+
+    const filtered = proveedores.filter((row) => {
+      if (searchById) {
+        return row.id.toString().includes(term)
+      } else {
+        return row.entity_name.toLowerCase().includes(term) || row.cuit.includes(term)
+      }
+    })
+    setFilteredProveedores(filtered)
+  }
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await fetchProvider()
+        setProveedores(data)
+        setFilteredProveedores(data) // Inicialmente mostrar todos
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      }
+    }
+    fetchData()
+  }, [])
 
   return (
     <div>
@@ -20,16 +59,6 @@ export default function Proveedores() {
           <li>
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
-              data-tip="Editar proveedor"
-              /*                 onClick={handleEditClick}
-                            disabled={!selectedRow} */
-            >
-              <Edit className="h-5 w-5" />
-            </button>
-          </li>
-          <li>
-            <button
-              className="btn btn-ghost tooltip tooltip-bottom"
               data-tip="Nuevo proveedor"
               onClick={() => setLocation('/nuevoProveedor')}
             >
@@ -39,9 +68,9 @@ export default function Proveedores() {
           <li>
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
-              data-tip="Información del proveedor"
-              /*                 onClick={handleInfoClick}
-                            disabled={!selectedRow} */
+              data-tip="Información del cliente"
+              onClick={() => setLocation(`/infoProvider?id=${proveedorSeleccionado.id}`)}
+              disabled={!proveedorSeleccionado}
             >
               <Info className="h-5 w-5" />
             </button>
@@ -55,21 +84,44 @@ export default function Proveedores() {
               type="text"
               placeholder="Buscar..."
               className="grow"
-              /*                 value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)} */
+              value={searchTerm}
+              onChange={handleSearch}
             />
             <Search className="h-4 w-4" />
           </label>
-          <label className="label cursor-pointer gap-2">
-            <span className="label-text">Buscar solo por ID</span>
-            <input
-              type="checkbox"
-              /*                 checked={searchById}
-                              onChange={(e) => setSearchById(e.target.checked)} */
-              className="checkbox checkbox-warning"
-            />
-          </label>
         </div>
+      </div>
+      <div className="mr-5 mb-10 ml-20 overflow-x-auto">
+        <table className="table w-full">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Domicilio</th>
+              <th>Teléfono</th>
+              <th>Contacto</th>
+              <th>CUIT</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredProveedores.map((row, index) => (
+              <tr
+                key={row.id}
+                className={`hover:bg-warning/10 cursor-pointer ${
+                  selectedRow === row.id ? 'bg-warning/20' : ''
+                }`}
+                onClick={() => handleRowClick(row)}
+              >
+                <td>{index + 1}</td>
+                <td>{row.entity_name}</td>
+                <td>{row.domicilio_comercial}</td>
+                <td>{row.phone_number}</td>
+                <td>{row.contact_name}</td>
+                <td>{row.cuit}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

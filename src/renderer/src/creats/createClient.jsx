@@ -29,7 +29,7 @@ function CreateClient() {
     }
 
     if (!formData.cuit || !/^\d{7,11}$/.test(formData.cuit)) {
-      newErrors.cuit = 'El CUIT debe contener entre 7 y 10 dígitos.'
+      newErrors.cuit = 'El número ingresado debe contener entre 7 y 10 dígitos.'
     }
 
     if (!formData.phone_number || !/^\d{10,15}$/.test(formData.phone_number)) {
@@ -51,6 +51,8 @@ function CreateClient() {
         console.log('Form data is valid.')
         const response = await postData(formData)
         console.log(response)
+        setLocation('/clientes')
+
 
         // Verifica si la respuesta fue exitosa según tu API
         if (response.success || response.status === 200) {

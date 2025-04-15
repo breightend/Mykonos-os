@@ -24,14 +24,10 @@ export default function EliminarClienteModal({ cliente }) {
             <form method="dialog">
               <div className="space-x-4">
                 <button className="btn btn-neutral">Cancelar</button>
-<<<<<<< HEAD
                 <button className="btn btn-success" onClick={handleDelete}>
                   Eliminar cliente
                 </button>
                 <Toaster position="bottom-right" />
-=======
-                <button className="btn btn-success" onClick={handleDeleteData}>Aceptar</button>
->>>>>>> 7ce02f673c5518107da1876da9c329b8fb75f3f2
               </div>
             </form>
           </div>
