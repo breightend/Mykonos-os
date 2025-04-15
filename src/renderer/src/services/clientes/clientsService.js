@@ -40,7 +40,7 @@ export async function putData(id, data) {
     }
 }
 
-export async function deleteData(id) {
+export async function   deleteData(id) {
     try {
         const response = await axios.delete(`http://localhost:5000/api/client/${id}`);
         return response.data;

@@ -13,7 +13,7 @@ export default function EliminarClienteModal({ cliente }) {
             <form method="dialog">
               <div className="space-x-4">
                 <button className="btn btn-neutral">Cancelar</button>
-                <button className="btn btn-success">Aceptar</button>
+                <button className="btn btn-success" onClick={handleDeleteData}>Aceptar</button>
               </div>
             </form>
           </div>
