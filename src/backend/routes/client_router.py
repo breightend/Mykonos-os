@@ -108,7 +108,7 @@ def update_client(client_id):
 @client_router.route( '/<client_id>' , methods=['DELETE'])
 def delete_client(client_id):
     db = Database()
-    success = db.delete_record_by_id("entities", client_id)
+    success = db.delete_record("entities", "id = ?", client_id)
     if success:
         return jsonify({"mensaje": "Proveedor eliminado con éxito", "status": "éxito"}), 200
     else:

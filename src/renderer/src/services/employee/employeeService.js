@@ -1,28 +1,28 @@
 import axios from "axios";
 //Anda
-export async function fetchCliente() {
+export async function fetchEmployeee() {
     try {
-        const response = await axios.get("http://localhost:5000/api/client/");
+        const response = await axios.get("http://localhost:5000/api/employee/");
         return response.data;
     } catch (error) {
-        console.error("Error fetching cliente:", error);
+        console.error("Error fetching employeee:", error);
         throw error;
     }
 }
 //Anda
-export async function fetchClienteById(id) {
+export async function fetchEmployeeeById(id) {
     try {
-        const response = await axios.get(`http://localhost:5000/api/client/${id}`,);
+        const response = await axios.get(`http://localhost:5000/api/employee/${id}`,);
         return response.data;
     } catch (error) {
-        console.error("Error fetching cliente by ID:", error);
+        console.error("Error fetching employeee by ID:", error);
         throw error;
     }
 }
 //Anda
 export async function postData(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/client/", data);
+        const response = await axios.post("http://localhost:5000/api/employee/", data);
         return response.data;
     } catch (error) {
         console.error("Error posting data:", error);
@@ -32,7 +32,7 @@ export async function postData(data) {
 //En proceso de validar
 export async function putData(id, data) {
     try {
-        const response = await axios.put(`http://localhost:5000/api/client/${id}`, data);
+        const response = await axios.put(`http://localhost:5000/api/employee/${id}`, data);
         return response.data;
     } catch (error) {
         console.error("Error updating data:", error);
@@ -40,9 +40,9 @@ export async function putData(id, data) {
     }
 }
 
-export async function   deleteData(id) {
+export async function deleteData(id) {
     try {
-        const response = await axios.delete(`http://localhost:5000/api/client/${id}`);
+        const response = await axios.delete(`http://localhost:5000/api/employee/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting data:", error);
