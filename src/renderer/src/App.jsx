@@ -38,7 +38,7 @@ function App() {
       <Route path="/nuevoProveedor" component={CreateProvider} />
       <Route path="/nuevoCliente" component={CreateClient} />
       <Route path="/infoCliente" component={InfoClientes} />
-      <Route path="/infoProveedor" component={InfoProvider} />
+      <Route path="/infoProvider" component={InfoProvider} />
     </Switch>
   )
 }
