@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "codecarbon>=2.8.4",
     "flask>=3.1.0",
     "flask-cors>=5.0.1",
 ]
