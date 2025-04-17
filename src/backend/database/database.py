@@ -119,7 +119,9 @@ DATABASE_TABLES = {
             "fullname":      "TEXT",                                # Nombre completo del usuario, requerido.
             "password":      "TEXT",                                # Contraseña del usuario, requerida.
             "email":         "TEXT",                                         # Correo electrónico del usuario.
-            "phone":         "TEXT",                                         # Número de teléfono del usuario.
+            "phone":         "TEXT",
+            "domicilio":     "TEXT",                                                                                  # Número de teléfono del usuario.
+            "cuit":          "TEXT NOT NULL UNIQUE",                                                                                  # Número de teléfono del usuario.
             "role":          "TEXT",                                         # Rol del usuario (ejemplo: admin, usuario normal).
             "status":        "TEXT",                                         # Estado del usuario (activo, inactivo, etc.).
             "session_token": "TEXT",                                         # Token de sesión para la autenticación del usuario.

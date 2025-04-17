@@ -3,7 +3,7 @@ import axios from "axios";
 //Anda
 export async function fetchEmployee() {
     try {
-        const response = await axios.get("http://localhost:5000/api/employee/");
+        const response = await axios.get("http://localhost:5000/api/user/");
         return response.data;
     } catch (error) {
         console.error("Error fetching empleado:", error);
@@ -13,7 +13,7 @@ export async function fetchEmployee() {
 //Anda
 export async function fetchEmployeeById(id) {
     try {
-        const response = await axios.get(`http://localhost:5000/api/employee/${id}`,);
+        const response = await axios.get(`http://localhost:5000/api/user/${id}`,);
         return response.data;
     } catch (error) {
         console.error("Error fetching empleado by ID:", error);
@@ -23,7 +23,7 @@ export async function fetchEmployeeById(id) {
 //Anda
 export async function postData(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/employee/", data);
+        const response = await axios.post("http://localhost:5000/api/user/", data);
         return response.data;
     } catch (error) {
         console.error("Error posting data:", error);
@@ -33,7 +33,7 @@ export async function postData(data) {
 //Anda
 export async function putData(id, data) {
     try {
-        const response = await axios.put(`http://localhost:5000/api/employee/${id}`, data);
+        const response = await axios.put(`http://localhost:5000/api/user/${id}`, data);
         return response.data;
     } catch (error) {
         console.error("Error updating data:", error);
@@ -43,7 +43,7 @@ export async function putData(id, data) {
 //Anda
 export async function deleteData(id) {
     try {
-        const response = await axios.delete(`http://localhost:5000/api/employee/${id}`);
+        const response = await axios.delete(`http://localhost:5000/api/user/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting data:", error);
