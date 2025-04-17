@@ -1,6 +1,6 @@
 import React from 'react'
 
-function agregarPagoModal() {
+function AgregarPagoModal() {
   return (
     <div>
       <dialog id="agregandoPago" className="modal">
@@ -18,4 +18,4 @@ function agregarPagoModal() {
   )
 }
 
-export default agregarPagoModal
+export default AgregarPagoModal

@@ -3,7 +3,7 @@ import React from 'react'
 function VerOperacionModal({ provider }) {
   return (
     <div>
-      <dialog id="verOperacionModal" className="modal modal-open">
+      <dialog id="verOperacionModal" className="modal ">
         <div className="modal-box w-11/12 max-w-5xl">
           <h3 className="text-lg font-bold">Detalles de la operación</h3>
           <div className="flex flex-col gap-4">
@@ -26,7 +26,7 @@ function VerOperacionModal({ provider }) {
             ></textarea>
           </div>
           <div className="modal-action">
-            <button className="btn">Cerrar</button>
+            <button className="btn btn-neutral">Cerrar</button>
           </div>
         </div>
       </dialog>

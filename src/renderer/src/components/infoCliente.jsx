@@ -8,7 +8,6 @@ import VerOprecionModal from '../modals/modalsCliente/verOprecionModal'
 import { fetchClienteById } from '../services/clientes/clientsService'
 import EliminarClienteModal from '../modals/modalsCliente/eliminarClienteModal'
 //TODO: ver operaciones va a ser con doble click
-//TODO : agregar eliminar el cliente
 export default function InfoClientes() {
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()

@@ -1,22 +1,23 @@
 import { Route, Switch } from 'wouter'
-import Login from './components/login'
-import Home from './components/registroVentas'
-import Ventas from './components/ventas'
-import Inventario from './components/inventario'
-import NuevoProducto from './creats/nuevoProducto'
-import Usuario from './components/usuario'
-import Proveedores from './components/proveedores'
 import Clientes from './components/clientes'
-import Estadisticas from './components/estadisticas'
-import Informe from './components/informe'
-import FormasPago from './components/formasPago'
 import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
-import CreateUser from './creats/createUser'
 import Empleados from './components/empleados'
-import CreateProvider from './creats/createProvider'
-import CreateClient from './creats/createClient'
+import Estadisticas from './components/estadisticas'
+import FormasPago from './components/formasPago'
 import InfoClientes from './components/infoCliente'
 import InfoProvider from './components/infoProvider'
+import Informe from './components/informe'
+import Inventario from './components/inventario'
+import Login from './components/login'
+import Proveedores from './components/proveedores'
+import Home from './components/registroVentas'
+import Usuario from './components/usuario'
+import Ventas from './components/ventas'
+import CreateClient from './creats/createClient'
+import CreateProvider from './creats/createProvider'
+import CreateUser from './creats/createUser'
+import NuevoProducto from './creats/nuevoProducto'
+import InfoEmpleado from './components/infoEmpleado'
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
       <Route path="/confirmacionDatosDeCompra" component={ConfirmacionDatosDeCompra} />
       <Route path="/createUser" component={CreateUser} />
       <Route path="/empleados" component={Empleados} />
+      <Route path="/infoEmpleado" component={InfoEmpleado} />
       <Route path="/nuevoProveedor" component={CreateProvider} />
       <Route path="/nuevoCliente" component={CreateClient} />
       <Route path="/infoCliente" component={InfoClientes} />

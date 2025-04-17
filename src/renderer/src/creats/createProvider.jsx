@@ -28,10 +28,6 @@ function CreateProvider() {
       newErrors.entity_name = 'El nombre comercial es obligatorio.'
     }
 
-    if (!formData.responsabilidad_iva || isNaN(Number(formData.responsabilidad_iva))) {
-      newErrors.responsabilidad_iva = 'La responsabilidad IVA debe ser un número válido.'
-    }
-
     if (!formData.cuit || !/^\d{7,11}$/.test(formData.cuit)) {
       newErrors.cuit = 'El número ingresado debe contener exactamente 11 dígitos.'
     }

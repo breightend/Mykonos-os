@@ -1,21 +1,22 @@
 import axios from "axios";
+
 //Anda
-export async function fetchEmployeee() {
+export async function fetchEmployee() {
     try {
         const response = await axios.get("http://localhost:5000/api/employee/");
         return response.data;
     } catch (error) {
-        console.error("Error fetching employeee:", error);
+        console.error("Error fetching empleado:", error);
         throw error;
     }
 }
 //Anda
-export async function fetchEmployeeeById(id) {
+export async function fetchEmployeeById(id) {
     try {
         const response = await axios.get(`http://localhost:5000/api/employee/${id}`,);
         return response.data;
     } catch (error) {
-        console.error("Error fetching employeee by ID:", error);
+        console.error("Error fetching empleado by ID:", error);
         throw error;
     }
 }
@@ -29,7 +30,7 @@ export async function postData(data) {
         throw error;
     }
 }
-//En proceso de validar
+//Anda
 export async function putData(id, data) {
     try {
         const response = await axios.put(`http://localhost:5000/api/employee/${id}`, data);
@@ -39,7 +40,7 @@ export async function putData(id, data) {
         throw error;
     }
 }
-
+//Anda
 export async function deleteData(id) {
     try {
         const response = await axios.delete(`http://localhost:5000/api/employee/${id}`);
