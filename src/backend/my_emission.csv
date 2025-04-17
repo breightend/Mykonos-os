@@ -1,3 +1,0 @@
-id,project_name,experiment_description,epoch,start_time,duration(s),power_consumption(kWh),CO2_emissions(kg),CPU_name,GPU_name,OS,region/country,cost
-b78e0735-3a7c-4996-9bd7-388641e31687,YourProjectName,training the <your model> model,,2025-04-17 13:47:25,3.4286346435546875,1.0905536905375471e-05,3.850221615516622e-06,"AMD Ryzen 5 5600G with Radeon Graphics/1 device(s), TDP:65.0",NVIDIA GeForce RTX 3060 Ti 1 device(s),Windows,AR/Cordoba,0
-d947765d-b186-4505-b255-1d1ce88c5393,YourProjectName,training the <your model> model,N/A,2025-04-17 13:50:52,3.549079656600952,1.1924704370892228e-05,4.210040727552243e-06,"AMD Ryzen 5 5600G with Radeon Graphics/1 device(s), TDP:65.0",NVIDIA GeForce RTX 3060 Ti 1 device(s),Windows,AR/Cordoba,0
