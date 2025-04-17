@@ -9,7 +9,9 @@ from werkzeug.security import generate_password_hash
 from routes.usuario_router import usuario_router
 from routes.provider_router import provider_router
 from routes.client_router import client_router
-from codecarbon import EmissionsTracker, track_emissions
+# from codecarbon import EmissionsTracker, track_emissions
+from eco2ai import track, Tracker
+import eco2ai
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -56,7 +58,8 @@ def cleanup():
     # if "tracker" in globals():
         # tracker.stop()
 
-@track_emissions
+# @track_emissions
+@track
 def simulacion_ejec_programa():
 
     zona_arg = ZoneInfo("America/Argentina/Buenos_Aires")
@@ -107,7 +110,7 @@ def simulacion_ejec_programa():
         
         print(f"Simulando ejecución del programa... {i}")
 
-        if i == 100000000:
+        if i == 100000:
             hora_arg = datetime.now(zona_arg)
             print("Hora de fin del programa:", hora_arg)
             # tracker.stop()

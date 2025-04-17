@@ -1,0 +1,2 @@
+id,project_name,experiment_description,epoch,start_time,duration(s),power_consumption(kWh),CO2_emissions(kg),CPU_name,GPU_name,OS,region/country,cost
+1daa43ab-8bf0-41a0-bc86-6dd35a223b6d,simulacion_db,medición de emisiones,N/A,2025-04-17 14:01:05,2769.983773469925,0.014866473044377776,0.0052486380412636625,"AMD Ryzen 5 5600G with Radeon Graphics/1 device(s), TDP:65.0",NVIDIA GeForce RTX 3060 Ti 1 device(s),Windows,AR/Cordoba,0

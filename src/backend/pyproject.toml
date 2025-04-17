@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "codecarbon>=2.8.4",
+    "eco2ai>=0.3.12",
     "flask>=3.1.0",
     "flask-cors>=5.0.1",
 ]
