@@ -46,6 +46,7 @@ function Empleados() {
     }
     fetchData()
   }, [])
+
   return (
     <div>
       <MenuVertical currentPath={'/empleados'} />
@@ -93,20 +94,19 @@ function Empleados() {
             </tr>
           </thead>
           <tbody>
-            {filteredEmployee.map((row, index) => (
-              <tr
-                key={row.id}
-                className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
-                onClick={() => handleRowClick(row)}
-              >
-                <td>{index + 1}</td>
-                <td>{row.entity_name}</td>
-                <td>{row.address}</td>
-                <td>{row.phone}</td>
-                <td>{row.cuit}</td>
-              </tr>
-            ))}
-
+            {filteredEmployee.length > 0 && filteredEmployee.map((row, index) => (
+                <tr
+                  key={row.id}
+                  className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
+                  onClick={() => handleRowClick(row)}
+                >
+                  <td>{index + 1}</td>
+                  <td>{row.fullname}</td>
+                  <td>{row.domicilio}</td>
+                  <td>{row.phone}</td>
+                  <td>{row.cuit}</td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

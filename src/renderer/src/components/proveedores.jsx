@@ -104,22 +104,23 @@ export default function Proveedores() {
             </tr>
           </thead>
           <tbody>
-            {filteredProveedores.map((row, index) => (
-              <tr
-                key={row.id}
-                className={`hover:bg-warning/10 cursor-pointer ${
-                  selectedRow === row.id ? 'bg-warning/20' : ''
-                }`}
-                onClick={() => handleRowClick(row)}
-              >
-                <td>{index + 1}</td>
-                <td>{row.entity_name}</td>
-                <td>{row.domicilio_comercial}</td>
-                <td>{row.phone_number}</td>
-                <td>{row.contact_name}</td>
-                <td>{row.cuit}</td>
-              </tr>
-            ))}
+            {filteredProveedores.length > 0 &&
+              filteredProveedores.map((row, index) => (
+                <tr
+                  key={row.id}
+                  className={`hover:bg-warning/10 cursor-pointer ${
+                    selectedRow === row.id ? 'bg-warning/20' : ''
+                  }`}
+                  onClick={() => handleRowClick(row)}
+                >
+                  <td>{index + 1}</td>
+                  <td>{row.entity_name}</td>
+                  <td>{row.domicilio_comercial}</td>
+                  <td>{row.phone_number}</td>
+                  <td>{row.contact_name}</td>
+                  <td>{row.cuit}</td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

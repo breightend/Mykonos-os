@@ -106,22 +106,23 @@ export default function Clientes() {
             </tr>
           </thead>
           <tbody>
-            {filteredClientes.map((row, index) => (
-              <tr
-                key={row.id} // Usamos el id único del cliente como key
-                className={`hover:bg-warning/10 cursor-pointer ${
-                  selectedRow === row.id ? 'bg-warning/20' : ''
-                }`}
-                onClick={() => handleRowClick(row)}
-              >
-                <td>{index + 1}</td>
-                <td>{row.entity_name}</td>
-                <td>{row.cuit}</td>
-                <td>{row.phone_number}</td>
-                <td>{row.domicilio_comercial}</td>
-                <td>{row.email || 'Sin Email'}</td>
-              </tr>
-            ))}
+            {filteredClientes.length > 0 &&
+              filteredClientes.map((row, index) => (
+                <tr
+                  key={row.id} // Usamos el id único del cliente como key
+                  className={`hover:bg-warning/10 cursor-pointer ${
+                    selectedRow === row.id ? 'bg-warning/20' : ''
+                  }`}
+                  onClick={() => handleRowClick(row)}
+                >
+                  <td>{index + 1}</td>
+                  <td>{row.entity_name}</td>
+                  <td>{row.cuit}</td>
+                  <td>{row.phone_number}</td>
+                  <td>{row.domicilio_comercial}</td>
+                  <td>{row.email || 'Sin Email'}</td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
