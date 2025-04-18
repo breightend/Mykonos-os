@@ -36,7 +36,7 @@ def recibir_datos():
         return jsonify({"mensaje": "Error al crear el usuario", "status": "error"}), 500
     
 
-@usuario_router.route('/', methods=['GET'])
+@usuario_router.route('/employees', methods=['GET'])
 def obtener_usuario_empleado():
     db = Database()
     records = db.get_all_records_by_clause("users", "role LIKE ?", "employee")

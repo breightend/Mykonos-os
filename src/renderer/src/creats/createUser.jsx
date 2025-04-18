@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { enviarData } from '../services/usuario/usuarioService'
 import toast, { Toaster } from 'react-hot-toast'
-import { ArrowLeft, Eye } from 'lucide-react'
+import { ArrowLeft, Eye, EyeClosed } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useDropzone } from 'react-dropzone'
 
 function CreateUser() {
   const [, setLocation] = useLocation()
   const [formData, setFormData] = useState({
+    nombre: '',
+    apellido: '',
     username: '',
     fullname: '',
     password: '',
@@ -15,10 +17,11 @@ function CreateUser() {
     phone: '',
     domicilio: '',
     cuit: '',
-    role: '',
+    role: 'employee',
     status: 'active',
     profile_image: '',
-    created_at: ''
+    created_at: '',
+    confirmPassword: ''
   })
   const [errors, setErrors] = useState({})
 
@@ -54,8 +57,24 @@ function CreateUser() {
 
   const onChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-    // Clear error when user types
+
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value }
+
+      if (name === 'nombre' || name === 'apellido') {
+        const nombre = name === 'nombre' ? value : updated.nombre
+        const apellido = name === 'apellido' ? value : updated.apellido
+
+        const capitalizar = (str) =>
+          str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : ''
+
+        updated.username = capitalizar(nombre) + capitalizar(apellido)
+        updated.fullname = `${capitalizar(nombre)} ${capitalizar(apellido)}`
+      }
+
+      return updated
+    })
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }))
     }
@@ -121,7 +140,7 @@ function CreateUser() {
     onDrop: async (acceptedFiles) => {
       const file = acceptedFiles[0]
       const base64 = await convertToBase64(file)
-      setFormData({ ...formData, avatar: base64 })
+      setFormData({ ...formData, profile_image: base64 })
     }
   })
 
@@ -198,7 +217,7 @@ function CreateUser() {
             <span className="label-text">Foto de perfil</span>
           </label>
 
-          {formData.avatar && (
+          {formData.profile_image && (
             <div className="mt-2 flex flex-col items-center justify-center">
               <div className="avatar justify-center">
                 <div className="ring-primary ring-offset-base-100 w-24 rounded-full ring ring-offset-2">
@@ -222,35 +241,54 @@ function CreateUser() {
               type="text"
               className={`w-full border px-3 py-2 ${errors.nombre ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
               placeholder="Ingrese su nombre"
-              value={formData.nombre}
             />
-            {errors.nombre && <p className="mt-1 text-xs text-red-500">{errors.nombre}</p>}
           </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium">Apellido</label>
             <input
               name="apellido"
               onChange={onChange}
               type="text"
-              className={`w-full border px-3 py-2 ${errors.apellido ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+              className={`w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none`}
               placeholder="Ingrese su apellido"
-              value={formData.apellido}
             />
-            {errors.apellido && <p className="mt-1 text-xs text-red-500">{errors.apellido}</p>}
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Username</label>
+          <label className="mb-1 block text-sm font-medium">CUIT</label>
           <input
-            name="username"
+            name="cuit"
             onChange={onChange}
             type="text"
-            className={`w-full border px-3 py-2 ${errors.username ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-            placeholder="Ingrese su nombre de usuario"
-            value={formData.username}
+            className={`w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+            placeholder="Ingrese su cuit"
+            value={formData.cuit}
           />
-          {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username}</p>}
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Celular</label>
+          <input
+            name="phone"
+            onChange={onChange}
+            type="tel"
+            className={`w-full border px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+            placeholder="+1234567890"
+            value={formData.phone}
+          />
+          {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Domicilio</label>
+          <input
+            name="domicilio"
+            onChange={onChange}
+            type="text"
+            className={`w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+            placeholder="Ingrese su domicilio"
+            value={formData.domicilio}
+          />
         </div>
 
         <div>
@@ -267,42 +305,14 @@ function CreateUser() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Teléfono</label>
-          <input
-            name="phone"
-            onChange={onChange}
-            type="tel"
-            className={`w-full border px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-            placeholder="+1234567890"
-            value={formData.phone}
-          />
-          {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Rol</label>
-          <select
-            name="rol"
-            onChange={onChange}
-            className={`w-full border px-3 py-2 ${errors.role ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-            value={formData.role}
-          >
-            <option value="">Seleccione un rol</option>
-            <option value="admin">Administrador</option>
-            <option value="employee">Empleado</option>
-          </select>
-          {errors.role && <p className="mt-1 text-xs text-red-500">{errors.role}</p>}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Sucursal</label>
+          <label className="mb-1 block text-sm font-medium">Ciudad</label>
           <select
             name="sucursal"
             onChange={onChange}
             className={`w-full border px-3 py-2 ${errors.sucursal ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
             value={formData.sucursal}
           >
-            <option value="">Seleccione sucursal</option>
+            <option value="">Seleccione ciudad</option>
             <option value="parana">Paraná</option>
             <option value="concordia">Concordia</option>
           </select>
@@ -323,33 +333,33 @@ function CreateUser() {
             {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Repetir contraseña</label>
-            <input
-              name="confirmPassword"
-              onChange={onChange}
-              type={seeValidatePassword ? 'text' : 'password'}
-              className={`w-full border px-3 py-2 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-              placeholder="••••••••"
-              value={formData.confirmPassword}
-            />
-
+            <label className="mb-1 block text-sm font-medium">Confirmar contraseña</label>
+            <div className="relative">
+              <input
+                name="confirmPassword"
+                onChange={onChange}
+                type={seeValidatePassword ? 'text' : 'password'}
+                className={`w-full border px-3 py-2 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+                placeholder="Repita su contraseña"
+                value={formData.confirmPassword}
+              />
+              {seeValidatePassword ? (
+                <EyeClosed
+                  onClick={() => setSeeValidatePassword(!seeValidatePassword)}
+                  className="absolute top-2.5 right-3 h-5 w-5 cursor-pointer text-gray-500"
+                />
+              ) : (
+                <Eye
+                  onClick={() => setSeeValidatePassword(!seeValidatePassword)}
+                  className="absolute top-2.5 right-3 h-5 w-5 cursor-pointer text-gray-500"
+                />
+              )}
+            </div>
             {errors.confirmPassword && (
               <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>
             )}
           </div>
         </div>
-        <button
-          type="btn"
-          onClick={handleWatchValidatePassword}
-          className="absolute top-10 right-3"
-        >
-          {seeValidatePassword ? (
-            <Eye className="text-primary" />
-          ) : (
-            <Eye className="text-gray-400" />
-          )}
-          <Eye />
-        </button>
 
         <button
           type="submit"

@@ -3,7 +3,7 @@ import axios from "axios";
 //Anda
 export async function fetchEmployee() {
     try {
-        const response = await axios.get("http://localhost:5000/api/user/");
+        const response = await axios.get("http://localhost:5000/api/user/employees");
         return response.data;
     } catch (error) {
         console.error("Error fetching empleado:", error);

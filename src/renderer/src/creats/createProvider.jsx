@@ -28,7 +28,7 @@ function CreateProvider() {
       newErrors.entity_name = 'El nombre comercial es obligatorio.'
     }
 
-    if (!formData.cuit || !/^\d{7,11}$/.test(formData.cuit)) {
+    if (!formData.cuit || !/^\d{11}$/.test(formData.cuit)) {
       newErrors.cuit = 'El número ingresado debe contener exactamente 11 dígitos.'
     }
 
@@ -37,7 +37,7 @@ function CreateProvider() {
     }
 
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'El correo electrónico no es válido.'
+      newErrors.email = 'El formato del correo electrónico no es válido.'
     }
 
     setErrors(newErrors)
@@ -92,7 +92,7 @@ function CreateProvider() {
         <div className="space-y-6">
           {[
             {
-              label: 'Nombre y apellido*',
+              label: 'Nombre comercial *',
               name: 'entity_name',
               type: 'text',
               placeholder: 'Ingrese el nombre del comercio'
@@ -115,7 +115,7 @@ function CreateProvider() {
               type: 'text',
               placeholder: 'Avenida Siempreviva 742.'
             },
-            { label: 'Cuit o DNI *', name: 'cuit', type: 'text', placeholder: '#####' },
+            { label: 'Cuit *', name: 'cuit', type: 'text', placeholder: '#####' },
 
             {
               label: 'Número de celular*',
