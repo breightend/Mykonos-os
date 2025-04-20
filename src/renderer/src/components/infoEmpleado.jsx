@@ -42,12 +42,12 @@ function InfoEmpleado() {
             <div className="verflow-x-auto">
               {empleado && (
                 <div>
-                  <div className="avatar">
-                    <div className="w-24 rounded">
-                      <img src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+                  <div className="avatar flex justify-center">
+                    <div className="ring-primary ring-offset-base-100 w-36 justify-center rounded-full ring ring-offset-2">
+                      <img src={empleado.profile_image} />
                     </div>
                   </div>
-                  <table className="table w-full text-sm">
+                  <table className="mt-8 table w-full text-sm">
                     <thead className="rounded-2xl bg-gray-800 text-white">
                       <tr>
                         <th>#</th>
@@ -56,6 +56,8 @@ function InfoEmpleado() {
                         <th>Celular</th>
                         <th>Mail</th>
                         <th>CUIT</th>
+                        <th>Estado</th>
+                        <th>Creado en:</th>
                       </tr>
                     </thead>
                     <tbody className="text-base-content">
@@ -66,6 +68,8 @@ function InfoEmpleado() {
                         <td>{empleado.phone}</td>
                         <td>{empleado.email}</td>
                         <td>{empleado.cuit}</td>
+                        <td>{empleado.status}</td>
+                        <td>{empleado.created_at}</td>
                       </tr>
                     </tbody>
                   </table>
