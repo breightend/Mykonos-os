@@ -44,11 +44,12 @@ def obtener_usuario_empleado():
     records = db.get_all_records_by_clause("users", "role LIKE ?", "employee")
     return jsonify(records), 200
 
-""" @usuario_router.route('/<user_id>', methods=['GET'])
+
+@usuario_router.route('employee/<user_id>', methods=['GET'])
 def obtener_empleado_by_id(user_id):
     db = Database()
     record = db.get_record_by_id("users", user_id)
     if record:
         return jsonify(record), 200
     else:
-        return jsonify({"mensaje": "Usuario no encontrado", "status": "error"}), 404 """
+        return jsonify({"mensaje": "Usuario no encontrado", "status": "error"}), 404

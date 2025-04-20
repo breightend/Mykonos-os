@@ -37,7 +37,7 @@ function Empleados() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const data = await fetchEmployee
+        const data = await fetchEmployee()
         setEmployee(data)
         setFilteredEmployee(data) // Inicialmente mostrar todos
       } catch (error) {
