@@ -4,8 +4,8 @@ from database.database import Database
 
 usuario_router = Blueprint('usuario_router', __name__)  # Creás un Blueprint
 
-@usuario_router.route('/', methods=['POST'])
-def recibir_datos():
+@usuario_router.route('/employees', methods=['POST'])
+def recibir_datos_empleados():
     db = Database()
     data = request.json  # Obtenemos los datos del frontend
 
@@ -35,6 +35,8 @@ def recibir_datos():
     else:
         return jsonify({"mensaje": "Error al crear el usuario", "status": "error"}), 500
     
+
+
 
 @usuario_router.route('/employees', methods=['GET'])
 def obtener_usuario_empleado():

@@ -25,7 +25,7 @@ export default function MenuVertical({ currentPath }) {
 
   return (
     <div
-      className={`fixed left-0 top-0 h-screen bg-accent dark:bg-secondary dark:text-black z-50  transition-all duration-300 ease-in-out ${isMenuOpen ? 'w-48' : 'w-16'}`}
+      className={`bg-accent dark:bg-secondary fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out dark:text-black ${isMenuOpen ? 'w-48' : 'w-16'}`}
       onMouseEnter={() => setIsMenuOpen(true)}
       onMouseLeave={() => setIsMenuOpen(false)}
     >
@@ -35,10 +35,10 @@ export default function MenuVertical({ currentPath }) {
         <X className="swap-on fill-current" />
       </label>
 
-      <ul className="flex flex-col space-y-2 p-2 mt-2">
+      <ul className="mt-2 flex flex-col space-y-2 p-2">
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/usuario' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/usuario' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/usuario')}
           >
             <User />
@@ -47,7 +47,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/home' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/home' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/home')}
           >
             <NotebookTabs />
@@ -56,7 +56,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/ventas' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/ventas' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/ventas')}
           >
             <ShoppingCart />
@@ -65,7 +65,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/inventario' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/inventario' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/inventario')}
           >
             <Package />
@@ -74,7 +74,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/proveedores' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/proveedores' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/proveedores')}
           >
             <Factory />
@@ -83,7 +83,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/clientes' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/clientes' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/clientes')}
           >
             <Users />
@@ -92,7 +92,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/empleados' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/empleados' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/empleados')}
           >
             <BriefcaseBusiness />
@@ -101,7 +101,7 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/estadisticas' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/estadisticas' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/estadisticas')}
           >
             <ChartLine />
@@ -110,14 +110,14 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li className="flex items-center">
           <button
-            className={`btn btn-ghost justify-start w-full ${currentPath === '/informes' ? 'bg-primary' : ''}`}
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/informes' ? 'bg-primary' : ''}`}
             onClick={() => setLocation('/informe')}
           >
             <ClipboardType />
             {isMenuOpen && <span className="ml-2">Informe</span>}
           </button>
         </li>
-        <li className=" items-center absolute bottom-0 ">
+        <li className="absolute bottom-0 items-center">
           <SettingsLog />
         </li>
       </ul>

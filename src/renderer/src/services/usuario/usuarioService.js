@@ -6,7 +6,13 @@ export async function fetchData() {
 }
 
 export async function enviarData(data) {
-    const response = await axios.post("http://localhost:5000/api/user/employees", data)
-    console.log(response)
-    return response
+    try {
+        console.log("Data to be sent:", data)
+        const response = await axios.post("http://localhost:5000/api/user/employees", data)
+        return response.data
+    }
+    catch (error) {
+        console.error("Error posting data: (El error esta aca )", error)
+        throw error
+    }
 }

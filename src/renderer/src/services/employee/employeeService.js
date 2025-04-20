@@ -10,7 +10,7 @@ export async function fetchEmployee() {
         throw error;
     }
 }
-//Anda
+//TODO: Modificar
 export async function fetchEmployeeById(id) {
     try {
         const response = await axios.get(`http://localhost:5000/api/user/${id}`,);
@@ -23,7 +23,7 @@ export async function fetchEmployeeById(id) {
 //Anda
 export async function postData(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/user/", data);
+        const response = await axios.post("http://localhost:5000/api/user/employees", data);
         return response.data;
     } catch (error) {
         console.error("Error posting data:", error);

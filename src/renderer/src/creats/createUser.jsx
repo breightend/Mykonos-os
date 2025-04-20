@@ -60,6 +60,7 @@ function CreateUser() {
 
     setFormData((prev) => {
       const updated = { ...prev, [name]: value }
+      formData.created_at = new Date().toISOString().split('T')[0]
 
       if (name === 'nombre' || name === 'apellido') {
         const nombre = name === 'nombre' ? value : updated.nombre
@@ -83,18 +84,6 @@ function CreateUser() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!validateForm()) {
-      toast.error('Por favor corrija los errores en el formulario', {
-        position: 'top-right',
-        duration: 3000,
-        style: {
-          background: '#f44336',
-          color: '#fff'
-        }
-      })
-      return
-    }
-
     try {
       const data = new FormData()
       for (const key in formData) {
@@ -102,8 +91,9 @@ function CreateUser() {
           data.append(key, formData[key])
         }
       }
+      console.log('DAta:', data)
 
-      await enviarData(data)
+      await enviarData(formData)
       toast.success('Usuario creado con éxito', {
         position: 'top-right',
         duration: 3000,
@@ -135,8 +125,10 @@ function CreateUser() {
     })
   }
 
-  const { getRootProps, getInputProps } = useDropzone({
-    accept: 'image/*',
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: {
+      'image/*': []
+    },
     onDrop: async (acceptedFiles) => {
       const file = acceptedFiles[0]
       const base64 = await convertToBase64(file)
@@ -224,13 +216,17 @@ function CreateUser() {
                   <img src={base64ToObjectUrl(formData.profile_image)} alt="Preview" />
                 </div>
               </div>
-              <span className="text-sm">{formData.profile_image.name}</span>
             </div>
           )}
         </div>
-        <div {...getRootProps()} className="rounded-lg border-2 border-dashed p-4">
+        <div
+          {...getRootProps()}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors duration-200 ${
+            isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+          }`}
+        >
           <input {...getInputProps()} />
-          <p>Arrastra tu imagen aquí o haz click</p>
+          <p>{isDragActive ? '¡Soltá la imagen aquí!' : 'Arrastrá tu imagen o hacé clic'}</p>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
