@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Ruler, Trash2 } from 'lucide-react'
+import ModalSize from '../modals/modalsProduct/modalSize'
+import ModalColor from '../modals/modalsProduct/modalColor'
 //TODO corregir el tema que se puedan crear multiples talles
 export default function NuevoProducto() {
   const [marca, setMarca] = useState('')
@@ -72,7 +74,7 @@ export default function NuevoProducto() {
 
   //Crea una lista de colres disponibles que son todos, dependiendo del talle en que esta
   // Función para manejar el envío del formulario
-  //TODO ver como crear una nueva prenda 
+  //TODO ver como crear una nueva prenda
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -172,9 +174,9 @@ export default function NuevoProducto() {
   }
 
   return (
-    <div className="p-6 bg-base-100 min-h-screen">
+    <div className="bg-base-100 min-h-screen p-6">
       <div className="flex items-center space-x-4 p-4">
-        <div className="tooltip " data-tip="Volver">
+        <div className="tooltip" data-tip="Volver">
           <button className="btn btn-circle" onClick={() => setLocation('/inventario')}>
             <ArrowLeft />
           </button>
@@ -183,7 +185,7 @@ export default function NuevoProducto() {
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Descripción</label>
+          <label className="mb-1 block text-sm font-medium">Descripción</label>
           <input
             type="text"
             placeholder="Remera..."
@@ -194,8 +196,8 @@ export default function NuevoProducto() {
         {/* Campo para el tipo de prenda */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-sm font-medium mb-1">Tipo de Prenda</label>
-            <select className="select select-bordered " required>
+            <label className="mb-1 block text-sm font-medium">Tipo de Prenda</label>
+            <select className="select select-bordered" required>
               <option value="" disabled>
                 Seleccione un tipo de prenda
               </option>
@@ -209,11 +211,11 @@ export default function NuevoProducto() {
 
           {/* Campo para la marca */}
           <div>
-            <label className="block text-sm font-medium mb-1">Marca</label>
+            <label className="mb-1 block text-sm font-medium">Marca</label>
             <select
               value={marca}
               onChange={(e) => setMarca(e.target.value)}
-              className="select select-bordered "
+              className="select select-bordered"
               required
             >
               <option value="" disabled>
@@ -230,8 +232,8 @@ export default function NuevoProducto() {
 
         {/* Precio */}
         <div>
-          <label className="block text-sm  font-medium mb-1">Precio</label>
-          <span className="flex gap-2 items-center">
+          <label className="mb-1 block text-sm font-medium">Precio</label>
+          <span className="flex items-center gap-2">
             $
             <input
               type="number"
@@ -244,12 +246,12 @@ export default function NuevoProducto() {
         </div>
 
         {/* Sección para talles, colores y cantidades */}
-        <h2 className="text-xl font-semibold mb-2">Talles, Colores y Cantidades</h2>
+        <h2 className="mb-2 text-xl font-semibold">Talles, Colores y Cantidades</h2>
         {talles.map((talle, talleIndex) => (
-          <div key={talleIndex} className="mb-4 p-4 bg-primary/20 rounded-lg">
+          <div key={talleIndex} className="bg-primary/20 mb-4 rounded-lg p-4">
             {/* Campo para el talle */}
             <div className="mb-2">
-              <span className=" text-md flex justify-between font-medium text-2xl mb-2">
+              <span className="text-md mb-2 flex justify-between text-2xl font-medium">
                 Talle
                 <div className="tooltip" data-tip="Eliminar talle">
                   <button
@@ -260,28 +262,35 @@ export default function NuevoProducto() {
                   </button>
                 </div>
               </span>
-              <select
-                value={talle.talle}
-                onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
-                className="select select-bordered "
-                required
-              >
-                <option value="" disabled>
-                  Seleccione un talle
-                </option>
-                {tallesPredefinidos.map((talle, index) => (
-                  <option key={index} value={talle}>
-                    {talle}
+              <div className="flex items-center space-x-4">
+                <select
+                  value={talle.talle}
+                  onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
+                  className="select select-bordered"
+                  required
+                >
+                  <option value="" disabled>
+                    Seleccione un talle
                   </option>
-                ))}
-              </select>
+                  {tallesPredefinidos.map((talle, index) => (
+                    <option key={index} value={talle}>
+                      {talle}
+                    </option>
+                  ))}
+                </select>
+                <ModalSize />
+              </div>
             </div>
 
             {/* Sección para colores */}
             <div>
-              <h2 className="text-md font-medium mb-2">Colores</h2>
+              <div className='flex items-center space-x-4'>
+
+              <h2 className="text-md mb-2 font-medium">Colores</h2>
+              <ModalColor />
+              </div>
               {talle.colores.map((color, colorIndex) => (
-                <div key={colorIndex} className="space-x-4 flex items-center mb-2">
+                <div key={colorIndex} className="mb-2 flex items-center space-x-4">
                   <select
                     onChange={(e) =>
                       handleColorSelect(talleIndex, colorIndex, 'color', e.target.value)
@@ -325,7 +334,7 @@ export default function NuevoProducto() {
                         parseInt(e.target.value, 10)
                       )
                     }
-                    className="input input-bordered w-1/5 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none "
+                    className="input input-bordered w-1/5 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     required
                   />
                   {colorIndex === talle.colores.length - 1 && (
@@ -350,21 +359,21 @@ export default function NuevoProducto() {
           </div>
         ))}
 
-        <div className=" flex justify-end">
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={agregarTalle}
-            className="btn btn-outline badge badge-secondary badge-outline p-6 transform hover:scale-105"
+            className="btn btn-outline badge badge-secondary badge-outline transform p-6 hover:scale-105"
           >
             + Agregar Talle
           </button>
         </div>
-        <div className="flex justify-between mt-8">
-          <p className="bg-secondary/20 rounded-2xl p-2 px-2 dark:text-black dark:bg-blue-300">
+        <div className="mt-8 flex justify-between">
+          <p className="bg-secondary/20 rounded-2xl p-2 px-2 dark:bg-blue-300 dark:text-black">
             Cantidad de unidades agregadas: <span className="font-semibold">{cantidadTotal}</span>
           </p>
-          <div className="flex ">
-            <button type="submit" className="btn btn-success justify-end transform hover:scale-105">
+          <div className="flex">
+            <button type="submit" className="btn btn-success transform justify-end hover:scale-105">
               Agregar Prenda
             </button>
           </div>

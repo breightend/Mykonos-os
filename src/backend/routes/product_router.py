@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
+product_router = Blueprint('product_router', __name__)
 
-@product_router.route('/', methods=['POST'])
+""" @product_router.route('/', methods=['POST'])
 def recibir_datos():
     data = request.json
-    # Obtenemos los datos del producto
+    # Obtenemos los datos del producto """
     
 
 @product_router.route('/size', methods=['POST'])
@@ -38,7 +39,7 @@ def obtener_talles():
     return jsonify(sizes), 200
 
 
-@product_router.route('/color', methods=['POST'])
+@product_router.route('/colors', methods=['POST'])
 def recibir_datos_color():
     data = request.json
     # Obtenemos los datos del producto
@@ -57,3 +58,11 @@ def recibir_datos_color():
     else:
         return jsonify({"mensaje": "Error al crear el color", "status": "error"}), 500
 
+@product_router.route('/colors', methods=['GET'])
+def obtener_colores():
+    # Obtener los colores de la base de datos
+    db = Database()
+    colors = db.get_colors()
+    if not colors:
+        return jsonify({"mensaje": "No se encontraron colores", "status": "error"}), 404
+    return jsonify(colors), 200
