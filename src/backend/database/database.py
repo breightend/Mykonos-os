@@ -876,6 +876,22 @@ class Database:
         except Exception as e:
             print(f"Error al obtener registros de la tabla '{table_name}': {e}")
             return []
+        
+    # FIXME: brenda...
+    def get_sizes(self):
+        sql ='SELECT * FROM sizes AS s JOIN size_categories AS sc ON s.category_id = sc.id'
+        try:
+            with self.create_connection() as conn:
+                conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
+                cur = conn.cursor()
+                cur.execute(sql)
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
+                return []
+        except Exception as e:
+            print(f'Error!!!: {e}')
+            return []
 
     # #TODO: devolver dict{sucess, message, record}
     # def get_all_records_by_clauses(self, table_name, search_clauses):
@@ -911,27 +927,27 @@ class Database:
     #         return []
 
     # #TODO: devolver dict{sucess, message, record}
-    # def get_all_records(self, table_name):
-    #     """
-    #     Obtiene todos los registros de una tabla de la base de datos.
+    def get_all_records(self, table_name):
+        """
+        Obtiene todos los registros de una tabla de la base de datos.
 
-    #     Args:
-    #         table_name (str): El nombre de la tabla.
+        Args:
+            table_name (str): El nombre de la tabla.
 
-    #     Returns:
-    #         list: Una lista de diccionarios con los datos de todos los registros.
-    #     """
-    #     sql = f"SELECT * FROM {table_name}"
-    #     try:
-    #         with self.create_connection() as conn:
-    #             cur = conn.cursor()
-    #             cur.execute(sql)
-    #             rows = cur.fetchall()
-    #             records = []
-    #             columns = [desc[0] for desc in cur.description]
-    #             for row in rows:
-    #                 records.append(dict(zip(columns, row)))
-    #             return records
-    #     except Exception as e:
-    #         print(f"Error al obtener todos los registros de {table_name}: {e}")
-    #         return []
+        Returns:
+            list: Una lista de diccionarios con los datos de todos los registros.
+        """
+        sql = f"SELECT * FROM {table_name}"
+        try:
+            with self.create_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(sql)
+                rows = cur.fetchall()
+                records = []
+                columns = [desc[0] for desc in cur.description]
+                for row in rows:
+                    records.append(dict(zip(columns, row)))
+                return records
+        except Exception as e:
+            print(f"Error al obtener todos los registros de {table_name}: {e}")
+            return []

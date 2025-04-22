@@ -1,14 +1,15 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
-product_router = Blueprint('product_router', __name__)
+
+product_router = Blueprint("product_router", __name__)
 
 """ @product_router.route('/', methods=['POST'])
 def recibir_datos():
     data = request.json
     # Obtenemos los datos del producto """
-    
 
-@product_router.route('/size', methods=['POST'])
+
+@product_router.route("/size", methods=["POST"])
 def recibir_datos_talle():
     data = request.json
     # Obtenemos los datos del producto
@@ -19,17 +20,21 @@ def recibir_datos_talle():
     db = Database()
     # if not size_name or not category_id or not description:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    success = db.add_record("sizes", {
-        "size_name": size_name,
-        "category_id": category_id,
-        "description": description
-    })
+    success = db.add_record(
+        "sizes",
+        {
+            "size_name": size_name,
+            "category_id": category_id,
+            "description": description,
+        },
+    )
     if success:
         return jsonify({"mensaje": "Talle creado con éxito", "status": "éxito"}), 200
     else:
         return jsonify({"mensaje": "Error al crear el talle", "status": "error"}), 500
 
-@product_router.route('/size', methods=['GET'])
+
+@product_router.route("/size", methods=["GET"])
 def obtener_talles():
     # Obtener los talles de la base de datos
     db = Database()
@@ -39,7 +44,7 @@ def obtener_talles():
     return jsonify(sizes), 200
 
 
-@product_router.route('/colors', methods=['POST'])
+@product_router.route("/colors", methods=["POST"])
 def recibir_datos_color():
     data = request.json
     # Obtenemos los datos del producto
@@ -49,20 +54,49 @@ def recibir_datos_color():
     db = Database()
     # if not color_name or not color_hex:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    success = db.add_record("colors", {
-        "color_name": color_name,
-        "color_hex": color_hex
-    })
+    success = db.add_record(
+        "colors", {"color_name": color_name, "color_hex": color_hex}
+    )
     if success:
         return jsonify({"mensaje": "Color creado con éxito", "status": "éxito"}), 200
     else:
         return jsonify({"mensaje": "Error al crear el color", "status": "error"}), 500
 
-@product_router.route('/colors', methods=['GET'])
+
+@product_router.route("/colors", methods=["GET"])
 def obtener_colores():
     # Obtener los colores de la base de datos
     db = Database()
-    colors = db.get_colors()
+    colors = db.get_all_records("colors")
     if not colors:
         return jsonify({"mensaje": "No se encontraron colores", "status": "error"}), 404
     return jsonify(colors), 200
+
+
+@product_router.route("/alan", methods=["GET"])
+def alan():
+    db = Database()
+    sizes = db.get_sizes()
+    if not sizes:
+        return jsonify({"mensaje": "AAAA"}), 404
+    return jsonify(sizes), 200
+
+
+@product_router.route("/crearAlan", methods=["GET"])
+def crearAlan():
+    db = Database()
+    category_response = db.add_record(
+        "size_categories", {"id": 1, "category_name": "alancate", "permanent": False}
+    )
+
+    size_response = db.add_record(
+        "sizes",
+        {"id": 1, "size_name": "brenda", "category_id": 1, "description": "es batman"},
+    )
+
+    print(size_response)
+    print(category_response)
+
+    # if size_response and success2:
+    #     return jsonify({'message':'YAAAAAAAAAAAY'}),200
+    return jsonify({"message": "NOOO"}), 500

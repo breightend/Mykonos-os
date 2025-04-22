@@ -1,12 +1,12 @@
 import { Palette } from 'lucide-react'
-import { postData } from '../../services/products/colorService'
-import { fetchColor } from '../../services/products/colorService'
+import { fetchColor, postData } from '../../services/products/colorService'
 import { useEffect, useState } from 'react'
-
+//TODO: arreglar funcion del backend GET
+//TODO: Ver el tema del post
 export default function ModalColor() {
   const [formData, setFormData] = useState({
     color_name: '',
-    hex_code: ''
+    color_hex: ''
   })
   const [colors, setColors] = useState([])
 
@@ -16,33 +16,48 @@ export default function ModalColor() {
       ...formData,
       [name]: value
     })
+    console.log(formData)
+  }
+
+  const onChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prevState) => ({
+      ...prevState, 
+      [name]: value
+    }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      console.log('VALORES:')
+      console.log(formData)
       const response = await postData(formData)
       console.log(response)
       setFormData({
         color_name: '',
-        hex_code: ''
+        color_hex: ''
       })
       fetchColor()
     } catch (error) {
       console.error('Error:', error)
     }
   }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetchColor()
-        setColors(response.data)
+        setColors(response)
       } catch (error) {
         console.error('Error fetching colors:', error)
       }
     }
     fetchData()
   }, [])
+
+  console.log({colors})
+
   return (
     <div>
       <button
@@ -64,17 +79,18 @@ export default function ModalColor() {
                 </tr>
               </thead>
               <tbody>
-                {colors.map((color) => (
-                  <tr key={color.id}>
-                    <td>{color.color_name}</td>
-                    <td>
-                      <div
-                        className="h-6 w-6 rounded-full border"
-                        style={{ backgroundColor: color.hex_code }}
-                      ></div>
-                    </td>
-                  </tr>
-                ))}
+                {colors &&
+                  colors.map((color) => (
+                    <tr key={color.id}>
+                      <td>{color.color_name}</td>
+                      <td>
+                        <div
+                          className="h-6 w-6 rounded-full border"
+                          style={{ backgroundColor: color.color_hex }}
+                        ></div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -88,7 +104,7 @@ export default function ModalColor() {
                 type="text"
                 name="color_name"
                 value={formData.color_name}
-                onChange={handleChange}
+                onChange={onChange}
                 placeholder="Nombre del color"
                 className="input input-bordered w-full max-w-xs"
               />
@@ -99,15 +115,15 @@ export default function ModalColor() {
               </label>
               <input
                 type="color"
-                name="hex_code"
-                value={formData.hex_code}
-                onChange={handleChange}
+                name="color_hex"
+                value={formData.color_hex}
+                onChange={onChange}
                 className="input input-bordered w-full max-w-xs"
               />
             </div>
 
             <div className="modal-action">
-              <button type="submit" className="btn">
+              <button type="submit" className="btn" onClick={handleSubmit}>
                 Agregar
               </button>
             </div>

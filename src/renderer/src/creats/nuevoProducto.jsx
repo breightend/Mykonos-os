@@ -284,10 +284,9 @@ export default function NuevoProducto() {
 
             {/* Sección para colores */}
             <div>
-              <div className='flex items-center space-x-4'>
-
-              <h2 className="text-md mb-2 font-medium">Colores</h2>
-              <ModalColor />
+              <div className="mb-2 flex items-center space-x-4">
+                <h2 className="text-md mb-2 font-medium">Colores</h2>
+                <ModalColor />
               </div>
               {talle.colores.map((color, colorIndex) => (
                 <div key={colorIndex} className="mb-2 flex items-center space-x-4">
