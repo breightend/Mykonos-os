@@ -878,20 +878,56 @@ class Database:
             return []
         
     # FIXME: brenda...
-    def get_sizes(self):
-        sql ='SELECT * FROM sizes AS s JOIN size_categories AS sc ON s.category_id = sc.id'
+    def get_join_records(self, table1_name, table2_name, join_column1, join_column2, select_columns="t1.*, t2.*"):
+        """
+        Performs an INNER JOIN between two tables and retrieves records.
+
+        Args:
+            table1_name (str): The name of the first table (aliased as t1).
+            table2_name (str): The name of the second table (aliased as t2).
+            join_column1 (str): The name of the join column in the first table.
+            join_column2 (str): The name of the join column in the second table.
+            select_columns (str): Comma-separated string of columns to select.
+                                  Defaults to 't1.*, t2.*'. Use specific aliases
+                                  (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'records': list[dict]}
+        """
+        # Basic validation
+        if not all([table1_name, table2_name, join_column1, join_column2, select_columns]):
+             return {'success': False, 'message': "Invalid table or column names provided.", 'records': []}
+
+        sql = f"""
+            SELECT {select_columns}
+            FROM {table1_name} AS t1
+            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
+        """
+        result = {'success': False, 'message': '', 'records': []}
+
         try:
             with self.create_connection() as conn:
-                conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
+                # Use row_factory for easy dict conversion, but be mindful of name collisions
+                conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
                 cur.execute(sql)
                 rows = cur.fetchall()
                 if rows:
-                    return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
-                return []
+                    # This conversion might still have issues if select_columns doesn't use aliases
+                    # for identically named columns in both tables.
+                    result['records'] = [dict(row) for row in rows]
+                    result['success'] = True
+                    result['message'] = f"Successfully joined {table1_name} and {table2_name}."
+                else:
+                    result['success'] = True # Query succeeded, but no results
+                    result['message'] = "No matching records found for the join."
+        except sqlite3.Error as e:
+            result['message'] = f"Database error joining {table1_name} and {table2_name}: {e}"
         except Exception as e:
-            print(f'Error!!!: {e}')
-            return []
+            # Catch potential errors during dict conversion if names collide badly
+            result['message'] = f"An unexpected error occurred: {e}"
+
+        return result
 
     # #TODO: devolver dict{sucess, message, record}
     # def get_all_records_by_clauses(self, table_name, search_clauses):

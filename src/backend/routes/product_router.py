@@ -73,30 +73,40 @@ def obtener_colores():
     return jsonify(colors), 200
 
 
-@product_router.route("/alan", methods=["GET"])
-def alan():
+
+
+@product_router.route("/sizeXcategory", methods=["GET"])
+def obtenerSizeXCategory():
     db = Database()
-    sizes = db.get_sizes()
-    if not sizes:
-        return jsonify({"mensaje": "AAAA"}), 404
-    return jsonify(sizes), 200
+    category_response = db.get_join_records(
+        "size_categories", "sizes", "id", "category_id", ""
+    )
+    if not category_response:
+        return jsonify({"mensaje": "No se encontraron talles", "status": "error"}), 404
+    return jsonify(category_response), 200
 
 
-@product_router.route("/crearAlan", methods=["GET"])
-def crearAlan():
+@product_router.route("/category", methods=["POST"])
+def recibir_datos_categoria():
+    data = request.json
+    # Obtenemos los datos del producto
+    category_name = data.get("category_name")
+    permanent = data.get("permanent")
+
     db = Database()
-    category_response = db.add_record(
-        "size_categories", {"id": 1, "category_name": "alancate", "permanent": False}
+    # if not category_name or not description:
+    #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
+    success = db.add_record(
+        "size_categories",
+        {"category_name": category_name, "permanent": permanent }
     )
-
-    size_response = db.add_record(
-        "sizes",
-        {"id": 1, "size_name": "brenda", "category_id": 1, "description": "es batman"},
-    )
-
-    print(size_response)
-    print(category_response)
-
-    # if size_response and success2:
-    #     return jsonify({'message':'YAAAAAAAAAAAY'}),200
-    return jsonify({"message": "NOOO"}), 500
+    if success:
+        return (
+            jsonify({"mensaje": "Categoria creada con éxito", "status": "éxito"}),
+            200,
+        )
+    else:
+        return (
+            jsonify({"mensaje": "Error al crear la categoria", "status": "error"}),
+            500,
+        )

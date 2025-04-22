@@ -52,11 +52,12 @@ function updateAppIcon() {
     return;
   }
 
-  // const isDarkMode = nativeTheme.shouldUseDarkColors;
-  const isDarkMode = localStorage.getItem('theme') === 'night' || false
+   const isDarkMode = nativeTheme.shouldUseDarkColors;
+  //const isDarkMode = localStorage.getItem('theme') === 'night' || false
   console.log(`Theme changed: ${isDarkMode ? 'Dark' : 'Light'}`); // For debugging
 
-  const iconPath = isDarkMode ? darkIcon : lightIcon;
+  //const iconPath = isDarkMode ? darkIcon : lightIcon;
+  const iconPath = lightIcon;
 
   try {
     const image = nativeImage.createFromPath(iconPath);

@@ -1,5 +1,5 @@
 import { Ruler } from 'lucide-react'
-import { postData } from '../../services/products/sizeService'
+import { postDataSize } from '../../services/products/sizeService'
 import { fetchSize } from '../../services/products/sizeService'
 import { useEffect, useState } from 'react'
 
