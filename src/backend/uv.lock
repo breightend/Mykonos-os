@@ -36,6 +36,7 @@ dependencies = [
     { name = "codecarbon" },
     { name = "flask" },
     { name = "flask-cors" },
+    { name = "ruff" },
 ]
 
 [package.dev-dependencies]
@@ -48,6 +49,7 @@ requires-dist = [
     { name = "codecarbon", specifier = ">=2.8.4" },
     { name = "flask", specifier = ">=3.1.0" },
     { name = "flask-cors", specifier = ">=5.0.1" },
+    { name = "ruff", specifier = ">=0.11.3" },
 ]
 
 [package.metadata.requires-dev]
