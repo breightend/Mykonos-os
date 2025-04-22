@@ -1,24 +1,33 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, nativeTheme, nativeImage } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import lightIcon from '../../resources/light.png?asset'
+import darkIcon from '../../resources/dark.png?asset'
+
+let mainWindow;
 
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
-    }
+    },
   })
+
+  updateAppIcon()
+
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -33,7 +42,48 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
+
+function updateAppIcon() {
+  if (!mainWindow) {
+    // Window not created yet or already closed
+    return;
+  }
+
+  // const isDarkMode = nativeTheme.shouldUseDarkColors;
+  const isDarkMode = localStorage.getItem('theme') === 'night' || false
+  console.log(`Theme changed: ${isDarkMode ? 'Dark' : 'Light'}`); // For debugging
+
+  const iconPath = isDarkMode ? darkIcon : lightIcon;
+
+  try {
+    const image = nativeImage.createFromPath(iconPath);
+    if (image.isEmpty()) {
+      console.error(`Failed to load icon image from path: ${iconPath}`);
+      return; // Don't try to set an empty image
+    }
+
+    // Ensure the image isn't empty before setting
+    if (!image.isEmpty()) {
+      // Set window icon (Taskbar on Win/Linux)
+      mainWindow.setIcon(image);
+
+      // Set dock icon (macOS)
+      if (process.platform === 'darwin') { // 'darwin' is the platform name for macOS
+        app.dock.setIcon(image);
+      }
+    } else {
+      console.warn(`Could not load icon from path: ${iconPath}`);
+    }
+
+
+  } catch (error) {
+    console.error(`Error creating nativeImage from path ${iconPath}:`, error);
+  }
+}
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -48,6 +98,13 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+
+  nativeTheme.on('updated', () => {
+    // Use a short debounce or setTimeout if updates fire too rapidly (optional)
+    // setTimeout(updateAppIcon, 100); // e.g., wait 100ms
+    updateAppIcon(); // Call the update function when the theme changes
+  });
+
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
