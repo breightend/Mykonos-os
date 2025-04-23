@@ -34,11 +34,12 @@ def recibir_datos_talle():
         return jsonify({"mensaje": "Error al crear el talle", "status": "error"}), 500
 
 
-@product_router.route("/size", methods=["GET"])
+@product_router.route("/sizes", methods=["GET"])
 def obtener_talles():
     # Obtener los talles de la base de datos
     db = Database()
-    sizes = db.get_sizes()
+    sizes = db.get_all_records("sizes")
+    print(sizes)
     if not sizes:
         return jsonify({"mensaje": "No se encontraron talles", "status": "error"}), 404
     return jsonify(sizes), 200
@@ -73,8 +74,6 @@ def obtener_colores():
     return jsonify(colors), 200
 
 
-
-
 @product_router.route("/sizeXcategory", methods=["GET"])
 def obtenerSizeXCategory():
     db = Database()
@@ -97,8 +96,7 @@ def recibir_datos_categoria():
     # if not category_name or not description:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
     success = db.add_record(
-        "size_categories",
-        {"category_name": category_name, "permanent": permanent }
+        "size_categories", {"category_name": category_name, "permanent": permanent}
     )
     if success:
         return (
@@ -110,3 +108,16 @@ def recibir_datos_categoria():
             jsonify({"mensaje": "Error al crear la categoria", "status": "error"}),
             500,
         )
+
+
+@product_router.route("/category", methods=["GET"])
+def obtener_categorias():
+    # Obtener los talles de la base de datos
+    db = Database()
+    categories = db.get_all_records("size_categories")
+    print(categories)
+    if not categories:
+        return jsonify(
+            {"mensaje": "No se encontraron categorías", "status": "error"}
+        ), 404
+    return jsonify(categories), 200

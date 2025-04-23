@@ -1,15 +1,21 @@
 import { Ruler } from 'lucide-react'
-import { postDataSize } from '../../services/products/sizeService'
+import {
+  fetchCategorySize,
+  postDataSize,
+  getCategoryXsize
+} from '../../services/products/sizeService'
 import { fetchSize } from '../../services/products/sizeService'
 import { useEffect, useState } from 'react'
 
 export default function ModalSize() {
   const [formData, setFormData] = useState({
     size_name: '',
-    category: '',
+    category_id: '',
     description: ''
   })
+  const [category, setCategory] = useState([])
   const [sizes, setSizes] = useState([])
+  const [sizeXcategory, setSizeXcategory] = useState([])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -21,7 +27,7 @@ export default function ModalSize() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await postData(formData)
+      const response = await postDataSize(formData)
       console.log(response)
       setFormData({
         size_name: '',
@@ -36,8 +42,18 @@ export default function ModalSize() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchSize()
-        setSizes(response.data)
+        fetchSize().then((response) => {
+          console.log(response)
+          setSizes(response)
+        })
+        fetchCategorySize().then((response) => {
+          console.log(response)
+          setCategory(response)
+        })
+        getCategoryXsize().then((response) => {
+          console.log(response)
+          setSizeXcategory(response)
+        })
       } catch (error) {
         console.error('Error fetching sizes:', error)
       }
@@ -54,15 +70,19 @@ export default function ModalSize() {
       >
         <Ruler />
       </button>
-      <dialog id="sizeModal" className="modal modal-bottom sm:modal-middle">
-        <div className="modal-box">
+      <dialog id="sizeModal" className="modal modal-bottom  sm:modal-middle">
+        <div className="modal-box w-11/12 max-w-5xl">
+        <form method="dialog">
+          {/* if there is a button in form, it will close the modal */}
+          <button className="btn btn-sm btn-circle btn-ghost absolute top-2 right-2">✕</button>
+        </form>
           <h3>Talles existentes:</h3>
           <div className="overflow-x-auto">
             <div className="h-96 overflow-x-auto">
               <table className="table-pin-rows bg-base-200 table">
                 <thead>
                   <tr>
-                    <th>Categorias</th>
+                    <th>Argentina</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -78,7 +98,7 @@ export default function ModalSize() {
                 </tbody>
                 <thead>
                   <tr>
-                    <th>Talles</th>
+                    <th>US</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -101,9 +121,36 @@ export default function ModalSize() {
               </table>
             </div>
           </div>
+          <div className='space-y-4'>
+
           <h3 className="text-lg font-bold">Agregar nuevo talle</h3>
           <label htmlFor=""></label>
+          <input
+            type="text"
+            name="size_name"
+            placeholder="Nombre del talle"
+            className="input input-bordered w-full max-w-xs"
+            value={formData.size_name}
+            onChange={handleChange}
+            />
+          <label htmlFor=""></label>
+          <select
+            name="category_id"
+            className="select select-bordered w-full max-w-xs"
+            value={formData.category_id}
+            onChange={handleChange}
+            >
+            <option disabled selected>
+              Seleccionar categoria
+            </option>
+            {category.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.category_name}
+              </option>
+            ))}
+          </select>
         </div>
+            </div>
         <form method="dialog" className="modal-backdrop">
           <button>Cerrar</button>
           <button onClick={handleSubmit}>Aceptar</button>

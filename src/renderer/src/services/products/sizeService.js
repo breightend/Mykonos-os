@@ -22,7 +22,7 @@ export async function postDataSize(data) {
 
 export async function fetchCategorySize() {
     try {
-        const response = await axios.get("http://localhost:5000/api/product/catgory");
+        const response = await axios.get("http://localhost:5000/api/product/category");
         return response.data;
     } catch (error) {
         console.error("Error fetching category size:", error);
@@ -32,7 +32,7 @@ export async function fetchCategorySize() {
 
 export async function postDataCategory(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/product/catgory", data);
+        const response = await axios.post("http://localhost:5000/api/product/category", data);
         return response.data;
 
     } catch (error) {
