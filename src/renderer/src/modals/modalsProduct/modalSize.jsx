@@ -43,15 +43,15 @@ export default function ModalSize() {
     const fetchData = async () => {
       try {
         fetchSize().then((response) => {
-          console.log(response)
+          console.log('Talles',response)
           setSizes(response)
         })
         fetchCategorySize().then((response) => {
-          console.log(response)
+          console.log('Categoria',response)
           setCategory(response)
         })
         getCategoryXsize().then((response) => {
-          console.log(response)
+          console.log('Categoria por talles',response)
           setSizeXcategory(response)
         })
       } catch (error) {

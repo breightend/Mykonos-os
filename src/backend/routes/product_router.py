@@ -78,7 +78,7 @@ def obtener_colores():
 def obtenerSizeXCategory():
     db = Database()
     category_response = db.get_join_records(
-        "size_categories", "sizes", "id", "category_id", ""
+        "size_categories", "sizes", "id", "category_id"
     )
     if not category_response:
         return jsonify({"mensaje": "No se encontraron talles", "status": "error"}), 404

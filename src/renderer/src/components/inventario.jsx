@@ -92,14 +92,14 @@ export default function Inventario() {
   }
 
   return (
-    <div className=" bg-base-100 min-h-screen">
+    <div className="bg-base-100 min-h-screen">
       <MenuVertical currentPath="/inventario" />
       <Navbar />
-      <div className="flex-1 ml-20">
-        <h2 className="text-2xl font-bold mb-6 text-warning">Inventario</h2>
-        
+      <div className="ml-20 flex-1">
+        <h2 className="text-warning mb-6 text-2xl font-bold">Inventario</h2>
+
         {/* Barra de navegación */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
             <li>
               <button
@@ -107,7 +107,7 @@ export default function Inventario() {
                 data-tip="Inicio"
                 onClick={() => setLocation('/home')}
               >
-                <House className="w-5 h-5" />
+                <House className="h-5 w-5" />
               </button>
             </li>
             <li>
@@ -117,7 +117,7 @@ export default function Inventario() {
                 onClick={handleEditClick}
                 disabled={!selectedRow}
               >
-                <Edit className="w-5 h-5" />
+                <Edit className="h-5 w-5" />
               </button>
             </li>
             <li>
@@ -126,7 +126,7 @@ export default function Inventario() {
                 data-tip="Nuevo producto"
                 onClick={() => setLocation('/nuevoProducto')}
               >
-                <PackagePlus className="w-5 h-5" />
+                <PackagePlus className="h-5 w-5" />
               </button>
             </li>
             <li>
@@ -136,14 +136,14 @@ export default function Inventario() {
                 onClick={handleInfoClick}
                 disabled={!selectedRow}
               >
-                <Info className="w-5 h-5" />
+                <Info className="h-5 w-5" />
               </button>
             </li>
           </ul>
 
           {/* Barra de búsqueda */}
           <div className="flex items-center gap-4">
-            <label className="input input-bordered flex items-center gap-2 input-warning">
+            <label className="input input-bordered input-warning flex items-center gap-2">
               <input
                 type="text"
                 placeholder="Buscar..."
@@ -151,7 +151,7 @@ export default function Inventario() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Search className="w-4 h-4" />
+              <Search className="h-4 w-4" />
             </label>
             <label className="label cursor-pointer gap-2">
               <span className="label-text">Buscar solo por ID</span>
@@ -166,7 +166,7 @@ export default function Inventario() {
         </div>
 
         {/* Tabla de inventario */}
-        <div className="overflow-x-auto bg-base-200 rounded-lg shadow-lg">
+        <div className="bg-base-200 overflow-x-auto rounded-lg shadow-lg">
           <table className="table w-full">
             <thead className="bg-warning/10">
               <tr>
@@ -201,9 +201,9 @@ export default function Inventario() {
 
         {/* Modal de información */}
         {modalShowDataOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-base-100 p-6 rounded-lg w-96 shadow-2xl">
-              <h3 className="text-lg font-bold mb-4 text-warning">Información del Producto</h3>
+          <div className="fixed inset-0 flex items-center justify-center bg-black/50">
+            <div className="bg-base-100 w-96 rounded-lg p-6 shadow-2xl">
+              <h3 className="text-warning mb-4 text-lg font-bold">Información del Producto</h3>
               <div className="space-y-2">
                 <p>
                   <strong>Producto:</strong> {showData.producto}
@@ -221,7 +221,7 @@ export default function Inventario() {
                   <strong>Fecha de edición:</strong> {showData.fecha}
                 </p>
               </div>
-              <div className="flex justify-end mt-4">
+              <div className="mt-4 flex justify-end">
                 <button className="btn btn-warning" onClick={() => setModalShowDataOpen(false)}>
                   Cerrar
                 </button>
@@ -232,12 +232,12 @@ export default function Inventario() {
 
         {/* Modal de edición */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-base-100 p-6 rounded-lg w-96 shadow-2xl">
-              <h3 className="text-lg font-bold mb-4 text-warning">Editar Producto</h3>
+          <div className="fixed inset-0 flex items-center justify-center bg-black/50">
+            <div className="bg-base-100 w-96 rounded-lg p-6 shadow-2xl">
+              <h3 className="text-warning mb-4 text-lg font-bold">Editar Producto</h3>
               <form className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Producto</label>
+                  <label className="mb-1 block text-sm font-medium">Producto</label>
                   <input
                     type="text"
                     value={editedData.producto}
@@ -246,7 +246,7 @@ export default function Inventario() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Marca</label>
+                  <label className="mb-1 block text-sm font-medium">Marca</label>
                   <input
                     type="text"
                     value={editedData.marca}
@@ -255,7 +255,7 @@ export default function Inventario() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Cantidad</label>
+                  <label className="mb-1 block text-sm font-medium">Cantidad</label>
                   <input
                     type="number"
                     value={editedData.cantidad}
@@ -264,7 +264,7 @@ export default function Inventario() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Colores</label>
+                  <label className="mb-1 block text-sm font-medium">Colores</label>
                   <input
                     type="text"
                     value={editedData.colores}
@@ -273,7 +273,7 @@ export default function Inventario() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Fecha de edición</label>
+                  <label className="mb-1 block text-sm font-medium">Fecha de edición</label>
                   <input
                     type="text"
                     value={editedData.fecha}
@@ -281,7 +281,7 @@ export default function Inventario() {
                     className="input input-bordered w-full"
                   />
                 </div>
-                <div className="flex justify-end gap-2 mt-4">
+                <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
                     className="btn btn-ghost"
