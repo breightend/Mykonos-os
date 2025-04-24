@@ -3,6 +3,7 @@ import { useLocation } from 'wouter'
 import { ArrowLeft, Ruler, Trash2 } from 'lucide-react'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
+import BarcodeGenerator from '../componentes especificos/Barcode'
 //TODO corregir el tema que se puedan crear multiples talles
 export default function NuevoProducto() {
   const [marca, setMarca] = useState('')
@@ -183,6 +184,7 @@ export default function NuevoProducto() {
         </div>
         <h1 className="text-4xl font-bold">Agregar artículo al Inventario</h1>
       </div>
+      <BarcodeGenerator  />
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium">Descripción</label>
