@@ -1,8 +1,9 @@
-import { Minus, Plus, Ruler } from 'lucide-react'
+import { Ruler } from 'lucide-react'
 import {
   fetchCategorySize,
   postDataSize,
-  getCategoryXsize
+  getCategoryXsize,
+  postDataCategory
 } from '../../services/products/sizeService'
 import { fetchSize } from '../../services/products/sizeService'
 import { useEffect, useState } from 'react'
@@ -11,7 +12,9 @@ export default function ModalSize() {
   const [formData, setFormData] = useState({
     size_name: '',
     category_id: '',
-    description: ''
+    description: '',
+    category_name: '',
+    permanent: ''
   })
   const [category, setCategory] = useState([])
   const [sizes, setSizes] = useState([])
@@ -30,23 +33,37 @@ export default function ModalSize() {
       [name]: value
     })
   }
-  const handleSubmit = async (e) => {
+  const handleSubmitSize = async (e) => {
     e.preventDefault()
     try {
       const response = await postDataSize(formData)
       console.log(response)
       setFormData({
         size_name: '',
-        category: '',
-        description: '',
-        category_name: '',
-        permanent: ''
+        category_id: '',
+        description: ''
       })
       fetchSize()
     } catch (error) {
       console.error('Error:', error)
     }
   }
+
+  const handleSubmitCategorySize = async (e) => {
+    e.preventDefault()
+    try {
+      const response = await postDataCategory(formData)
+      console.log(response)
+      setFormData({
+        category_name: '',
+        permanent: 1
+      })
+      fetchCategorySize()
+    } catch (error) {
+      console.error('Error:', error)
+    }
+  }
+
   useEffect(() => {
     setLoading(true)
     const fetchData = async () => {
@@ -78,18 +95,7 @@ export default function ModalSize() {
         data-tip="Agregar nuevo talle"
         onClick={() => document.getElementById('sizeModal').showModal()}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-            clipRule="evenodd"
-          />
-        </svg>
+        <Ruler className="h-6 w-6" />
       </button>
       <dialog id="sizeModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
@@ -139,7 +145,7 @@ export default function ModalSize() {
                 name="size_name"
                 placeholder="Ej: S, M, L, 38, 40"
                 className="input input-bordered w-full max-w-xs"
-                value={formData.sizame}
+                value={formData.size_name}
                 onChange={handleChange}
               />
             </div>
@@ -162,6 +168,19 @@ export default function ModalSize() {
                   </option>
                 ))}
               </select>
+              <div className="form-control mt-4">
+                <label className="label">
+                  <span className="label-text">Descripcion:</span>
+                </label>
+                <input
+                  type="text"
+                  name="description"
+                  placeholder="Ej: Talle de ropa, calzado, etc."
+                  className="input input-bordered w-full max-w-xs"
+                  value={formData.description}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
 
             <div className="mt-4 border-t pt-4">
@@ -216,14 +235,16 @@ export default function ModalSize() {
                       onChange={handleChange}
                     />
                   </div>
-                  <button className="btn btn-sm btn-primary">Aceptar Categoría</button>
+                  <button className="btn btn-sm btn-primary" onClick={handleSubmitCategorySize}>
+                    Agregar Categoría
+                  </button>
                 </div>
               )}
             </div>
           </div>
 
           <div className="modal-action mt-6 justify-end">
-            <button type="submit" onClick={handleSubmit} className="btn btn-primary">
+            <button type="submit" onClick={handleSubmitSize} className="btn btn-primary">
               Agregar Talle
             </button>
           </div>

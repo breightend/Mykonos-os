@@ -9,7 +9,7 @@ def recibir_datos():
     # Obtenemos los datos del producto """
 
 
-@product_router.route("/size", methods=["POST"])
+@product_router.route("/sizes", methods=["POST"])
 def recibir_datos_talle():
     data = request.json
     # Obtenemos los datos del producto
