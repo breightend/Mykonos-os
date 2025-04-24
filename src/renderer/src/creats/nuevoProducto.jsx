@@ -1,26 +1,74 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Ruler, Trash2 } from 'lucide-react'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
 import BarcodeGenerator from '../componentes especificos/Barcode'
+import { fetchCategorySize, fetchSize } from '../services/products/sizeService'
+import { fetchColor } from '../services/products/colorService'
 //TODO corregir el tema que se puedan crear multiples talles
+//TODO: Mapear los colores
+//TODO: Mapear los talles
+
 export default function NuevoProducto() {
-  const [marca, setMarca] = useState('')
+  const [formData, setFormData] = useState({
+    barcode: '',
+    provider_code: '',
+    product_name: '',
+    group_id: '',
+    provider_id: '',
+    size_id: '',
+    description: '',
+    cost: '',
+    sale_price: '',
+    tax: '',
+    discount: '',
+    color_id: '',
+    comments: '',
+    user_id: '',
+    image_ids: '',
+    brand_id: '',
+    creation_date: '',
+    last_modified_date: ''
+  })
+
   const [cantidad] = useState(0)
-  const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
+  const [talles, setTalles] = useState([])
+  const [tallesElegidos, setTallesElegidos] = useState([
+    { talle: '', colores: [{ color: '', cantidad: '' }] }
+  ])
+  const [colors, setColors] = useState([])
+  const [categoria, setCategoria] = useState([])
+
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
+  const [marca, setMarca] = useState('')
 
   // Opciones predefinidas, esto vuela con la implementacion de la bd.
   const marcas = ['Nike', 'Adidas', 'Puma', "Levi's", 'Zara']
-  const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo']
-  const allColors = ['Azul', 'Blanco', 'Negro', 'Rojo', 'Verde'] //necesito que este array cuando lo llamen de la bd se ordene
-  const tallesPredefinidos = ['S', 'M', 'L', 'XL', 'XXL']
+  const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo'] //necesito que este array cuando lo llamen de la bd se ordene
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const sizesResponse = await fetchSize()
+        setTalles(sizesResponse)
+
+        const categorySizeResponse = await fetchCategorySize()
+        setCategoria(categorySizeResponse)
+
+        const colorsResponse = await fetchColor()
+        setColors(colorsResponse)
+      } catch (error) {
+        console.error('Error Fetching data: ', error)
+      }
+    }
+    fetchData()
+  }, [])
 
   const handleCantidadTotal = () => {
     let cantidadTotal = 0
-    talles.forEach((talle) => {
+    tallesElegidos.forEach((talle) => {
       talle.colores.forEach((color) => {
         cantidadTotal += color.cantidad
       })
@@ -67,8 +115,8 @@ export default function NuevoProducto() {
   }
 
   const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState(
-    tallesPredefinidos.reduce((acc, talle) => {
-      acc[talle] = [...allColors]
+    talles.size_name.reduce((acc, talle) => {
+      acc[talle] = [...colors]
       return acc
     }, {})
   )
@@ -91,12 +139,12 @@ export default function NuevoProducto() {
 
   // Función para agregar un nuevo talle, la cantidad tengo que modificar
   const agregarTalle = () => {
-    setTalles([...talles, { talle: tallesPredefinidos[0], colores: [{ color: '', cantidad: 0 }] }])
+    setTallesElegidos([...talles, { talle: talles.id[0], colores: [{ color: '', cantidad: 0 }] }])
   }
 
   // Función para manejar cambios en los talles
   const handleTalleChange = (talleIndex, value) => {
-    const nuevosTalles = [...talles]
+    const nuevosTalles = [...talles.id]
     nuevosTalles[talleIndex].talle = value
     setTalles(nuevosTalles)
   }
@@ -131,7 +179,7 @@ export default function NuevoProducto() {
       if (nuevoColor !== colorAnterior) {
         // Actualizamos el color del select en el array talles
         nuevosTalles[talleIndex].colores[colorIndex].color = nuevoColor
-        setTalles(nuevosTalles)
+        setTallesElegidos(nuevosTalles)
 
         setColoresDisponiblesPorTalle((prev) => {
           const coloresUsados = nuevosTalles[talleIndex].colores.map((c) => c.color)
@@ -161,7 +209,7 @@ export default function NuevoProducto() {
     nuevosTalles[talleIndex].colores[colorIndex][field] =
       field === 'cantidad' ? parseInt(value, 10) || 0 : value
 
-    setTalles(nuevosTalles)
+    setTallesElegidos(nuevosTalles)
     handleCantidadTotal()
   }
 
@@ -184,7 +232,7 @@ export default function NuevoProducto() {
         </div>
         <h1 className="text-4xl font-bold">Agregar artículo al Inventario</h1>
       </div>
-      <BarcodeGenerator  />
+      <BarcodeGenerator />
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium">Descripción</label>
@@ -266,7 +314,7 @@ export default function NuevoProducto() {
               </span>
               <div className="flex items-center space-x-4">
                 <select
-                  value={talle.talle}
+                  value={talle.id}
                   onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
                   className="select select-bordered"
                   required
@@ -274,9 +322,9 @@ export default function NuevoProducto() {
                   <option value="" disabled>
                     Seleccione un talle
                   </option>
-                  {tallesPredefinidos.map((talle, index) => (
-                    <option key={index} value={talle}>
-                      {talle}
+                  {talles.map((talle, index) => (
+                    <option key={index} value={talle.id}>
+                      {talle.size_name}
                     </option>
                   ))}
                 </select>
@@ -302,7 +350,7 @@ export default function NuevoProducto() {
                   >
                     <option disabled>Seleccione un color</option>
                     {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
-                      allColors.map((color, index) => {
+                      colors.map((color, index) => {
                         if (coloresDisponiblesPorTalle[talle.talle].includes(color)) {
                           return (
                             <option key={index} value={color}>

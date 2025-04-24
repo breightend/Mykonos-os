@@ -137,7 +137,7 @@ export default function ModalSize() {
             <button className="btn btn-sm btn-circle btn-ghost absolute top-2 right-2">✕</button>
           </form>
           <h3 className="mb-4 text-lg font-bold">Talles Existentes</h3>
-          <div className="border-base-300 mb-4 max-h-96 overflow-y-auto rounded-lg border">
+          <div className="border-base-300 mb-4 max-h-96 overflow-y-auto rounded-lg  border-2 p-2">
             <table className="table w-full">
               {category &&
                 category.map((cat) => (
