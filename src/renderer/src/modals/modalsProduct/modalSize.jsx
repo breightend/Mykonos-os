@@ -21,9 +21,11 @@ export default function ModalSize() {
   const [sizeXcategory, setSizeXcategory] = useState([])
   const [loading, setLoading] = useState(false)
   const [mostrarAgregarCategoria, setMostrarAgregarCategoria] = useState(false)
+  const [error, setError] = useState('')
 
   const handleMostrarAgregarCategoria = () => {
     setMostrarAgregarCategoria(!mostrarAgregarCategoria)
+    setError('') // Clear error when toggling category form
   }
 
   const handleChange = (e) => {
@@ -32,9 +34,26 @@ export default function ModalSize() {
       ...formData,
       [name]: value
     })
+    setError('') // Clear error on input change
   }
+
   const handleSubmitSize = async (e) => {
     e.preventDefault()
+    setError('') // Clear previous error
+    const { size_name, category_id } = formData
+
+    // Check if the size already exists for the selected category
+    const sizeExists = sizes.some(
+      (size) =>
+        size.size_name.toLowerCase() === size_name.toLowerCase() &&
+        size.category_id === parseInt(category_id)
+    )
+
+    if (sizeExists) {
+      setError(`El talle "${size_name}" ya existe para esta categoría.`)
+      return
+    }
+
     try {
       const response = await postDataSize(formData)
       console.log(response)
@@ -46,11 +65,25 @@ export default function ModalSize() {
       fetchSize()
     } catch (error) {
       console.error('Error:', error)
+      setError('Ocurrió un error al agregar el talle.')
     }
   }
 
   const handleSubmitCategorySize = async (e) => {
     e.preventDefault()
+    setError('') // Clear previous error
+    const { category_name } = formData
+
+    // Check if the category name already exists
+    const categoryExists = category.some(
+      (cat) => cat.category_name.toLowerCase() === category_name.toLowerCase()
+    )
+
+    if (categoryExists) {
+      setError(`La categoría "${category_name}" ya existe.`)
+      return
+    }
+
     try {
       const response = await postDataCategory(formData)
       console.log(response)
@@ -59,8 +92,10 @@ export default function ModalSize() {
         permanent: 1
       })
       fetchCategorySize()
+      setMostrarAgregarCategoria(false) // Hide the category form after successful submission
     } catch (error) {
       console.error('Error:', error)
+      setError('Ocurrió un error al agregar la categoría.')
     }
   }
 
@@ -68,20 +103,19 @@ export default function ModalSize() {
     setLoading(true)
     const fetchData = async () => {
       try {
-        fetchSize().then((response) => {
-          console.log('Talles', response)
-          setSizes(response)
-        })
-        fetchCategorySize().then((response) => {
-          console.log('Categoria', response)
-          setCategory(response)
-        })
-        getCategoryXsize().then((response) => {
-          console.log('Categoria por talles', response)
-          setSizeXcategory(response)
-        })
+        const sizesResponse = await fetchSize()
+        console.log('Talles', sizesResponse)
+        setSizes(sizesResponse)
+
+        const categoryResponse = await fetchCategorySize()
+        console.log('Categoria', categoryResponse)
+        setCategory(categoryResponse)
+
+        const sizeXcategoryResponse = await getCategoryXsize()
+        console.log('Categoria por talles', sizeXcategoryResponse)
+        setSizeXcategory(sizeXcategoryResponse)
       } catch (error) {
-        console.error('Error fetching sizes:', error)
+        console.error('Error fetching data:', error)
       }
       setLoading(false)
     }
@@ -135,6 +169,24 @@ export default function ModalSize() {
           </div>
 
           <h3 className="mt-6 mb-2 text-lg font-bold">Agregar Nuevo Talle</h3>
+          {error && (
+            <div className="alert alert-error mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 shrink-0 stroke-current"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
           <div className="space-y-3">
             <div className="form-control">
               <label className="label">
