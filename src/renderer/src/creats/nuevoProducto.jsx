@@ -33,11 +33,11 @@ export default function NuevoProducto() {
   })
 
   const [cantidad] = useState(0)
-  const [talles, setTalles] = useState([])
+  const [talles, setTalles] = useState([]) //Todos los talles
   const [tallesElegidos, setTallesElegidos] = useState([
-    { talle: '', colores: [{ color: '', cantidad: '' }] }
+    { talle: '', colores: [{ color: '', cantidad: '' }] } //Talle id y colores id
   ])
-  const [colors, setColors] = useState([])
+  const [colors, setColors] = useState([]) //Todos los colores
   const [categoria, setCategoria] = useState([])
 
   const [, setLocation] = useLocation()
@@ -115,7 +115,7 @@ export default function NuevoProducto() {
   }
 
   const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState(
-    talles.size_name.reduce((acc, talle) => {
+    tallesElegidos.reduce((acc, talle) => {
       acc[talle] = [...colors]
       return acc
     }, {})
@@ -146,14 +146,14 @@ export default function NuevoProducto() {
   const handleTalleChange = (talleIndex, value) => {
     const nuevosTalles = [...talles.id]
     nuevosTalles[talleIndex].talle = value
-    setTalles(nuevosTalles)
+    setTallesElegidos(nuevosTalles)
   }
 
   // Función para agregar un select color a un talle específico
   const agregarColor = (talleIndex) => {
     const nuevosTalles = [...talles]
     nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
-    setTalles(nuevosTalles)
+    setTallesElegidos(nuevosTalles)
   }
 
   const handleColorSelect = (talleIndex, colorIndex, field, value) => {
