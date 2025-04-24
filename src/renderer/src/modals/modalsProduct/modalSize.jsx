@@ -1,4 +1,4 @@
-import { Ruler } from 'lucide-react'
+import { Minus, Plus, Ruler } from 'lucide-react'
 import {
   fetchCategorySize,
   postDataSize,
@@ -16,6 +16,12 @@ export default function ModalSize() {
   const [category, setCategory] = useState([])
   const [sizes, setSizes] = useState([])
   const [sizeXcategory, setSizeXcategory] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [mostrarAgregarCategoria, setMostrarAgregarCategoria] = useState(false)
+
+  const handleMostrarAgregarCategoria = () => {
+    setMostrarAgregarCategoria(!mostrarAgregarCategoria)
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -32,7 +38,9 @@ export default function ModalSize() {
       setFormData({
         size_name: '',
         category: '',
-        description: ''
+        description: '',
+        category_name: '',
+        permanent: ''
       })
       fetchSize()
     } catch (error) {
@@ -40,23 +48,25 @@ export default function ModalSize() {
     }
   }
   useEffect(() => {
+    setLoading(true)
     const fetchData = async () => {
       try {
         fetchSize().then((response) => {
-          console.log('Talles',response)
+          console.log('Talles', response)
           setSizes(response)
         })
         fetchCategorySize().then((response) => {
-          console.log('Categoria',response)
+          console.log('Categoria', response)
           setCategory(response)
         })
         getCategoryXsize().then((response) => {
-          console.log('Categoria por talles',response)
+          console.log('Categoria por talles', response)
           setSizeXcategory(response)
         })
       } catch (error) {
         console.error('Error fetching sizes:', error)
       }
+      setLoading(false)
     }
     fetchData()
   }, [])
@@ -68,99 +78,158 @@ export default function ModalSize() {
         data-tip="Agregar nuevo talle"
         onClick={() => document.getElementById('sizeModal').showModal()}
       >
-        <Ruler />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+            clipRule="evenodd"
+          />
+        </svg>
       </button>
       <dialog id="sizeModal" className="modal modal-bottom sm:modal-middle">
-        <div className="modal-box w-11/12 max-w-5xl">
+        <div className="modal-box">
           <form method="dialog">
-            {/* if there is a button in form, it will close the modal */}
             <button className="btn btn-sm btn-circle btn-ghost absolute top-2 right-2">✕</button>
           </form>
-          <h3>Talles existentes:</h3>
-          <div className="overflow-x-auto">
-            <div className="h-96 overflow-x-auto">
-              <table className="table-pin-rows bg-base-200 table">
-                <thead>
-                  <tr>
-                    <th>Argentina</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>40</td>
-                  </tr>
-                  <tr>
-                    <td>42</td>
-                  </tr>
-                  <tr>
-                    <td>44</td>
-                  </tr>
-                </tbody>
-                <thead>
-                  <tr>
-                    <th>US</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>S</td>
-                  </tr>
-                  <tr>
-                    <td>M</td>
-                  </tr>
-                  <tr>
-                    <td>L</td>
-                  </tr>
-                  <tr>
-                    <td>Black Canary</td>
-                  </tr>
-                  <tr>
-                    <td>Black Panther</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <h3 className="mb-4 text-lg font-bold">Talles Existentes</h3>
+          <div className="border-base-300 mb-4 max-h-96 overflow-y-auto rounded-lg border">
+            <table className="table w-full">
+              {category &&
+                category.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border"
+                  >
+                    <input type="checkbox" className="peer" />
+                    <div className="collapse-title font-medium">{cat.category_name}</div>
+                    <div className="collapse-content">
+                      <ul>
+                        {sizes
+                          .filter((size) => size.category_id === cat.id)
+                          .map((size) => (
+                            <li key={size.id} className="py-1">
+                              {size.size_name}
+                            </li>
+                          ))}
+                        {sizes.filter((size) => size.category_id === cat.id).length === 0 && (
+                          <li className="py-1 text-sm text-gray-500">
+                            No hay talles para esta categoría
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+            </table>
           </div>
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold">Agregar nuevo talle</h3>
-            <label htmlFor=""></label>
-            <input
-              type="text"
-              name="size_name"
-              placeholder="Nombre del talle"
-              className="input input-bordered w-full max-w-xs"
-              value={formData.size_name}
-              onChange={handleChange}
-            />
-            <label htmlFor=""></label>
-            <select
-              name="category_id"
-              className="select select-bordered w-full max-w-xs"
-              value={formData.category_id}
-              onChange={handleChange}
-            >
-              <option disabled selected>
-                Seleccionar categoria
-              </option>
-              {category.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.category_name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className='flex flex-col gap-2 mt-2 w-1/2 justify-end'>
 
-          <button type="submit" onClick={handleSubmit}
-          className='btn  btn-success'>
-            Agregar talle
-          </button>
+          <h3 className="mt-6 mb-2 text-lg font-bold">Agregar Nuevo Talle</h3>
+          <div className="space-y-3">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Nombre del talle:</span>
+              </label>
+              <input
+                type="text"
+                name="size_name"
+                placeholder="Ej: S, M, L, 38, 40"
+                className="input input-bordered w-full max-w-xs"
+                value={formData.sizame}
+                onChange={handleChange}
+              />
             </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Categoría:</span>
+              </label>
+              <select
+                name="category_id"
+                className="select select-bordered w-full max-w-xs"
+                value={formData.category_id}
+                onChange={handleChange}
+              >
+                <option value="" disabled>
+                  Seleccionar categoría
+                </option>
+                {category.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.category_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold">Agregar Categoría</h4>
+                <button className="btn btn-xs" onClick={handleMostrarAgregarCategoria}>
+                  {mostrarAgregarCategoria ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 13l-7 7-7-7m14-6l-7 7-7-7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {mostrarAgregarCategoria && (
+                <div className="mt-2 space-y-3">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Nombre de la categoría:</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="category_name"
+                      placeholder="Ej: Ropa, Calzado, Accesorios"
+                      className="input input-bordered w-full max-w-xs"
+                      value={formData.category_name}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <button className="btn btn-sm btn-primary">Aceptar Categoría</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="modal-action mt-6 justify-end">
+            <button type="submit" onClick={handleSubmit} className="btn btn-primary">
+              Agregar Talle
+            </button>
+          </div>
         </div>
         <form method="dialog" className="modal-backdrop">
           <button>Cerrar</button>
-          <button onClick={handleSubmit}>Aceptar</button>
         </form>
       </dialog>
     </div>

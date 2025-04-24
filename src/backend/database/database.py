@@ -903,7 +903,6 @@ class Database:
             FROM {table1_name} AS t1
             INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
         """
-        result = {'success': False, 'message': '', 'records': []}
 
         try:
             with self.create_connection() as conn:
@@ -915,19 +914,16 @@ class Database:
                 if rows:
                     # This conversion might still have issues if select_columns doesn't use aliases
                     # for identically named columns in both tables.
-                    result['records'] = [dict(row) for row in rows]
-                    result['success'] = True
-                    result['message'] = f"Successfully joined {table1_name} and {table2_name}."
-                else:
-                    result['success'] = True # Query succeeded, but no results
-                    result['message'] = "No matching records found for the join."
-        except sqlite3.Error as e:
-            result['message'] = f"Database error joining {table1_name} and {table2_name}: {e}"
-        except Exception as e:
-            # Catch potential errors during dict conversion if names collide badly
-            result['message'] = f"An unexpected error occurred: {e}"
+                    return [dict(row) for row in rows]
 
-        return result
+                else:
+                    return []
+
+        except Exception as e:
+            print(f"Error al obtener registros de la tabla: {e}")
+            return []
+
+        
 
     # #TODO: devolver dict{sucess, message, record}
     # def get_all_records_by_clauses(self, table_name, search_clauses):
