@@ -20,6 +20,7 @@ export default function NuevoProducto() {
   const [tallesBD, setTallesBD] = useState([]) // Estado para los talles de la BD
   const [loadingData, setLoadingData] = useState(true)
   const [errorData, setErrorData] = useState(null)
+  const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState({}) // Inicializar como objeto vacío
 
   const marcas = ['Nike', 'Adidas', 'Puma', "Levi's", 'Zara']
   const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo']
@@ -41,6 +42,14 @@ export default function NuevoProducto() {
         const providerResponse = await fetchProvider()
         setProvider(providerResponse)
         console.log('proveedores', providerResponse)
+
+        // Inicializar coloresDisponiblesPorTalle después de obtener los colores
+        setColoresDisponiblesPorTalle(
+          tallesBD.reduce((acc, talleItem) => {
+            acc[talleItem.size_name] = colors.map((color) => color.color_name)
+            return acc
+          }, {})
+        )
       } catch (error) {
         console.error('Error Fetching data: ', error)
         setErrorData(error)
@@ -94,13 +103,6 @@ export default function NuevoProducto() {
     setTalles(nuevosTalles)
     handleCantidadTotal()
   }
-
-  const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState(
-    tallesBD.reduce((acc, talleItem) => {
-      acc[talleItem.size_name] = colors.map((color) => color.color_name)
-      return acc
-    }, {})
-  )
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -320,7 +322,7 @@ export default function NuevoProducto() {
                   >
                     <option disabled>Seleccione un color</option>
                     {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
-                      colores.map((colorItem) => {
+                      colors.map((colorItem) => {
                         const isColorAvailable = coloresDisponiblesPorTalle[talle.talle]?.includes(
                           colorItem.color_name
                         )
