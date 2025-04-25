@@ -1,66 +1,51 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Ruler, Trash2 } from 'lucide-react'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
 import BarcodeGenerator from '../componentes especificos/Barcode'
-import { fetchCategorySize, fetchSize } from '../services/products/sizeService'
-import { fetchColor } from '../services/products/colorService'
-//TODO corregir el tema que se puedan crear multiples talles
-//TODO: Mapear los colores
-//TODO: Mapear los talles
+import { fetchSize, fetchCategorySize } from '../services/products/sizeService'
+import { fetchColor } from '../services/products/colorService' // Importa el servicio de colores
+import { fetchProvider } from '../services/proveedores/proveedorService'
 
 export default function NuevoProducto() {
-  const [formData, setFormData] = useState({
-    barcode: '',
-    provider_code: '',
-    product_name: '',
-    group_id: '',
-    provider_id: '',
-    size_id: '',
-    description: '',
-    cost: '',
-    sale_price: '',
-    tax: '',
-    discount: '',
-    color_id: '',
-    comments: '',
-    user_id: '',
-    image_ids: '',
-    brand_id: '',
-    creation_date: '',
-    last_modified_date: ''
-  })
-
+  const [marca, setMarca] = useState('')
   const [cantidad] = useState(0)
-  const [talles, setTalles] = useState([]) //Todos los talles
-  const [tallesElegidos, setTallesElegidos] = useState([
-    { talle: '', colores: [{ color: '', cantidad: '' }] } //Talle id y colores id
-  ])
-  const [colors, setColors] = useState([]) //Todos los colores
-  const [categoria, setCategoria] = useState([])
-
+  const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
-  const [marca, setMarca] = useState('')
+  const [colors, setColors] = useState([]) // Estado para los colores
+  const [categoria, setCategoria] = useState([]) // Estado para las categorias
+  const [provider, setProvider] = useState([]) // Estado para los proveedores
+  const [tallesBD, setTallesBD] = useState([]) // Estado para los talles de la BD
+  const [loadingData, setLoadingData] = useState(true)
+  const [errorData, setErrorData] = useState(null)
 
-  // Opciones predefinidas, esto vuela con la implementacion de la bd.
   const marcas = ['Nike', 'Adidas', 'Puma', "Levi's", 'Zara']
-  const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo'] //necesito que este array cuando lo llamen de la bd se ordene
+  const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo']
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const sizesResponse = await fetchSize()
-        setTalles(sizesResponse)
+        setTallesBD(sizesResponse)
+        console.log('talles', sizesResponse)
 
         const categorySizeResponse = await fetchCategorySize()
         setCategoria(categorySizeResponse)
 
-        const colorsResponse = await fetchColor()
+        const colorsResponse = await fetchColor() // Llama a tu servicio de colores
         setColors(colorsResponse)
+        console.log('colores', colorsResponse)
+
+        const providerResponse = await fetchProvider()
+        setProvider(providerResponse)
+        console.log('proveedores', providerResponse)
       } catch (error) {
         console.error('Error Fetching data: ', error)
+        setErrorData(error)
+      } finally {
+        setLoadingData(false)
       }
     }
     fetchData()
@@ -68,9 +53,9 @@ export default function NuevoProducto() {
 
   const handleCantidadTotal = () => {
     let cantidadTotal = 0
-    tallesElegidos.forEach((talle) => {
+    talles.forEach((talle) => {
       talle.colores.forEach((color) => {
-        cantidadTotal += color.cantidad
+        cantidadTotal += parseInt(color.cantidad || 0, 10)
       })
     })
     setCantidadTotal(cantidadTotal)
@@ -81,27 +66,23 @@ export default function NuevoProducto() {
     const colorEliminado = nuevosTalles[talleIndex].colores[colorIndex].color
     const talleActual = nuevosTalles[talleIndex].talle
 
-    // Restaurar el color eliminado a la lista de disponibles
     if (colorEliminado) {
       setColoresDisponiblesPorTalle((prev) => ({
         ...prev,
-        [talleActual]: [...prev[talleActual], colorEliminado]
+        [talleActual]: [...(prev[talleActual] || []), colorEliminado]
       }))
     }
     nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
-
     setTalles(nuevosTalles)
     handleCantidadTotal()
-    console.log('color eliminado', colorEliminado)
   }
 
   const handleDeleteTalle = (talleIndex) => {
     const nuevosTalles = [...talles]
     const talleEliminado = nuevosTalles[talleIndex]
 
-    // Restaurar todos los colores del talle eliminado
     talleEliminado.colores.forEach((color) => {
-      if (color.color) {
+      if (color.color && coloresDisponiblesPorTalle[talleEliminado.talle]) {
         setColoresDisponiblesPorTalle((prev) => ({
           ...prev,
           [talleEliminado.talle]: [...prev[talleEliminado.talle], color.color]
@@ -115,15 +96,11 @@ export default function NuevoProducto() {
   }
 
   const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState(
-    tallesElegidos.reduce((acc, talle) => {
-      acc[talle] = [...colors]
+    tallesBD.reduce((acc, talleItem) => {
+      acc[talleItem.size_name] = colors.map((color) => color.color_name)
       return acc
     }, {})
   )
-
-  //Crea una lista de colres disponibles que son todos, dependiendo del talle en que esta
-  // Función para manejar el envío del formulario
-  //TODO ver como crear una nueva prenda
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -131,43 +108,35 @@ export default function NuevoProducto() {
       marca,
       cantidad,
       talles,
-      cantidadT: cantidadTotal //TODO: verificar aca
+      cantidadT: cantidadTotal
     }
     console.log('Prenda agregada:', nuevaPrenda)
-    // Aca se pueden enviar los datos a donde se necesite
+    // Aquí iría tu lógica para enviar los datos a la BD
   }
 
-  // Función para agregar un nuevo talle, la cantidad tengo que modificar
   const agregarTalle = () => {
-    setTallesElegidos([...talles, { talle: talles.id[0], colores: [{ color: '', cantidad: 0 }] }])
+    setTalles([
+      ...talles,
+      { talle: tallesBD[0]?.size_name || '', colores: [{ color: '', cantidad: 0 }] }
+    ])
   }
 
-  // Función para manejar cambios en los talles
   const handleTalleChange = (talleIndex, value) => {
-    const nuevosTalles = [...talles.id]
+    const nuevosTalles = [...talles]
     nuevosTalles[talleIndex].talle = value
-    setTallesElegidos(nuevosTalles)
+    setTalles(nuevosTalles)
   }
 
-  // Función para agregar un select color a un talle específico
   const agregarColor = (talleIndex) => {
     const nuevosTalles = [...talles]
     nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
-    setTallesElegidos(nuevosTalles)
+    setTalles(nuevosTalles)
   }
 
   const handleColorSelect = (talleIndex, colorIndex, field, value) => {
-    // if (field === 'color') {
-    //   if (selectedColors.includes(value)) {
-    //     toast.error('El color que está agregando ya se encuentra seleccionado')
-    //     return
-    //   }
-    //   setSelectedColors([...selectedColors, value])
-    // }
     handleColorChange(talleIndex, colorIndex, field, value)
   }
 
-  //Field: campo que esta cambiando, value: valor que se esta cambiando
   const handleColorChange = (talleIndex, colorIndex, field, value) => {
     const nuevosTalles = [...talles]
     const talleActual = nuevosTalles[talleIndex].talle
@@ -177,49 +146,50 @@ export default function NuevoProducto() {
       const nuevoColor = value
 
       if (nuevoColor !== colorAnterior) {
-        // Actualizamos el color del select en el array talles
         nuevosTalles[talleIndex].colores[colorIndex].color = nuevoColor
-        setTallesElegidos(nuevosTalles)
+        setTalles(nuevosTalles)
 
         setColoresDisponiblesPorTalle((prev) => {
           const coloresUsados = nuevosTalles[talleIndex].colores.map((c) => c.color)
           const disponiblesActuales = prev[talleActual] ?? []
 
-          // Restaurar el color anterior si ya no está en uso
           const debeRestaurar = colorAnterior && !coloresUsados.includes(colorAnterior)
           let nuevosDisponibles = debeRestaurar
             ? [...disponiblesActuales, colorAnterior]
             : [...disponiblesActuales]
 
-          // Eliminar el nuevo color seleccionado
           nuevosDisponibles = nuevosDisponibles.filter((c) => c !== nuevoColor)
 
           return {
             ...prev,
-            [talleActual]: nuevosDisponibles // Aquí se mantiene la consistencia del array
+            [talleActual]: nuevosDisponibles
           }
         })
 
-        // Llamar a removeColorFromTalle solo si el color cambió
         removeColorFromTalle(talleActual, nuevoColor)
       }
     }
 
-    // Actualizar el valor en el array de talles
     nuevosTalles[talleIndex].colores[colorIndex][field] =
       field === 'cantidad' ? parseInt(value, 10) || 0 : value
 
-    setTallesElegidos(nuevosTalles)
+    setTalles(nuevosTalles)
     handleCantidadTotal()
   }
 
-  // console.log('talles', talles)
-  //Esto anda bien, el tema es como se muestra!!!!! AAAAH
   const removeColorFromTalle = (talle, color) => {
     setColoresDisponiblesPorTalle((prev) => ({
       ...prev,
-      [talle]: prev[talle].filter((c) => c !== color)
+      [talle]: (prev[talle] || []).filter((c) => c !== color)
     }))
+  }
+
+  if (loadingData) {
+    return <div>Cargando datos...</div>
+  }
+
+  if (errorData) {
+    return <div>Error al cargar los datos: {errorData.message}</div>
   }
 
   return (
@@ -314,7 +284,7 @@ export default function NuevoProducto() {
               </span>
               <div className="flex items-center space-x-4">
                 <select
-                  value={talle.id}
+                  value={talle.talle}
                   onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
                   className="select select-bordered"
                   required
@@ -322,9 +292,9 @@ export default function NuevoProducto() {
                   <option value="" disabled>
                     Seleccione un talle
                   </option>
-                  {talles.map((talle, index) => (
-                    <option key={index} value={talle.id}>
-                      {talle.size_name}
+                  {tallesBD.map((talleBDItem) => (
+                    <option key={talleBDItem.id} value={talleBDItem.size_name}>
+                      {talleBDItem.size_name}
                     </option>
                   ))}
                 </select>
@@ -350,20 +320,19 @@ export default function NuevoProducto() {
                   >
                     <option disabled>Seleccione un color</option>
                     {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
-                      colors.map((color, index) => {
-                        if (coloresDisponiblesPorTalle[talle.talle].includes(color)) {
-                          return (
-                            <option key={index} value={color}>
-                              {color}
-                            </option>
-                          )
-                        } else {
-                          return (
-                            <option key={index} value={color} disabled>
-                              {color}
-                            </option>
-                          )
-                        }
+                      colores.map((colorItem) => {
+                        const isColorAvailable = coloresDisponiblesPorTalle[talle.talle]?.includes(
+                          colorItem.color_name
+                        )
+                        return (
+                          <option
+                            key={colorItem.id}
+                            value={colorItem.color_name}
+                            disabled={!isColorAvailable}
+                          >
+                            {colorItem.color_name}
+                          </option>
+                        )
                       })
                     ) : (
                       <option value="No hay colores disponibles">
@@ -413,6 +382,7 @@ export default function NuevoProducto() {
             type="button"
             onClick={agregarTalle}
             className="btn btn-outline badge badge-secondary badge-outline transform p-6 hover:scale-105"
+            disabled={loadingData || tallesBD.length === 0} // Deshabilitar si no hay talles cargados
           >
             + Agregar Talle
           </button>
