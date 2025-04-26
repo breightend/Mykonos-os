@@ -5,6 +5,7 @@ import time
 import threading
 from enum import Enum
 from commons.tools import print_debug
+#TODO: hacer tabla ProveedoresXMarcas para poder relacionar varios proveedores a una misma marca y viceversa.
 
 class TABLES(Enum):
     ENTITIES = "entities"

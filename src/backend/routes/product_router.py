@@ -180,3 +180,71 @@ def obtener_colores():
     if not colors:
         return jsonify({"mensaje": "No se encontraron colores", "status": "error"}), 404
     return jsonify(colors), 200
+
+
+@product_router.route("/familyProducts", methods=["POST"])
+def recibir_datos_familia_producto():
+    data = request.json
+    # Obtenemos los datos del producto
+    group_name = data.get("group_name")
+    parent_group_id = data.get("parent_group_id")
+    marked_as_root = data.get("marked_as_root")
+
+    db = Database()
+    # if not family_name or not description:
+    #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
+    success = db.add_record(
+        "group", {"group_name": group_name, "parent_group_id": parent_group_id, "marked_as_root": marked_as_root}   
+    )
+    if success:
+        return (
+            jsonify({"mensaje": "Familia de productos creada con éxito", "status": "éxito"}),
+            200,
+        )
+    else:
+        return (
+            jsonify({"mensaje": "Error al crear la familia de productos", "status": "error"}),
+            500,
+        )
+    
+@product_router.route("/familyProducts", methods=["GET"])
+def obtener_familia_producto():
+    # Obtener los colores de la base de datos
+    db = Database()
+    family_products = db.get_all_records("group")
+    if not family_products:
+        return jsonify({"mensaje": "No se encontraron familias de productos", "status": "error"}), 404
+    return jsonify(family_products), 200
+
+@product_router.route("/familyProducts/<group_id>", methods=["PUT"])
+def actualizar_familia_producto(group_id):
+    db = Database()
+
+    data = request.json
+    # Obtenemos los datos del producto
+    group_name = data.get("group_name")
+    parent_group_id = data.get("parent_group_id")
+    marked_as_root = data.get("marked_as_root")
+
+    # if not family_name or not description:
+    #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
+    success = db.update_record(
+        "group",
+        {
+            "id": group_id,
+            "group_name": group_name,
+            "parent_group_id": parent_group_id,
+            "marked_as_root": marked_as_root,
+        },
+
+    )
+    if success:
+        return (
+            jsonify({"mensaje": "Familia de productos actualizada con éxito", "status": "éxito"}),
+            200,
+        )
+    else:
+        return (
+            jsonify({"mensaje": "Error al actualizar la familia de productos", "status": "error"}),
+            500,
+        )

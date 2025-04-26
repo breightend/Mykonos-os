@@ -1,8 +1,9 @@
-import { PackagePlus, Search, House, Edit, Info } from 'lucide-react'
+import { PackagePlus, Search, House, Edit, Info, Boxes } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState } from 'react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
+import ProductsFamily from '../modals/modalsInventory/productsFamily'
 
 export default function Inventario() {
   const [, setLocation] = useLocation()
@@ -90,7 +91,10 @@ export default function Inventario() {
   const handleInputChange = (field, value) => {
     setEditedData((prev) => ({ ...prev, [field]: value }))
   }
-
+  const [familyModalOpen, setFamilyModalOpen] = useState(false)
+  const handleFamilyModal = () => {
+    setFamilyModalOpen(!familyModalOpen)
+  }
   return (
     <div className="bg-base-100 min-h-screen">
       <MenuVertical currentPath="/inventario" />
@@ -104,10 +108,10 @@ export default function Inventario() {
             <li>
               <button
                 className="btn btn-ghost tooltip tooltip-bottom"
-                data-tip="Inicio"
-                onClick={() => setLocation('/home')}
+                data-tip="Editar producto"
+                onClick={handleFamilyModal}
               >
-                <House className="h-5 w-5" />
+                <Boxes className="h-5 w-5" />
               </button>
             </li>
             <li>
@@ -297,6 +301,8 @@ export default function Inventario() {
             </div>
           </div>
         )}
+        {/* Modal de familia de productos */}
+
       </div>
     </div>
   )
