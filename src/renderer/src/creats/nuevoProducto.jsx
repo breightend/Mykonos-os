@@ -30,18 +30,15 @@ export default function NuevoProducto() {
       try {
         const sizesResponse = await fetchSize()
         setTallesBD(sizesResponse)
-        console.log('talles', sizesResponse)
 
         const categorySizeResponse = await fetchCategorySize()
         setCategoria(categorySizeResponse)
 
         const colorsResponse = await fetchColor() // Llama a tu servicio de colores
         setColors(colorsResponse)
-        console.log('colores', colorsResponse)
 
         const providerResponse = await fetchProvider()
         setProvider(providerResponse)
-        console.log('proveedores', providerResponse)
 
         // Inicializar coloresDisponiblesPorTalle después de obtener los colores
         setColoresDisponiblesPorTalle(
@@ -59,6 +56,8 @@ export default function NuevoProducto() {
     }
     fetchData()
   }, [])
+
+  console.log('Colores disponibles por talle:', coloresDisponiblesPorTalle)
 
   const handleCantidadTotal = () => {
     let cantidadTotal = 0
@@ -204,7 +203,6 @@ export default function NuevoProducto() {
   if (errorData) {
     return <div>Error al cargar los datos: {errorData.message}</div>
   }
-
   return (
     <div className="bg-base-100 min-h-screen p-6">
       <div className="flex items-center space-x-4 p-4">
@@ -321,66 +319,68 @@ export default function NuevoProducto() {
                 <h2 className="text-md mb-2 font-medium">Colores</h2>
                 <ModalColor />
               </div>
-              {talle.colores.map((color, colorIndex) => (
-                <div key={colorIndex} className="mb-2 flex items-center space-x-4">
-                  <select
-                    onChange={(e) =>
-                      handleColorSelect(talleIndex, colorIndex, 'color', e.target.value)
-                    }
-                    className="select select-bordered flex-1"
-                    required
-                    defaultValue="Seleccione un color"
-                  >
-                    <option disabled>Seleccione un color</option>
-                    {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
-                      colors.map((colorItem) => {
-                        const isColorAvailable = coloresDisponiblesPorTalle[talle.talle]?.includes(
-                          colorItem.color_name
+              {talle &&
+                talle.colores.map((color, colorIndex) => (
+                  <div key={colorIndex} className="mb-2 flex items-center space-x-4">
+                    <select
+                      onChange={(e) =>
+                        handleColorSelect(talleIndex, colorIndex, 'color', e.target.value)
+                      }
+                      className="select select-bordered flex-1"
+                      required
+                      defaultValue="Seleccione un color"
+                    >
+                      <option disabled>Seleccione un color</option>
+                      {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
+                        colors.map((colorItem) => {
+                          const isColorAvailable = coloresDisponiblesPorTalle[
+                            talle.talle
+                          ]?.includes(colorItem.color_name)
+
+                          return (
+                            <option
+                              key={colorItem.id}
+                              value={colorItem.color_name}
+                              disabled={!isColorAvailable}
+                            >
+                              {colorItem.color_name}
+                            </option>
+                          )
+                        })
+                      ) : (
+                        <option value="No hay colores disponibles">
+                          Seleccione un talle primero
+                        </option>
+                      )}
+                    </select>
+                    <input
+                      type="number"
+                      placeholder="Cantidad"
+                      value={color.cantidad}
+                      onChange={(e) =>
+                        handleColorChange(
+                          talleIndex,
+                          colorIndex,
+                          'cantidad',
+                          parseInt(e.target.value, 10)
                         )
-                        return (
-                          <option
-                            key={colorItem.id}
-                            value={colorItem.color_name}
-                            disabled={!isColorAvailable}
-                          >
-                            {colorItem.color_name}
-                          </option>
-                        )
-                      })
-                    ) : (
-                      <option value="No hay colores disponibles">
-                        Seleccione un talle primero
-                      </option>
+                      }
+                      className="input input-bordered w-1/5 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      required
+                    />
+                    {colorIndex === talle.colores.length - 1 && (
+                      <div className="tooltip" data-tip="Eliminar Color">
+                        <button
+                          type="button"
+                          className="btn btn-error"
+                          onClick={() => handleDeleteColor(talleIndex, colorIndex)}
+                        >
+                          <Trash2 />
+                        </button>
+                      </div>
                     )}
-                  </select>
-                  <input
-                    type="number"
-                    placeholder="Cantidad"
-                    value={color.cantidad}
-                    onChange={(e) =>
-                      handleColorChange(
-                        talleIndex,
-                        colorIndex,
-                        'cantidad',
-                        parseInt(e.target.value, 10)
-                      )
-                    }
-                    className="input input-bordered w-1/5 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    required
-                  />
-                  {colorIndex === talle.colores.length - 1 && (
-                    <div className="tooltip" data-tip="Eliminar Color">
-                      <button
-                        type="button"
-                        className="btn btn-error"
-                        onClick={() => handleDeleteColor(talleIndex, colorIndex)}
-                      >
-                        <Trash2 />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
               <div>
                 <button type="button" onClick={() => agregarColor(talleIndex)}>
                   + Agregar color
@@ -395,7 +395,7 @@ export default function NuevoProducto() {
             type="button"
             onClick={agregarTalle}
             className="btn btn-outline badge badge-secondary badge-outline transform p-6 hover:scale-105"
-            disabled={loadingData || tallesBD.length === 0} // Deshabilitar si no hay talles cargados
+            disabled={loadingData || tallesBD.length === 0} 
           >
             + Agregar Talle
           </button>
