@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export default async function postFamilyData(data) {
+export async function postFamilyData(data) {
     try {
         const response = await axios.post("http://localhost:5000/api/product/familyProducts", data)
         return response.data
@@ -19,3 +19,4 @@ export async function fetchFamilyProducts() {
         throw error
     }
 }
+
