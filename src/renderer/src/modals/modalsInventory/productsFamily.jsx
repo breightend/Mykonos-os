@@ -82,9 +82,11 @@ export default function ProductsFamily() {
                     >
                       <option value="">Selecciona una familia</option>
                       {familyGroup.map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.group_name}
-                        </option>
+                        <>
+                          <option key={group.id} value={group.id}>
+                            {group.group_name}
+                          </option>
+                        </>
                       ))}
                     </select>
                   </>
