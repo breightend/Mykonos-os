@@ -109,7 +109,7 @@ export default function Inventario() {
               <button
                 className="btn btn-ghost tooltip tooltip-bottom"
                 data-tip="Editar producto"
-                onClick={handleFamilyModal}
+                onClick={() => document.getElementById('productsFamily').showModal()}
               >
                 <Boxes className="h-5 w-5" />
               </button>
@@ -302,7 +302,7 @@ export default function Inventario() {
           </div>
         )}
         {/* Modal de familia de productos */}
-
+        <ProductsFamily />
       </div>
     </div>
   )
