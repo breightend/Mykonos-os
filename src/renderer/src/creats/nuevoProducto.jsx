@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, Ruler, Trash2 } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Ruler, Trash2 } from 'lucide-react'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
 import BarcodeGenerator from '../componentes especificos/Barcode'
@@ -187,7 +187,18 @@ export default function NuevoProducto() {
   }
 
   if (loadingData) {
-    return <div>Cargando datos...</div>
+    return (
+      <>
+        <div className="bg-base-100 flex min-h-screen items-center justify-center p-6">
+          <div className="flex items-center space-x-4 p-4">
+            <div className="">
+              <LoaderCircle className="h-10 w-10 animate-spin" />
+            </div>
+            <h1 className="text-4xl font-bold">Cargando...</h1>
+          </div>
+        </div>
+      </>
+    )
   }
 
   if (errorData) {
