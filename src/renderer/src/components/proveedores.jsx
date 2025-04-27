@@ -100,6 +100,7 @@ export default function Proveedores() {
               <th>Domicilio</th>
               <th>Teléfono</th>
               <th>Contacto</th>
+              <th>Marca</th>
               <th>CUIT</th>
             </tr>
           </thead>
@@ -118,6 +119,7 @@ export default function Proveedores() {
                   <td>{row.domicilio_comercial}</td>
                   <td>{row.phone_number}</td>
                   <td>{row.contact_name}</td>
+                  <td>Marca Prox</td>
                   <td>{row.cuit}</td>
                 </tr>
               ))}

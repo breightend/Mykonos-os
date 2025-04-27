@@ -93,6 +93,9 @@ export default function InfoProvider() {
         </div>
         <div>
           <hr className="mt-4 border-2" />
+          <h1 className="text-3xl font-bold">Marcas: </h1>
+          <hr className="mt-4 border-2" />
+          
           <h1 className="text-3xl font-bold"> Registro de operaciones </h1>
         </div>
         <div className="w-full">

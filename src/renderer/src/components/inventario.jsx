@@ -108,7 +108,7 @@ export default function Inventario() {
             <li>
               <button
                 className="btn btn-ghost tooltip tooltip-bottom"
-                data-tip="Editar producto"
+                data-tip="Grupos"
                 onClick={() => document.getElementById('productsFamily').showModal()}
               >
                 <Boxes className="h-5 w-5" />
