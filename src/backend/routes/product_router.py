@@ -194,7 +194,7 @@ def recibir_datos_familia_producto():
     # if not family_name or not description:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
     success = db.add_record(
-        "group", {"group_name": group_name, "parent_group_id": parent_group_id, "marked_as_root": marked_as_root}   
+        "groups", {"group_name": group_name, "parent_group_id": parent_group_id, "marked_as_root": marked_as_root}   
     )
     if success:
         return (
@@ -211,7 +211,7 @@ def recibir_datos_familia_producto():
 def obtener_familia_producto():
     # Obtener los colores de la base de datos
     db = Database()
-    family_products = db.get_all_records("group")
+    family_products = db.get_all_records("groups")
     if not family_products:
         return jsonify({"mensaje": "No se encontraron familias de productos", "status": "error"}), 404
     return jsonify(family_products), 200
@@ -229,7 +229,7 @@ def actualizar_familia_producto(group_id):
     # if not family_name or not description:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
     success = db.update_record(
-        "group",
+        "groups",
         {
             "id": group_id,
             "group_name": group_name,

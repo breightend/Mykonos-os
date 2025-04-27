@@ -20,3 +20,12 @@ export async function fetchFamilyProducts() {
     }
 }
 
+export async function modfifyFamilyProduct(id, data) {
+    try {
+        const response = await axios.put(`http://localhost:5000/api/product/familyProducts/${id}`, data)
+        return response.data
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+}

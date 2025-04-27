@@ -23,3 +23,16 @@
   --color-base-100: #111820;
 
 }
+
+.tree, .tree ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+
+.tree li::before {
+  content: "›"; /* Puedes usar otro carácter como un icono */
+  color: gray;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
