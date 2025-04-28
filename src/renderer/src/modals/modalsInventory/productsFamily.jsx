@@ -173,7 +173,6 @@ export default function ProductsFamily() {
 
           <form method="dialog">
             <div className="modal-action justify-end">
-              <button className="btn btn-success">Guardar Cambios</button>
               <button className="btn btn-neutral">Cerrar</button>
             </div>
           </form>

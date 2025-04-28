@@ -27,7 +27,6 @@ export default function InfoProvider() {
     fetchData()
   }, [providerId])
 
-
   const handleRowClick = (row) => {
     setOperacionSeleccionada(row.id)
     console.log('Proveedor seleccionado:', row)
@@ -75,7 +74,6 @@ export default function InfoProvider() {
                 <th>Email</th>
                 <th>Razon social</th>
                 <th>Dirección</th>
-
               </tr>
             </thead>
             <tbody>
@@ -92,10 +90,7 @@ export default function InfoProvider() {
           </table>
         </div>
         <div>
-          <hr className="mt-4 border-2" />
-          <h1 className="text-3xl font-bold">Marcas: </h1>
-          <hr className="mt-4 border-2" />
-          
+
           <h1 className="text-3xl font-bold"> Registro de operaciones </h1>
         </div>
         <div className="w-full">
