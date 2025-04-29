@@ -150,7 +150,7 @@ def delete_provider(provider_id):
         ), 500
 
 
-@provider_router.route("brand", methods=["POST"])
+@provider_router.route("/brand", methods=["POST"])
 def recibir_datos_marca():
     data = request.json
     # Obtenemos los datos del producto
@@ -186,4 +186,41 @@ def recibir_datos_marca():
 def get_all_brands():
     db = Database()
     records = db.get_all_records("brands")
+    return jsonify(records), 200
+
+
+@provider_router.route("/providerXbrand", methods=["POST"])
+def recibir_datos_marcaXproveedores():
+    data = request.json
+    id_brand = data.get('id_brand')
+    id_provider = data.get('id_provider')
+
+    db= Database()
+    success = db.add_record(
+        "providerxmarca", {
+            "id_provider" : id_provider,
+            "id_brand": id_brand
+        }
+    )
+    if success:
+        return (
+            jsonify({"mensaje": "Marca creada con éxito", "status": "éxito"}),
+            200,
+        )
+    else:
+        return (
+            jsonify({"mensaje": "Error al crear la marca", "status": "error"}),
+            500,
+        )
+    
+@provider_router.route("/providerXbrand", methods=["GET"])
+def getProviderXBrand():
+    db = Database()
+    records = db.get_all_records('providerxmarca')
+    return jsonify(records), 200
+
+@provider_router.route("/providerJoinMarca", methods=["GET"]) 
+def getProviderJoinMarca():
+    db = Database()
+    records = db.get_join_records_tres_tables("brands", "proveedorxmarca", "entities", "id", "id_brand", "id_provider")
     return jsonify(records), 200

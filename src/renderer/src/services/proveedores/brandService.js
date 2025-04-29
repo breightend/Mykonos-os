@@ -21,7 +21,7 @@ export async function fetchBrandById(id) {
     }
 }
 
-export async function fetchBrandXProviders(id_provider, ) {
+export async function fetchBrandBYProviders(id_provider) {
     
 }
 

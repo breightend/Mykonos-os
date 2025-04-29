@@ -27,6 +27,7 @@ class TABLES(Enum):
     BRANDS = 'brands'
     PURCHASES = "purchases"
     PURCHASES_DETAIL = "purchases_detail"
+    PROVEEDORXMARCA = "proveedorxmarca"
 
 DATABASE_TABLES = {
     TABLES.ENTITIES: {
@@ -47,6 +48,28 @@ DATABASE_TABLES = {
         }
     },
 
+    TABLES.PROVEEDORXMARCA: {
+        "columns": {
+            "id_brand": "INTEGER PRIMARY KEY",  #Identificador de la marca.
+            "id_provider": "INTEGER PRIMARY KEY",  #Identificador del proveedor.
+        }, 
+        "foreign_keys": [
+            {# Relación con la tabla de brand.
+                "column": "id_brand", 
+                "reference_table": TABLES.BRANDS,
+                "reference_column": "id",
+                "export_column_name":"brand_name",  # <- columna de referencia cuando se exportan tablas
+            },
+            {# Relación con la tabla de brand.
+                "column": "id_provider", 
+                "reference_table": TABLES.ENTITIES,
+                "reference_column": "id",
+                "export_column_name":"entity_name",  # <- columna de referencia cuando se exportan tablas
+            }
+            ]
+
+    },
+
     TABLES.FILE_ATTACHMENTS: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",          # Identificador único para cada archivo adjunto, se incrementa automáticamente.
@@ -56,6 +79,7 @@ DATABASE_TABLES = {
             "upload_date": "TEXT DEFAULT CURRENT_TIMESTAMP",    # Fecha de carga del archivo
             "comment": "TEXT"                                   # Comentario opcional sobre el archivo
         }
+        
     },
 
     TABLES.ACCOUNT_MOVEMENTS: {
@@ -878,7 +902,7 @@ class Database:
             print(f"Error al obtener registros de la tabla '{table_name}': {e}")
             return []
         
-    # FIXME: brenda...
+ 
     def get_join_records(self, table1_name, table2_name, join_column1, join_column2, select_columns="t1.*, t2.*"):
         """
         Performs an INNER JOIN between two tables and retrieves records.
@@ -923,8 +947,88 @@ class Database:
         except Exception as e:
             print(f"Error al obtener registros de la tabla: {e}")
             return []
-
         
+    def get_join_records_tres_tables(self, table1_name, table2_name, table3_name, join_column1, join_column2, join_column3, select_columns="t1.*, t2.*, t3.*"):
+        """
+        Performs an INNER JOIN between three tables and retrieves records.
+
+        Args:
+            table1_name (str): The name of the first table (aliased as t1).
+            table2_name (str): The name of the second table (aliased as t2).
+            table3_name (str): The name of the third table (aliased as t3).
+            join_column1 (str): The name of the join column in the first table.
+            join_column2 (str): The name of the join column in the second table.
+            join_column3 (str): The name of the join column in the third table.
+            select_columns (str): Comma-separated string of columns to select.
+                                  Defaults to 't1.*, t2.*, t3.*'. Use specific aliases
+                                  (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'records': list[dict]}
+        """
+        # Basic validation
+        if not all([table1_name, table2_name, table3_name, join_column1, join_column2, join_column3, select_columns]):
+             return {'success': False, 'message': "Invalid table or column names provided.", 'records': []}
+
+        sql = f"""
+            SELECT {select_columns}
+            FROM {table1_name} AS t1
+            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
+            INNER JOIN {table3_name} AS t3 ON t2.{join_column3} = t3.{join_column1}
+        """
+
+        try:
+            with self.create_connection() as conn:
+                # Use row_factory for easy dict conversion, but be mindful of name collisions
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute(sql)
+                rows = cur.fetchall()
+                if rows:
+                    # This conversion might still have issues if select_columns doesn't use aliases
+                    # for identically named columns in both tables.
+                    return [dict(row) for row in rows]
+
+                else:
+                    return []
+
+        except Exception as e:
+            print(f"Error al obtener registros de la tabla: {e}")
+            return []
+
+    def get_join_records_by_id(self, table1_name, table2_name, join_column1, join_column2, record_id):
+        """
+        Obtiene registros de dos tablas unidas por una columna específica, filtrando por el ID de la primera tabla.
+
+        Args:
+            table1_name (str): Nombre de la primera tabla (aliased as t1).
+            table2_name (str): Nombre de la segunda tabla (aliased as t2).
+            join_column1 (str): Nombre de la columna de unión en la primera tabla.
+            join_column2 (str): Nombre de la columna de unión en la segunda tabla.
+            record_id (int): ID del registro en la primera tabla para filtrar.
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'records': list[dict]}
+        """
+        sql = f"""
+            SELECT t1.*, t2.*
+            FROM {table1_name} AS t1
+            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
+            WHERE t1.id = ?
+        """
+
+        try:
+            with self.create_connection() as conn:
+                conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
+                cur = conn.cursor()
+                cur.execute(sql, (record_id,))
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
+                return []
+        except Exception as e:
+            print(f"Error al obtener registros de la tabla '{table1_name}': {e}")
+            return []  
 
     # #TODO: devolver dict{sucess, message, record}
     # def get_all_records_by_clauses(self, table_name, search_clauses):
