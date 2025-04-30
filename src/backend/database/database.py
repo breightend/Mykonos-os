@@ -48,26 +48,26 @@ DATABASE_TABLES = {
         }
     },
 
-    TABLES.PROVEEDORXMARCA: {
+TABLES.PROVEEDORXMARCA: {
         "columns": {
-            "id_brand": "INTEGER PRIMARY KEY",  #Identificador de la marca.
-            "id_provider": "INTEGER PRIMARY KEY",  #Identificador del proveedor.
-        }, 
+            "id_brand": "INTEGER NOT NULL",  # Identificador de la marca.
+            "id_provider": "INTEGER NOT NULL" # Identificador del proveedor.
+        },
+        "primary_key": ["id_brand", "id_provider"], # Definimos la clave primaria compuesta
         "foreign_keys": [
             {# Relación con la tabla de brand.
-                "column": "id_brand", 
+                "column": "id_brand",
                 "reference_table": TABLES.BRANDS,
                 "reference_column": "id",
                 "export_column_name":"brand_name",  # <- columna de referencia cuando se exportan tablas
             },
-            {# Relación con la tabla de brand.
-                "column": "id_provider", 
+            {# Relación con la tabla de entidades (proveedores).
+                "column": "id_provider",
                 "reference_table": TABLES.ENTITIES,
                 "reference_column": "id",
                 "export_column_name":"entity_name",  # <- columna de referencia cuando se exportan tablas
             }
-            ]
-
+        ]
     },
 
     TABLES.FILE_ATTACHMENTS: {
@@ -478,32 +478,44 @@ class Database:
         """
         Crea todas las tablas necesarias en la base de datos.
         """
-        def create_or_update_table(conn, table_name, columns, foreign_keys=[]):
+        conn = self.create_connection()
+        if conn is not None:
+            try:
+                for table, definition in DATABASE_TABLES.items():
+                    primary_key = definition.get("primary_key")
+                    foreign_keys = definition.get("foreign_keys", [])
+                    create_or_update_table(conn, table.value, definition["columns"], foreign_keys, primary_key)
+                conn.commit()
+            except sqlite3.Error as e:
+                print(f"Error al crear o actualizar tablas: {e}")
+            finally:
+                conn.close()
+
+
+    def create_or_update_table(conn, table_name, columns, foreign_keys=[], primary_key=None):
             """
             Crea la tabla si no existe y revisa si hay columnas faltantes o de más.
             """
-            # print_debug(f"Creando o actualizando tabla: {table_name}")
-            
-            # Verificar las columnas que ya existen en la tabla
             existing_columns = get_existing_columns(conn, table_name)
+            column_defs = [f"{col_name} {col_type}" for col_name, col_type in columns.items()]
 
-            # Si la tabla no existe, se crea directamente
+            if primary_key:
+                column_defs.append(f"PRIMARY KEY ({', '.join(primary_key)})")
+
+            if foreign_keys:
+                for fk in foreign_keys:
+                    column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})")
+
+            create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(column_defs)});"
+
             if not existing_columns:
-                column_defs = [f"{col_name} {col_type}" for col_name, col_type in columns.items()]
-                if foreign_keys:
-                    for fk in foreign_keys:
-                        column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})")
-                create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(column_defs)});"
-                print(create_table_sql)  # Para depuración, muestra la consulta SQL creada
+                print(create_table_sql)
                 conn.execute(create_table_sql)
             else:
-                # Si la tabla ya existe, asegurarse de que las columnas coincidan
                 extra_columns = [col for col in existing_columns if col not in columns]
                 if extra_columns:
-                    # Si existen columnas de más, reestructuramos la tabla sin borrar los datos
                     remove_extra_columns(conn, table_name, columns, foreign_keys, extra_columns, existing_columns)
 
-                # Agregar columnas faltantes
                 for col_name, col_type in columns.items():
                     if col_name not in existing_columns:
                         try:
@@ -512,7 +524,6 @@ class Database:
                             conn.execute(alter_table_sql)
                         except sqlite3.OperationalError as e:
                             print(f"Error al agregar la columna {col_name}: {e}")
-                            # Si el error es por un nombre duplicado, lo ignoramos
                             if 'duplicate column name' in str(e).lower():
                                 continue
                             else:
