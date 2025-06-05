@@ -18,6 +18,7 @@ import CreateProvider from './creats/createProvider'
 import CreateUser from './creats/createUser'
 import NuevoProducto from './creats/nuevoProducto'
 import InfoEmpleado from './components/infoEmpleado'
+import Sucursales from './components/sucursales'
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
       <Route path="/nuevoCliente" component={CreateClient} />
       <Route path="/infoCliente" component={InfoClientes} />
       <Route path="/infoProvider" component={InfoProvider} />
+      <Route path="/sucursales" component={Sucursales} />
     </Switch>
   )
 }

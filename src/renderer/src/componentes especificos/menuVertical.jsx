@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   NotebookTabs,
-  BriefcaseBusiness
+  BriefcaseBusiness,
+  Store
 } from 'lucide-react'
 import SettingsLog from './settingsLog'
 
@@ -97,6 +98,15 @@ export default function MenuVertical({ currentPath }) {
           >
             <BriefcaseBusiness />
             {isMenuOpen && <span className="ml-2">Empleados</span>}
+          </button>
+        </li>
+        <li className="flex items-center">
+          <button
+            className={`btn btn-ghost w-full justify-start ${currentPath === '/sucursales' ? 'bg-primary' : ''}`}
+            onClick={() => setLocation('/sucursales')}
+          >
+            <Store />
+            {isMenuOpen && <span className="ml-2">Sucursales</span>}
           </button>
         </li>
         <li className="flex items-center">

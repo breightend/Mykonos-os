@@ -30,6 +30,7 @@ class TABLES(Enum):
     PURCHASES = "purchases"
     PURCHASES_DETAIL = "purchases_detail"
     PROVEEDORXMARCA = "proveedorxmarca"
+    USERSXSTORAGE = "usersxstorage"
 
 
 DATABASE_TABLES = {
@@ -420,6 +421,30 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.PRODUCTS,
                 "reference_column": "id",
                 "export_column_name": "product_name",
+            },
+        ],
+    },
+    TABLES.USERSXSTORAGE: {
+        "columns": {
+            "id_user": "INTEGER NOT NULL",  # Identificador del usuario.
+            "id_storage": "INTEGER NOT NULL",  # Identificador del almacén.
+        },
+        "primary_key": [
+            "id_user",
+            "id_storage",
+        ],  # Definimos la clave primaria compuesta
+        "foreign_keys": [
+            {  # Relación con la tabla de usuarios.
+                "column": "id_user",
+                "reference_table": TABLES.USERS,
+                "reference_column": "id",
+                "export_column_name": "username",  # <- columna de referencia cuando se exportan tablas
+            },
+            {  # Relación con la tabla de almacenes.
+                "column": "id_storage",
+                "reference_table": TABLES.STORAGE,
+                "reference_column": "id",
+                "export_column_name": "name",  # <- columna de referencia cuando se exportan tablas
             },
         ],
     },
@@ -1273,6 +1298,132 @@ class Database:
             TABLES.PROVEEDORXMARCA.value,
             "id_provider = ? AND id_brand = ?",
             (provider_id, brand_id),
+        )
+
+        return {
+            "success": result["success"],
+            "message": result["message"],
+            "exists": result["success"] and result["record"] is not None,
+            "record": result["record"],
+        }
+
+    # Utility methods for user-storage many-to-many relationships
+    def add_user_storage_relationship(self, user_id, storage_id):
+        """
+        Adds a many-to-many relationship between a user and a storage location.
+
+        Args:
+            user_id (int): The ID of the user
+            storage_id (int): The ID of the storage location
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'rowid': int or None}
+        """
+        data = {"id_user": user_id, "id_storage": storage_id}
+
+        # Check if relationship already exists
+        existing = self.get_record_by_clause(
+            TABLES.USERSXSTORAGE.value,
+            "id_user = ? AND id_storage = ?",
+            (user_id, storage_id),
+        )
+
+        if existing["success"] and existing["record"] is not None:
+            return {
+                "success": False,
+                "message": "La relación entre el usuario y el almacén ya existe.",
+                "rowid": None,
+            }
+
+        result = self.add_record(TABLES.USERSXSTORAGE.value, data)
+        return result
+
+    def remove_user_storage_relationship(self, user_id, storage_id):
+        """
+        Removes a many-to-many relationship between a user and a storage location.
+
+        Args:
+            user_id (int): The ID of the user
+            storage_id (int): The ID of the storage location
+
+        Returns:
+            dict: {'success': bool, 'message': str}
+        """
+        result = self.delete_record(
+            TABLES.USERSXSTORAGE.value,
+            "id_user = ? AND id_storage = ?",
+            (user_id, storage_id),
+        )
+        return result
+
+    def get_storages_by_user(self, user_id):
+        """
+        Gets all storage locations accessible to a specific user.
+
+        Args:
+            user_id (int): The ID of the user
+
+        Returns:
+            list[dict]: List of storage records accessible to the user
+        """
+        return self.get_join_records(
+            TABLES.USERSXSTORAGE.value,
+            TABLES.STORAGE.value,
+            "id_storage",
+            "id",
+            "t2.*",  # Only select storage columns
+        )
+
+    def get_users_by_storage(self, storage_id):
+        """
+        Gets all users who have access to a specific storage location.
+
+        Args:
+            storage_id (int): The ID of the storage location
+
+        Returns:
+            list[dict]: List of user records who have access to the storage
+        """
+        return self.get_join_records(
+            TABLES.USERSXSTORAGE.value,
+            TABLES.USERS.value,
+            "id_user",
+            "id",
+            "t2.*",  # Only select user columns
+        )
+
+    def get_user_storage_relationships(self):
+        """
+        Gets all user-storage relationships with detailed information.
+
+        Returns:
+            list[dict]: List of records containing user and storage information
+        """
+        return self.get_join_records_tres_tables(
+            TABLES.USERSXSTORAGE.value,
+            TABLES.USERS.value,
+            TABLES.STORAGE.value,
+            "id_user",
+            "id",
+            "id_storage",
+            "t1.id_user, t1.id_storage, t2.username, t2.fullname, t3.name as storage_name, t3.description as storage_description",
+        )
+
+    def check_user_storage_relationship_exists(self, user_id, storage_id):
+        """
+        Checks if a relationship between a user and storage location already exists.
+
+        Args:
+            user_id (int): The ID of the user
+            storage_id (int): The ID of the storage location
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'exists': bool, 'record': dict or None}
+        """
+        result = self.get_record_by_clause(
+            TABLES.USERSXSTORAGE.value,
+            "id_user = ? AND id_storage = ?",
+            (user_id, storage_id),
         )
 
         return {
