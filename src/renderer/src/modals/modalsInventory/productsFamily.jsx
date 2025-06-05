@@ -60,7 +60,7 @@ export default function ProductsFamily() {
   const FamilyGroupList = ({ groups }) => {
     return (
       <ul className="tree">
-        {groups.map((group) => (
+        {groups && groups.map((group) => (
           <li key={group.id}>
             {group.group_name}
             {group.children && group.children.length > 0 && (

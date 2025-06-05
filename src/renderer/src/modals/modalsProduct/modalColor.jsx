@@ -1,28 +1,22 @@
-import { Palette } from 'lucide-react'
-import { fetchColor, postData } from '../../services/products/colorService'
+import { Palette, Trash2 } from 'lucide-react'
+import { fetchColor, postData, deleteColor } from '../../services/products/colorService'
 import { useEffect, useState } from 'react'
+
 //TODO: arreglar funcion del backend GET
 //TODO: Ver el tema del post
+//TODO: poder eliminar colores
+
 export default function ModalColor() {
   const [formData, setFormData] = useState({
     color_name: '',
-    color_hex: ''
+    color_hex: '#000000'
   })
   const [colors, setColors] = useState([])
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value
-    })
-    console.log(formData)
-  }
 
   const onChange = (e) => {
     const { name, value } = e.target
     setFormData((prevState) => ({
-      ...prevState, 
+      ...prevState,
       [name]: value
     }))
   }
@@ -30,8 +24,6 @@ export default function ModalColor() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      console.log('VALORES:')
-      console.log(formData)
       const response = await postData(formData)
       console.log(response)
       setFormData({
@@ -41,6 +33,15 @@ export default function ModalColor() {
       fetchColor()
     } catch (error) {
       console.error('Error:', error)
+    }
+  }
+
+  const handleDeleteColor = async (colorId) => {
+    try {
+      await deleteColor(colorId)
+      fetchColor()
+    } catch (error) {
+      console.error('Error deleting color:', error)
     }
   }
 
@@ -56,7 +57,7 @@ export default function ModalColor() {
     fetchData()
   }, [])
 
-  console.log({colors})
+  console.log({ colors })
 
   return (
     <div>
@@ -69,13 +70,14 @@ export default function ModalColor() {
       </button>
       <dialog id="colorModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
-          <h3>Colores existentes:</h3>
+          <h3 className="text-bold text-2xl text-gray-800">Colores del sistema:</h3>
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
                 <tr>
                   <th>Nombre</th>
                   <th>Vista</th>
+                  <th>Eliminar</th>
                 </tr>
               </thead>
               <tbody>
@@ -88,6 +90,14 @@ export default function ModalColor() {
                           className="h-6 w-6 rounded-full border"
                           style={{ backgroundColor: color.color_hex }}
                         ></div>
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-sm btn-warning"
+                          onClick={() => handleDeleteColor(color.id)}
+                        >
+                          <Trash2 className="" size={18} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -117,13 +127,21 @@ export default function ModalColor() {
                 type="color"
                 name="color_hex"
                 value={formData.color_hex}
+                defaultValue={'#000000'}
                 onChange={onChange}
                 className="input input-bordered w-full max-w-xs"
               />
             </div>
 
             <div className="modal-action">
-              <button type="submit" className="btn" onClick={handleSubmit}>
+              <button
+                type="submit"
+                className="btn btn-neutral"
+                onClick={() => document.getElementById('colorModal').close()}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-success" onClick={handleSubmit}>
                 Agregar
               </button>
             </div>

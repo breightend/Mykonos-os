@@ -8,6 +8,9 @@ import { fetchSize, fetchCategorySize } from '../services/products/sizeService'
 import { fetchColor } from '../services/products/colorService' // Importa el servicio de colores
 import { fetchProvider } from '../services/proveedores/proveedorService'
 
+//TODO: Poder eliminar colores y talles. 
+//TODO: que no se puedan seleccionar dos talles iguales
+
 export default function NuevoProducto() {
   const [marca, setMarca] = useState('')
   const [cantidad] = useState(0)
@@ -200,9 +203,9 @@ export default function NuevoProducto() {
     )
   }
 
-  if (errorData) {
+/*   if (errorData) {
     return <div>Error al cargar los datos: {errorData.message}</div>
-  }
+  } */
   return (
     <div className="bg-base-100 min-h-screen p-6">
       <div className="flex items-center space-x-4 p-4">

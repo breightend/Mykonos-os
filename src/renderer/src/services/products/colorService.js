@@ -20,3 +20,13 @@ export const fetchColor = async () => {
         throw error
     }
 }
+
+export const deleteColor = async (colorId) => {
+    try {
+        const response = await axios.delete(`http://localhost:5000/api/product/colors/${colorId}`)
+        return response.data
+    } catch (error) {
+        console.error("Error deleting color:", error)
+        throw error
+    }
+}

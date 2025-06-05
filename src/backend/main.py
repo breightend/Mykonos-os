@@ -10,7 +10,6 @@ from routes.client_router import client_router
 from routes.product_router import product_router
 
 app = Flask(__name__)
-app.register_blueprint(usuario_router, url_prefix="/api/user")
 CORS(
     app,
     resources={
@@ -21,6 +20,7 @@ CORS(
         }
     },
 )  # Habilitar CORS para todas las rutas
+app.register_blueprint(usuario_router, url_prefix="/api/user")
 app.register_blueprint(provider_router, url_prefix="/api/provider")
 app.register_blueprint(client_router, url_prefix="/api/client")
 app.register_blueprint(product_router, url_prefix="/api/product")

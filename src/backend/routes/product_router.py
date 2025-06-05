@@ -181,6 +181,15 @@ def obtener_colores():
         return jsonify({"mensaje": "No se encontraron colores", "status": "error"}), 404
     return jsonify(colors), 200
 
+@product_router.route("/color/<color_id>", methods=["DELETE"])
+def eliminar_color(color_id):
+    db = Database()
+    success = db.delete_record("colors", color_id)
+    if success:
+        return jsonify({"mensaje": "Color eliminado con éxito", "status": "éxito"}), 200
+    else:
+        return jsonify({"mensaje": "Error al eliminar el color", "status": "error"}), 500
+
 
 @product_router.route("/familyProducts", methods=["POST"])
 def recibir_datos_familia_producto():

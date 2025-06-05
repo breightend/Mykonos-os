@@ -6,7 +6,8 @@ import time
 import threading
 from enum import Enum
 from commons.tools import print_debug
-#TODO: hacer tabla ProveedoresXMarcas para poder relacionar varios proveedores a una misma marca y viceversa.
+# TODO: hacer tabla ProveedoresXMarcas para poder relacionar varios proveedores a una misma marca y viceversa.
+
 
 class TABLES(Enum):
     ENTITIES = "entities"
@@ -25,427 +26,414 @@ class TABLES(Enum):
     INVENTORY_MOVEMETNS = "inventory_movements"
     INVENTORY_MOVEMETNS_GROUPS = "inventory_movements_groups"
     RESPONSABILIDADES_AFIP = "responsabilidades_afip"
-    BRANDS = 'brands'
+    BRANDS = "brands"
     PURCHASES = "purchases"
     PURCHASES_DETAIL = "purchases_detail"
     PROVEEDORXMARCA = "proveedorxmarca"
 
+
 DATABASE_TABLES = {
     TABLES.ENTITIES: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",      # Identificador único para cada entidad, se incrementa automáticamente.
-            "entity_name": "TEXT NOT NULL",                 # Nombre de la entidad (puede ser cliente o proveedor).
-            "entity_type": "TEXT NOT NULL",                 # Tipo de entidad (ejemplo: 'cliente', 'proveedor').
-            "razon_social": "TEXT NOT NULL",                # Razón social de la entidad, importante para facturación.
-            "responsabilidad_iva": "INTEGER NOT NULL",      # Indica la categoría de responsabilidad ante el IVA (ej: responsable inscripto).
-            "domicilio_comercial": "TEXT NOT NULL",         # Dirección comercial de la entidad, necesaria para correspondencia y facturación.
-            "cuit": "TEXT NOT NULL UNIQUE",                 # CUIT (Clave Única de Identificación Tributaria), único para cada entidad.
-            "inicio_actividades": "TEXT",                   # Fecha de inicio de actividades de la entidad.
-            "ingresos_brutos": "TEXT",                      # Información sobre los ingresos brutos, puede ser útil para reportes.
-            "contact_name": "TEXT",                         # Nombre del contacto principal en la entidad, si aplica.
-            "phone_number": "TEXT",                         # Número de teléfono de la entidad para contacto directo.
-            "email": "TEXT",                                # Correo electrónico de la entidad para enviar comunicaciones.
-            "observations": "TEXT"                          # Notas adicionales o comentarios sobre la entidad, para uso interno.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada entidad, se incrementa automáticamente.
+            "entity_name": "TEXT NOT NULL",  # Nombre de la entidad (puede ser cliente o proveedor).
+            "entity_type": "TEXT NOT NULL",  # Tipo de entidad (ejemplo: 'cliente', 'proveedor').
+            "razon_social": "TEXT NOT NULL",  # Razón social de la entidad, importante para facturación.
+            "responsabilidad_iva": "INTEGER NOT NULL",  # Indica la categoría de responsabilidad ante el IVA (ej: responsable inscripto).
+            "domicilio_comercial": "TEXT NOT NULL",  # Dirección comercial de la entidad, necesaria para correspondencia y facturación.
+            "cuit": "TEXT NOT NULL UNIQUE",  # CUIT (Clave Única de Identificación Tributaria), único para cada entidad.
+            "inicio_actividades": "TEXT",  # Fecha de inicio de actividades de la entidad.
+            "ingresos_brutos": "TEXT",  # Información sobre los ingresos brutos, puede ser útil para reportes.
+            "contact_name": "TEXT",  # Nombre del contacto principal en la entidad, si aplica.
+            "phone_number": "TEXT",  # Número de teléfono de la entidad para contacto directo.
+            "email": "TEXT",  # Correo electrónico de la entidad para enviar comunicaciones.
+            "observations": "TEXT",  # Notas adicionales o comentarios sobre la entidad, para uso interno.
         }
     },
-
     TABLES.PROVEEDORXMARCA: {
         "columns": {
             "id_brand": "INTEGER NOT NULL",  # Identificador de la marca.
-            "id_provider": "INTEGER NOT NULL" # Identificador del proveedor.
+            "id_provider": "INTEGER NOT NULL",  # Identificador del proveedor.
         },
-        "primary_key": ["id_brand", "id_provider"], # Definimos la clave primaria compuesta
+        "primary_key": [
+            "id_brand",
+            "id_provider",
+        ],  # Definimos la clave primaria compuesta
         "foreign_keys": [
-            {# Relación con la tabla de brand.
+            {  # Relación con la tabla de brand.
                 "column": "id_brand",
                 "reference_table": TABLES.BRANDS,
                 "reference_column": "id",
-                "export_column_name":"brand_name",  # <- columna de referencia cuando se exportan tablas
+                "export_column_name": "brand_name",  # <- columna de referencia cuando se exportan tablas
             },
-            {# Relación con la tabla de entidades (proveedores).
+            {  # Relación con la tabla de entidades (proveedores).
                 "column": "id_provider",
                 "reference_table": TABLES.ENTITIES,
                 "reference_column": "id",
-                "export_column_name":"entity_name",  # <- columna de referencia cuando se exportan tablas
-            }
-        ]
+                "export_column_name": "entity_name",  # <- columna de referencia cuando se exportan tablas
+            },
+        ],
     },
-
     TABLES.FILE_ATTACHMENTS: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",          # Identificador único para cada archivo adjunto, se incrementa automáticamente.
-            "file_name": "TEXT NOT NULL",                       # Nombre del archivo original
-            "file_extension": "TEXT NOT NULL",                  # Extensión del archivo (ej: pdf, jpg, png)
-            "file_content": "BLOB NOT NULL",                    # Contenido del archivo
-            "upload_date": "TEXT DEFAULT CURRENT_TIMESTAMP",    # Fecha de carga del archivo
-            "comment": "TEXT"                                   # Comentario opcional sobre el archivo
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada archivo adjunto, se incrementa automáticamente.
+            "file_name": "TEXT NOT NULL",  # Nombre del archivo original
+            "file_extension": "TEXT NOT NULL",  # Extensión del archivo (ej: pdf, jpg, png)
+            "file_content": "BLOB NOT NULL",  # Contenido del archivo
+            "upload_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de carga del archivo
+            "comment": "TEXT",  # Comentario opcional sobre el archivo
         }
     },
-
     TABLES.ACCOUNT_MOVEMENTS: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",                              # Identificador único para cada movimiento de cuenta, se incrementa automáticamente.
-            "numero_operacion": "INTEGER NOT NULL CHECK (numero_operacion > 0)",    # Número de operación, debe ser positivo.
-            "entity_id": "INTEGER NOT NULL",                                        # ID de la entidad relacionada (cliente o proveedor).
-            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",                         # Fecha y hora en que se creó el movimiento.
-            "descripcion": "TEXT",                                                  # Descripción del movimiento para un seguimiento más detallado.
-            "medio_pago": "TEXT",                                                   # Medio de pago utilizado (efectivo, tarjeta de crédito, transferencia, etc.).
-            "numero_de_comprobante": "TEXT",                                        # Número de comprobante asociado al movimiento, si aplica.
-            "purchase_id": "INTEGER",                                               # ID de la compra asociada a este movimiento
-            "debe": "REAL",                                                         # Monto que se debe (cargos).
-            "haber": "REAL",                                                        # Monto que se acredita (abonos).
-            "saldo": "REAL",                                                        # Saldo actual después de realizar el movimiento.
-            "file_id": "INTEGER",                                                   # ID del archivo asociado, si existe (documentación adjunta).
-            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP"                          # Fecha de la última modificación del movimiento.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada movimiento de cuenta, se incrementa automáticamente.
+            "numero_operacion": "INTEGER NOT NULL CHECK (numero_operacion > 0)",  # Número de operación, debe ser positivo.
+            "entity_id": "INTEGER NOT NULL",  # ID de la entidad relacionada (cliente o proveedor).
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora en que se creó el movimiento.
+            "descripcion": "TEXT",  # Descripción del movimiento para un seguimiento más detallado.
+            "medio_pago": "TEXT",  # Medio de pago utilizado (efectivo, tarjeta de crédito, transferencia, etc.).
+            "numero_de_comprobante": "TEXT",  # Número de comprobante asociado al movimiento, si aplica.
+            "purchase_id": "INTEGER",  # ID de la compra asociada a este movimiento
+            "debe": "REAL",  # Monto que se debe (cargos).
+            "haber": "REAL",  # Monto que se acredita (abonos).
+            "saldo": "REAL",  # Saldo actual después de realizar el movimiento.
+            "file_id": "INTEGER",  # ID del archivo asociado, si existe (documentación adjunta).
+            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de la última modificación del movimiento.
         },
         "foreign_keys": [
-            {# Relación con la tabla de entidades.
-                "column": "entity_id", 
+            {  # Relación con la tabla de entidades.
+                "column": "entity_id",
                 "reference_table": TABLES.ENTITIES,
                 "reference_column": "id",
-                "export_column_name":"entity_name",  # <- columna de referencia cuando se exportan tablas
-            },# Relación con la tabla de archivos adjuntos.
+                "export_column_name": "entity_name",  # <- columna de referencia cuando se exportan tablas
+            },  # Relación con la tabla de archivos adjuntos.
             {
                 "column": "file_id",
                 "reference_table": TABLES.FILE_ATTACHMENTS,
                 "reference_column": "id",
-                "export_column_name":"file_name",
+                "export_column_name": "file_name",
             },
-            {# Relación con la tabla de compras.
+            {  # Relación con la tabla de compras.
                 "column": "purchase_id",
                 "reference_table": TABLES.PURCHASES,
                 "reference_column": "id",
-                "export_column_name":"id",
-            }         
-        ]
+                "export_column_name": "id",
+            },
+        ],
     },
-
     TABLES.GROUP: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",          # Identificador único para cada grupo, se incrementa automáticamente.
-            "group_name": "TEXT NOT NULL",                      # Nombre del grupo, requerido.
-            "parent_group_id": "INTEGER",                       # ID del grupo padre, si aplica (permite crear jerarquías).
-            "marked_as_root": "INTEGER NOT NULL DEFAULT 0"      # Indica si el grupo es raíz (0) o no (1).
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada grupo, se incrementa automáticamente.
+            "group_name": "TEXT NOT NULL",  # Nombre del grupo, requerido.
+            "parent_group_id": "INTEGER",  # ID del grupo padre, si aplica (permite crear jerarquías).
+            "marked_as_root": "INTEGER NOT NULL DEFAULT 0",  # Indica si el grupo es raíz (0) o no (1).
         },
         "foreign_keys": [
-            { # Relación con la tabla de grupos.
+            {  # Relación con la tabla de grupos.
                 "column": "parent_group_id",
                 "reference_table": TABLES.GROUP,
                 "reference_column": "id",
-                "export_column_name":"group_name"
+                "export_column_name": "group_name",
             }
-        ]
+        ],
     },
-
     TABLES.USERS: {
         "columns": {
-            "id":            "INTEGER PRIMARY KEY AUTOINCREMENT",            # Identificador único para cada usuario, se incrementa automáticamente.
-            "username":      "TEXT UNIQUE",                         # Nombre de usuario, debe ser único y no nulo.
-            "fullname":      "TEXT",                                # Nombre completo del usuario, requerido.
-            "password":      "TEXT",                                # Contraseña del usuario, requerida.
-            "email":         "TEXT",                                         # Correo electrónico del usuario.
-            "phone":         "TEXT",
-            "domicilio":     "TEXT",                                                                                  # Número de teléfono del usuario.
-            "cuit":          "TEXT NOT NULL UNIQUE",                                                                                  # Número de teléfono del usuario.
-            "role":          "TEXT",                                         # Rol del usuario (ejemplo: admin, usuario normal).
-            "status":        "TEXT",                                         # Estado del usuario (activo, inactivo, etc.).
-            "session_token": "TEXT",                                         # Token de sesión para la autenticación del usuario.
-            "profile_image": "BLOB",                                         # Imagen de perfil del usuario, almacenada como BLOB.
-            "created_at":    "TEXT DEFAULT (datetime('now','localtime'))"    # Fecha de creación del registro, se establece por defecto a la fecha y hora actuales.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada usuario, se incrementa automáticamente.
+            "username": "TEXT UNIQUE",  # Nombre de usuario, debe ser único y no nulo.
+            "fullname": "TEXT",  # Nombre completo del usuario, requerido.
+            "password": "TEXT",  # Contraseña del usuario, requerida.
+            "email": "TEXT",  # Correo electrónico del usuario.
+            "phone": "TEXT",
+            "domicilio": "TEXT",  # Número de teléfono del usuario.
+            "cuit": "TEXT NOT NULL UNIQUE",  # Número de teléfono del usuario.
+            "role": "TEXT",  # Rol del usuario (ejemplo: admin, usuario normal).
+            "status": "TEXT",  # Estado del usuario (activo, inactivo, etc.).
+            "session_token": "TEXT",  # Token de sesión para la autenticación del usuario.
+            "profile_image": "BLOB",  # Imagen de perfil del usuario, almacenada como BLOB.
+            "created_at": "TEXT DEFAULT (datetime('now','localtime'))",  # Fecha de creación del registro, se establece por defecto a la fecha y hora actuales.
         }
     },
-
     TABLES.SIZE_CATEGORIES: {
         "columns": {
-            "id":             "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada categoría de tamaño, se incrementa automáticamente.
-            "category_name":  "TEXT NOT NULL UNIQUE",               # Nombre de la categoría de tamaño, debe ser único y no nulo.
-            "permanent":      "BOOLEAN NOT NULL DEFAULT 0"          # Indica si la categoría es permanente (1) o no (0).
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada categoría de tamaño, se incrementa automáticamente.
+            "category_name": "TEXT NOT NULL UNIQUE",  # Nombre de la categoría de tamaño, debe ser único y no nulo.
+            "permanent": "BOOLEAN NOT NULL DEFAULT 0",  # Indica si la categoría es permanente (1) o no (0).
         }
     },
-
     TABLES.SIZES: {
         "columns": {
-            "id":            "INTEGER PRIMARY KEY AUTOINCREMENT",      # Identificador único para cada tamaño, se incrementa automáticamente.
-            "size_name":     "TEXT NOT NULL",                          # Nombre del tamaño, requerido.
-            "category_id":   "INTEGER NOT NULL",                       # ID de la categoría de tamaño a la que pertenece.
-            "description":   "TEXT"                                    # Descripción del tamaño, opcional.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada tamaño, se incrementa automáticamente.
+            "size_name": "TEXT NOT NULL",  # Nombre del tamaño, requerido.
+            "category_id": "INTEGER NOT NULL",  # ID de la categoría de tamaño a la que pertenece.
+            "description": "TEXT",  # Descripción del tamaño, opcional.
         },
         "foreign_keys": [
             {
                 "column": "category_id",
                 "reference_table": TABLES.SIZE_CATEGORIES,
                 "reference_column": "id",
-                "export_column_name": "category_name"
+                "export_column_name": "category_name",
             }  # Relación con la tabla de categorías de tamaño.
-        ]
+        ],
     },
-
     TABLES.COLORS: {
         "columns": {
-            "id":          "INTEGER PRIMARY KEY AUTOINCREMENT",         # Identificador único para cada color, se incrementa automáticamente.
-            "color_name":  "TEXT NOT NULL",                             # Nombre del color, requerido.
-            "color_hex":   "TEXT NOT NULL"                              # Código hexadecimal del color, requerido.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada color, se incrementa automáticamente.
+            "color_name": "TEXT NOT NULL",  # Nombre del color, requerido.
+            "color_hex": "TEXT NOT NULL",  # Código hexadecimal del color, requerido.
         }
     },
-
     TABLES.BARCODES: {
         "columns": {
-            "id":          "INTEGER PRIMARY KEY AUTOINCREMENT",         # Identificador único para cada código de barras, se incrementa automáticamente.
-            "barcode":     "TEXT UNIQUE NOT NULL",                      # Código de barras único para cada producto, requerido.
-            "product_id":  "INTEGER"                                    # ID del producto al que corresponde el código de barras.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada código de barras, se incrementa automáticamente.
+            "barcode": "TEXT UNIQUE NOT NULL",  # Código de barras único para cada producto, requerido.
+            "product_id": "INTEGER",  # ID del producto al que corresponde el código de barras.
         },
         "foreign_keys": [
             {
                 "column": "product_id",
                 "reference_table": TABLES.PRODUCTS,
                 "reference_column": "barcode",
-                "export_column_name":"product_name"
+                "export_column_name": "product_name",
             }  # Relación con la tabla de productos.
-        ]
+        ],
     },
-
     TABLES.STORAGE: {
         "columns": {
-            "id":           "INTEGER PRIMARY KEY AUTOINCREMENT",    # Identificador único para cada almacenamiento, se incrementa automáticamente.
-            "name":         "TEXT NOT NULL",                        # Nombre del almacenamiento, requerido.
-            "address":      "TEXT",                                 # Dirección del almacenamiento.
-            "postal_code":  "TEXT",                                 # Código postal del almacenamiento.
-            "phone_number": "TEXT",                                 # Número de teléfono del almacenamiento.
-            "area":         "TEXT",                                 # Área o sección dentro del almacenamiento.
-            "description":  "TEXT"                                  # Área o sección dentro del almacenamiento.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada almacenamiento, se incrementa automáticamente.
+            "name": "TEXT NOT NULL",  # Nombre del almacenamiento, requerido.
+            "address": "TEXT",  # Dirección del almacenamiento.
+            "postal_code": "TEXT",  # Código postal del almacenamiento.
+            "phone_number": "TEXT",  # Número de teléfono del almacenamiento.
+            "area": "TEXT",  # Área o sección dentro del almacenamiento.
+            "description": "TEXT",  # Área o sección dentro del almacenamiento.
         }
     },
-
     TABLES.PRODUCTS: {
         "columns": {
-            "id":                "INTEGER PRIMARY KEY AUTOINCREMENT",                       # Identificador único para cada producto, se incrementa automáticamente.
-            "barcode":           "TEXT NOT NULL",                                           # Código de barras del producto, requerido.
-            "provider_code":     "TEXT",                                                    # Código del proveedor
-            "product_name":      "TEXT NOT NULL",                                           # Nombre del producto, requerido.
-            "group_id":          "INTEGER",                                                 # ID del grupo al que pertenece el producto.
-            "provider_id":       "INTEGER",                                                 # ID del proveedor, se relaciona con la tabla de entidades.
-            "size_id":           "INTEGER",                                                 # ID del tamaño del producto.
-            "description":       "TEXT",                                                    # Descripción del producto, opcional.
-            "cost":              "REAL",                                                    # Costo del producto.
-            "sale_price":        "REAL",                                                    # Precio de venta del producto.
-            "tax":               "REAL",                                                    # Impuesto aplicable al producto.
-            "discount":          "REAL",                                                    # Descuento aplicado al producto.
-            "color_id":          "INTEGER",                                                 # ID del color del producto.
-            "comments":          "TEXT",                                                    # Comentarios adicionales sobre el producto.
-            "user_id":           "INTEGER",                                                 # ID del usuario que creó o modificó el producto.
-            "images_ids":        "TEXT",                                                    # IDs de las imágenes asociadas al producto.
-            "brand_id":          "INTEGER",                                                 # ID de la marca del producto.
-            "creation_date":     "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",    # Fecha de creación del producto, se establece por defecto a la fecha y hora actuales.
-            "last_modified_date": "TEXT"                                                    # Fecha de la última modificación del producto.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada producto, se incrementa automáticamente.
+            "barcode": "TEXT NOT NULL",  # Código de barras del producto, requerido.
+            "provider_code": "TEXT",  # Código del proveedor
+            "product_name": "TEXT NOT NULL",  # Nombre del producto, requerido.
+            "group_id": "INTEGER",  # ID del grupo al que pertenece el producto.
+            "provider_id": "INTEGER",  # ID del proveedor, se relaciona con la tabla de entidades.
+            "size_id": "INTEGER",  # ID del tamaño del producto.
+            "description": "TEXT",  # Descripción del producto, opcional.
+            "cost": "REAL",  # Costo del producto.
+            "sale_price": "REAL",  # Precio de venta del producto.
+            "tax": "REAL",  # Impuesto aplicable al producto.
+            "discount": "REAL",  # Descuento aplicado al producto.
+            "color_id": "INTEGER",  # ID del color del producto.
+            "comments": "TEXT",  # Comentarios adicionales sobre el producto.
+            "user_id": "INTEGER",  # ID del usuario que creó o modificó el producto.
+            "images_ids": "TEXT",  # IDs de las imágenes asociadas al producto.
+            "brand_id": "INTEGER",  # ID de la marca del producto.
+            "creation_date": "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",  # Fecha de creación del producto, se establece por defecto a la fecha y hora actuales.
+            "last_modified_date": "TEXT",  # Fecha de la última modificación del producto.
         },
-
         "foreign_keys": [
-            {# Relación con la tabla de usuarios.
+            {  # Relación con la tabla de usuarios.
                 "column": "user_id",
                 "reference_table": TABLES.USERS,
                 "reference_column": "id",
-                "export_column_name":"username"
+                "export_column_name": "username",
             },
-            {# Relación con la tabla de grupos.
+            {  # Relación con la tabla de grupos.
                 "column": "group_id",
                 "reference_table": TABLES.GROUP,
                 "reference_column": "id",
-                "export_column_name":"group_name"
+                "export_column_name": "group_name",
             },
-            {# Relación con la tabla de tamaños.
+            {  # Relación con la tabla de tamaños.
                 "column": "size_id",
                 "reference_table": TABLES.SIZES,
                 "reference_column": "id",
-                "export_column_name":"size_name"
-             },
-            {# Relación con la tabla de colores.
+                "export_column_name": "size_name",
+            },
+            {  # Relación con la tabla de colores.
                 "column": "color_id",
                 "reference_table": TABLES.COLORS,
                 "reference_column": "id",
-                "export_column_name":"color_name",
-            },   
-            {# Relación con la tabla de marcas.
+                "export_column_name": "color_name",
+            },
+            {  # Relación con la tabla de marcas.
                 "column": "brand_id",
                 "reference_table": TABLES.BRANDS,
                 "reference_column": "id",
-                "export_column_name":"brand_name"
-            }    
-        ]
+                "export_column_name": "brand_name",
+            },
+        ],
     },
-
     TABLES.IMAGES: {
         "columns": {
-            "id":          "INTEGER PRIMARY KEY AUTOINCREMENT",     # Identificador único para cada imagen, se incrementa automáticamente.
-            "image_data":  "BLOB NOT NULL",                         # Datos de la imagen, almacenados como BLOB.
-            "product_id":  "INTEGER"                                # ID del producto al que corresponde la imagen.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada imagen, se incrementa automáticamente.
+            "image_data": "BLOB NOT NULL",  # Datos de la imagen, almacenados como BLOB.
+            "product_id": "INTEGER",  # ID del producto al que corresponde la imagen.
         },
         "foreign_keys": [
-            {# Relación con la tabla de productos.
+            {  # Relación con la tabla de productos.
                 "column": "product_id",
                 "reference_table": TABLES.PRODUCTS,
                 "reference_column": "id",
-                "export_column_name":"product_name"
+                "export_column_name": "product_name",
             }
-        ]
+        ],
     },
-
     TABLES.WAREHOUSE_STOCK: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",                              # Identificador único para cada registro en el inventario.
-            "product_id": "INTEGER NOT NULL",                                       # Identificador del producto, relacionado con la tabla products.
-            "branch_id": "INTEGER NOT NULL",                                        # Identificador de la sucursal que almacena el producto.
-            "quantity": "INTEGER NOT NULL CHECK (quantity >= 0)",                   # Cantidad actual del producto en la sucursal, no puede ser negativo.
-            "last_updated": "TEXT DEFAULT CURRENT_TIMESTAMP"                        # Fecha de la última actualización del stock.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada registro en el inventario.
+            "product_id": "INTEGER NOT NULL",  # Identificador del producto, relacionado con la tabla products.
+            "branch_id": "INTEGER NOT NULL",  # Identificador de la sucursal que almacena el producto.
+            "quantity": "INTEGER NOT NULL CHECK (quantity >= 0)",  # Cantidad actual del producto en la sucursal, no puede ser negativo.
+            "last_updated": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de la última actualización del stock.
         },
         "foreign_keys": [
-            {# Relación con la tabla de productos.
+            {  # Relación con la tabla de productos.
                 "column": "product_id",
                 "reference_table": TABLES.PRODUCTS,
                 "reference_column": "id",
-                "export_column_name":"product_name"
+                "export_column_name": "product_name",
             },
-            {# Relación con la tabla de sucursales.
+            {  # Relación con la tabla de sucursales.
                 "column": "branch_id",
                 "reference_table": TABLES.STORAGE,
                 "reference_column": "id",
-                "export_column_name":"name"
-            }
-        ]
+                "export_column_name": "name",
+            },
+        ],
     },
-    
     TABLES.INVENTORY_MOVEMETNS: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",                              # Identificador único para cada movimiento de inventario.
-            "inventory_movements_group_id": "INTEGER NOT NULL",                     # Identificador del grupo de transferencia.
-            "product_id": "INTEGER NOT NULL",                                       # Identificador del producto movido.
-            "quantity": "INTEGER NOT NULL CHECK (quantity > 0)",                    # Cantidad de productos movidos, siempre positiva.
-            "discount":     "REAL DEFAULT 0.0",                                     # Descuento aplicado al producto
-            "subtotal":     "REAL NOT NULL",                                        # Subtotal para el producto (precio * cantidad)                    
-            "total":                "REAL NOT NULL",                                # Total final después de aplicar descuentos
-            "movement_date": "TEXT DEFAULT CURRENT_TIMESTAMP"                       # Fecha y hora del movimiento de inventario.
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada movimiento de inventario.
+            "inventory_movements_group_id": "INTEGER NOT NULL",  # Identificador del grupo de transferencia.
+            "product_id": "INTEGER NOT NULL",  # Identificador del producto movido.
+            "quantity": "INTEGER NOT NULL CHECK (quantity > 0)",  # Cantidad de productos movidos, siempre positiva.
+            "discount": "REAL DEFAULT 0.0",  # Descuento aplicado al producto
+            "subtotal": "REAL NOT NULL",  # Subtotal para el producto (precio * cantidad)
+            "total": "REAL NOT NULL",  # Total final después de aplicar descuentos
+            "movement_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora del movimiento de inventario.
         },
         "foreign_keys": [
-            { # Relación con la tabla de grupos de transferencia.
+            {  # Relación con la tabla de grupos de transferencia.
                 "column": "inventory_movements_group_id",
-                "reference_table": TABLES.INVENTORY_MOVEMETNS_GROUPS,  
+                "reference_table": TABLES.INVENTORY_MOVEMETNS_GROUPS,
                 "reference_column": "id",
-                "export_column_name":"id",
+                "export_column_name": "id",
             },
-            { # Relación con la tabla de productos.
-                "column": "product_id", 
-                "reference_table": TABLES.PRODUCTS, 
-                "reference_column": "id",
-                "export_column_name":"barcode"
-            }  
-        ]
-    },
-
-    TABLES.INVENTORY_MOVEMETNS_GROUPS: {
-        "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",                              # Identificador único para cada grupo de transferencia.
-            "origin_branch_id": "INTEGER NOT NULL",                                 # ID de la sucursal de origen.
-            "destination_branch_id": "INTEGER NOT NULL",                            # ID de la sucursal de destino.
-            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",                         # Fecha y hora de la creación del grupo de transferencia.
-            "notes": "TEXT"                                                         # Comentarios adicionales sobre la transferencia.
-        },
-        "foreign_keys": [
-            {# Relación con la sucursal de origen.
-                "column": "origin_branch_id",
-                "reference_table": TABLES.STORAGE,
-                "reference_column": "id",
-                "export_column_name":"name"
-            },
-            {# Relación con la sucursal de destino.
-                "column": "destination_branch_id",
-                "reference_table": TABLES.STORAGE,
-                "reference_column": "id",
-                "export_column_name":"name"
-            }
-        ]
-    },
-
-    TABLES.RESPONSABILIDADES_AFIP: {
-        "columns": {
-            "id":          "INTEGER PRIMARY KEY",                   # Identificador único para cada responsabilidad, se establece como clave primaria.
-            "codigo":      "INTEGER NOT NULL",                      # Código de responsabilidad, requerido.
-            "descripcion": "TEXT NOT NULL"                          # Descripción de la responsabilidad, requerida.
-        }
-    },
-
-    TABLES.BRANDS: {
-        "columns": {
-            "id":                  "INTEGER PRIMARY KEY AUTOINCREMENT",                     # Identificador único para cada marca, se incrementa automáticamente.
-            "brand_name":         "TEXT NOT NULL UNIQUE",                                   # Nombre de la marca, debe ser único y no nulo.
-            "description":        "TEXT",                                                   # Descripción de la marca, opcional.
-            "creation_date":      "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",   # Fecha de creación del registro, se establece por defecto a la fecha y hora actuales.
-            "last_modified_date": "TEXT"                                                    # Fecha de la última modificación de la marca.
-        }
-    },
-
-    TABLES.PURCHASES: {
-        "columns": {
-            "id":                   "INTEGER PRIMARY KEY AUTOINCREMENT",   # Identificador único de la venta
-            "entity_id":            "INTEGER",                             # Id de la entidad 
-            "purchase_date":        "TEXT DEFAULT CURRENT_TIMESTAMP",      # Fecha y hora de la venta
-            "subtotal":             "REAL NOT NULL",                       # Suma total antes de descuentos
-            "discount":             "REAL DEFAULT 0.0",                    # Total de descuentos aplicados
-            "total":                "REAL NOT NULL",                       # Total final después de aplicar descuentos
-            "payment_method":       "TEXT",                                # Medio de pago (efectivo, tarjeta, etc.)
-            "transaction_number":   "TEXT",                                # Número del comprobante te transferencia/ticket de la venta
-            "invoice_number":       "TEXT",                                # Número de factura de la venta
-            "notes":                "TEXT",                                # Nota de texto para dejar comentarios
-            "file_id":              "INTEGER"                              # Id del arhcivo adjunto de la compra TODO: Tenes cuidado con esto
-        },
-        "foreign_keys": [
-            {# Relación con tabla de clientes si es necesario
-                "column": "entity_id",
-                "reference_table": TABLES.ENTITIES,
-                "reference_column": "id",
-                "export_column_name":"entity_name"
-            },
-            {# Relación con tabla de archivos si es necesario
-                "column": "file_id",
-                "reference_table": TABLES.FILE_ATTACHMENTS,
-                "reference_column": "id",
-                "export_column_name":"file_name"
-            }
-        ]
-    },
-    
-    TABLES.PURCHASES_DETAIL:{
-        "columns": {
-            "id":           "INTEGER PRIMARY KEY AUTOINCREMENT",            # Identificador único del detalle de la venta
-            "purchase_id":  "INTEGER NOT NULL",                             # ID de la venta relacionada
-            "product_id":   "INTEGER",                                      # ID del producto
-            "sale_price":   "REAL NOT NULL",                                # Precio del producto en el momento de la venta
-            "quantity":     "INTEGER NOT NULL CHECK (quantity > 0)",        # Cantidad de productos vendidos
-            "discount":     "REAL DEFAULT 0.0",                             # Descuento aplicado al producto
-            "subtotal":     "REAL NOT NULL",                                # Subtotal para el producto (precio * cantidad)
-            "metadata":     "TEXT"                                          # Informacion adicional de la venta
-        },
-        "foreign_keys": [
-            {# Relación con la tabla de ventas
-                "column": "purchase_id",
-                "reference_table": TABLES.PURCHASES,
-                "reference_column": "id",
-                "export_column_name":"id"
-            },
-            {# Relación a la tabla de productos
+            {  # Relación con la tabla de productos.
                 "column": "product_id",
                 "reference_table": TABLES.PRODUCTS,
                 "reference_column": "id",
-                "export_column_name":"product_name"
-            }
-        ]
-    }
+                "export_column_name": "barcode",
+            },
+        ],
+    },
+    TABLES.INVENTORY_MOVEMETNS_GROUPS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada grupo de transferencia.
+            "origin_branch_id": "INTEGER NOT NULL",  # ID de la sucursal de origen.
+            "destination_branch_id": "INTEGER NOT NULL",  # ID de la sucursal de destino.
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la creación del grupo de transferencia.
+            "notes": "TEXT",  # Comentarios adicionales sobre la transferencia.
+        },
+        "foreign_keys": [
+            {  # Relación con la sucursal de origen.
+                "column": "origin_branch_id",
+                "reference_table": TABLES.STORAGE,
+                "reference_column": "id",
+                "export_column_name": "name",
+            },
+            {  # Relación con la sucursal de destino.
+                "column": "destination_branch_id",
+                "reference_table": TABLES.STORAGE,
+                "reference_column": "id",
+                "export_column_name": "name",
+            },
+        ],
+    },
+    TABLES.RESPONSABILIDADES_AFIP: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY",  # Identificador único para cada responsabilidad, se establece como clave primaria.
+            "codigo": "INTEGER NOT NULL",  # Código de responsabilidad, requerido.
+            "descripcion": "TEXT NOT NULL",  # Descripción de la responsabilidad, requerida.
+        }
+    },
+    TABLES.BRANDS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada marca, se incrementa automáticamente.
+            "brand_name": "TEXT NOT NULL UNIQUE",  # Nombre de la marca, debe ser único y no nulo.
+            "description": "TEXT",  # Descripción de la marca, opcional.
+            "creation_date": "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",  # Fecha de creación del registro, se establece por defecto a la fecha y hora actuales.
+            "last_modified_date": "TEXT",  # Fecha de la última modificación de la marca.
+        }
+    },
+    TABLES.PURCHASES: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único de la venta
+            "entity_id": "INTEGER",  # Id de la entidad
+            "purchase_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la venta
+            "subtotal": "REAL NOT NULL",  # Suma total antes de descuentos
+            "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
+            "total": "REAL NOT NULL",  # Total final después de aplicar descuentos
+            "payment_method": "TEXT",  # Medio de pago (efectivo, tarjeta, etc.)
+            "transaction_number": "TEXT",  # Número del comprobante te transferencia/ticket de la venta
+            "invoice_number": "TEXT",  # Número de factura de la venta
+            "notes": "TEXT",  # Nota de texto para dejar comentarios
+            "file_id": "INTEGER",  # Id del arhcivo adjunto de la compra TODO: Tenes cuidado con esto
+        },
+        "foreign_keys": [
+            {  # Relación con tabla de clientes si es necesario
+                "column": "entity_id",
+                "reference_table": TABLES.ENTITIES,
+                "reference_column": "id",
+                "export_column_name": "entity_name",
+            },
+            {  # Relación con tabla de archivos si es necesario
+                "column": "file_id",
+                "reference_table": TABLES.FILE_ATTACHMENTS,
+                "reference_column": "id",
+                "export_column_name": "file_name",
+            },
+        ],
+    },
+    TABLES.PURCHASES_DETAIL: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único del detalle de la venta
+            "purchase_id": "INTEGER NOT NULL",  # ID de la venta relacionada
+            "product_id": "INTEGER",  # ID del producto
+            "sale_price": "REAL NOT NULL",  # Precio del producto en el momento de la venta
+            "quantity": "INTEGER NOT NULL CHECK (quantity > 0)",  # Cantidad de productos vendidos
+            "discount": "REAL DEFAULT 0.0",  # Descuento aplicado al producto
+            "subtotal": "REAL NOT NULL",  # Subtotal para el producto (precio * cantidad)
+            "metadata": "TEXT",  # Informacion adicional de la venta
+        },
+        "foreign_keys": [
+            {  # Relación con la tabla de ventas
+                "column": "purchase_id",
+                "reference_table": TABLES.PURCHASES,
+                "reference_column": "id",
+                "export_column_name": "id",
+            },
+            {  # Relación a la tabla de productos
+                "column": "product_id",
+                "reference_table": TABLES.PRODUCTS,
+                "reference_column": "id",
+                "export_column_name": "product_name",
+            },
+        ],
+    },
 }
 
 DATABASE_PATH = "./database/mykonos.db"
 
+
 class Database:
     def __init__(self, db_path=DATABASE_PATH):
         if not os.path.exists(db_path):
-            print(f"Base de datos no encontrada en: {db_path}. Creando una nueva base de datos.")
+            print(
+                f"Base de datos no encontrada en: {db_path}. Creando una nueva base de datos."
+            )
             try:
                 # Create the directory if it doesn't exist
                 os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -456,7 +444,7 @@ class Database:
             except sqlite3.Error as e:
                 print(f"Error al crear la base de datos: {e}")
                 return None
-            
+
         self.db_path = db_path
         self.db_lock = threading.Lock()
         self.create_tables()
@@ -474,7 +462,7 @@ class Database:
 
     def get_db_lock(self):
         return self.db_lock
-    
+
     # Tables
     def create_tables(self):
         """
@@ -485,31 +473,43 @@ class Database:
             try:
                 # Habilitar claves foráneas
                 conn.execute("PRAGMA foreign_keys = ON;")
-                
+
                 for table, definition in DATABASE_TABLES.items():
                     primary_key = definition.get("primary_key")
                     foreign_keys = definition.get("foreign_keys", [])
-                    self.create_or_update_table(conn, table.value, definition["columns"], foreign_keys, primary_key)
+                    self.create_or_update_table(
+                        conn,
+                        table.value,
+                        definition["columns"],
+                        foreign_keys,
+                        primary_key,
+                    )
                 conn.commit()
             except sqlite3.Error as e:
                 print(f"Error al crear o actualizar tablas: {e}")
             finally:
                 conn.close()
 
-    def create_or_update_table(self, conn, table_name, columns, foreign_keys=[], primary_key=None):
+    def create_or_update_table(
+        self, conn, table_name, columns, foreign_keys=[], primary_key=None
+    ):
         """
         Crea la tabla si no existe y revisa si hay columnas faltantes o de más.
         Soporta claves primarias compuestas para relaciones many-to-many.
         """
         existing_columns = self.get_existing_columns(conn, table_name)
-        
+
         # Build column definitions, excluding PRIMARY KEY from individual columns if composite primary key is defined
         column_defs = []
         for col_name, col_type in columns.items():
             # If we have a composite primary key, remove PRIMARY KEY from individual column definitions
             if primary_key and col_name in primary_key:
                 # Remove PRIMARY KEY AUTOINCREMENT from the column definition
-                col_type_clean = col_type.replace("PRIMARY KEY AUTOINCREMENT", "").replace("PRIMARY KEY", "").strip()
+                col_type_clean = (
+                    col_type.replace("PRIMARY KEY AUTOINCREMENT", "")
+                    .replace("PRIMARY KEY", "")
+                    .strip()
+                )
                 column_defs.append(f"{col_name} {col_type_clean}")
             else:
                 column_defs.append(f"{col_name} {col_type}")
@@ -522,9 +522,13 @@ class Database:
         # Add foreign key constraints
         if foreign_keys:
             for fk in foreign_keys:
-                column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})")
+                column_defs.append(
+                    f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})"
+                )
 
-        create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(column_defs)});"
+        create_table_sql = (
+            f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(column_defs)});"
+        )
 
         if not existing_columns:
             print(f"Creando tabla: {table_name}")
@@ -534,20 +538,32 @@ class Database:
             # Check for extra columns
             extra_columns = [col for col in existing_columns if col not in columns]
             if extra_columns:
-                self.remove_extra_columns(conn, table_name, columns, foreign_keys, extra_columns, existing_columns, primary_key)
+                self.remove_extra_columns(
+                    conn,
+                    table_name,
+                    columns,
+                    foreign_keys,
+                    extra_columns,
+                    existing_columns,
+                    primary_key,
+                )
 
             # Add missing columns
             for col_name, col_type in columns.items():
                 if col_name not in existing_columns:
                     try:
                         # Clean column type for ALTER TABLE (remove PRIMARY KEY constraints)
-                        col_type_clean = col_type.replace("PRIMARY KEY AUTOINCREMENT", "").replace("PRIMARY KEY", "").strip()
+                        col_type_clean = (
+                            col_type.replace("PRIMARY KEY AUTOINCREMENT", "")
+                            .replace("PRIMARY KEY", "")
+                            .strip()
+                        )
                         alter_table_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type_clean};"
                         print(f"Agregando columna: {col_name} a la tabla {table_name}")
                         conn.execute(alter_table_sql)
                     except sqlite3.OperationalError as e:
                         print(f"Error al agregar la columna {col_name}: {e}")
-                        if 'duplicate column name' in str(e).lower():
+                        if "duplicate column name" in str(e).lower():
                             continue
                         else:
                             raise e
@@ -559,7 +575,16 @@ class Database:
         cursor = conn.execute(f"PRAGMA table_info({table_name});")
         return [row[1] for row in cursor.fetchall()]
 
-    def remove_extra_columns(self, conn, table_name, columns, foreign_keys, extra_columns, existing_columns, primary_key=None):
+    def remove_extra_columns(
+        self,
+        conn,
+        table_name,
+        columns,
+        foreign_keys,
+        extra_columns,
+        existing_columns,
+        primary_key=None,
+    ):
         """
         Reestructura la tabla para eliminar columnas extra sin borrar datos existentes.
         """
@@ -567,7 +592,7 @@ class Database:
 
         # Deshabilitar claves foráneas temporalmente
         conn.execute("PRAGMA foreign_keys = OFF;")
-        
+
         # Verificar si la tabla temporal ya existe, y si es así, eliminarla
         conn.execute(f"DROP TABLE IF EXISTS {table_name}_temp;")
 
@@ -576,7 +601,11 @@ class Database:
         for col_name, col_type in columns.items():
             # If we have a composite primary key, remove PRIMARY KEY from individual column definitions
             if primary_key and col_name in primary_key:
-                col_type_clean = col_type.replace("PRIMARY KEY AUTOINCREMENT", "").replace("PRIMARY KEY", "").strip()
+                col_type_clean = (
+                    col_type.replace("PRIMARY KEY AUTOINCREMENT", "")
+                    .replace("PRIMARY KEY", "")
+                    .strip()
+                )
                 column_defs.append(f"{col_name} {col_type_clean}")
             else:
                 column_defs.append(f"{col_name} {col_type}")
@@ -589,13 +618,17 @@ class Database:
         # Add foreign key constraints
         if foreign_keys:
             for fk in foreign_keys:
-                column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})")
+                column_defs.append(
+                    f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})"
+                )
 
-        temp_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name}_temp ({', '.join(column_defs)});"
+        temp_table_sql = (
+            f"CREATE TABLE IF NOT EXISTS {table_name}_temp ({', '.join(column_defs)});"
+        )
         conn.execute(temp_table_sql)
 
         # Copiar los datos de las columnas válidas a la tabla temporal
-        valid_columns = ', '.join([col for col in existing_columns if col in columns])
+        valid_columns = ", ".join([col for col in existing_columns if col in columns])
         copy_data_sql = f"INSERT INTO {table_name}_temp ({valid_columns}) SELECT {valid_columns} FROM {table_name};"
         conn.execute(copy_data_sql)
 
@@ -619,7 +652,7 @@ class Database:
             dict: {'success': bool, 'message': str, 'deleted_count': int}
         """
         result = {"success": False, "message": "", "deleted_count": 0}
-        
+
         try:
             with self.create_connection() as conn:
                 if conn:
@@ -634,10 +667,14 @@ class Database:
 
                     conn.commit()
                     result["success"] = True
-                    result["message"] = f"Se eliminaron {deleted_count} tablas correctamente."
+                    result["message"] = (
+                        f"Se eliminaron {deleted_count} tablas correctamente."
+                    )
                     result["deleted_count"] = deleted_count
                 else:
-                    result["message"] = "No se pudo establecer la conexión con la base de datos."
+                    result["message"] = (
+                        "No se pudo establecer la conexión con la base de datos."
+                    )
         except Exception as e:
             result["message"] = f"Error al eliminar las tablas: {e}"
 
@@ -674,12 +711,15 @@ class Database:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 # Verificar si la tabla existe antes de consultar
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+                cursor.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (table_name,),
+                )
                 if not cursor.fetchone():
                     return {
                         "success": False,
                         "message": f"La tabla '{table_name}' no existe en la base de datos.",
-                        "table_names": []
+                        "table_names": [],
                     }
 
                 # Obtener los nombres de las columnas
@@ -690,16 +730,16 @@ class Database:
                 return {
                     "success": True,
                     "message": f"Se obtuvieron {len(column_names)} columnas de la tabla '{table_name}'.",
-                    "table_names": column_names
+                    "table_names": column_names,
                 }
 
         except sqlite3.Error as e:
             return {
                 "success": False,
                 "message": f"Error al obtener las columnas de la tabla '{table_name}': {e}",
-                "table_names": []
+                "table_names": [],
             }
-        
+
     # Record
     def add_record(self, table_name, data):
         """
@@ -709,10 +749,10 @@ class Database:
         :param data: Un diccionario con los datos a insertar, donde las claves son los nombres de las columnas.
         :return: Un diccionario con 'success' (bool), 'message' (str) y 'rowid' (int o None).
         """
-        placeholders = ', '.join([f":{key}" for key in data.keys()])
-        columns = ', '.join(data.keys())
-        sql = f'''INSERT INTO {table_name} ({columns})
-                VALUES ({placeholders})'''
+        placeholders = ", ".join([f":{key}" for key in data.keys()])
+        columns = ", ".join(data.keys())
+        sql = f"""INSERT INTO {table_name} ({columns})
+                VALUES ({placeholders})"""
 
         retries = 5
         while retries:
@@ -725,7 +765,7 @@ class Database:
                         return {
                             "success": True,
                             "message": f"Registro agregado correctamente en la tabla '{table_name}'",
-                            "rowid": cur.lastrowid
+                            "rowid": cur.lastrowid,
                         }
             except sqlite3.OperationalError as e:
                 if "locked" in str(e):
@@ -735,27 +775,27 @@ class Database:
                     return {
                         "success": False,
                         "message": f"Error al agregar registro en la tabla '{table_name}': {e}",
-                        "rowid": None
+                        "rowid": None,
                     }
             except sqlite3.IntegrityError as e:
                 return {
                     "success": False,
                     "message": f"Error de integridad al agregar registro en la tabla '{table_name}': {e}",
-                    "rowid": None
+                    "rowid": None,
                 }
             except Exception as e:
                 return {
                     "success": False,
                     "message": f"Error al agregar registro en la tabla '{table_name}': {e}",
-                    "rowid": None
+                    "rowid": None,
                 }
 
         return {
             "success": False,
             "message": f"Error al agregar registro en la tabla '{table_name}': la base de datos está bloqueada después de varios intentos",
-            "rowid": None
+            "rowid": None,
         }
-    
+
     def update_record(self, table_name, data):
         """
         Actualiza un registro en la tabla especificada de la base de datos.
@@ -764,16 +804,22 @@ class Database:
         :param data: Un diccionario con los datos a actualizar, incluyendo el ID del registro.
         :return: Un diccionario con dos claves: 'success' (bool) y 'message' (str).
         """
-        if 'id' not in data:
-            return {'success': False,
-                    'message': "Error: El diccionario de datos debe contener una clave 'id' con el ID del registro."}
+        if "id" not in data:
+            return {
+                "success": False,
+                "message": "Error: El diccionario de datos debe contener una clave 'id' con el ID del registro.",
+            }
 
-        if data.get('id', None) is None:
-            return {'success': False, 
-                    'message': f"Error: El diccionario de datos debe contener una clave 'id' valido, actual:{data.get('id', None)}"}
-        
+        if data.get("id", None) is None:
+            return {
+                "success": False,
+                "message": f"Error: El diccionario de datos debe contener una clave 'id' valido, actual:{data.get('id', None)}",
+            }
+
         # Construir la cláusula SET de la consulta SQL, excluyendo 'id'
-        set_clause = ', '.join([f"{key} = :{key}" for key in data.keys() if key != 'id'])
+        set_clause = ", ".join(
+            [f"{key} = :{key}" for key in data.keys() if key != "id"]
+        )
         sql = f"UPDATE {table_name} SET {set_clause} WHERE id = :id"
 
         try:
@@ -782,9 +828,15 @@ class Database:
                     cur = conn.cursor()
                     cur.execute(sql, data)
                     conn.commit()
-            return {'success': True, 'message': f"Registro en la tabla '{table_name}' actualizado correctamente."}
+            return {
+                "success": True,
+                "message": f"Registro en la tabla '{table_name}' actualizado correctamente.",
+            }
         except Exception as e:
-            return {'success': False, 'message': f"Error al actualizar el registro en la tabla '{table_name}': {e}"}
+            return {
+                "success": False,
+                "message": f"Error al actualizar el registro en la tabla '{table_name}': {e}",
+            }
 
     def delete_record(self, table_name, where_clause, params):
         """
@@ -802,25 +854,19 @@ class Database:
                 with sqlite3.connect(self.db_path) as conn:
                     cur = conn.cursor()
                     cur.execute(sql, params)
-                    
+
                     if cur.rowcount == 0:
                         return {
                             "success": False,
-                            "message": "Error: No se encontró un registro que cumpla con los criterios especificados."
+                            "message": "Error: No se encontró un registro que cumpla con los criterios especificados.",
                         }
-                    
+
                     conn.commit()
-                    
-            return {
-                "success": True,
-                "message": "Registro eliminado correctamente"
-            }
+
+            return {"success": True, "message": "Registro eliminado correctamente"}
 
         except Exception as e:
-            return {
-                "success": False,
-                "message": f"Error al eliminar registro: {e}"
-            }
+            return {"success": False, "message": f"Error al eliminar registro: {e}"}
 
     def get_record_by_id(self, table_name, record_id):
         """
@@ -843,21 +889,21 @@ class Database:
                     columns = [desc[0] for desc in cur.description]
                     record = dict(zip(columns, row))
                     return {
-                        'success': True,
-                        'message': f"Registro en la tabla '{table_name}' encontrado",
-                        'record': record
+                        "success": True,
+                        "message": f"Registro en la tabla '{table_name}' encontrado",
+                        "record": record,
                     }
                 else:
                     return {
-                        'success': False,
-                        'message': f"No se encontró el registro en la tabla '{table_name}'",
-                        'record': None
+                        "success": False,
+                        "message": f"No se encontró el registro en la tabla '{table_name}'",
+                        "record": None,
                     }
         except Exception as e:
             return {
-                'success': False,
-                'message': f"Error al obtener el registro en la tabla '{table_name}': {e}",
-                'record': None
+                "success": False,
+                "message": f"Error al obtener el registro en la tabla '{table_name}': {e}",
+                "record": None,
             }
 
     def get_record_by_clause(self, table_name, search_clause, value):
@@ -877,7 +923,9 @@ class Database:
 
         try:
             with self.create_connection() as conn:
-                conn.row_factory = sqlite3.Row  # Permite acceder a los valores por nombre de columna
+                conn.row_factory = (
+                    sqlite3.Row
+                )  # Permite acceder a los valores por nombre de columna
                 cur = conn.cursor()
 
                 # Convertir value a tupla si no lo es
@@ -886,11 +934,13 @@ class Database:
 
                 cur.execute(sql, value)
                 row = cur.fetchone()
-                
+
                 if row:
                     result["success"] = True
                     result["message"] = "Registro encontrado."
-                    result["record"] = {key: row[key] for key in row.keys()}  # Diccionario con nombres de columnas
+                    result["record"] = {
+                        key: row[key] for key in row.keys()
+                    }  # Diccionario con nombres de columnas
                 else:
                     result["message"] = "No se encontró ningún registro."
 
@@ -914,18 +964,29 @@ class Database:
         sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
         try:
             with self.create_connection() as conn:
-                conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
+                conn.row_factory = (
+                    sqlite3.Row
+                )  # Devuelve los resultados como un diccionario
                 cur = conn.cursor()
                 cur.execute(sql, (value,))
                 rows = cur.fetchall()
                 if rows:
-                    return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
+                    return [
+                        dict(row) for row in rows
+                    ]  # Convierte cada fila en un diccionario y devuelve la lista
                 return []
         except Exception as e:
             print(f"Error al obtener registros de la tabla '{table_name}': {e}")
             return []
-        
-    def get_join_records(self, table1_name, table2_name, join_column1, join_column2, select_columns="t1.*, t2.*"):
+
+    def get_join_records(
+        self,
+        table1_name,
+        table2_name,
+        join_column1,
+        join_column2,
+        select_columns="t1.*, t2.*",
+    ):
         """
         Performs an INNER JOIN between two tables and retrieves records.
 
@@ -942,8 +1003,14 @@ class Database:
             dict: {'success': bool, 'message': str, 'records': list[dict]}
         """
         # Basic validation
-        if not all([table1_name, table2_name, join_column1, join_column2, select_columns]):
-             return {'success': False, 'message': "Invalid table or column names provided.", 'records': []}
+        if not all(
+            [table1_name, table2_name, join_column1, join_column2, select_columns]
+        ):
+            return {
+                "success": False,
+                "message": "Invalid table or column names provided.",
+                "records": [],
+            }
 
         sql = f"""
             SELECT {select_columns}
@@ -969,8 +1036,17 @@ class Database:
         except Exception as e:
             print(f"Error al obtener registros de la tabla: {e}")
             return []
-        
-    def get_join_records_tres_tables(self, table1_name, table2_name, table3_name, join_column1, join_column2, join_column3, select_columns="t1.*, t2.*, t3.*"):
+
+    def get_join_records_tres_tables(
+        self,
+        table1_name,
+        table2_name,
+        table3_name,
+        join_column1,
+        join_column2,
+        join_column3,
+        select_columns="t1.*, t2.*, t3.*",
+    ):
         """
         Performs an INNER JOIN between three tables and retrieves records.
 
@@ -989,8 +1065,22 @@ class Database:
             dict: {'success': bool, 'message': str, 'records': list[dict]}
         """
         # Basic validation
-        if not all([table1_name, table2_name, table3_name, join_column1, join_column2, join_column3, select_columns]):
-             return {'success': False, 'message': "Invalid table or column names provided.", 'records': []}
+        if not all(
+            [
+                table1_name,
+                table2_name,
+                table3_name,
+                join_column1,
+                join_column2,
+                join_column3,
+                select_columns,
+            ]
+        ):
+            return {
+                "success": False,
+                "message": "Invalid table or column names provided.",
+                "records": [],
+            }
 
         sql = f"""
             SELECT {select_columns}
@@ -1018,7 +1108,9 @@ class Database:
             print(f"Error al obtener registros de la tabla: {e}")
             return []
 
-    def get_join_records_by_id(self, table1_name, table2_name, join_column1, join_column2, record_id):
+    def get_join_records_by_id(
+        self, table1_name, table2_name, join_column1, join_column2, record_id
+    ):
         """
         Obtiene registros de dos tablas unidas por una columna específica, filtrando por el ID de la primera tabla.
 
@@ -1041,16 +1133,20 @@ class Database:
 
         try:
             with self.create_connection() as conn:
-                conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
+                conn.row_factory = (
+                    sqlite3.Row
+                )  # Devuelve los resultados como un diccionario
                 cur = conn.cursor()
                 cur.execute(sql, (record_id,))
                 rows = cur.fetchall()
                 if rows:
-                    return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
+                    return [
+                        dict(row) for row in rows
+                    ]  # Convierte cada fila en un diccionario y devuelve la lista
                 return []
         except Exception as e:
             print(f"Error al obtener registros de la tabla '{table1_name}': {e}")
-            return []  
+            return []
 
     def get_all_records(self, table_name):
         """
@@ -1081,60 +1177,57 @@ class Database:
     def add_provider_brand_relationship(self, provider_id, brand_id):
         """
         Adds a many-to-many relationship between a provider and a brand.
-        
+
         Args:
             provider_id (int): The ID of the provider (entity)
             brand_id (int): The ID of the brand
-            
+
         Returns:
             dict: {'success': bool, 'message': str}
         """
-        data = {
-            'id_provider': provider_id,
-            'id_brand': brand_id
-        }
-        
+        data = {"id_provider": provider_id, "id_brand": brand_id}
+
         # Check if relationship already exists
         existing = self.get_record_by_clause(
-            TABLES.PROVEEDORXMARCA.value, 
-            "id_provider = ? AND id_brand = ?", 
-            (provider_id, brand_id)
+            TABLES.PROVEEDORXMARCA.value,
+            "id_provider = ? AND id_brand = ?",
+            (provider_id, brand_id),
         )
-        
-        if existing['success']:
+
+        if existing["success"]:
             return {
-                'success': False,
-                'message': 'La relación entre el proveedor y la marca ya existe.'
+                "success": False,
+                "message": "La relación entre el proveedor y la marca ya existe.",
             }
-            
+
         result = self.add_record(TABLES.PROVEEDORXMARCA.value, data)
         return result
 
     def remove_provider_brand_relationship(self, provider_id, brand_id):
         """
         Removes a many-to-many relationship between a provider and a brand.
-        
+
         Args:
             provider_id (int): The ID of the provider (entity)
             brand_id (int): The ID of the brand
-            
+
         Returns:
             dict: {'success': bool, 'message': str}
         """
         result = self.delete_record(
             TABLES.PROVEEDORXMARCA.value,
             "id_provider = ? AND id_brand = ?",
-            (provider_id, brand_id)
+            (provider_id, brand_id),
         )
         return result
 
     def get_brands_by_provider(self, provider_id):
         """
         Gets all brands associated with a specific provider.
-        
+
         Args:
             provider_id (int): The ID of the provider
-            
+
         Returns:
             list: List of brand records
         """
@@ -1143,16 +1236,16 @@ class Database:
             TABLES.BRANDS.value,
             "id_brand",
             "id",
-            "t2.*"  # Only select brand columns
+            "t2.*",  # Only select brand columns
         )
 
     def get_providers_by_brand(self, brand_id):
         """
         Gets all providers associated with a specific brand.
-        
+
         Args:
             brand_id (int): The ID of the brand
-            
+
         Returns:
             list: List of provider (entity) records
         """
@@ -1161,5 +1254,5 @@ class Database:
             TABLES.ENTITIES.value,
             "id_provider",
             "id",
-            "t2.*"  # Only select entity columns
+            "t2.*",  # Only select entity columns
         )

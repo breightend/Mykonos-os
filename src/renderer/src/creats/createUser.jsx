@@ -4,7 +4,7 @@ import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft, Eye, EyeClosed } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useDropzone } from 'react-dropzone'
-
+//TODO: poder asignarle sucursales al usuario.
 function CreateUser() {
   const [, setLocation] = useLocation()
   const [formData, setFormData] = useState({
