@@ -20,7 +20,6 @@ export default function ModalColor() {
       [name]: value
     }))
   }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -28,18 +27,19 @@ export default function ModalColor() {
       console.log(response)
       setFormData({
         color_name: '',
-        color_hex: ''
+        color_hex: '#000000'
       })
-      fetchColor()
+      const updatedColors = await fetchColor()
+      setColors(updatedColors)
     } catch (error) {
       console.error('Error:', error)
     }
   }
-
-  const handleDeleteColor = async (colorId) => {
+  const handleDeleteColor = (colorId) => async () => {
     try {
       await deleteColor(colorId)
-      fetchColor()
+      const response = await fetchColor()
+      setColors(response)
     } catch (error) {
       console.error('Error deleting color:', error)
     }

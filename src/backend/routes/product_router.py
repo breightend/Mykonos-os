@@ -185,7 +185,7 @@ def obtener_colores():
 @product_router.route("/colors/<color_id>", methods=["DELETE"])
 def eliminar_color(color_id):
     db = Database()
-    success = db.delete_record("colors", color_id)
+    success = db.delete_record("colors", "id = ?",color_id)
     if success:
         return jsonify({"mensaje": "Color eliminado con éxito", "status": "éxito"}), 200
     else:
