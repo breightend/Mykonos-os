@@ -94,7 +94,7 @@ export default function ModalColor() {
                       <td>
                         <button
                           className="btn btn-sm btn-warning"
-                          onClick={() => handleDeleteColor(color.id)}
+                          onClick={handleDeleteColor(color.id)}
                         >
                           <Trash2 className="" size={18} />
                         </button>
