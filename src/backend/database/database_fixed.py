@@ -1083,34 +1083,50 @@ class Database:
         Adds a many-to-many relationship between a provider and a brand.
         
         Args:
-            provider_id (int): The ID of the provider (from ENTITIES table)
-            brand_id (int): The ID of the brand (from BRANDS table)
+            provider_id (int): The ID of the provider (entity)
+            brand_id (int): The ID of the brand
             
         Returns:
-            dict: {'success': bool, 'message': str, 'rowid': int or None}
+            dict: {'success': bool, 'message': str}
         """
         data = {
-            "id_provider": provider_id,
-            "id_brand": brand_id
+            'id_provider': provider_id,
+            'id_brand': brand_id
         }
         
-        return self.add_record(TABLES.PROVEEDORXMARCA.value, data)
+        # Check if relationship already exists
+        existing = self.get_record_by_clause(
+            TABLES.PROVEEDORXMARCA.value, 
+            "id_provider = ? AND id_brand = ?", 
+            (provider_id, brand_id)
+        )
+        
+        if existing['success']:
+            return {
+                'success': False,
+                'message': 'La relación entre el proveedor y la marca ya existe.'
+            }
+            
+        result = self.add_record(TABLES.PROVEEDORXMARCA.value, data)
+        return result
 
     def remove_provider_brand_relationship(self, provider_id, brand_id):
         """
         Removes a many-to-many relationship between a provider and a brand.
         
         Args:
-            provider_id (int): The ID of the provider
+            provider_id (int): The ID of the provider (entity)
             brand_id (int): The ID of the brand
             
         Returns:
             dict: {'success': bool, 'message': str}
         """
-        where_clause = "id_provider = ? AND id_brand = ?"
-        params = (provider_id, brand_id)
-        
-        return self.delete_record(TABLES.PROVEEDORXMARCA.value, where_clause, params)
+        result = self.delete_record(
+            TABLES.PROVEEDORXMARCA.value,
+            "id_provider = ? AND id_brand = ?",
+            (provider_id, brand_id)
+        )
+        return result
 
     def get_brands_by_provider(self, provider_id):
         """
@@ -1120,7 +1136,7 @@ class Database:
             provider_id (int): The ID of the provider
             
         Returns:
-            list[dict]: List of brand records associated with the provider
+            list: List of brand records
         """
         return self.get_join_records(
             TABLES.PROVEEDORXMARCA.value,
@@ -1138,7 +1154,7 @@ class Database:
             brand_id (int): The ID of the brand
             
         Returns:
-            list[dict]: List of provider (entity) records associated with the brand
+            list: List of provider (entity) records
         """
         return self.get_join_records(
             TABLES.PROVEEDORXMARCA.value,
@@ -1147,44 +1163,3 @@ class Database:
             "id",
             "t2.*"  # Only select entity columns
         )
-
-    def get_provider_brands_relationships(self):
-        """
-        Gets all provider-brand relationships with detailed information.
-        
-        Returns:
-            list[dict]: List of records containing provider and brand information
-        """
-        return self.get_join_records_tres_tables(
-            TABLES.PROVEEDORXMARCA.value,
-            TABLES.ENTITIES.value,
-            TABLES.BRANDS.value,
-            "id_provider",
-            "id",
-            "id_brand",
-            "t1.id_provider, t1.id_brand, t2.entity_name, t2.cuit, t3.brand_name, t3.description"
-        )
-
-    def check_provider_brand_relationship_exists(self, provider_id, brand_id):
-        """
-        Checks if a relationship between a provider and brand already exists.
-        
-        Args:
-            provider_id (int): The ID of the provider
-            brand_id (int): The ID of the brand
-            
-        Returns:
-            dict: {'success': bool, 'message': str, 'exists': bool, 'record': dict or None}
-        """
-        result = self.get_record_by_clause(
-            TABLES.PROVEEDORXMARCA.value,
-            "id_provider = ? AND id_brand = ?",
-            (provider_id, brand_id)
-        )
-        
-        return {
-            'success': result['success'],
-            'message': result['message'],
-            'exists': result['success'] and result['record'] is not None,
-            'record': result['record']
-        }

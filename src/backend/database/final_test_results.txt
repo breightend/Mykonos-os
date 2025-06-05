@@ -1,0 +1,4 @@
+=== COMPREHENSIVE COMPOSITE PRIMARY KEY TEST ===
+
+1. TESTING DATABASE SCHEMA
+----------------------------------------

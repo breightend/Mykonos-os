@@ -1,4 +1,8 @@
-# filepath: c:\Users\brend\OneDrive\Desktop\BrendaDevs\mykonos-os-electron-dev\Mykonos-app\src\backend\database\database.py
+import os
+import io as io
+import sqlite3
+import time
+import threading
 import os
 import io as io
 import sqlite3
@@ -49,7 +53,7 @@ DATABASE_TABLES = {
         }
     },
 
-    TABLES.PROVEEDORXMARCA: {
+TABLES.PROVEEDORXMARCA: {
         "columns": {
             "id_brand": "INTEGER NOT NULL",  # Identificador de la marca.
             "id_provider": "INTEGER NOT NULL" # Identificador del proveedor.
@@ -80,6 +84,7 @@ DATABASE_TABLES = {
             "upload_date": "TEXT DEFAULT CURRENT_TIMESTAMP",    # Fecha de carga del archivo
             "comment": "TEXT"                                   # Comentario opcional sobre el archivo
         }
+        
     },
 
     TABLES.ACCOUNT_MOVEMENTS: {
@@ -483,130 +488,118 @@ class Database:
         conn = self.create_connection()
         if conn is not None:
             try:
-                # Habilitar claves foráneas
-                conn.execute("PRAGMA foreign_keys = ON;")
-                
                 for table, definition in DATABASE_TABLES.items():
                     primary_key = definition.get("primary_key")
                     foreign_keys = definition.get("foreign_keys", [])
-                    self.create_or_update_table(conn, table.value, definition["columns"], foreign_keys, primary_key)
+                    create_or_update_table(conn, table.value, definition["columns"], foreign_keys, primary_key)
                 conn.commit()
             except sqlite3.Error as e:
                 print(f"Error al crear o actualizar tablas: {e}")
             finally:
                 conn.close()
 
-    def create_or_update_table(self, conn, table_name, columns, foreign_keys=[], primary_key=None):
-        """
-        Crea la tabla si no existe y revisa si hay columnas faltantes o de más.
-        Soporta claves primarias compuestas para relaciones many-to-many.
-        """
-        existing_columns = self.get_existing_columns(conn, table_name)
-        
-        # Build column definitions, excluding PRIMARY KEY from individual columns if composite primary key is defined
-        column_defs = []
-        for col_name, col_type in columns.items():
-            # If we have a composite primary key, remove PRIMARY KEY from individual column definitions
-            if primary_key and col_name in primary_key:
-                # Remove PRIMARY KEY AUTOINCREMENT from the column definition
-                col_type_clean = col_type.replace("PRIMARY KEY AUTOINCREMENT", "").replace("PRIMARY KEY", "").strip()
-                column_defs.append(f"{col_name} {col_type_clean}")
+
+    def create_or_update_table(conn, table_name, columns, foreign_keys=[], primary_key=None):
+            """
+            Crea la tabla si no existe y revisa si hay columnas faltantes o de más.
+            """
+            existing_columns = get_existing_columns(conn, table_name)
+            column_defs = [f"{col_name} {col_type}" for col_name, col_type in columns.items()]
+
+            if primary_key:
+                column_defs.append(f"PRIMARY KEY ({', '.join(primary_key)})")
+
+            if foreign_keys:
+                for fk in foreign_keys:
+                    column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})")
+
+            create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(column_defs)});"
+
+            if not existing_columns:
+                print(create_table_sql)
+                conn.execute(create_table_sql)
             else:
-                column_defs.append(f"{col_name} {col_type}")
+                extra_columns = [col for col in existing_columns if col not in columns]
+                if extra_columns:
+                    remove_extra_columns(conn, table_name, columns, foreign_keys, extra_columns, existing_columns)
 
-        # Add composite primary key constraint if specified
-        if primary_key:
-            primary_key_columns = ", ".join(primary_key)
-            column_defs.append(f"PRIMARY KEY ({primary_key_columns})")
+                for col_name, col_type in columns.items():
+                    if col_name not in existing_columns:
+                        try:
+                            alter_table_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type};"
+                            print(f"Agregando columna: {col_name} a la tabla {table_name}")
+                            conn.execute(alter_table_sql)
+                        except sqlite3.OperationalError as e:
+                            print(f"Error al agregar la columna {col_name}: {e}")
+                            if 'duplicate column name' in str(e).lower():
+                                continue
+                            else:
+                                raise e
 
-        # Add foreign key constraints
-        if foreign_keys:
-            for fk in foreign_keys:
-                column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})")
+        def get_existing_columns(conn, table_name):
+            """
+            Devuelve una lista de las columnas existentes en una tabla.
+            """
+            cursor = conn.execute(f"PRAGMA table_info({table_name});")
+            return [row[1] for row in cursor.fetchall()]
 
-        create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(column_defs)});"
+        def remove_extra_columns(conn, table_name, columns, foreign_keys, extra_columns, existing_columns):
+            """
+            Reestructura la tabla para eliminar columnas extra sin borrar datos existentes.
+            """
+            print(f"Eliminando columnas extra: {extra_columns} en la tabla {table_name}")
 
-        if not existing_columns:
-            print(f"Creando tabla: {table_name}")
-            print(create_table_sql)
-            conn.execute(create_table_sql)
-        else:
-            # Check for extra columns
-            extra_columns = [col for col in existing_columns if col not in columns]
-            if extra_columns:
-                self.remove_extra_columns(conn, table_name, columns, foreign_keys, extra_columns, existing_columns, primary_key)
+            # Deshabilitar claves foráneas temporalmente
+            conn.execute("PRAGMA foreign_keys = OFF;")
+            
+            # Verificar si la tabla temporal ya existe, y si es así, eliminarla
+            conn.execute(f"DROP TABLE IF EXISTS {table_name}_temp;")
 
-            # Add missing columns
-            for col_name, col_type in columns.items():
-                if col_name not in existing_columns:
-                    try:
-                        # Clean column type for ALTER TABLE (remove PRIMARY KEY constraints)
-                        col_type_clean = col_type.replace("PRIMARY KEY AUTOINCREMENT", "").replace("PRIMARY KEY", "").strip()
-                        alter_table_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type_clean};"
-                        print(f"Agregando columna: {col_name} a la tabla {table_name}")
-                        conn.execute(alter_table_sql)
-                    except sqlite3.OperationalError as e:
-                        print(f"Error al agregar la columna {col_name}: {e}")
-                        if 'duplicate column name' in str(e).lower():
-                            continue
-                        else:
-                            raise e
+            # Crear una tabla temporal con las columnas correctas
+            column_defs = [f"{col_name} {col_type}" for col_name, col_type in columns.items()]
+            if foreign_keys:
+                for fk in foreign_keys:
+                    column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table']}({fk['reference_column']})")
 
-    def get_existing_columns(self, conn, table_name):
-        """
-        Devuelve una lista de las columnas existentes en una tabla.
-        """
-        cursor = conn.execute(f"PRAGMA table_info({table_name});")
-        return [row[1] for row in cursor.fetchall()]
+            temp_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name}_temp ({', '.join(column_defs)});"
 
-    def remove_extra_columns(self, conn, table_name, columns, foreign_keys, extra_columns, existing_columns, primary_key=None):
-        """
-        Reestructura la tabla para eliminar columnas extra sin borrar datos existentes.
-        """
-        print(f"Eliminando columnas extra: {extra_columns} en la tabla {table_name}")
+            conn.execute(temp_table_sql)
 
-        # Deshabilitar claves foráneas temporalmente
-        conn.execute("PRAGMA foreign_keys = OFF;")
-        
-        # Verificar si la tabla temporal ya existe, y si es así, eliminarla
-        conn.execute(f"DROP TABLE IF EXISTS {table_name}_temp;")
+            # Copiar los datos de las columnas válidas a la tabla temporal
+            valid_columns = ', '.join([col for col in existing_columns if col in columns])
+            copy_data_sql = f"INSERT INTO {table_name}_temp ({valid_columns}) SELECT {valid_columns} FROM {table_name};"
 
-        # Crear una tabla temporal con las columnas correctas
-        column_defs = []
-        for col_name, col_type in columns.items():
-            # If we have a composite primary key, remove PRIMARY KEY from individual column definitions
-            if primary_key and col_name in primary_key:
-                col_type_clean = col_type.replace("PRIMARY KEY AUTOINCREMENT", "").replace("PRIMARY KEY", "").strip()
-                column_defs.append(f"{col_name} {col_type_clean}")
-            else:
-                column_defs.append(f"{col_name} {col_type}")
+            conn.execute(copy_data_sql)
 
-        # Add composite primary key constraint if specified
-        if primary_key:
-            primary_key_columns = ", ".join(primary_key)
-            column_defs.append(f"PRIMARY KEY ({primary_key_columns})")
+            # Eliminar la tabla original
+            conn.execute(f"DROP TABLE {table_name};")
 
-        # Add foreign key constraints
-        if foreign_keys:
-            for fk in foreign_keys:
-                column_defs.append(f"FOREIGN KEY({fk['column']}) REFERENCES {fk['reference_table'].value}({fk['reference_column']})")
+            # Renombrar la tabla temporal a la tabla original
+            conn.execute(f"ALTER TABLE {table_name}_temp RENAME TO {table_name};")
 
-        temp_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name}_temp ({', '.join(column_defs)});"
-        conn.execute(temp_table_sql)
+            # Rehabilitar claves foráneas
+            conn.execute("PRAGMA foreign_keys = ON;")
 
-        # Copiar los datos de las columnas válidas a la tabla temporal
-        valid_columns = ', '.join([col for col in existing_columns if col in columns])
-        copy_data_sql = f"INSERT INTO {table_name}_temp ({valid_columns}) SELECT {valid_columns} FROM {table_name};"
-        conn.execute(copy_data_sql)
+        conn = self.create_connection()
+            
+        try:
+            # Habilitar claves foráneas
+            conn.execute("PRAGMA foreign_keys = ON;")
+            
+            # Diccionario de tablas
+            tables = DATABASE_TABLES
 
-        # Eliminar la tabla original
-        conn.execute(f"DROP TABLE {table_name};")
+            # Iterar sobre cada tabla en el diccionario y crearla
+            for table_name, table_data in tables.items():
+                create_or_update_table(conn, table_name.value, table_data["columns"], table_data.get("foreign_keys", []))
+                # Hacer commit de todos los cambios
+                conn.commit()
 
-        # Renombrar la tabla temporal a la tabla original
-        conn.execute(f"ALTER TABLE {table_name}_temp RENAME TO {table_name};")
-
-        # Rehabilitar claves foráneas
-        conn.execute("PRAGMA foreign_keys = ON;")
+        except sqlite3.Error as e:
+            print(e)
+        finally:
+            if conn:
+                conn.close()
 
     def delete_tables(self, tables):
         """
@@ -899,6 +892,8 @@ class Database:
 
         return result
 
+
+    # #TODO: devolver dict{sucess, message, record}
     def get_all_records_by_clause(self, table_name, search_clause, value):
         """
         Obtiene todos los registros de la base de datos en función de una cláusula de búsqueda personalizada.
@@ -925,6 +920,7 @@ class Database:
             print(f"Error al obtener registros de la tabla '{table_name}': {e}")
             return []
         
+ 
     def get_join_records(self, table1_name, table2_name, join_column1, join_column2, select_columns="t1.*, t2.*"):
         """
         Performs an INNER JOIN between two tables and retrieves records.
@@ -1052,6 +1048,40 @@ class Database:
             print(f"Error al obtener registros de la tabla '{table1_name}': {e}")
             return []  
 
+    # #TODO: devolver dict{sucess, message, record}
+    # def get_all_records_by_clauses(self, table_name, search_clauses):
+    #     """
+    #     Obtiene todos los registros de la base de datos en función de múltiples cláusulas de búsqueda personalizadas.
+
+    #     Args:
+    #         table_name (str): El nombre de la tabla donde se realizará la búsqueda.
+    #         search_clauses (dict): Diccionario donde las claves son nombres de columna y los valores son los valores de búsqueda.
+
+    #     Returns:
+    #         list[dict]: Una lista de diccionarios con los datos de cada registro, o una lista vacía si no se encontraron registros.
+    #     """
+    #     # Construir la cláusula WHERE a partir del diccionario de condiciones
+    #     clause_strings = [f"{column} = ?" for column in search_clauses.keys()]
+    #     search_clause = " AND ".join(clause_strings)
+    #     values = tuple(search_clauses.values())
+
+    #     # Construir la consulta SQL con las condiciones especificadas
+    #     sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
+        
+    #     try:
+    #         with self.create_connection() as conn:
+    #             conn.row_factory = sqlite3.Row  # Devuelve los resultados como un diccionario
+    #             cur = conn.cursor()
+    #             cur.execute(sql, values)
+    #             rows = cur.fetchall()
+    #             if rows:
+    #                 return [dict(row) for row in rows]  # Convierte cada fila en un diccionario y devuelve la lista
+    #             return []
+    #     except Exception as e:
+    #         print(f"Error al obtener registros de la tabla '{table_name}': {e}")
+    #         return []
+
+    # #TODO: devolver dict{sucess, message, record}
     def get_all_records(self, table_name):
         """
         Obtiene todos los registros de una tabla de la base de datos.
@@ -1076,115 +1106,3 @@ class Database:
         except Exception as e:
             print(f"Error al obtener todos los registros de {table_name}: {e}")
             return []
-
-    # Utility methods for many-to-many relationships
-    def add_provider_brand_relationship(self, provider_id, brand_id):
-        """
-        Adds a many-to-many relationship between a provider and a brand.
-        
-        Args:
-            provider_id (int): The ID of the provider (from ENTITIES table)
-            brand_id (int): The ID of the brand (from BRANDS table)
-            
-        Returns:
-            dict: {'success': bool, 'message': str, 'rowid': int or None}
-        """
-        data = {
-            "id_provider": provider_id,
-            "id_brand": brand_id
-        }
-        
-        return self.add_record(TABLES.PROVEEDORXMARCA.value, data)
-
-    def remove_provider_brand_relationship(self, provider_id, brand_id):
-        """
-        Removes a many-to-many relationship between a provider and a brand.
-        
-        Args:
-            provider_id (int): The ID of the provider
-            brand_id (int): The ID of the brand
-            
-        Returns:
-            dict: {'success': bool, 'message': str}
-        """
-        where_clause = "id_provider = ? AND id_brand = ?"
-        params = (provider_id, brand_id)
-        
-        return self.delete_record(TABLES.PROVEEDORXMARCA.value, where_clause, params)
-
-    def get_brands_by_provider(self, provider_id):
-        """
-        Gets all brands associated with a specific provider.
-        
-        Args:
-            provider_id (int): The ID of the provider
-            
-        Returns:
-            list[dict]: List of brand records associated with the provider
-        """
-        return self.get_join_records(
-            TABLES.PROVEEDORXMARCA.value,
-            TABLES.BRANDS.value,
-            "id_brand",
-            "id",
-            "t2.*"  # Only select brand columns
-        )
-
-    def get_providers_by_brand(self, brand_id):
-        """
-        Gets all providers associated with a specific brand.
-        
-        Args:
-            brand_id (int): The ID of the brand
-            
-        Returns:
-            list[dict]: List of provider (entity) records associated with the brand
-        """
-        return self.get_join_records(
-            TABLES.PROVEEDORXMARCA.value,
-            TABLES.ENTITIES.value,
-            "id_provider",
-            "id",
-            "t2.*"  # Only select entity columns
-        )
-
-    def get_provider_brands_relationships(self):
-        """
-        Gets all provider-brand relationships with detailed information.
-        
-        Returns:
-            list[dict]: List of records containing provider and brand information
-        """
-        return self.get_join_records_tres_tables(
-            TABLES.PROVEEDORXMARCA.value,
-            TABLES.ENTITIES.value,
-            TABLES.BRANDS.value,
-            "id_provider",
-            "id",
-            "id_brand",
-            "t1.id_provider, t1.id_brand, t2.entity_name, t2.cuit, t3.brand_name, t3.description"
-        )
-
-    def check_provider_brand_relationship_exists(self, provider_id, brand_id):
-        """
-        Checks if a relationship between a provider and brand already exists.
-        
-        Args:
-            provider_id (int): The ID of the provider
-            brand_id (int): The ID of the brand
-            
-        Returns:
-            dict: {'success': bool, 'message': str, 'exists': bool, 'record': dict or None}
-        """
-        result = self.get_record_by_clause(
-            TABLES.PROVEEDORXMARCA.value,
-            "id_provider = ? AND id_brand = ?",
-            (provider_id, brand_id)
-        )
-        
-        return {
-            'success': result['success'],
-            'message': result['message'],
-            'exists': result['success'] and result['record'] is not None,
-            'record': result['record']
-        }
