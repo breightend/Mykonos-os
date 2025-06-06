@@ -1,13 +1,12 @@
 import webbrowser
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
 from commons import create_admin
-from database.database import Database
-from werkzeug.security import generate_password_hash
 from routes.usuario_router import usuario_router
 from routes.provider_router import provider_router
 from routes.client_router import client_router
 from routes.product_router import product_router
+from routes.storage_router import storage_router
 
 app = Flask(__name__)
 CORS(
@@ -24,6 +23,7 @@ app.register_blueprint(usuario_router, url_prefix="/api/user")
 app.register_blueprint(provider_router, url_prefix="/api/provider")
 app.register_blueprint(client_router, url_prefix="/api/client")
 app.register_blueprint(product_router, url_prefix="/api/product")
+app.register_blueprint(storage_router, url_prefix="/api/storage")
 
 @app.route("/")
 def index():

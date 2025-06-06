@@ -19,6 +19,8 @@ import CreateUser from './creats/createUser'
 import NuevoProducto from './creats/nuevoProducto'
 import InfoEmpleado from './components/infoEmpleado'
 import Sucursales from './components/sucursales'
+import NuevaSucursal from './creats/nuevaSucursal'
+import InfoSucursal from './components/infoSucursal'
 
 function App() {
   return (
@@ -32,7 +34,7 @@ function App() {
       <Route path="/proveedores" component={Proveedores} />
       <Route path="/clientes" component={Clientes} />
       <Route path="/estadisticas" component={Estadisticas} />
-      <Route path="/informe" component={Informe} />
+      <Route path="/informes" component={Informe} />
       <Route path="/formaPago" component={FormasPago} />
       <Route path="/confirmacionDatosDeCompra" component={ConfirmacionDatosDeCompra} />
       <Route path="/createUser" component={CreateUser} />
@@ -43,6 +45,8 @@ function App() {
       <Route path="/infoCliente" component={InfoClientes} />
       <Route path="/infoProvider" component={InfoProvider} />
       <Route path="/sucursales" component={Sucursales} />
+      <Route path="/nuevaSucursal" component={NuevaSucursal} />
+      <Route path="/infoSucursal" component={InfoSucursal} />
     </Switch>
   )
 }

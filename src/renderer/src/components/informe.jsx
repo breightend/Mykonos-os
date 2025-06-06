@@ -6,6 +6,7 @@ export default function Informe() {
     <div>
       <Navbar />
       <MenuVertical currentPath="/informe" />
+      <h2>Esto es un informe! </h2>
     </div>
   )
 }

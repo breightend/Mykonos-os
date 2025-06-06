@@ -100,6 +100,7 @@ export default function MenuVertical({ currentPath }) {
             {isMenuOpen && <span className="ml-2">Empleados</span>}
           </button>
         </li>
+
         <li className="flex items-center">
           <button
             className={`btn btn-ghost w-full justify-start ${currentPath === '/sucursales' ? 'bg-primary' : ''}`}
@@ -109,6 +110,7 @@ export default function MenuVertical({ currentPath }) {
             {isMenuOpen && <span className="ml-2">Sucursales</span>}
           </button>
         </li>
+
         <li className="flex items-center">
           <button
             className={`btn btn-ghost w-full justify-start ${currentPath === '/estadisticas' ? 'bg-primary' : ''}`}
@@ -121,10 +123,10 @@ export default function MenuVertical({ currentPath }) {
         <li className="flex items-center">
           <button
             className={`btn btn-ghost w-full justify-start ${currentPath === '/informes' ? 'bg-primary' : ''}`}
-            onClick={() => setLocation('/informe')}
+            onClick={() => setLocation('/informes')}
           >
             <ClipboardType />
-            {isMenuOpen && <span className="ml-2">Informe</span>}
+            {isMenuOpen && <span className="ml-2">Informes</span>}
           </button>
         </li>
         <li className="absolute bottom-0 items-center">
