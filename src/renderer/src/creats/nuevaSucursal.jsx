@@ -16,7 +16,9 @@ function NuevaSucursal() {
     postal_code: '',
     phone_number: '',
     area: '',
-    description: ''
+    description: '',
+    status: 'Activo',
+    created_at: ''
   })
 
   const handleInputChange = (e) => {
@@ -127,7 +129,7 @@ function NuevaSucursal() {
 
               <div>
                 <label className="label">
-                  <span className="label-text font-semibold">Teléfono</span>
+                  <span className="label-text font-semibold">Celular</span>
                 </label>
                 <input
                   type="text"

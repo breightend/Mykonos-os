@@ -52,7 +52,7 @@ function InfoSucursal() {
                         <th>ID</th>
                         <th>Nombre</th>
                         <th>Dirección</th>
-                        <th>Teléfono</th>
+                        <th>Celular</th>
                         <th>Estado</th>
                         <th>Creado en</th>
                       </tr>
@@ -62,7 +62,7 @@ function InfoSucursal() {
                         <td>{sucursal.id}</td>
                         <td>{sucursal.name}</td>
                         <td>{sucursal.address}</td>
-                        <td>{sucursal.phone}</td>
+                        <td>{sucursal.phone_number}</td>
                         <td>
                           <span
                             className={`badge ${sucursal.status === 'Active' ? 'badge-success' : 'badge-error'}`}
@@ -90,7 +90,7 @@ function InfoSucursal() {
                   <th>ID</th>
                   <th>Nombre</th>
                   <th>Email</th>
-                  <th>Teléfono</th>
+                  <th>Celular</th>
                   <th>Estado</th>
                 </tr>
               </thead>

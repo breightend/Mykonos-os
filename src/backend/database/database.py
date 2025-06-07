@@ -209,6 +209,8 @@ DATABASE_TABLES = {
             "phone_number": "TEXT",  # Número de teléfono del almacenamiento.
             "area": "TEXT",  # Área o sección dentro del almacenamiento.
             "description": "TEXT",  # Área o sección dentro del almacenamiento.
+            "created_at": "TEXT DEFAULT (datetime('now','localtime'))",  # Fecha de creación del registro, se establece por defecto a la fecha y hora actuales.
+            "status": "TEXT DEFAULT 'Activo'",  # Estado del almacenamiento (activo, inactivo, etc.).
         }
     },
     TABLES.PRODUCTS: {
