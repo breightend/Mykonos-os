@@ -9,7 +9,7 @@ import toast, { Toaster } from 'react-hot-toast'
 function NuevaSucursal() {
   const [, setLocation] = useLocation()
   const [loading, setLoading] = useState(false)
-  
+
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -21,7 +21,7 @@ function NuevaSucursal() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }))
@@ -29,7 +29,7 @@ function NuevaSucursal() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim()) {
       toast.error('El nombre de la sucursal es requerido')
       return
@@ -54,13 +54,10 @@ function NuevaSucursal() {
     <div>
       <MenuVertical currentPath={'/sucursales'} />
       <Navbar />
-      
+
       <div className="ml-20 p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <button 
-            className="btn btn-circle" 
-            onClick={() => setLocation('/sucursales')}
-          >
+        <div className="mb-6 flex items-center gap-4">
+          <button className="btn btn-circle" onClick={() => setLocation('/sucursales')}>
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h2 className="text-warning text-2xl font-bold">Nueva Sucursal</h2>
@@ -68,7 +65,7 @@ function NuevaSucursal() {
 
         <div className="max-w-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
                 <label className="label">
                   <span className="label-text font-semibold">Nombre de la Sucursal *</span>
@@ -113,7 +110,7 @@ function NuevaSucursal() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
                 <label className="label">
                   <span className="label-text font-semibold">Código Postal</span>
@@ -151,7 +148,7 @@ function NuevaSucursal() {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="textarea textarea-bordered w-full h-24"
+                className="textarea textarea-bordered h-24 w-full"
                 placeholder="Descripción detallada de la sucursal..."
               />
             </div>
@@ -176,7 +173,7 @@ function NuevaSucursal() {
           </form>
         </div>
       </div>
-      
+
       <Toaster position="bottom-right" />
     </div>
   )

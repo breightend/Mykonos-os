@@ -5,7 +5,6 @@ import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft, Eye, EyeClosed } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useDropzone } from 'react-dropzone'
-
 function CreateUser() {
   const [, setLocation] = useLocation()
   const [formData, setFormData] = useState({
@@ -75,13 +74,12 @@ function CreateUser() {
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-
   const onChange = (e) => {
     const { name, value } = e.target
 
     setFormData((prev) => {
       const updated = { ...prev, [name]: value }
-      updated.created_at = new Date().toISOString().split('T')[0]
+      formData.created_at = new Date().toISOString().split('T')[0]
 
       if (name === 'nombre' || name === 'apellido') {
         const nombre = name === 'nombre' ? value : updated.nombre
@@ -104,34 +102,35 @@ function CreateUser() {
 
   // Manejar selección de sucursales
   const handleSucursalSelection = (sucursalId) => {
-    setSelectedSucursales((prev) => {
+    setSelectedSucursales(prev => {
       if (prev.includes(sucursalId)) {
-        return prev.filter((id) => id !== sucursalId)
+        return prev.filter(id => id !== sucursalId)
       } else {
         return [...prev, sucursalId]
       }
     })
   }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!validateForm()) {
-      return
-    }
-
     try {
-      console.log('Creando usuario con datos:', formData)
+      const data = new FormData()
+      for (const key in formData) {
+        if (formData[key] !== null && formData[key] !== undefined) {
+          data.append(key, formData[key])
+        }
+      }
+      console.log('Data:', data)
 
       // Crear el usuario
       const createdUser = await enviarData(formData)
       console.log('Usuario creado:', createdUser)
 
       // Asignar sucursales al usuario si hay alguna seleccionada
-      if (selectedSucursales.length > 0 && createdUser.user_id) {
+      if (selectedSucursales.length > 0 && createdUser.id) {
         try {
           for (const sucursalId of selectedSucursales) {
-            await assignEmployeeToSucursal(sucursalId, createdUser.user_id)
+            await assignEmployeeToSucursal(sucursalId, createdUser.id)
           }
           toast.success(`Usuario creado y asignado a ${selectedSucursales.length} sucursal(es)`, {
             position: 'top-right',
@@ -162,7 +161,7 @@ function CreateUser() {
           }
         })
       }
-
+      
       setLocation('/home')
     } catch (error) {
       console.error('Error al enviar los datos:', error)
@@ -196,6 +195,8 @@ function CreateUser() {
       setFormData({ ...formData, profile_image: base64 })
     }
   })
+
+  console.log({ formData })
 
   /**
    * Converts a base64 image to a Blob and creates an object URL
@@ -239,7 +240,6 @@ function CreateUser() {
     // Create and return object URL
     return URL.createObjectURL(blob)
   }
-
   const [seeValidatePassword, setSeeValidatePassword] = useState(false)
 
   return (
@@ -248,7 +248,7 @@ function CreateUser() {
         <button
           onClick={() => setLocation('/home')}
           type="button"
-          className="btn btn-circle btn-icon bg-base-300 flex items-center justify-center"
+          className="justify-cente btn btn-icon btn-circle bg-base-300 flex items-center"
         >
           <ArrowLeft className="h-6 w-6 cursor-pointer" />
         </button>
@@ -271,7 +271,6 @@ function CreateUser() {
             </div>
           )}
         </div>
-
         <div
           {...getRootProps()}
           className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors duration-200 ${
@@ -281,7 +280,6 @@ function CreateUser() {
           <input {...getInputProps()} />
           <p>{isDragActive ? '¡Soltá la imagen aquí!' : 'Arrastrá tu imagen o hacé clic'}</p>
         </div>
-
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Nombre</label>
@@ -289,13 +287,9 @@ function CreateUser() {
               name="nombre"
               onChange={onChange}
               type="text"
-              className={`w-full border px-3 py-2 ${
-                errors.nombre ? 'border-red-500' : 'border-gray-300'
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+              className={`w-full border px-3 py-2 ${errors.nombre ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
               placeholder="Ingrese su nombre"
-              value={formData.nombre}
             />
-            {errors.nombre && <p className="mt-1 text-xs text-red-500">{errors.nombre}</p>}
           </div>
 
           <div>
@@ -306,9 +300,7 @@ function CreateUser() {
               type="text"
               className={`w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none`}
               placeholder="Ingrese su apellido"
-              value={formData.apellido}
             />
-            {errors.apellido && <p className="mt-1 text-xs text-red-500">{errors.apellido}</p>}
           </div>
         </div>
 
@@ -322,24 +314,19 @@ function CreateUser() {
             placeholder="Ingrese su cuit"
             value={formData.cuit}
           />
-          {errors.cuit && <p className="mt-1 text-xs text-red-500">{errors.cuit}</p>}
         </div>
-
         <div>
           <label className="mb-1 block text-sm font-medium">Celular</label>
           <input
             name="phone"
             onChange={onChange}
             type="tel"
-            className={`w-full border px-3 py-2 ${
-              errors.phone ? 'border-red-500' : 'border-gray-300'
-            } rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+            className={`w-full border px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
             placeholder="+1234567890"
             value={formData.phone}
           />
           {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
         </div>
-
         <div>
           <label className="mb-1 block text-sm font-medium">Domicilio</label>
           <input
@@ -350,7 +337,6 @@ function CreateUser() {
             placeholder="Ingrese su domicilio"
             value={formData.domicilio}
           />
-          {errors.domicilio && <p className="mt-1 text-xs text-red-500">{errors.domicilio}</p>}
         </div>
 
         <div>
@@ -359,23 +345,17 @@ function CreateUser() {
             name="email"
             onChange={onChange}
             type="email"
-            className={`w-full border px-3 py-2 ${
-              errors.email ? 'border-red-500' : 'border-gray-300'
-            } rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+            className={`w-full border px-3 py-2 ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
             placeholder="ejemplo@correo.com"
             value={formData.email}
           />
           {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-        </div>
-
-        <div>
+        </div>        <div>
           <label className="mb-1 block text-sm font-medium">Ciudad</label>
           <select
             name="sucursal"
             onChange={onChange}
-            className={`w-full border px-3 py-2 ${
-              errors.sucursal ? 'border-red-500' : 'border-gray-300'
-            } rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+            className={`w-full border px-3 py-2 ${errors.sucursal ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
             value={formData.sucursal}
           >
             <option value="">Seleccione ciudad</option>
@@ -383,9 +363,7 @@ function CreateUser() {
             <option value="concordia">Concordia</option>
           </select>
           {errors.sucursal && <p className="mt-1 text-xs text-red-500">{errors.sucursal}</p>}
-        </div>
-
-        {/* Selección de Sucursales */}
+        </div>        {/* Selección de Sucursales */}
         <div>
           <label className="mb-1 block text-sm font-medium">Sucursales</label>
           <p className="mb-2 text-xs text-gray-600">
@@ -427,14 +405,11 @@ function CreateUser() {
                 </div>
               )}
             </div>
-          )}
-
-          {selectedSucursales.length > 0 && (
+          )}          {selectedSucursales.length > 0 && (
             <p className="mt-2 text-sm text-blue-600">
               {selectedSucursales.length} sucursal(es) seleccionada(s)
             </p>
-          )}
-        </div>
+          )}        </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -443,15 +418,12 @@ function CreateUser() {
               name="password"
               onChange={onChange}
               type="password"
-              className={`w-full border px-3 py-2 ${
-                errors.password ? 'border-red-500' : 'border-gray-300'
-              } rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+              className={`w-full border px-3 py-2 ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
               placeholder="••••••••"
               value={formData.password}
             />
             {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
           </div>
-
           <div>
             <label className="mb-1 block text-sm font-medium">Confirmar contraseña</label>
             <div className="relative">
@@ -459,9 +431,7 @@ function CreateUser() {
                 name="confirmPassword"
                 onChange={onChange}
                 type={seeValidatePassword ? 'text' : 'password'}
-                className={`w-full border px-3 py-2 ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                } rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+                className={`w-full border px-3 py-2 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none`}
                 placeholder="Repita su contraseña"
                 value={formData.confirmPassword}
               />

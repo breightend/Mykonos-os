@@ -1,14 +1,17 @@
 # Sucursales Implementation - Complete Documentation
 
 ## Overview
+
 This document describes the complete implementation of the Sucursales (Branches) feature for the Mykonos-OS application, following the same patterns as the existing empleados (employees) component.
 
 ## Implementation Summary
 
 ### Backend Implementation ✅
+
 **File**: `src/backend/routes/storage_router.py`
 
 **Endpoints implemented:**
+
 - `GET /api/storage` - Get all sucursales
 - `GET /api/storage/{id}` - Get specific sucursal by ID
 - `POST /api/storage` - Create new sucursal
@@ -19,15 +22,18 @@ This document describes the complete implementation of the Sucursales (Branches)
 - `DELETE /api/storage/{id}/employees/{user_id}` - Remove employee from sucursal
 
 **Database Tables Used:**
+
 - `storage` - Main sucursales table (id, name, address, postal_code, phone_number, area, description)
 - `usersxstorage` - Relationship table between users and storage locations
 
 ### Frontend Implementation ✅
 
 #### Service Layer
+
 **File**: `src/renderer/src/services/sucursales/sucursalesService.js`
 
 **API Methods:**
+
 - `fetchSucursales()` - Get all sucursales
 - `fetchSucursalById(id)` - Get specific sucursal
 - `postData(data)` - Create new sucursal
@@ -43,6 +49,7 @@ This document describes the complete implementation of the Sucursales (Branches)
 **File**: `src/renderer/src/components/sucursales.jsx`
 
 **Features:**
+
 - Table display of all sucursales
 - Search functionality by name, address, phone, area
 - Row selection with visual feedback
@@ -55,6 +62,7 @@ This document describes the complete implementation of the Sucursales (Branches)
 **File**: `src/renderer/src/creats/nuevaSucursal.jsx`
 
 **Features:**
+
 - Dedicated page for creating new sucursales
 - Form validation
 - All storage fields supported
@@ -64,15 +72,18 @@ This document describes the complete implementation of the Sucursales (Branches)
 **File**: `src/renderer/src/components/infoSucursal.jsx`
 
 **Features:**
+
 - Detailed view of sucursal information
 - List of assigned employees
 - Edit and delete functionality
 - Employee management
 
 #### App Configuration ✅
+
 **File**: `src/renderer/src/App.jsx`
 
 **Routes added:**
+
 - `/sucursales` - Main sucursales page
 - `/nuevaSucursal` - Create new sucursal page
 - `/infoSucursal` - Sucursal details page
@@ -80,6 +91,7 @@ This document describes the complete implementation of the Sucursales (Branches)
 ## Database Schema
 
 ### Storage Table
+
 ```sql
 CREATE TABLE storage (
     id INTEGER PRIMARY KEY,
@@ -93,6 +105,7 @@ CREATE TABLE storage (
 ```
 
 ### Users x Storage Relationship
+
 ```sql
 CREATE TABLE usersxstorage (
     user_id INTEGER,
@@ -107,22 +120,26 @@ CREATE TABLE usersxstorage (
 ### Backend Testing
 
 **Start the Flask Server:**
+
 ```bash
 cd src/backend
 python main.py
 ```
 
 **Simple API Test:**
+
 ```bash
 python test_simple.py
 ```
 
 **Complete API Test:**
+
 ```bash
 python test_complete_api.py
 ```
 
 **Manual Testing:**
+
 ```bash
 python test_manual.py
 ```
@@ -141,6 +158,7 @@ python test_manual.py
    - Edit/delete operations
 
 ## File Structure
+
 ```
 src/
 ├── backend/
@@ -164,6 +182,7 @@ src/
 ## Usage Instructions
 
 ### For Users
+
 1. Navigate to "Sucursales" from the main menu
 2. View the list of existing sucursales
 3. Use the search bar to filter sucursales
@@ -174,6 +193,7 @@ src/
    - ➕ Create a new sucursal
 
 ### For Developers
+
 1. The implementation follows the existing patterns in the codebase
 2. All components use the same styling (DaisyUI)
 3. Error handling and loading states are implemented
@@ -181,10 +201,12 @@ src/
 5. The code is modular and maintainable
 
 ## Known Issues
+
 - Some linting/formatting warnings exist but don't affect functionality
 - These are style preferences and can be fixed by running a code formatter
 
 ## Next Steps
+
 1. Run comprehensive testing
 2. Fix any remaining linting issues
 3. Add additional features as needed:
@@ -194,6 +216,7 @@ src/
    - Employee assignment from sucursal details page
 
 ## Integration Notes
+
 - The storage router is properly registered in main.py
 - All routes use the `/api/storage` prefix
 - CORS is configured for frontend access

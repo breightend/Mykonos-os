@@ -25,6 +25,7 @@ app.register_blueprint(client_router, url_prefix="/api/client")
 app.register_blueprint(product_router, url_prefix="/api/product")
 app.register_blueprint(storage_router, url_prefix="/api/storage")
 
+
 @app.route("/")
 def index():
     create_admin.create_admin()

@@ -128,11 +128,11 @@ function Sucursales() {
       <MenuVertical currentPath={'/sucursales'} />
       <Navbar />
       <div className="ml-20 flex-1">
-        <h2 className="mb-6 text-2xl font-bold text-warning">Sucursales</h2>
+        <h2 className="text-warning mb-6 text-2xl font-bold">Sucursales</h2>
       </div>
 
-      <div className="mb-6 ml-20 mr-5 flex items-center justify-between">
-        <ul className="menu menu-horizontal gap-2 rounded-box bg-base-200">
+      <div className="mr-5 mb-6 ml-20 flex items-center justify-between">
+        <ul className="menu menu-horizontal rounded-box bg-base-200 gap-2">
           <li>
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
@@ -151,9 +151,7 @@ function Sucursales() {
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
               data-tip="Información de la sucursal"
-              onClick={() =>
-                setLocation(`/infoSucursal?id=${sucursalSeleccionada?.id}`)
-              }
+              onClick={() => setLocation(`/infoSucursal?id=${sucursalSeleccionada?.id}`)}
               disabled={!sucursalSeleccionada}
             >
               <Info className="h-5 w-5" />
@@ -186,7 +184,7 @@ function Sucursales() {
       </div>
 
       {/* Sucursales table */}
-      <div className="mb-10 ml-20 mr-5 overflow-x-auto">
+      <div className="mr-5 mb-10 ml-20 overflow-x-auto">
         <table className="table w-full">
           <thead>
             <tr>
@@ -204,7 +202,7 @@ function Sucursales() {
               filteredSucursales.map((row, index) => (
                 <tr
                   key={row.id}
-                  className={`cursor-pointer hover:bg-warning/10 ${
+                  className={`hover:bg-warning/10 cursor-pointer ${
                     selectedRow === row.id ? 'bg-warning/20' : ''
                   }`}
                   onClick={() => handleRowClick(row)}
@@ -222,19 +220,15 @@ function Sucursales() {
         </table>
 
         {filteredSucursales.length === 0 && (
-          <div className="py-8 text-center text-gray-500">
-            No se encontraron sucursales
-          </div>
+          <div className="py-8 text-center text-gray-500">No se encontraron sucursales</div>
         )}
       </div>
 
       {/* Create Sucursal Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-96 rounded-lg bg-base-100 p-6 shadow-2xl">
-            <h3 className="mb-4 text-lg font-bold text-warning">
-              Nueva Sucursal
-            </h3>
+          <div className="bg-base-100 w-96 rounded-lg p-6 shadow-2xl">
+            <h3 className="text-warning mb-4 text-lg font-bold">Nueva Sucursal</h3>
             <form onSubmit={handleCreateSucursal} className="space-y-4">
               <div>
                 <label className="label">
@@ -322,11 +316,7 @@ function Sucursales() {
               </div>
 
               <div className="mt-6 flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setShowCreateModal(false)}
-                >
+                <button type="button" className="btn" onClick={() => setShowCreateModal(false)}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn btn-warning">
@@ -341,9 +331,9 @@ function Sucursales() {
       {/* Employees Modal */}
       {showEmployeesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-3/4 max-w-4xl rounded-lg bg-base-100 p-6 shadow-2xl">
+          <div className="bg-base-100 w-3/4 max-w-4xl rounded-lg p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-warning">
+              <h3 className="text-warning text-lg font-bold">
                 Empleados - {sucursalSeleccionada?.name}
               </h3>
               <button
@@ -380,9 +370,7 @@ function Sucursales() {
                         <td>
                           <span
                             className={`badge ${
-                              employee.status === 'active'
-                                ? 'badge-success'
-                                : 'badge-error'
+                              employee.status === 'active' ? 'badge-success' : 'badge-error'
                             }`}
                           >
                             {employee.status}

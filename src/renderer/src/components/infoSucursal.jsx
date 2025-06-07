@@ -9,14 +9,14 @@ function InfoSucursal() {
   const sucursalId = searchParams.get('id')
   const [sucursal, setSucursal] = useState(null)
   const [employees, setEmployees] = useState([])
-  
+
   useEffect(() => {
     async function fetchData() {
       try {
         const data = await fetchSucursalById(sucursalId)
         console.log(data)
         setSucursal(data.record)
-        
+
         // Fetch employees for this sucursal
         const employeesData = await fetchSucursalEmployees(sucursalId)
         setEmployees(employeesData.records || [])
@@ -38,14 +38,12 @@ function InfoSucursal() {
           >
             <ArrowLeft />
           </button>
-          <h1 className="mb-4 text-2xl font-bold">
-            Información de la Sucursal: {sucursal?.name}
-          </h1>
+          <h1 className="mb-4 text-2xl font-bold">Información de la Sucursal: {sucursal?.name}</h1>
         </div>
-        
-        <div className="w-full rounded-lg bg-white p-6 shadow-md mb-6">
+
+        <div className="mb-6 w-full rounded-lg bg-white p-6 shadow-md">
           <div className="text-base-content flex flex-col items-center gap-4">
-            <div className="overflow-x-auto w-full">
+            <div className="w-full overflow-x-auto">
               {sucursal && (
                 <div>
                   <table className="table w-full text-sm">
@@ -66,7 +64,9 @@ function InfoSucursal() {
                         <td>{sucursal.address}</td>
                         <td>{sucursal.phone}</td>
                         <td>
-                          <span className={`badge ${sucursal.status === 'Active' ? 'badge-success' : 'badge-error'}`}>
+                          <span
+                            className={`badge ${sucursal.status === 'Active' ? 'badge-success' : 'badge-error'}`}
+                          >
                             {sucursal.status}
                           </span>
                         </td>
@@ -82,7 +82,7 @@ function InfoSucursal() {
 
         {/* Employees Section */}
         <div className="w-full rounded-lg bg-white p-6 shadow-md">
-          <h2 className="text-xl font-bold mb-4">Empleados de la Sucursal</h2>
+          <h2 className="mb-4 text-xl font-bold">Empleados de la Sucursal</h2>
           <div className="overflow-x-auto">
             <table className="table w-full text-sm">
               <thead className="rounded-2xl bg-gray-800 text-white">
@@ -103,7 +103,9 @@ function InfoSucursal() {
                       <td>{employee.email}</td>
                       <td>{employee.phone}</td>
                       <td>
-                        <span className={`badge ${employee.status === 'Active' ? 'badge-success' : 'badge-error'}`}>
+                        <span
+                          className={`badge ${employee.status === 'Active' ? 'badge-success' : 'badge-error'}`}
+                        >
                           {employee.status}
                         </span>
                       </td>
@@ -111,7 +113,7 @@ function InfoSucursal() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-center py-4">
+                    <td colSpan="5" className="py-4 text-center">
                       No hay empleados asignados a esta sucursal
                     </td>
                   </tr>

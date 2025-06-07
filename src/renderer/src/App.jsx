@@ -15,12 +15,12 @@ import Usuario from './components/usuario'
 import Ventas from './components/ventas'
 import CreateClient from './creats/createClient'
 import CreateProvider from './creats/createProvider'
-import CreateUser from './creats/createUser'
 import NuevoProducto from './creats/nuevoProducto'
 import InfoEmpleado from './components/infoEmpleado'
 import Sucursales from './components/sucursales'
 import NuevaSucursal from './creats/nuevaSucursal'
 import InfoSucursal from './components/infoSucursal'
+import CreateUser from './creats/createUser'
 
 function App() {
   return (
