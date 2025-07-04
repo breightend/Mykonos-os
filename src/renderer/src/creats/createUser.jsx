@@ -45,15 +45,27 @@ function CreateUser() {
     }
     loadSucursales()
   }, [])
+  console.log(sucursales)
 
   const validateForm = () => {
     const newErrors = {}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-    // Check all fields are filled
-    for (const key in formData) {
-      if (!formData[key].trim()) {
-        newErrors[key] = 'Este campo es requerido'
+    // Required fields validation
+    const requiredFields = [
+      'nombre',
+      'apellido',
+      'email',
+      'phone',
+      'domicilio',
+      'cuit',
+      'password',
+      'confirmPassword'
+    ]
+
+    for (const field of requiredFields) {
+      if (!formData[field] || !formData[field].trim()) {
+        newErrors[field] = 'Este campo es requerido'
       }
     }
 
@@ -68,7 +80,7 @@ function CreateUser() {
     }
 
     // Password strength validation (optional)
-    if (formData.password.length < 8) {
+    if (formData.password && formData.password.length < 8) {
       newErrors.password = 'La contraseña debe tener al menos 8 caracteres'
     }
 
@@ -123,9 +135,28 @@ function CreateUser() {
     try {
       console.log('Creando usuario con datos:', formData)
 
+      // Prepare data for backend (only fields that exist in database)
+      const userData = {
+        username: formData.username,
+        fullname: formData.fullname,
+        password: formData.password,
+        email: formData.email,
+        phone: formData.phone,
+        domicilio: formData.domicilio,
+        cuit: formData.cuit,
+        role: formData.role,
+        status: formData.status,
+        profile_image: formData.profile_image,
+        session_token: '' // Empty string for now
+      }
+
+      console.log('Data being sent to backend:', userData)
+
       // Crear el usuario
-      const createdUser = await enviarData(formData)
+      const createdUser = await enviarData(userData)
       console.log('Usuario creado:', createdUser)
+
+      console.log(selectedSucursales)
 
       // Asignar sucursales al usuario si hay alguna seleccionada
       if (selectedSucursales.length > 0 && createdUser.user_id) {

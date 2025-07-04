@@ -5,7 +5,7 @@ import sqlite3
 import time
 import threading
 from enum import Enum
-from commons.tools import print_debug
+from commons.tools import print_debug  # noqa: F401
 # TODO: hacer tabla ProveedoresXMarcas para poder relacionar varios proveedores a una misma marca y viceversa.
 
 
@@ -1368,13 +1368,18 @@ class Database:
         Returns:
             list[dict]: List of storage records accessible to the user
         """
-        return self.get_join_records(
-            TABLES.USERSXSTORAGE.value,
-            TABLES.STORAGE.value,
-            "id_storage",
-            "id",
-            "t2.*",  # Only select storage columns
-        )
+        sql = """
+            SELECT s.*
+            FROM storage s
+            INNER JOIN usersxstorage us ON s.id = us.id_storage
+            WHERE us.id_user = ?
+        """
+        try:
+            records = self.execute_query(sql, (user_id,))
+            return records if records else []
+        except Exception as e:
+            print(f"Error getting storages by user: {e}")
+            return []
 
     def get_users_by_storage(self, storage_id):
         """

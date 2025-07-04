@@ -19,7 +19,8 @@ function InfoSucursal() {
 
         // Fetch employees for this sucursal
         const employeesData = await fetchSucursalEmployees(sucursalId)
-        setEmployees(employeesData.records || [])
+        console.log('Employees data:', employeesData)
+        setEmployees(employeesData || [])
       } catch (error) {
         console.error('Error fetching data:', error)
       }

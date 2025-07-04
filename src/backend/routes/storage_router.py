@@ -136,34 +136,31 @@ def assign_employee_to_storage(storage_id):
     data = request.json
     user_id = data.get("user_id")
 
+    if not user_id:
+        return jsonify({"mensaje": "user_id es requerido", "status": "error"}), 400
+
     db = Database()
 
-    success = db.add_record(
-        "usersxstorage", {"id_user": user_id, "id_storage": storage_id}
-    )
+    # Use the specific method for adding user-storage relationships
+    result = db.add_user_storage_relationship(user_id, storage_id)
 
-    if success:
+    if result["success"]:
         return jsonify(
             {"mensaje": "Empleado asignado a sucursal con éxito", "status": "éxito"}
         ), 200
     else:
-        return jsonify(
-            {"mensaje": "Error al asignar empleado a sucursal", "status": "error"}
-        ), 500
+        return jsonify({"mensaje": result["message"], "status": "error"}), 400
 
 
 # Remove employee from storage/sucursal
 @storage_router.route("/<storage_id>/employees/<user_id>", methods=["DELETE"])
 def remove_employee_from_storage(storage_id, user_id):
     db = Database()
-    success = db.delete_record(
-        "usersxstorage", "id_user = ? AND id_storage = ?", user_id, storage_id
-    )
-    if success:
+    result = db.remove_user_storage_relationship(user_id, storage_id)
+
+    if result["success"]:
         return jsonify(
             {"mensaje": "Empleado removido de sucursal con éxito", "status": "éxito"}
         ), 200
     else:
-        return jsonify(
-            {"mensaje": "Error al remover empleado de sucursal", "status": "error"}
-        ), 500
+        return jsonify({"mensaje": result["message"], "status": "error"}), 400

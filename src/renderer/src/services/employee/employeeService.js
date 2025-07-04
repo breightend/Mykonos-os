@@ -50,3 +50,38 @@ export async function deleteData(id) {
         throw error;
     }
 }
+
+// Get employee's assigned storages
+export async function fetchEmployeeStorages(employeeId) {
+    try {
+        const response = await axios.get(`http://localhost:5000/api/user/employee/${employeeId}/storages`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching employee storages:", error);
+        throw error;
+    }
+}
+
+// Assign storage to employee
+export async function assignStorageToEmployee(employeeId, storageId) {
+    try {
+        const response = await axios.post(`http://localhost:5000/api/user/employee/${employeeId}/storages`, {
+            storage_id: storageId
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error assigning storage to employee:", error);
+        throw error;
+    }
+}
+
+// Remove storage from employee
+export async function removeStorageFromEmployee(employeeId, storageId) {
+    try {
+        const response = await axios.delete(`http://localhost:5000/api/user/employee/${employeeId}/storages/${storageId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error removing storage from employee:", error);
+        throw error;
+    }
+}

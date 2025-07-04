@@ -66,6 +66,7 @@ export async function fetchSucursalEmployees(storageId) {
     }
 }
 
+
 // Assign employee to sucursal
 export async function assignEmployeeToSucursal(storageId, userId) {
     try {
