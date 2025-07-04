@@ -1023,8 +1023,8 @@ class Database:
             join_column1 (str): The name of the join column in the first table.
             join_column2 (str): The name of the join column in the second table.
             select_columns (str): Comma-separated string of columns to select.
-                                  Defaults to 't1.*, t2.*'. Use specific aliases
-                                  (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
+            Defaults to 't1.*, t2.*'. Use specific aliases
+            (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
 
         Returns:
             dict: {'success': bool, 'message': str, 'records': list[dict]}
@@ -1085,8 +1085,8 @@ class Database:
             join_column2 (str): The name of the join column in the second table.
             join_column3 (str): The name of the join column in the third table.
             select_columns (str): Comma-separated string of columns to select.
-                                  Defaults to 't1.*, t2.*, t3.*'. Use specific aliases
-                                  (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
+            Defaults to 't1.*, t2.*, t3.*'. Use specific aliases
+            (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
 
         Returns:
             dict: {'success': bool, 'message': str, 'records': list[dict]}
@@ -1375,8 +1375,15 @@ class Database:
             WHERE us.id_user = ?
         """
         try:
-            records = self.execute_query(sql, (user_id,))
-            return records if records else []
+            with self.create_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute(sql, (user_id,))
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(row) for row in rows]
+                else:
+                    return []
         except Exception as e:
             print(f"Error getting storages by user: {e}")
             return []
@@ -1391,13 +1398,25 @@ class Database:
         Returns:
             list[dict]: List of user records who have access to the storage
         """
-        return self.get_join_records(
-            TABLES.USERSXSTORAGE.value,
-            TABLES.USERS.value,
-            "id_user",
-            "id",
-            "t2.*",  # Only select user columns
-        )
+        sql = """
+            SELECT u.*
+            FROM users u
+            INNER JOIN usersxstorage us ON u.id = us.id_user
+            WHERE us.id_storage = ?
+        """
+        try:
+            with self.create_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute(sql, (storage_id,))
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(row) for row in rows]
+                else:
+                    return []
+        except Exception as e:
+            print(f"Error getting users by storage: {e}")
+            return []
 
     def get_user_storage_relationships(self):
         """

@@ -4,7 +4,7 @@ from database.database import Database
 storage_router = Blueprint("storage_router", __name__)
 
 
-# Get all storage/sucursales
+# Anda
 @storage_router.route("/", methods=["GET"])
 def get_all_storage():
     db = Database()
@@ -12,18 +12,20 @@ def get_all_storage():
     return jsonify(records), 200
 
 
-# Get storage by ID
+# Anda
 @storage_router.route("/<storage_id>", methods=["GET"])
 def get_storage_by_id(storage_id):
     db = Database()
-    record = db.get_record_by_id("storage", storage_id)
-    if record:
-        return jsonify(record), 200
+    result = db.get_record_by_id("storage", storage_id)
+    if result["success"] and result["record"]:
+        return jsonify({"success": True, "record": result["record"]}), 200
     else:
-        return jsonify({"mensaje": "Sucursal no encontrada", "status": "error"}), 404
+        return jsonify(
+            {"mensaje": "Sucursal no encontrada", "status": "error", "success": False}
+        ), 404
 
 
-# Create new storage/sucursal
+# Anda
 @storage_router.route("/", methods=["POST"])
 def create_storage():
     data = request.json
@@ -37,7 +39,7 @@ def create_storage():
 
     db = Database()
 
-    success = db.add_record(
+    result = db.add_record(
         "storage",
         {
             "name": name,
@@ -49,12 +51,10 @@ def create_storage():
         },
     )
 
-    if success:
+    if result["success"]:
         return jsonify({"mensaje": "Sucursal creada con éxito", "status": "éxito"}), 200
     else:
-        return jsonify(
-            {"mensaje": "Error al crear la sucursal", "status": "error"}
-        ), 500
+        return jsonify({"mensaje": result["message"], "status": "error"}), 500
 
 
 # Update storage/sucursal
@@ -71,7 +71,7 @@ def update_storage(storage_id):
     area = data.get("area")
     description = data.get("description")
 
-    success = db.update_record(
+    result = db.update_record(
         "storage",
         {
             "id": storage_id,
@@ -84,44 +84,33 @@ def update_storage(storage_id):
         },
     )
 
-    if success:
+    if result["success"]:
         return jsonify(
             {"mensaje": "Sucursal actualizada con éxito", "status": "éxito"}
         ), 200
     else:
-        return jsonify(
-            {"mensaje": "Error al actualizar la sucursal", "status": "error"}
-        ), 500
+        return jsonify({"mensaje": result["message"], "status": "error"}), 500
 
 
 # Delete storage/sucursal
 @storage_router.route("/<storage_id>", methods=["DELETE"])
 def delete_storage(storage_id):
     db = Database()
-    success = db.delete_record("storage", "id = ?", storage_id)
-    if success:
+    result = db.delete_record("storage", "id = ?", (storage_id,))
+    if result["success"]:
         return jsonify(
             {"mensaje": "Sucursal eliminada con éxito", "status": "éxito"}
         ), 200
     else:
-        return jsonify(
-            {"mensaje": "Error al eliminar la sucursal", "status": "error"}
-        ), 500
+        return jsonify({"mensaje": result["message"], "status": "error"}), 500
 
 
-# Get employees for a specific storage/sucursal
 @storage_router.route("/<storage_id>/employees", methods=["GET"])
 def get_storage_employees(storage_id):
     db = Database()
-    # Get employees assigned to this storage using USERSXSTORAGE table
-    query = """
-    SELECT u.id, u.username, u.fullname, u.email, u.phone, u.domicilio, u.cuit, u.role, u.status
-    FROM users u
-    INNER JOIN usersxstorage us ON u.id = us.id_user
-    WHERE us.id_storage = ? AND u.role = 'employee'
-    """
     try:
-        employees = db.execute_query(query, (storage_id,))
+        # Use the database method to get users by storage
+        employees = db.get_users_by_storage(storage_id)
         return jsonify(employees), 200
     except Exception as e:
         print(f"Error fetching employees: {e}")

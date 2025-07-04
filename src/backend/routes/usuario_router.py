@@ -37,10 +37,8 @@ def recibir_datos_empleados():
         # Hash de la contraseña
         hashed_password = generate_password_hash(password)
 
-        # Handle profile_image: if it's a base64 string, convert to bytes
         processed_profile_image = profile_image
         if profile_image and profile_image.startswith("data:"):
-            # Extract the base64 part and convert to bytes
             try:
                 import base64
 
@@ -48,9 +46,8 @@ def recibir_datos_empleados():
                 processed_profile_image = base64.b64decode(base64_data)
             except Exception as img_error:
                 print(f"Error processing profile image: {img_error}")
-                processed_profile_image = b""  # Empty bytes if conversion fails
+                processed_profile_image = b""
         elif profile_image:
-            # If it's already a string but not a data URI, store as is
             processed_profile_image = (
                 profile_image.encode("utf-8")
                 if isinstance(profile_image, str)
@@ -103,25 +100,39 @@ def recibir_datos_empleados():
 @usuario_router.route("/employees", methods=["GET"])
 def obtener_usuario_empleado():
     db = Database()
-    records = db.get_all_records_by_clause("users", "role LIKE ?", "employee")
+    records = db.get_all_records_by_clause("users", "role = ?", "employee")
+
+    # Process profile images for frontend display
+    for record in records:
+        if record.get("profile_image"):
+            profile_img = record["profile_image"]
+            if isinstance(profile_img, bytes):
+                try:
+                    import base64
+
+                    record["profile_image"] = (
+                        f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
+                    )
+                except Exception as e:
+                    print(f"Error converting profile image: {e}")
+                    record["profile_image"] = ""
+
     return jsonify(records), 200
 
 
-@usuario_router.route("employee/<user_id>", methods=["GET"])
+@usuario_router.route("/employee/<user_id>", methods=["GET"])
 def obtener_empleado_by_id(user_id):
     db = Database()
     record = db.get_record_by_id("users", user_id)
     if record["success"]:
         employee_data = record["record"]
 
-        # Convert profile_image from bytes to base64 string if needed
         if employee_data and employee_data.get("profile_image"):
             profile_img = employee_data["profile_image"]
             if isinstance(profile_img, bytes):
                 try:
                     import base64
 
-                    # Convert bytes to base64 string
                     employee_data["profile_image"] = (
                         f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
                     )
@@ -129,7 +140,6 @@ def obtener_empleado_by_id(user_id):
                     print(f"Error converting profile image: {e}")
                     employee_data["profile_image"] = ""
 
-        # Get the employee's assigned storages
         storages = db.get_storages_by_user(user_id)
         employee_data["assigned_storages"] = storages
 
@@ -138,7 +148,7 @@ def obtener_empleado_by_id(user_id):
         return jsonify({"mensaje": "Usuario no encontrado", "status": "error"}), 404
 
 
-@usuario_router.route("employee/<user_id>/storages", methods=["GET"])
+@usuario_router.route("/employee/<user_id>/storages", methods=["GET"])
 def get_employee_storages(user_id):
     """Get all storages assigned to a specific employee"""
     db = Database()
@@ -152,7 +162,7 @@ def get_employee_storages(user_id):
         ), 500
 
 
-@usuario_router.route("employee/<user_id>/storages", methods=["POST"])
+@usuario_router.route("/employee/<user_id>/storages", methods=["POST"])
 def assign_storage_to_employee(user_id):
     """Assign a storage to an employee"""
     db = Database()
@@ -175,7 +185,7 @@ def assign_storage_to_employee(user_id):
         return jsonify({"mensaje": "Error al asignar sucursal", "status": "error"}), 500
 
 
-@usuario_router.route("employee/<user_id>/storages/<storage_id>", methods=["DELETE"])
+@usuario_router.route("/employee/<user_id>/storages/<storage_id>", methods=["DELETE"])
 def remove_storage_from_employee(user_id, storage_id):
     """Remove a storage assignment from an employee"""
     db = Database()
@@ -190,3 +200,103 @@ def remove_storage_from_employee(user_id, storage_id):
     except Exception as e:
         print(f"Error removing storage from employee: {e}")
         return jsonify({"mensaje": "Error al remover sucursal", "status": "error"}), 500
+
+
+@usuario_router.route("/<user_id>", methods=["PUT"])
+def update_user(user_id):
+    """Update user information"""
+    db = Database()
+    data = request.json
+
+    # Get current user data first
+    current_user = db.get_record_by_id("users", user_id)
+    if not current_user["success"]:
+        return jsonify({"mensaje": "Usuario no encontrado", "status": "error"}), 404
+
+    # Prepare update data
+    update_data = {"id": user_id}
+
+    # Only update fields that are provided
+    if "username" in data:
+        update_data["username"] = data["username"]
+    if "fullname" in data:
+        update_data["fullname"] = data["fullname"]
+    if "email" in data:
+        update_data["email"] = data["email"]
+    if "phone" in data:
+        update_data["phone"] = data["phone"]
+    if "domicilio" in data:
+        update_data["domicilio"] = data["domicilio"]
+    if "cuit" in data:
+        update_data["cuit"] = data["cuit"]
+    if "role" in data:
+        update_data["role"] = data["role"]
+    if "status" in data:
+        update_data["status"] = data["status"]
+
+    # Handle password update if provided
+    if "password" in data and data["password"]:
+        hashed_password = generate_password_hash(data["password"])
+        update_data["password"] = hashed_password
+
+    # Handle profile image update if provided
+    if "profile_image" in data:
+        profile_image = data["profile_image"]
+        if profile_image and profile_image.startswith("data:"):
+            try:
+                import base64
+
+                base64_data = profile_image.split(";base64,")[1]
+                processed_profile_image = base64.b64decode(base64_data)
+                update_data["profile_image"] = processed_profile_image
+            except Exception as img_error:
+                print(f"Error processing profile image: {img_error}")
+                update_data["profile_image"] = b""
+        elif profile_image:
+            update_data["profile_image"] = (
+                profile_image.encode("utf-8")
+                if isinstance(profile_image, str)
+                else profile_image
+            )
+        else:
+            update_data["profile_image"] = b""
+
+    try:
+        result = db.update_record("users", update_data)
+        if result["success"]:
+            return jsonify(
+                {"mensaje": "Usuario actualizado con éxito", "status": "éxito"}
+            ), 200
+        else:
+            return jsonify({"mensaje": result["message"], "status": "error"}), 500
+    except Exception as e:
+        print(f"Error updating user: {e}")
+        return jsonify(
+            {"mensaje": f"Error interno del servidor: {str(e)}", "status": "error"}
+        ), 500
+
+
+@usuario_router.route("/<user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    """Delete a user"""
+    db = Database()
+
+    try:
+        # First, remove all storage relationships for this user
+        user_storage_relationships = db.get_storages_by_user(user_id)
+        for storage in user_storage_relationships:
+            db.remove_user_storage_relationship(user_id, storage["id"])
+
+        # Then delete the user
+        result = db.delete_record("users", "id = ?", (user_id,))
+        if result["success"]:
+            return jsonify(
+                {"mensaje": "Usuario eliminado con éxito", "status": "éxito"}
+            ), 200
+        else:
+            return jsonify({"mensaje": result["message"], "status": "error"}), 500
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        return jsonify(
+            {"mensaje": f"Error interno del servidor: {str(e)}", "status": "error"}
+        ), 500
