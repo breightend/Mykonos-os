@@ -996,8 +996,8 @@ class Database:
             join_column1 (str): The name of the join column in the first table.
             join_column2 (str): The name of the join column in the second table.
             select_columns (str): Comma-separated string of columns to select.
-                                  Defaults to 't1.*, t2.*'. Use specific aliases
-                                  (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
+            Defaults to 't1.*, t2.*'. Use specific aliases
+            (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
 
         Returns:
             dict: {'success': bool, 'message': str, 'records': list[dict]}
@@ -1058,8 +1058,8 @@ class Database:
             join_column2 (str): The name of the join column in the second table.
             join_column3 (str): The name of the join column in the third table.
             select_columns (str): Comma-separated string of columns to select.
-                                  Defaults to 't1.*, t2.*, t3.*'. Use specific aliases
-                                  (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
+            Defaults to 't1.*, t2.*, t3.*'. Use specific aliases
+            (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
 
         Returns:
             dict: {'success': bool, 'message': str, 'records': list[dict]}

@@ -91,6 +91,8 @@ export default function InfoProvider() {
         </div>
         <div>
 
+          <h1 className="text-3xl font-bold">Marcas: </h1>
+            <p>Aca van a ir las marcas que tiene el proveedor.</p>
           <h1 className="text-3xl font-bold"> Registro de operaciones </h1>
         </div>
         <div className="w-full">

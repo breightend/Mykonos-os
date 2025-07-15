@@ -13,7 +13,7 @@ export async function fetchEmployee() {
 //TODO: Modificar
 export async function fetchEmployeeById(id) {
     try {
-        const response = await axios.get(`http://localhost:5000/api/user/employee/${id}`,);
+        const response = await axios.get(`http://localhost:5000/api/user/employee/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching empleado by ID:", error);
