@@ -20,7 +20,7 @@ export async function fetchEmployeeById(id) {
         throw error;
     }
 }
-//Anda
+
 export async function postData(data) {
     try {
         const response = await axios.post("http://localhost:5000/api/user/employees", data);

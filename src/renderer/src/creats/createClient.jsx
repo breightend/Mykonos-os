@@ -12,8 +12,8 @@ function CreateClient() {
     responsabilidad_iva: '',
     domicilio_comercial: '',
     cuit: '',
-    inicio_actividades: '', //Colocar la fecha que es creada
-    ingresos_brutos: '0', //se setea en 0
+    inicio_actividades: '', 
+    ingresos_brutos: '0', 
     contact_name: '',
     phone_number: '',
     email: '',
@@ -54,16 +54,13 @@ function CreateClient() {
         setLocation('/clientes')
 
 
-        // Verifica si la respuesta fue exitosa según tu API
         if (response.success || response.status === 200) {
           setLocation('/clientes')
         } else {
           console.error('Error en la respuesta del servidor:', response)
-          // Puedes mostrar un mensaje de error al usuario aquí
         }
       } catch (error) {
         console.error('Error al enviar los datos:', error)
-        // Puedes mostrar un mensaje de error al usuario aquí
       }
     }
   }

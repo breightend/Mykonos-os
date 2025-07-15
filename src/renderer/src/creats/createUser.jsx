@@ -29,7 +29,6 @@ function CreateUser() {
   const [selectedSucursales, setSelectedSucursales] = useState([])
   const [loadingSucursales, setLoadingSucursales] = useState(false)
 
-  // Cargar sucursales al montar el componente
   useEffect(() => {
     const loadSucursales = async () => {
       setLoadingSucursales(true)
@@ -45,7 +44,6 @@ function CreateUser() {
     }
     loadSucursales()
   }, [])
-  console.log(sucursales)
 
   const validateForm = () => {
     const newErrors = {}
@@ -69,19 +67,34 @@ function CreateUser() {
       }
     }
 
-    // Email validation
+    // Validate email format
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = 'Ingrese un email válido'
     }
 
-    // Password match validation
+    // Validate password match
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden'
     }
 
-    // Password strength validation (optional)
+    // Validate password length
     if (formData.password && formData.password.length < 8) {
       newErrors.password = 'La contraseña debe tener al menos 8 caracteres'
+    }
+
+    // Validate CUIT format (basic validation)
+    if (formData.cuit && (formData.cuit.length < 10 || formData.cuit.length > 11)) {
+      newErrors.cuit = 'El CUIT debe tener entre 10 y 11 dígitos'
+    }
+
+    // Validate username is generated
+    if (!formData.username || !formData.username.trim()) {
+      newErrors.username = 'El nombre de usuario es requerido'
+    }
+
+    // Validate fullname is generated
+    if (!formData.fullname || !formData.fullname.trim()) {
+      newErrors.fullname = 'El nombre completo es requerido'
     }
 
     setErrors(newErrors)
@@ -95,6 +108,7 @@ function CreateUser() {
       const updated = { ...prev, [name]: value }
       updated.created_at = new Date().toISOString().split('T')[0]
 
+      // Auto-generate username and fullname when nombre or apellido change
       if (name === 'nombre' || name === 'apellido') {
         const nombre = name === 'nombre' ? value : updated.nombre
         const apellido = name === 'apellido' ? value : updated.apellido
@@ -102,13 +116,29 @@ function CreateUser() {
         const capitalizar = (str) =>
           str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : ''
 
-        updated.username = capitalizar(nombre) + capitalizar(apellido)
-        updated.fullname = `${capitalizar(nombre)} ${capitalizar(apellido)}`
+        // Generate username (FirstnameLastname)
+        const nombreCapitalizado = capitalizar(nombre)
+        const apellidoCapitalizado = capitalizar(apellido)
+
+        if (nombreCapitalizado && apellidoCapitalizado) {
+          updated.username = nombreCapitalizado + apellidoCapitalizado
+          updated.fullname = `${nombreCapitalizado} ${apellidoCapitalizado}`
+        } else if (nombreCapitalizado) {
+          updated.username = nombreCapitalizado
+          updated.fullname = nombreCapitalizado
+        } else if (apellidoCapitalizado) {
+          updated.username = apellidoCapitalizado
+          updated.fullname = apellidoCapitalizado
+        } else {
+          updated.username = ''
+          updated.fullname = ''
+        }
       }
 
       return updated
     })
 
+    // Clear errors for the field being edited
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }))
     }
@@ -128,7 +158,10 @@ function CreateUser() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    console.log('Form submitted with data:', formData)
+
     if (!validateForm()) {
+      console.log('Form validation failed:', errors)
       return
     }
 
@@ -151,6 +184,26 @@ function CreateUser() {
       }
 
       console.log('Data being sent to backend:', userData)
+
+      // Validate that required fields are not empty
+      const requiredBackendFields = [
+        'username',
+        'fullname',
+        'password',
+        'email',
+        'phone',
+        'domicilio',
+        'cuit'
+      ]
+      const missingFields = requiredBackendFields.filter(
+        (field) => !userData[field] || !userData[field].trim()
+      )
+
+      if (missingFields.length > 0) {
+        console.error('Missing required fields:', missingFields)
+        toast.error(`Faltan campos requeridos: ${missingFields.join(', ')}`)
+        return
+      }
 
       // Crear el usuario
       const createdUser = await enviarData(userData)

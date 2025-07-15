@@ -8,7 +8,9 @@ usuario_router = Blueprint("usuario_router", __name__)  # Creás un Blueprint
 @usuario_router.route("/employees", methods=["POST"])
 def recibir_datos_empleados():
     db = Database()
-    data = request.json  # Obtenemos los datos del frontend
+    data = request.json
+
+    print(f"Received data: {data}")  # Debug log
 
     # Required fields
     username = data.get("username")
@@ -25,6 +27,7 @@ def recibir_datos_empleados():
     session_token = data.get("session_token", "")
     profile_image = data.get("profile_image", "")
 
+    # Validate required fields
     if not username or not password:
         return jsonify(
             {"mensaje": "Username y password son requeridos", "status": "error"}
@@ -33,14 +36,35 @@ def recibir_datos_empleados():
     if not fullname:
         return jsonify({"mensaje": "Fullname es requerido", "status": "error"}), 400
 
+    if not cuit:
+        return jsonify({"mensaje": "CUIT es requerido", "status": "error"}), 400
+
+    if not email:
+        return jsonify({"mensaje": "Email es requerido", "status": "error"}), 400
+
+    if not phone:
+        return jsonify({"mensaje": "Teléfono es requerido", "status": "error"}), 400
+
+    if not domicilio:
+        return jsonify({"mensaje": "Domicilio es requerido", "status": "error"}), 400
+
     try:
-        # Hash de la contraseña
+        # Check if username already exists
+        existing_user = db.get_all_records_by_clause("users", "username = ?", username)
+        if existing_user and len(existing_user) > 0:
+            return jsonify(
+                {"mensaje": "El nombre de usuario ya existe", "status": "error"}
+            ), 400
+
+        # Check if cuit already exists
+        existing_cuit = db.get_all_records_by_clause("users", "cuit = ?", cuit)
+        if existing_cuit and len(existing_cuit) > 0:
+            return jsonify({"mensaje": "El CUIT ya existe", "status": "error"}), 400
+
         hashed_password = generate_password_hash(password)
 
-        # Handle profile_image: if it's a base64 string, convert to bytes
         processed_profile_image = profile_image
         if profile_image and profile_image.startswith("data:"):
-            # Extract the base64 part and convert to bytes
             try:
                 import base64
 
@@ -59,6 +83,10 @@ def recibir_datos_empleados():
         else:
             processed_profile_image = b""  # Empty bytes for no image
 
+        print(
+            f"Attempting to insert user data: {username}, {fullname}, {email}, {phone}, {cuit}"
+        )
+
         result = db.add_record(
             "users",
             {
@@ -75,6 +103,8 @@ def recibir_datos_empleados():
                 "profile_image": processed_profile_image,
             },
         )
+
+        print(f"Database result: {result}")
 
         if result["success"]:
             return jsonify(
@@ -95,6 +125,9 @@ def recibir_datos_empleados():
 
     except Exception as e:
         print(f"Exception in user creation: {e}")
+        import traceback
+
+        traceback.print_exc()
         return jsonify(
             {"mensaje": f"Error interno del servidor: {str(e)}", "status": "error"}
         ), 500

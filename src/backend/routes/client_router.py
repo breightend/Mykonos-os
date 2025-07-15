@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash
 from database.database import Database 
 
 client_router = Blueprint('client_router', __name__)
@@ -19,12 +18,10 @@ def recibir_datos():
     contact_name = data.get("contact_name")
     phone_number = data.get("phone_number")
     email = data.get("email")
-    observation = data.get("observation")
-
+    observation = data.get("observations")
 
     db = Database()
-    # if not entity_name or not entity_type or not razon_social or not responsabilidad_iva or not domicilio_comercial or not cuit or not inicio_actividad or not ingreso_brutos or not contact_name or not phone_number or not email:
-    #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
+
     
     success = db.add_record("entities", {
         "entity_name": entity_name,
@@ -46,11 +43,9 @@ def recibir_datos():
     else:
         return jsonify({"mensaje": "Error al crear el proveedor", "status": "error"}), 500
 
-#Lo que obtengo lo muestro en la tabla clientes    
 @client_router.route( '/' , methods=['GET'])
 def get_all_records():
     db = Database()
-#    records = db.get_all_records("entities")
     records = db.get_all_records_by_clause("entities", "entity_type LIKE ?", "client")
     return jsonify(records), 200
 
