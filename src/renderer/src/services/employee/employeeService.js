@@ -10,7 +10,7 @@ export async function fetchEmployee() {
         throw error;
     }
 }
-//TODO: Modificar
+
 export async function fetchEmployeeById(id) {
     try {
         const response = await axios.get(`http://localhost:5000/api/user/employee/${id}`);

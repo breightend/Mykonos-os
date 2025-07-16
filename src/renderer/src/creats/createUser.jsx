@@ -37,7 +37,7 @@ function CreateUser() {
         setSucursales(data)
       } catch (error) {
         console.error('Error loading sucursales:', error)
-        toast.error('Error al cargar las sucursales')
+        toast.error('Error al cargar las sucursales', error.message)
       } finally {
         setLoadingSucursales(false)
       }
@@ -49,7 +49,6 @@ function CreateUser() {
     const newErrors = {}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-    // Required fields validation
     const requiredFields = [
       'nombre',
       'apellido',
@@ -67,34 +66,32 @@ function CreateUser() {
       }
     }
 
-    // Validate email format
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = 'Ingrese un email válido'
     }
 
-    // Validate password match
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden'
     }
 
-    // Validate password length
     if (formData.password && formData.password.length < 8) {
       newErrors.password = 'La contraseña debe tener al menos 8 caracteres'
     }
 
-    // Validate CUIT format (basic validation)
     if (formData.cuit && (formData.cuit.length < 10 || formData.cuit.length > 11)) {
       newErrors.cuit = 'El CUIT debe tener entre 10 y 11 dígitos'
     }
 
-    // Validate username is generated
     if (!formData.username || !formData.username.trim()) {
       newErrors.username = 'El nombre de usuario es requerido'
     }
 
-    // Validate fullname is generated
     if (!formData.fullname || !formData.fullname.trim()) {
       newErrors.fullname = 'El nombre completo es requerido'
+    }
+
+    if (!formData.profile_image || !formData.profile_image.trim()) {
+      newErrors.profile_image = 'La foto de perfil es requerida'
     }
 
     setErrors(newErrors)
@@ -116,7 +113,6 @@ function CreateUser() {
         const capitalizar = (str) =>
           str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : ''
 
-        // Generate username (FirstnameLastname)
         const nombreCapitalizado = capitalizar(nombre)
         const apellidoCapitalizado = capitalizar(apellido)
 
@@ -138,20 +134,22 @@ function CreateUser() {
       return updated
     })
 
-    // Clear errors for the field being edited
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }))
     }
   }
 
-  // Manejar selección de sucursales
   const handleSucursalSelection = (sucursalId) => {
     setSelectedSucursales((prev) => {
+      let newSelection
       if (prev.includes(sucursalId)) {
-        return prev.filter((id) => id !== sucursalId)
+        newSelection = prev.filter((id) => id !== sucursalId)
+        console.log(`Removed sucursal ${sucursalId}. New selection:`, newSelection)
       } else {
-        return [...prev, sucursalId]
+        newSelection = [...prev, sucursalId]
+        console.log(`Added sucursal ${sucursalId}. New selection:`, newSelection)
       }
+      return newSelection
     })
   }
 
@@ -168,7 +166,6 @@ function CreateUser() {
     try {
       console.log('Creando usuario con datos:', formData)
 
-      // Prepare data for backend (only fields that exist in database)
       const userData = {
         username: formData.username,
         fullname: formData.fullname,
@@ -183,9 +180,8 @@ function CreateUser() {
         session_token: '' // Empty string for now
       }
 
-      console.log('Data being sent to backend:', userData)
+      console.log('Los datos fueron enviados al backend:', userData)
 
-      // Validate that required fields are not empty
       const requiredBackendFields = [
         'username',
         'fullname',
@@ -199,27 +195,40 @@ function CreateUser() {
         (field) => !userData[field] || !userData[field].trim()
       )
 
+      if (!userData.profile_image) {
+        missingFields.push('profile_image')
+      }
+
       if (missingFields.length > 0) {
         console.error('Missing required fields:', missingFields)
         toast.error(`Faltan campos requeridos: ${missingFields.join(', ')}`)
         return
       }
 
-      // Crear el usuario
       const createdUser = await enviarData(userData)
       console.log('Usuario creado:', createdUser)
+      console.log('Selected sucursales:', selectedSucursales)
+      console.log('User ID from response:', createdUser.user_id)
 
-      console.log(selectedSucursales)
+      if (selectedSucursales.length > 0) {
+        if (!createdUser.user_id) {
+          console.error('No user_id received from server:', createdUser)
+          toast.error('Usuario creado, pero error obteniendo ID de usuario')
+          return
+        }
 
-      // Asignar sucursales al usuario si hay alguna seleccionada
-      if (selectedSucursales.length > 0 && createdUser.user_id) {
         try {
+          console.log(
+            `Asignando usuario ${createdUser.user_id} a ${selectedSucursales.length} sucursales`
+          )
           for (const sucursalId of selectedSucursales) {
-            await assignEmployeeToSucursal(sucursalId, createdUser.user_id)
+            console.log(`Asignando a sucursal: ${sucursalId}`)
+            const assignResult = await assignEmployeeToSucursal(sucursalId, createdUser.user_id)
+            console.log(`Resultado de asignación para sucursal ${sucursalId}:`, assignResult)
           }
           toast.success(`Usuario creado y asignado a ${selectedSucursales.length} sucursal(es)`, {
             position: 'top-right',
-            duration: 3000,
+            duration: 2000,
             style: {
               background: '#4caf50',
               color: '#fff'
@@ -227,19 +236,23 @@ function CreateUser() {
           })
         } catch (sucursalError) {
           console.error('Error al asignar sucursales:', sucursalError)
-          toast.error('Usuario creado, pero error al asignar sucursales', {
-            position: 'top-right',
-            duration: 3000,
-            style: {
-              background: '#ff9800',
-              color: '#fff'
+          toast.error(
+            `Usuario creado, pero error al asignar sucursales: ${sucursalError.message || sucursalError}`,
+            {
+              position: 'top-right',
+              duration: 3000,
+              style: {
+                background: '#ff9800',
+                color: '#fff'
+              }
             }
-          })
+          )
         }
       } else {
+        console.log('No se seleccionaron sucursales para asignar')
         toast.success('Usuario creado con éxito', {
           position: 'top-right',
-          duration: 3000,
+          duration: 2000,
           style: {
             background: '#4caf50',
             color: '#fff'
@@ -247,7 +260,16 @@ function CreateUser() {
         })
       }
 
-      setLocation('/home')
+      console.log('Attempting to navigate to /home')
+      setTimeout(() => {
+        try {
+          setLocation('/home')
+          console.log('Navigation command executed')
+        } catch (navError) {
+          console.error('Navigation error:', navError)
+          window.location.hash = '#/home'
+        }
+      }, 100)
     } catch (error) {
       console.error('Error al enviar los datos:', error)
       toast.error(error.message || 'Ocurrió un error al enviar los datos', {
@@ -278,6 +300,11 @@ function CreateUser() {
       const file = acceptedFiles[0]
       const base64 = await convertToBase64(file)
       setFormData({ ...formData, profile_image: base64 })
+
+      // Clear profile image error if it exists
+      if (errors.profile_image) {
+        setErrors((prev) => ({ ...prev, profile_image: '' }))
+      }
     }
   })
 
@@ -342,7 +369,7 @@ function CreateUser() {
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <div className="form-control w-full">
           <label className="label">
-            <span className="label-text">Foto de perfil</span>
+            <span className="label-text">Foto de perfil *</span>
           </label>
 
           {formData.profile_image && (
@@ -359,16 +386,23 @@ function CreateUser() {
         <div
           {...getRootProps()}
           className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors duration-200 ${
-            isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+            isDragActive
+              ? 'border-blue-500 bg-blue-50'
+              : errors.profile_image
+                ? 'border-red-500 bg-red-50'
+                : 'border-gray-300'
           }`}
         >
           <input {...getInputProps()} />
           <p>{isDragActive ? '¡Soltá la imagen aquí!' : 'Arrastrá tu imagen o hacé clic'}</p>
         </div>
+        {errors.profile_image && (
+          <p className="mt-1 text-xs text-red-500">{errors.profile_image}</p>
+        )}
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">Nombre</label>
+            <label className="mb-1 block text-sm font-medium">Nombre *</label>
             <input
               name="nombre"
               onChange={onChange}
@@ -383,7 +417,7 @@ function CreateUser() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Apellido</label>
+            <label className="mb-1 block text-sm font-medium">Apellido *</label>
             <input
               name="apellido"
               onChange={onChange}
@@ -397,7 +431,7 @@ function CreateUser() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">CUIT</label>
+          <label className="mb-1 block text-sm font-medium">CUIT *</label>
           <input
             name="cuit"
             onChange={onChange}
@@ -410,7 +444,7 @@ function CreateUser() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Celular</label>
+          <label className="mb-1 block text-sm font-medium">Celular *</label>
           <input
             name="phone"
             onChange={onChange}
@@ -425,7 +459,7 @@ function CreateUser() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Domicilio</label>
+          <label className="mb-1 block text-sm font-medium">Domicilio *</label>
           <input
             name="domicilio"
             onChange={onChange}
@@ -438,7 +472,7 @@ function CreateUser() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Email</label>
+          <label className="mb-1 block text-sm font-medium">Email *</label>
           <input
             name="email"
             onChange={onChange}
@@ -522,7 +556,7 @@ function CreateUser() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">Contraseña</label>
+            <label className="mb-1 block text-sm font-medium">Contraseña *</label>
             <input
               name="password"
               onChange={onChange}
@@ -537,7 +571,7 @@ function CreateUser() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Confirmar contraseña</label>
+            <label className="mb-1 block text-sm font-medium">Confirmar contraseña *</label>
             <div className="relative">
               <input
                 name="confirmPassword"

@@ -48,6 +48,11 @@ def recibir_datos_empleados():
     if not domicilio:
         return jsonify({"mensaje": "Domicilio es requerido", "status": "error"}), 400
 
+    if not profile_image or not profile_image.strip():
+        return jsonify(
+            {"mensaje": "Foto de perfil es requerida", "status": "error"}
+        ), 400
+
     try:
         # Check if username already exists
         existing_user = db.get_all_records_by_clause("users", "username = ?", username)
@@ -137,20 +142,47 @@ def obtener_usuario_empleado():
     db = Database()
     records = db.get_all_records_by_clause("users", "role = ?", "employee")
 
-    # Process profile images for frontend display
+    # Process all records to handle bytes objects
     for record in records:
+        # Handle profile_image conversion
         if record.get("profile_image"):
             profile_img = record["profile_image"]
             if isinstance(profile_img, bytes):
                 try:
                     import base64
 
-                    record["profile_image"] = (
-                        f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
-                    )
+                    if len(profile_img) > 0:  # Check if bytes data is not empty
+                        record["profile_image"] = (
+                            f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
+                        )
+                    else:
+                        record["profile_image"] = ""
                 except Exception as e:
-                    print(f"Error converting profile image: {e}")
+                    print(
+                        f"Error converting profile image for user {record.get('id', 'unknown')}: {e}"
+                    )
                     record["profile_image"] = ""
+            elif profile_img is None:
+                record["profile_image"] = ""
+        else:
+            record["profile_image"] = ""
+
+        # Ensure all other fields are JSON serializable
+        for key, value in record.items():
+            if isinstance(value, bytes):
+                try:
+                    # Try to decode as text first
+                    record[key] = value.decode("utf-8")
+                except UnicodeDecodeError:
+                    # If it's not text, convert to base64
+                    import base64
+
+                    record[key] = base64.b64encode(value).decode("utf-8")
+                except Exception as e:
+                    print(
+                        f"Error converting bytes field {key} for user {record.get('id', 'unknown')}: {e}"
+                    )
+                    record[key] = ""
 
     return jsonify(records), 200
 
@@ -162,18 +194,41 @@ def obtener_empleado_by_id(user_id):
     if record["success"]:
         employee_data = record["record"]
 
+        # Handle profile_image conversion
         if employee_data and employee_data.get("profile_image"):
             profile_img = employee_data["profile_image"]
             if isinstance(profile_img, bytes):
                 try:
                     import base64
 
-                    employee_data["profile_image"] = (
-                        f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
-                    )
+                    if len(profile_img) > 0:  # Check if bytes data is not empty
+                        employee_data["profile_image"] = (
+                            f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
+                        )
+                    else:
+                        employee_data["profile_image"] = ""
                 except Exception as e:
-                    print(f"Error converting profile image: {e}")
+                    print(f"Error converting profile image for user {user_id}: {e}")
                     employee_data["profile_image"] = ""
+            elif profile_img is None:
+                employee_data["profile_image"] = ""
+        else:
+            employee_data["profile_image"] = ""
+
+        # Ensure all other fields are JSON serializable
+        for key, value in employee_data.items():
+            if isinstance(value, bytes):
+                try:
+                    # Try to decode as text first
+                    employee_data[key] = value.decode("utf-8")
+                except UnicodeDecodeError:
+                    # If it's not text, convert to base64
+                    import base64
+
+                    employee_data[key] = base64.b64encode(value).decode("utf-8")
+                except Exception as e:
+                    print(f"Error converting bytes field {key} for user {user_id}: {e}")
+                    employee_data[key] = ""
 
         storages = db.get_storages_by_user(user_id)
         employee_data["assigned_storages"] = storages

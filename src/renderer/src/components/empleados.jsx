@@ -6,7 +6,7 @@ import Navbar from '../componentes especificos/navbar'
 import { fetchEmployee } from '../services/employee/employeeService'
 
 function Empleados() {
-  const [location, setLocation] = useLocation()
+  const [, setLocation] = useLocation()
   const [employee, setEmployee] = useState([])
   const [filteredEmployee, setFilteredEmployee] = useState([])
   const [selectedRow, setSelectedRow] = useState(null)
@@ -18,6 +18,11 @@ function Empleados() {
     setSelectedRow(row.id)
     console.log('Empleado seleccionado:', row)
     setEmployeeSeleccionado(row)
+  }
+
+  const handleRowDoubleClick = (row) => {
+    console.log('Navegando a info del empleado:', row)
+    setLocation(`/infoEmpleado?id=${row.id}`)
   }
 
   const handleSearch = (e) => {
@@ -39,7 +44,7 @@ function Empleados() {
       try {
         const data = await fetchEmployee()
         setEmployee(data)
-        setFilteredEmployee(data) // Inicialmente mostrar todos
+        setFilteredEmployee(data)
       } catch (error) {
         console.error('Error fetching data:', error)
       }
@@ -94,11 +99,13 @@ function Empleados() {
             </tr>
           </thead>
           <tbody>
-            {filteredEmployee.length > 0 && filteredEmployee.map((row, index) => (
+            {filteredEmployee.length > 0 &&
+              filteredEmployee.map((row, index) => (
                 <tr
                   key={row.id}
                   className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
                   onClick={() => handleRowClick(row)}
+                  onDoubleClick={() => handleRowDoubleClick(row)}
                 >
                   <td>{index + 1}</td>
                   <td>{row.fullname}</td>
