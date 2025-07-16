@@ -34,6 +34,11 @@ export default function Clientes() {
     setClienteSeleccionado(row)
   }
 
+  const handleRowDoubleClick = (row) => {
+    console.log('Navegando a info del cliente:', row)
+    setLocation(`/infoCliente?id=${row.id}`)
+  }
+
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase()
     setSearchTerm(term)
@@ -114,6 +119,7 @@ export default function Clientes() {
                     selectedRow === row.id ? 'bg-warning/20' : ''
                   }`}
                   onClick={() => handleRowClick(row)}
+                  onDoubleClick={() => handleRowDoubleClick(row)}
                 >
                   <td>{index + 1}</td>
                   <td>{row.entity_name}</td>
