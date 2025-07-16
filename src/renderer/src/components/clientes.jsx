@@ -20,7 +20,7 @@ export default function Clientes() {
       try {
         const data = await fetchCliente()
         setClientes(data)
-        setFilteredClientes(data) // Inicialmente mostrar todos
+        setFilteredClientes(data) 
       } catch (error) {
         console.error('Error fetching data:', error)
       }
@@ -35,7 +35,6 @@ export default function Clientes() {
   }
 
   const handleRowDoubleClick = (row) => {
-    console.log('Navegando a info del cliente:', row)
     setLocation(`/infoCliente?id=${row.id}`)
   }
 

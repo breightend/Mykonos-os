@@ -33,7 +33,7 @@ function Empleados() {
       if (searchById) {
         return row.id.toString().includes(term)
       } else {
-        return row.entity_name.toLowerCase().includes(term) || row.cuit.includes(term)
+        return row.fullname.toLowerCase().includes(term) || row.cuit.includes(term)
       }
     })
     setFilteredEmployee(filtered)

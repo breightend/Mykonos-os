@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { putData } from '../../services/clientes/clientsService'
+import { CircleX, Save } from 'lucide-react'
 
 function EditarClienteModal({ cliente }) {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ function EditarClienteModal({ cliente }) {
     email: '',
     observations: ''
   })
+
   useEffect(() => {
     if (cliente) {
       setFormData({
@@ -152,9 +154,12 @@ function EditarClienteModal({ cliente }) {
           <div className="modal-action">
             <form method="dialog">
               <div className="space-x-4">
-                <button className="btn btn-neutral">Cancelar</button>
+                <button className="btn btn-neutral">
+                  <CircleX className="mr-2" />
+                  Cancelar
+                </button>
                 <button className="btn btn-success" onClick={handleEdit}>
-                  Aceptar
+                  <Save /> Aceptar
                 </button>
                 <Toaster position="bottom-right" />
               </div>
