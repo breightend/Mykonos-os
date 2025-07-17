@@ -12,7 +12,7 @@ export default function FormasPago() {
   const [monstrarDetalle, setMostrarDetalle] = useState(false)
   const { saleData, setSaleData } = useSellContext()
 
-  //TODO
+
   const metodos = [
     { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
     {

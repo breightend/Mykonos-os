@@ -58,11 +58,28 @@ export async function deleteData(id) {
 // Get employees for a specific sucursal
 export async function fetchSucursalEmployees(storageId) {
     try {
+        console.log(`Fetching employees for storage ID: ${storageId}`)
+
+        if (!storageId) {
+            throw new Error('Storage ID is required')
+        }
+
         const response = await axios.get(`http://localhost:5000/api/storage/${storageId}/employees`)
+        console.log('Employees response:', response.data)
         return response.data
     } catch (error) {
         console.error('Error fetching sucursal employees:', error)
-        throw error
+        if (error.response) {
+            console.error('Response status:', error.response.status)
+            console.error('Response data:', error.response.data)
+            throw new Error(`Server error: ${error.response.data.mensaje || error.response.statusText}`)
+        } else if (error.request) {
+            console.error('No response received:', error.request)
+            throw new Error('No response from server - check if the backend is running')
+        } else {
+            console.error('Request error:', error.message)
+            throw error
+        }
     }
 }
 

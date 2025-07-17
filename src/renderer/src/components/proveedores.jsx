@@ -102,6 +102,7 @@ export default function Proveedores() {
               <th>Contacto</th>
               <th>Marca</th>
               <th>CUIT</th>
+              <th>Observaciones</th>
             </tr>
           </thead>
           <tbody>
@@ -121,6 +122,7 @@ export default function Proveedores() {
                   <td>{row.contact_name}</td>
                   <td>Marca Prox</td>
                   <td>{row.cuit}</td>
+                  <td>{row.observations}</td>
                 </tr>
               ))}
           </tbody>

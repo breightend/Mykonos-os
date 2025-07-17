@@ -105,7 +105,7 @@ def update_provider(provider_id):
     contact_name = data.get("contact_name")
     phone_number = data.get("phone_number")
     email = data.get("email")
-    observation = data.get("observation")
+    observations = data.get("observations")
 
     success = db.update_record(
         "entities",
@@ -122,7 +122,7 @@ def update_provider(provider_id):
             "contact_name": contact_name,
             "phone_number": phone_number,
             "email": email,
-            "observations": observation,
+            "observations": observations,
         },
     )
 

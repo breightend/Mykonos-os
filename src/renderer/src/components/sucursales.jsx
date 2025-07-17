@@ -29,13 +29,18 @@ function Sucursales() {
     postal_code: '',
     phone_number: '',
     area: '',
-    description: ''
+    description: '',
+    status: 'Active'
   })
 
   const handleRowClick = (row) => {
     setSelectedRow(row.id)
     console.log('Sucursal seleccionada:', row)
     setSucursalSeleccionada(row)
+  }
+
+  const handleRowDoubleClick = (row) => {
+    setLocation(`/infoSucursal?id=${row.id}`)
   }
 
   const handleSearch = (e) => {
@@ -53,10 +58,10 @@ function Sucursales() {
     setFilteredSucursales(filtered)
   }
   const handleInputChange = (e) => {
-    const { name, value } = e.target
+    const { name, value, type, checked } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? (checked ? 'Active' : 'Inactive') : value
     }))
   }
 
@@ -78,7 +83,8 @@ function Sucursales() {
         postal_code: '',
         phone_number: '',
         area: '',
-        description: ''
+        description: '',
+        status: 'Active'
       })
       // Refresh data
       fetchData()
@@ -194,6 +200,7 @@ function Sucursales() {
               <th>Teléfono</th>
               <th>Área</th>
               <th>Descripción</th>
+              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -204,6 +211,8 @@ function Sucursales() {
                   key={row.id}
                   className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
                   onClick={() => handleRowClick(row)}
+                  onDoubleClick={() => handleRowDoubleClick(row)}
+                  title="Doble clic para ver información de la sucursal"
                 >
                   <td>{index + 1}</td>
                   <td className="font-semibold">{row.name}</td>
@@ -212,6 +221,7 @@ function Sucursales() {
                   <td>{row.phone_number || 'N/A'}</td>
                   <td>{row.area || 'N/A'}</td>
                   <td>{row.description || 'N/A'}</td>
+                  <td>{row.status || 'N/D'}</td>
                 </tr>
               ))}
           </tbody>
@@ -296,6 +306,22 @@ function Sucursales() {
                   className="input input-bordered w-full"
                   placeholder="Área o sección"
                 />
+              </div>
+
+              <div>
+                <label className="label cursor-pointer">
+                  <span className="label-text">Estado Activo</span>
+                  <input
+                    type="checkbox"
+                    name="status"
+                    checked={formData.status === 'Active'}
+                    onChange={handleInputChange}
+                    className="checkbox checkbox-success"
+                  />
+                </label>
+                <div className="mt-1 text-sm text-gray-500">
+                  {formData.status === 'Active' ? 'Sucursal activa' : 'Sucursal inactiva'}
+                </div>
               </div>
 
               <div>

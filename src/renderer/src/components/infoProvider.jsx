@@ -6,6 +6,7 @@ import EditarProveedorModal from '../modals/modalsProveedor/editarProveedorModal
 import AgregarPagoModal from '../modals/modalsProveedor/agregarPagoModal'
 import EliminarProveedorModal from '../modals/modalsProveedor/eliminarProveedorModal'
 import AgregarCompraModal from '../modals/modalsProveedor/agregarCompraModal'
+import NuevaMarca from '../modals/modalsProveedor/nuevaMarcaModal'
 
 export default function InfoProvider() {
   const [, setLocation] = useLocation()
@@ -90,9 +91,17 @@ export default function InfoProvider() {
           </table>
         </div>
         <div>
+          <div className="">
+            <h1 className="text-3xl font-bold">Marcas: </h1>
+            <button
+              className="btn btn-primary"
+              onClick={() => document.getElementById('nuevaMarca').showModal()}
+            >
+              Agregar marca
+            </button>
+          </div>
 
-          <h1 className="text-3xl font-bold">Marcas: </h1>
-            <p>Aca van a ir las marcas que tiene el proveedor.</p>
+          <p>Aca van a ir las marcas que tiene el proveedor.</p>
           <h1 className="text-3xl font-bold"> Registro de operaciones </h1>
         </div>
         <div className="w-full">
@@ -160,6 +169,7 @@ export default function InfoProvider() {
       <AgregarPagoModal provider={provider} />
       <EliminarProveedorModal provider={provider} />
       <AgregarCompraModal provider={provider} />
+      <NuevaMarca provider={provider} />
     </div>
   )
 }

@@ -105,7 +105,6 @@ function CreateUser() {
       const updated = { ...prev, [name]: value }
       updated.created_at = new Date().toISOString().split('T')[0]
 
-      // Auto-generate username and fullname when nombre or apellido change
       if (name === 'nombre' || name === 'apellido') {
         const nombre = name === 'nombre' ? value : updated.nombre
         const apellido = name === 'apellido' ? value : updated.apellido
@@ -177,7 +176,7 @@ function CreateUser() {
         role: formData.role,
         status: formData.status,
         profile_image: formData.profile_image,
-        session_token: '' // Empty string for now
+        session_token: '' 
       }
 
       console.log('Los datos fueron enviados al backend:', userData)

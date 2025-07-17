@@ -36,6 +36,8 @@ def create_storage():
     phone_number = data.get("phone_number")
     area = data.get("area")
     description = data.get("description")
+    status = data.get("status", "active")  # Default to 'active' if not provided
+    created_at = data.get("created_at")
 
     db = Database()
 
@@ -48,6 +50,8 @@ def create_storage():
             "phone_number": phone_number,
             "area": area,
             "description": description,
+            "status": status,
+            "created_at": created_at,
         },
     )
 
@@ -70,6 +74,8 @@ def update_storage(storage_id):
     phone_number = data.get("phone_number")
     area = data.get("area")
     description = data.get("description")
+    status = data.get("status", "active")
+    created_at = data.get("created_at")
 
     result = db.update_record(
         "storage",
@@ -81,6 +87,8 @@ def update_storage(storage_id):
             "phone_number": phone_number,
             "area": area,
             "description": description,
+            "status": status,
+            "created_at": created_at,
         },
     )
 
@@ -104,18 +112,41 @@ def delete_storage(storage_id):
     else:
         return jsonify({"mensaje": result["message"], "status": "error"}), 500
 
-
+#obtiene empleados de una sucursal
 @storage_router.route("/<storage_id>/employees", methods=["GET"])
 def get_storage_employees(storage_id):
     db = Database()
     try:
+        # Validate storage_id
+        if not storage_id:
+            return jsonify(
+                {"mensaje": "ID de sucursal es requerido", "status": "error"}
+            ), 400
+
+        storage_result = db.get_record_by_id("storage", storage_id)
+        if not storage_result["success"] or not storage_result["record"]:
+            return jsonify(
+                {
+                    "mensaje": f"Sucursal con ID {storage_id} no encontrada",
+                    "status": "error",
+                }
+            ), 404
+
         # Use the database method to get users by storage
         employees = db.get_users_by_storage(storage_id)
+
         return jsonify(employees), 200
     except Exception as e:
-        print(f"Error fetching employees: {e}")
+        print(f"Error fetching employees for storage {storage_id}: {e}")
+        import traceback
+
+        traceback.print_exc()
         return jsonify(
-            {"mensaje": "Error al obtener empleados de la sucursal", "status": "error"}
+            {
+                "mensaje": f"Error al obtener empleados de la sucursal: {str(e)}",
+                "status": "error",
+                "storage_id": storage_id,
+            }
         ), 500
 
 

@@ -39,6 +39,7 @@ function NuevaSucursal() {
 
     setLoading(true)
     try {
+      formData.created_at = new Date().toISOString()
       await createSucursal(formData)
       toast.success('Sucursal creada exitosamente')
       setTimeout(() => {

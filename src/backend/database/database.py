@@ -1399,7 +1399,8 @@ class Database:
             list[dict]: List of user records who have access to the storage
         """
         sql = """
-            SELECT u.*
+            SELECT u.id, u.username, u.fullname, u.email, u.phone, u.domicilio, 
+                   u.cuit, u.role, u.status, u.session_token, u.created_at
             FROM users u
             INNER JOIN usersxstorage us ON u.id = us.id_user
             WHERE us.id_storage = ?
@@ -1411,7 +1412,15 @@ class Database:
                 cur.execute(sql, (storage_id,))
                 rows = cur.fetchall()
                 if rows:
-                    return [dict(row) for row in rows]
+                    users = []
+                    for row in rows:
+                        user = dict(row)
+                        # Ensure all values are JSON serializable
+                        for key, value in user.items():
+                            if isinstance(value, bytes):
+                                user[key] = None  # Remove binary data
+                        users.append(user)
+                    return users
                 else:
                     return []
         except Exception as e:
