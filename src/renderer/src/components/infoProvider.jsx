@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Trash2, Plus, Edit2, X, Save, Users, Package } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Plus, Edit2, X, Users, Package } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
 import { fetchProviderById } from '../services/proveedores/proveedorService'
@@ -282,6 +282,9 @@ export default function InfoProvider() {
                 <th>Email</th>
                 <th>Razon social</th>
                 <th>Dirección</th>
+                <th>Responsabilidad iva</th>
+                <th>Fecha Inicio Actividades</th>
+                <th>Observaciones</th>
               </tr>
             </thead>
             <tbody>
@@ -293,6 +296,9 @@ export default function InfoProvider() {
                 <td>{provider?.email}</td>
                 <td>{provider?.razon_social}</td>
                 <td>{provider?.domicilio_comercial}</td>
+                <td>{provider?.responsabilidad_iva}</td>
+                <td>{provider?.inicio_actividades}</td>
+                <td>{provider?.observations}</td>
               </tr>
             </tbody>
           </table>
