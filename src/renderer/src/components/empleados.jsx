@@ -63,7 +63,7 @@ function Empleados() {
         <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-bottom"
+              className="btn btn-ghost tooltip tooltip-right"
               data-tip="Información del cliente"
               onClick={() => setLocation(`/infoEmpleado?id=${employeeSeleccionado.id}`)}
               disabled={!employeeSeleccionado}

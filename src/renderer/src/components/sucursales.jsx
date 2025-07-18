@@ -140,8 +140,8 @@ function Sucursales() {
         <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-bottom"
-              data-tip="Ver empleados de la sucursal"
+              className="btn btn-ghost tooltip tooltip-right"
+              data-tip="Empleados en sucursal"
               onClick={handleShowEmployees}
               disabled={!sucursalSeleccionada || loadingEmployees}
             >

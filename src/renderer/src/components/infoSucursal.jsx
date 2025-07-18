@@ -226,7 +226,7 @@ function InfoSucursal() {
   }
 
   const handleEmployeeDoubleClick = (employeeId) => {
-    setLocation(`/info-empleado?id=${employeeId}`)
+    setLocation(`/infoEmpleado?id=${employeeId}`)
   }
 
   return (

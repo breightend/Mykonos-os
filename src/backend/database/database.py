@@ -767,7 +767,35 @@ class Database:
                 "table_names": [],
             }
 
-    # Record
+    def execute_query(self, query, params=None):
+        """
+        Executes a custom SQL query and returns the results.
+
+        Args:
+            query (str): The SQL query to execute.
+            params (tuple, optional): Parameters for the query. Defaults to None.
+
+        Returns:
+            list: A list of dictionaries with the query results.
+        """
+        try:
+            with self.create_connection() as conn:
+                cur = conn.cursor()
+                if params:
+                    cur.execute(query, params)
+                else:
+                    cur.execute(query)
+                rows = cur.fetchall()
+                records = []
+                columns = [desc[0] for desc in cur.description]
+                for row in rows:
+                    records.append(dict(zip(columns, row)))
+                return records
+        except Exception as e:
+            print(f"Error executing query: {e}")
+            return []
+
+    # CRUD methods
     def add_record(self, table_name, data):
         """
         Agrega un nuevo registro a la tabla especificada en la base de datos.
@@ -1006,175 +1034,6 @@ class Database:
             print(f"Error al obtener registros de la tabla '{table_name}': {e}")
             return []
 
-    def get_join_records(
-        self,
-        table1_name,
-        table2_name,
-        join_column1,
-        join_column2,
-        select_columns="t1.*, t2.*",
-    ):
-        """
-        Performs an INNER JOIN between two tables and retrieves records.
-
-        Args:
-            table1_name (str): The name of the first table (aliased as t1).
-            table2_name (str): The name of the second table (aliased as t2).
-            join_column1 (str): The name of the join column in the first table.
-            join_column2 (str): The name of the join column in the second table.
-            select_columns (str): Comma-separated string of columns to select.
-            Defaults to 't1.*, t2.*'. Use specific aliases
-            (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
-
-        Returns:
-            dict: {'success': bool, 'message': str, 'records': list[dict]}
-        """
-        # Basic validation
-        if not all(
-            [table1_name, table2_name, join_column1, join_column2, select_columns]
-        ):
-            return {
-                "success": False,
-                "message": "Invalid table or column names provided.",
-                "records": [],
-            }
-
-        sql = f"""
-            SELECT {select_columns}
-            FROM {table1_name} AS t1
-            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
-        """
-
-        try:
-            with self.create_connection() as conn:
-                # Use row_factory for easy dict conversion, but be mindful of name collisions
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                cur.execute(sql)
-                rows = cur.fetchall()
-                if rows:
-                    # This conversion might still have issues if select_columns doesn't use aliases
-                    # for identically named columns in both tables.
-                    return [dict(row) for row in rows]
-
-                else:
-                    return []
-
-        except Exception as e:
-            print(f"Error al obtener registros de la tabla: {e}")
-            return []
-
-    def get_join_records_tres_tables(
-        self,
-        table1_name,
-        table2_name,
-        table3_name,
-        join_column1,
-        join_column2,
-        join_column3,
-        select_columns="t1.*, t2.*, t3.*",
-    ):
-        """
-        Performs an INNER JOIN between three tables and retrieves records.
-
-        Args:
-            table1_name (str): The name of the first table (aliased as t1).
-            table2_name (str): The name of the second table (aliased as t2).
-            table3_name (str): The name of the third table (aliased as t3).
-            join_column1 (str): The name of the join column in the first table.
-            join_column2 (str): The name of the join column in the second table.
-            join_column3 (str): The name of the join column in the third table.
-            select_columns (str): Comma-separated string of columns to select.
-            Defaults to 't1.*, t2.*, t3.*'. Use specific aliases
-            (e.g., 't1.id AS t1_id, t2.name') to avoid name collisions if needed.
-
-        Returns:
-            dict: {'success': bool, 'message': str, 'records': list[dict]}
-        """
-        # Basic validation
-        if not all(
-            [
-                table1_name,
-                table2_name,
-                table3_name,
-                join_column1,
-                join_column2,
-                join_column3,
-                select_columns,
-            ]
-        ):
-            return {
-                "success": False,
-                "message": "Invalid table or column names provided.",
-                "records": [],
-            }
-
-        sql = f"""
-            SELECT {select_columns}
-            FROM {table1_name} AS t1
-            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
-            INNER JOIN {table3_name} AS t3 ON t2.{join_column3} = t3.{join_column1}
-        """
-
-        try:
-            with self.create_connection() as conn:
-                # Use row_factory for easy dict conversion, but be mindful of name collisions
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                cur.execute(sql)
-                rows = cur.fetchall()
-                if rows:
-                    # This conversion might still have issues if select_columns doesn't use aliases
-                    # for identically named columns in both tables.
-                    return [dict(row) for row in rows]
-
-                else:
-                    return []
-
-        except Exception as e:
-            print(f"Error al obtener registros de la tabla: {e}")
-            return []
-
-    def get_join_records_by_id(
-        self, table1_name, table2_name, join_column1, join_column2, record_id
-    ):
-        """
-        Obtiene registros de dos tablas unidas por una columna específica, filtrando por el ID de la primera tabla.
-
-        Args:
-            table1_name (str): Nombre de la primera tabla (aliased as t1).
-            table2_name (str): Nombre de la segunda tabla (aliased as t2).
-            join_column1 (str): Nombre de la columna de unión en la primera tabla.
-            join_column2 (str): Nombre de la columna de unión en la segunda tabla.
-            record_id (int): ID del registro en la primera tabla para filtrar.
-
-        Returns:
-            dict: {'success': bool, 'message': str, 'records': list[dict]}
-        """
-        sql = f"""
-            SELECT t1.*, t2.*
-            FROM {table1_name} AS t1
-            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
-            WHERE t1.id = ?
-        """
-
-        try:
-            with self.create_connection() as conn:
-                conn.row_factory = (
-                    sqlite3.Row
-                )  # Devuelve los resultados como un diccionario
-                cur = conn.cursor()
-                cur.execute(sql, (record_id,))
-                rows = cur.fetchall()
-                if rows:
-                    return [
-                        dict(row) for row in rows
-                    ]  # Convierte cada fila en un diccionario y devuelve la lista
-                return []
-        except Exception as e:
-            print(f"Error al obtener registros de la tabla '{table1_name}': {e}")
-            return []
-
     def get_all_records(self, table_name):
         """
         Obtiene todos los registros de una tabla de la base de datos.
@@ -1198,6 +1057,52 @@ class Database:
                 return records
         except Exception as e:
             print(f"Error al obtener todos los registros de {table_name}: {e}")
+            return []
+
+    def get_join_records_tres_tables(
+        self,
+        table1_name,
+        table2_name,
+        table3_name,
+        join_column1,
+        join_column2,
+        join_column3,
+        select_columns="t1.*, t2.*, t3.*",
+    ):
+        """
+        Performs an INNER JOIN between three tables and retrieves records.
+
+        Args:
+            table1_name (str): The name of the first table (aliased as t1).
+            table2_name (str): The name of the second table (aliased as t2).
+            table3_name (str): The name of the third table (aliased as t3).
+            join_column1 (str): The name of the join column in the first table.
+            join_column2 (str): The name of the join column in the second table.
+            join_column3 (str): The name of the join column in the third table.
+            select_columns (str): Comma-separated string of columns to select.
+
+        Returns:
+            list[dict]: List of records as dictionaries
+        """
+        sql = f"""
+            SELECT {select_columns}
+            FROM {table1_name} AS t1
+            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
+            INNER JOIN {table3_name} AS t3 ON t2.{join_column3} = t3.id
+        """
+
+        try:
+            with self.create_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute(sql)
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(row) for row in rows]
+                else:
+                    return []
+        except Exception as e:
+            print(f"Error al obtener registros con JOIN: {e}")
             return []
 
     # Utility methods for many-to-many relationships
