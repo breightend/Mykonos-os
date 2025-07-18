@@ -1,31 +1,33 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, LoaderCircle, Ruler, Trash2 } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Trash2 } from 'lucide-react'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
 import BarcodeGenerator from '../componentes especificos/Barcode'
-import { fetchSize, fetchCategorySize } from '../services/products/sizeService'
+import { fetchSize } from '../services/products/sizeService'
 import { fetchColor } from '../services/products/colorService' // Importa el servicio de colores
 import { fetchProvider } from '../services/proveedores/proveedorService'
+import { fetchBrandByProviders } from '../services/proveedores/brandService'
 
-//TODO: Poder eliminar colores y talles. 
+//TODO: Poder eliminar colores y talles.
 //TODO: que no se puedan seleccionar dos talles iguales
 
 export default function NuevoProducto() {
   const [marca, setMarca] = useState('')
+  const [selectedProvider, setSelectedProvider] = useState('') // Estado para el proveedor seleccionado
   const [cantidad] = useState(0)
   const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
   const [colors, setColors] = useState([]) // Estado para los colores
-  const [categoria, setCategoria] = useState([]) // Estado para las categorias
+  // const [categoria, setCategoria] = useState([]) // Estado para las categorias - comentado temporalmente
   const [provider, setProvider] = useState([]) // Estado para los proveedores
+  const [brandByProvider, setBrandByProvider] = useState([]) // Estado para las marcas por proveedor
   const [tallesBD, setTallesBD] = useState([]) // Estado para los talles de la BD
   const [loadingData, setLoadingData] = useState(true)
-  const [errorData, setErrorData] = useState(null)
+  // const [errorData, setErrorData] = useState(null) // Comentado temporalmente
   const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState({}) // Inicializar como objeto vacío
 
-  const marcas = ['Nike', 'Adidas', 'Puma', "Levi's", 'Zara']
   const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo']
 
   useEffect(() => {
@@ -34,25 +36,26 @@ export default function NuevoProducto() {
         const sizesResponse = await fetchSize()
         setTallesBD(sizesResponse)
 
-        const categorySizeResponse = await fetchCategorySize()
-        setCategoria(categorySizeResponse)
+        // const categorySizeResponse = await fetchCategorySize()
+        // setCategoria(categorySizeResponse)
 
-        const colorsResponse = await fetchColor() // Llama a tu servicio de colores
+        const colorsResponse = await fetchColor()
         setColors(colorsResponse)
 
         const providerResponse = await fetchProvider()
         setProvider(providerResponse)
 
-        // Inicializar coloresDisponiblesPorTalle después de obtener los colores
-        setColoresDisponiblesPorTalle(
-          tallesBD.reduce((acc, talleItem) => {
-            acc[talleItem.size_name] = colors.map((color) => color.color_name)
-            return acc
-          }, {})
-        )
+        // Configurar colores disponibles por talle una vez que tenemos los datos
+        if (colorsResponse && sizesResponse) {
+          const coloresDisponibles = {}
+          sizesResponse.forEach((talle) => {
+            coloresDisponibles[talle.size_name] = colorsResponse.map((color) => color.color_name)
+          })
+          setColoresDisponiblesPorTalle(coloresDisponibles)
+        }
       } catch (error) {
         console.error('Error Fetching data: ', error)
-        setErrorData(error)
+        // setErrorData(error)
       } finally {
         setLoadingData(false)
       }
@@ -60,7 +63,31 @@ export default function NuevoProducto() {
     fetchData()
   }, [])
 
-  console.log('Colores disponibles por talle:', coloresDisponiblesPorTalle)
+  // UseEffect para cargar marcas cuando se selecciona un proveedor
+  useEffect(() => {
+    const fetchBrandsForProvider = async () => {
+      if (selectedProvider) {
+        try {
+          const brandsByProviderResponse = await fetchBrandByProviders(selectedProvider)
+          setBrandByProvider(brandsByProviderResponse)
+          // Resetear la marca seleccionada cuando cambia el proveedor
+          setMarca('')
+        } catch (error) {
+          console.error('Error fetching brands for provider: ', error)
+          setBrandByProvider([])
+        }
+      } else {
+        setBrandByProvider([])
+        setMarca('')
+      }
+    }
+    fetchBrandsForProvider()
+  }, [selectedProvider])
+
+  // Manejar cambio de proveedor
+  const handleProviderChange = (e) => {
+    setSelectedProvider(e.target.value)
+  }
 
   const handleCantidadTotal = () => {
     let cantidadTotal = 0
@@ -109,6 +136,7 @@ export default function NuevoProducto() {
   const handleSubmit = (e) => {
     e.preventDefault()
     const nuevaPrenda = {
+      proveedor: selectedProvider,
       marca,
       cantidad,
       talles,
@@ -203,7 +231,7 @@ export default function NuevoProducto() {
     )
   }
 
-/*   if (errorData) {
+  /*   if (errorData) {
     return <div>Error al cargar los datos: {errorData.message}</div>
   } */
   return (
@@ -228,7 +256,7 @@ export default function NuevoProducto() {
           />
         </div>
         {/* Campo para el tipo de prenda */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Tipo de Prenda</label>
             <select className="select select-bordered" required>
@@ -243,6 +271,26 @@ export default function NuevoProducto() {
             </select>
           </div>
 
+          {/* Campo para el proveedor */}
+          <div>
+            <label className="mb-1 block text-sm font-medium">Proveedor</label>
+            <select
+              value={selectedProvider}
+              onChange={handleProviderChange}
+              className="select select-bordered"
+              required
+            >
+              <option value="" disabled>
+                Seleccione un proveedor
+              </option>
+              {provider.map((proveedorItem) => (
+                <option key={proveedorItem.id} value={proveedorItem.id}>
+                  {proveedorItem.entity_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Campo para la marca */}
           <div>
             <label className="mb-1 block text-sm font-medium">Marca</label>
@@ -251,13 +299,14 @@ export default function NuevoProducto() {
               onChange={(e) => setMarca(e.target.value)}
               className="select select-bordered"
               required
+              disabled={!selectedProvider}
             >
               <option value="" disabled>
-                Seleccione una marca
+                {!selectedProvider ? 'Seleccione un proveedor primero' : 'Seleccione una marca'}
               </option>
-              {marcas.map((marca, index) => (
-                <option key={index} value={marca}>
-                  {marca}
+              {brandByProvider.map((marcaItem) => (
+                <option key={marcaItem.id} value={marcaItem.brand_name}>
+                  {marcaItem.brand_name}
                 </option>
               ))}
             </select>
@@ -398,7 +447,7 @@ export default function NuevoProducto() {
             type="button"
             onClick={agregarTalle}
             className="btn btn-outline badge badge-secondary badge-outline transform p-6 hover:scale-105"
-            disabled={loadingData || tallesBD.length === 0} 
+            disabled={loadingData || tallesBD.length === 0}
           >
             + Agregar Talle
           </button>
