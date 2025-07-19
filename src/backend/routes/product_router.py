@@ -20,7 +20,9 @@ def recibir_datos():
     discount = data.get("discount")
     comments = data.get("comments")
     user_id = data.get("user_id")
-    image_ids = data.get("image_ids")
+    images_ids = data.get(
+        "images_ids"
+    )  # Changed from image_ids to match database schema
     brand_id = data.get("brand_id")
     creation_date = data.get("creation_date")
     last_modified_date = data.get("last_modified_date")
@@ -46,7 +48,7 @@ def recibir_datos():
             "discount": discount,
             "comments": comments,
             "user_id": user_id,
-            "image_ids": image_ids,
+            "images_ids": images_ids,
             "brand_id": brand_id,
             "creation_date": creation_date,
             "last_modified_date": last_modified_date,
@@ -264,6 +266,34 @@ def obtener_familia_producto():
             {"mensaje": "No se encontraron familias de productos", "status": "error"}
         ), 404
     return jsonify(family_products), 200
+
+
+@product_router.route("/familyProducts/tree", methods=["GET"])
+def obtener_familia_producto_arbol():
+    """Obtener los grupos de productos en estructura de árbol jerárquico"""
+    db = Database()
+    family_products = db.get_all_records("groups")
+
+    if not family_products:
+        return jsonify(
+            {"mensaje": "No se encontraron familias de productos", "status": "error"}
+        ), 404
+
+    # Convertir la lista plana en estructura de árbol
+    def build_tree(items, parent_id=None):
+        tree = []
+        for item in items:
+            if item.get("parent_group_id") == parent_id:
+                children = build_tree(items, item["id"])
+                if children:
+                    item["children"] = children
+                tree.append(item)
+        return tree
+
+    # Construir el árbol empezando desde los nodos raíz (parent_group_id = None)
+    tree_structure = build_tree(family_products, None)
+
+    return jsonify(tree_structure), 200
 
 
 @product_router.route("/familyProducts/<group_id>", methods=["PUT"])

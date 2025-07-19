@@ -10,6 +10,9 @@ import { fetchColor } from '../services/products/colorService'
 import { fetchProvider } from '../services/proveedores/proveedorService'
 import { fetchBrandByProviders } from '../services/proveedores/brandService'
 import postData from '../services/products/productService'
+import { fetchFamilyProductsTree } from '../services/products/familyService'
+import GroupTreeSelector from '../components/GroupTreeSelector'
+import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 
 //TODO: Poder eliminar colores y talles.
 //TODO: que no se puedan seleccionar dos talles iguales
@@ -33,6 +36,7 @@ export default function NuevoProducto() {
   const [provider, setProvider] = useState([])
   const [brandByProvider, setBrandByProvider] = useState([])
   const [tallesBD, setTallesBD] = useState([])
+  const [grupoTree, setGrupoTree] = useState([])
 
   // Estados de control
   const [loadingData, setLoadingData] = useState(true)
@@ -40,8 +44,7 @@ export default function NuevoProducto() {
   const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState({})
   const [productImage, setProductImage] = useState('')
   const [errors, setErrors] = useState({})
-
-  const tiposPrenda = ['Pantalón', 'Campera', 'Remera', 'Camisa', 'Buzo']
+  const [showGroupTreeModal, setShowGroupTreeModal] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +60,9 @@ export default function NuevoProducto() {
 
         const providerResponse = await fetchProvider()
         setProvider(providerResponse)
+
+        const grupoTreeData = await fetchFamilyProductsTree()
+        setGrupoTree(grupoTreeData)
 
         // Configurar colores disponibles por talle una vez que tenemos los datos
         if (colorsResponse && sizesResponse) {
@@ -107,6 +113,11 @@ export default function NuevoProducto() {
   // Manejar cambio de proveedor
   const handleProviderChange = (e) => {
     setSelectedProvider(e.target.value)
+  }
+
+  // Manejar selección de grupo
+  const handleGroupSelect = (group) => {
+    setTipo(group.id.toString())
   }
 
   const handleCantidadTotal = () => {
@@ -353,17 +364,31 @@ export default function NuevoProducto() {
       })
       .filter(Boolean)
 
+    // Obtener brand_id de la marca seleccionada
+    const selectedBrand = brandByProvider.find((brand) => brand.brand_name === marca)
+    const brandId = selectedBrand ? selectedBrand.id : null
+
+    // Generar código de barras temporal si no existe
+    const generatedBarcode = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
     // Preparar datos del producto para el backend
     return {
-      description,
-      product_type: tipo,
-      brand: marca,
+      barcode: generatedBarcode,
+      provider_code: `PROV-${selectedProvider}`,
+      product_name: description,
+      group_id: parseInt(tipo), // Usar el grupo seleccionado
       provider_id: parseInt(selectedProvider),
+      description,
       cost: parseFloat(cost) || 0,
       sale_price: parseFloat(salePrice) || 0,
-      image: productImage || null,
+      tax: 0, // Por defecto
+      discount: 0, // Por defecto
       comments: comments || null,
-      total_quantity: cantidadTotal,
+      user_id: 1, // Usuario por defecto por ahora
+      images_ids: productImage ? '1' : null, // Por defecto
+      brand_id: brandId,
+      creation_date: new Date().toISOString(),
+      last_modified_date: new Date().toISOString(),
       size_ids: sizeIds,
       color_ids: colorIds
     }
@@ -374,7 +399,7 @@ export default function NuevoProducto() {
     const newErrors = {}
 
     if (!description.trim()) newErrors.description = 'La descripción es requerida'
-    if (!tipo) newErrors.tipo = 'El tipo de prenda es requerido'
+    if (!tipo) newErrors.tipo = 'El grupo de producto es requerido'
     if (!selectedProvider) newErrors.provider = 'El proveedor es requerido'
     if (!marca) newErrors.marca = 'La marca es requerida'
     if (!cost || parseFloat(cost) <= 0) newErrors.cost = 'El costo debe ser mayor a 0'
@@ -490,7 +515,7 @@ export default function NuevoProducto() {
   return (
     <div className="from-base-100 to-base-200 min-h-screen bg-gradient-to-br">
       {/* Header con gradiente y sombra */}
-      <div className="bg-base-100/95 border-base-300  top-0 z-10 border-b shadow-lg backdrop-blur-sm">
+      <div className="bg-base-100/95 border-base-300 top-0 z-10 border-b shadow-lg backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -628,36 +653,50 @@ export default function NuevoProducto() {
                 Categorización y Origen
               </h2>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                {/* Tipo de Prenda */}
+                {/* Grupo/Tipo de Prenda */}
                 <div>
                   <label className="label">
-                    <span className="label-text font-semibold">Tipo de Prenda</span>
+                    <span className="label-text font-semibold">Grupo de Producto</span>
                     <span className="label-text-alt text-error">*</span>
                   </label>
-                  <select
-                    className={`select select-bordered focus:border-secondary w-full ${
-                      errors.tipo ? 'select-error' : ''
-                    }`}
-                    value={tipo}
-                    onChange={(e) => setTipo(e.target.value)}
-                    required
-                  >
-                    <option value="" disabled>
-                      Seleccione un tipo
-                    </option>
-                    {tiposPrenda.map((tipoPrenda, index) => (
-                      <option key={index} value={tipoPrenda}>
-                        {tipoPrenda}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <GroupTreeSelector
+                      groups={grupoTree}
+                      selectedGroupId={tipo ? parseInt(tipo) : null}
+                      onSelectGroup={handleGroupSelect}
+                      className={`flex-1 ${errors.tipo ? 'border-error' : ''}`}
+                      placeholder="Seleccione un grupo de producto..."
+                      emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
+                    />
+                    <div className="tooltip" data-tip="Ver estructura de grupos">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-secondary"
+                        onClick={() => setShowGroupTreeModal(true)}
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                   {errors.tipo && (
                     <div className="label">
                       <span className="label-text-alt text-error">{errors.tipo}</span>
                     </div>
                   )}
                 </div>
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
 
                 {/* Proveedor */}
                 <div>
@@ -1177,6 +1216,13 @@ export default function NuevoProducto() {
           </div>
         </form>
       </div>
+
+      {/* Modal de vista del árbol de grupos */}
+      <GroupTreePreviewModal
+        groups={grupoTree}
+        isOpen={showGroupTreeModal}
+        onClose={() => setShowGroupTreeModal(false)}
+      />
     </div>
   )
 }

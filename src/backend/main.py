@@ -9,16 +9,12 @@ from routes.product_router import product_router
 from routes.storage_router import storage_router
 
 app = Flask(__name__)
+# More permissive CORS configuration to handle preflight requests
 CORS(
     app,
-    resources={
-        r"/api/*": {
-            "origins": "http://localhost:5173",
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type"],
-        }
-    },
-)  # Habilitar CORS para todas las rutas
+    origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    supports_credentials=True,
+)
 app.register_blueprint(usuario_router, url_prefix="/api/user")
 app.register_blueprint(provider_router, url_prefix="/api/provider")
 app.register_blueprint(client_router, url_prefix="/api/client")
