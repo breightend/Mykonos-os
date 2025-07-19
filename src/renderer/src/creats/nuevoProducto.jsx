@@ -104,12 +104,14 @@ export default function NuevoProducto() {
     const colorEliminado = nuevosTalles[talleIndex].colores[colorIndex].color
     const talleActual = nuevosTalles[talleIndex].talle
 
-    if (colorEliminado) {
+    // Si hay un color eliminado, devolverlo a la lista de disponibles
+    if (colorEliminado && talleActual) {
       setColoresDisponiblesPorTalle((prev) => ({
         ...prev,
         [talleActual]: [...(prev[talleActual] || []), colorEliminado]
       }))
     }
+
     nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
     setTalles(nuevosTalles)
     handleCantidadTotal()
@@ -119,14 +121,13 @@ export default function NuevoProducto() {
     const nuevosTalles = [...talles]
     const talleEliminado = nuevosTalles[talleIndex]
 
-    talleEliminado.colores.forEach((color) => {
-      if (color.color && coloresDisponiblesPorTalle[talleEliminado.talle]) {
-        setColoresDisponiblesPorTalle((prev) => ({
-          ...prev,
-          [talleEliminado.talle]: [...prev[talleEliminado.talle], color.color]
-        }))
-      }
-    })
+    // Restaurar colores a la lista de disponibles del talle eliminado
+    if (talleEliminado.talle) {
+      setColoresDisponiblesPorTalle((prev) => ({
+        ...prev,
+        [talleEliminado.talle]: colors.map((color) => color.color_name)
+      }))
+    }
 
     nuevosTalles.splice(talleIndex, 1)
     setTalles(nuevosTalles)
@@ -147,16 +148,32 @@ export default function NuevoProducto() {
   }
 
   const agregarTalle = () => {
-    setTalles([
-      ...talles,
-      { talle: tallesBD[0]?.size_name || '', colores: [{ color: '', cantidad: 0 }] }
-    ])
+    // Verificar que hay talles disponibles
+    const tallesUsados = talles.map((t) => t.talle).filter(Boolean)
+    const tallesDisponibles = tallesBD.filter((t) => !tallesUsados.includes(t.size_name))
+
+    if (tallesDisponibles.length === 0) {
+      alert('No hay más talles disponibles para agregar')
+      return
+    }
+
+    setTalles([...talles, { talle: '', colores: [{ color: '', cantidad: 0 }] }])
   }
 
   const handleTalleChange = (talleIndex, value) => {
     const nuevosTalles = [...talles]
+
+    // Actualizar el talle
     nuevosTalles[talleIndex].talle = value
     setTalles(nuevosTalles)
+
+    // Actualizar colores disponibles para el nuevo talle
+    if (value && colors.length > 0) {
+      setColoresDisponiblesPorTalle((prev) => ({
+        ...prev,
+        [value]: colors.map((color) => color.color_name)
+      }))
+    }
   }
 
   const agregarColor = (talleIndex) => {
@@ -178,30 +195,35 @@ export default function NuevoProducto() {
       const nuevoColor = value
 
       if (nuevoColor !== colorAnterior) {
+        // Actualizar el color en el estado
         nuevosTalles[talleIndex].colores[colorIndex].color = nuevoColor
-        setTalles(nuevosTalles)
 
         setColoresDisponiblesPorTalle((prev) => {
-          const coloresUsados = nuevosTalles[talleIndex].colores.map((c) => c.color)
-          const disponiblesActuales = prev[talleActual] ?? []
+          const nuevosDisponibles = { ...prev }
 
-          const debeRestaurar = colorAnterior && !coloresUsados.includes(colorAnterior)
-          let nuevosDisponibles = debeRestaurar
-            ? [...disponiblesActuales, colorAnterior]
-            : [...disponiblesActuales]
-
-          nuevosDisponibles = nuevosDisponibles.filter((c) => c !== nuevoColor)
-
-          return {
-            ...prev,
-            [talleActual]: nuevosDisponibles
+          // Si había un color anterior, devolverlo a la lista de disponibles
+          if (colorAnterior && talleActual) {
+            if (!nuevosDisponibles[talleActual]) {
+              nuevosDisponibles[talleActual] = []
+            }
+            if (!nuevosDisponibles[talleActual].includes(colorAnterior)) {
+              nuevosDisponibles[talleActual].push(colorAnterior)
+            }
           }
-        })
 
-        removeColorFromTalle(talleActual, nuevoColor)
+          // Remover el nuevo color de la lista de disponibles
+          if (nuevoColor && talleActual && nuevosDisponibles[talleActual]) {
+            nuevosDisponibles[talleActual] = nuevosDisponibles[talleActual].filter(
+              (c) => c !== nuevoColor
+            )
+          }
+
+          return nuevosDisponibles
+        })
       }
     }
 
+    // Actualizar el campo correspondiente
     nuevosTalles[talleIndex].colores[colorIndex][field] =
       field === 'cantidad' ? parseInt(value, 10) || 0 : value
 
@@ -209,11 +231,13 @@ export default function NuevoProducto() {
     handleCantidadTotal()
   }
 
-  const removeColorFromTalle = (talle, color) => {
-    setColoresDisponiblesPorTalle((prev) => ({
-      ...prev,
-      [talle]: (prev[talle] || []).filter((c) => c !== color)
-    }))
+  // Función para obtener talles disponibles (no repetidos)
+  const getTallesDisponibles = (talleIndex) => {
+    const tallesSeleccionados = talles
+      .map((t, index) => (index !== talleIndex ? t.talle : null))
+      .filter(Boolean)
+
+    return tallesBD.filter((talle) => !tallesSeleccionados.includes(talle.size_name))
   }
 
   if (loadingData) {
@@ -355,7 +379,7 @@ export default function NuevoProducto() {
                   <option value="" disabled>
                     Seleccione un talle
                   </option>
-                  {tallesBD.map((talleBDItem) => (
+                  {getTallesDisponibles(talleIndex).map((talleBDItem) => (
                     <option key={talleBDItem.id} value={talleBDItem.size_name}>
                       {talleBDItem.size_name}
                     </option>
@@ -375,14 +399,16 @@ export default function NuevoProducto() {
                 talle.colores.map((color, colorIndex) => (
                   <div key={colorIndex} className="mb-2 flex items-center space-x-4">
                     <select
+                      value={color.color || ''}
                       onChange={(e) =>
                         handleColorSelect(talleIndex, colorIndex, 'color', e.target.value)
                       }
                       className="select select-bordered flex-1"
                       required
-                      defaultValue="Seleccione un color"
                     >
-                      <option disabled>Seleccione un color</option>
+                      <option value="" disabled>
+                        Seleccione un color
+                      </option>
                       {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
                         colors.map((colorItem) => {
                           const isColorAvailable = coloresDisponiblesPorTalle[
