@@ -585,15 +585,57 @@ class Database:
                             .replace("PRIMARY KEY", "")
                             .strip()
                         )
-                        alter_table_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type_clean};"
-                        print(f"Agregando columna: {col_name} a la tabla {table_name}")
-                        conn.execute(alter_table_sql)
+
+                        # Handle function-based defaults that SQLite can't add via ALTER TABLE
+                        if (
+                            "datetime(" in col_type_clean
+                            or "CURRENT_TIMESTAMP" in col_type_clean
+                        ):
+                            # For function-based defaults, add column without default first
+                            col_type_no_default = col_type_clean.split("DEFAULT")[
+                                0
+                            ].strip()
+                            alter_table_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type_no_default};"
+                            print(
+                                f"Agregando columna: {col_name} a la tabla {table_name} (sin default function)"
+                            )
+                            conn.execute(alter_table_sql)
+
+                            # Then update existing rows with current timestamp if it's a timestamp column
+                            if "created_at" in col_name.lower():
+                                update_sql = f"UPDATE {table_name} SET {col_name} = datetime('now','localtime') WHERE {col_name} IS NULL;"
+                                conn.execute(update_sql)
+                        else:
+                            alter_table_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type_clean};"
+                            print(
+                                f"Agregando columna: {col_name} a la tabla {table_name}"
+                            )
+                            conn.execute(alter_table_sql)
                     except sqlite3.OperationalError as e:
                         print(f"Error al agregar la columna {col_name}: {e}")
                         if "duplicate column name" in str(e).lower():
                             continue
+                        elif "Cannot add a column with non-constant default" in str(e):
+                            # Try adding without the default
+                            try:
+                                col_type_no_default = col_type_clean.split("DEFAULT")[
+                                    0
+                                ].strip()
+                                alter_table_sql = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type_no_default};"
+                                print(
+                                    f"Reintentando agregar columna: {col_name} sin default"
+                                )
+                                conn.execute(alter_table_sql)
+                            except Exception as e2:
+                                print(
+                                    f"Error al reintentar agregar columna {col_name}: {e2}"
+                                )
+                                continue
                         else:
-                            raise e
+                            print(
+                                f"Error no manejado al agregar columna {col_name}: {e}"
+                            )
+                            continue
 
     def get_existing_columns(self, conn, table_name):
         """

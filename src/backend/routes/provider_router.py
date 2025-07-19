@@ -1,75 +1,107 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
 
-provider_router = Blueprint("provider_router", __name__)  # Creás un Blueprint
+provider_router = Blueprint("provider_router", __name__)
 
 
 @provider_router.route("/", methods=["POST"])
 def recibir_datos():
-    data = request.json
-    # Obtenemos los datos del frontend
-    entity_name = data.get("entity_name")
-    entity_type = data.get("entity_type")
-    razon_social = data.get("razon_social")
-    responsabilidad_iva = data.get("responsabilidad_iva")
-    domicilio_comercial = data.get("domicilio_comercial")
-    cuit = data.get("cuit")
-    inicio_actividades = data.get("inicio_actividades")
-    ingreso_brutos = data.get("ingresos_brutos")
-    contact_name = data.get("contact_name")
-    phone_number = data.get("phone_number")
-    email = data.get("email")
-    observation = data.get("observation")
+    try:
+        data = request.json
+        entity_name = data.get("entity_name")
+        entity_type = data.get("entity_type")
+        razon_social = data.get("razon_social")
+        responsabilidad_iva = data.get("responsabilidad_iva")
+        domicilio_comercial = data.get("domicilio_comercial")
+        cuit = data.get("cuit")
+        inicio_actividades = data.get("inicio_actividades")
+        ingreso_brutos = data.get("ingresos_brutos")
+        contact_name = data.get("contact_name")
+        phone_number = data.get("phone_number")
+        email = data.get("email")
+        observations = data.get("observations")
 
-    print(f"entity_name: {entity_name}")
-    print(f"entity_type: {entity_type}")
-    print(f"razon_social: {razon_social}")
-    print(f"responsabilidad_iva: {responsabilidad_iva}")
-    print(f"domicilio_comercial: {domicilio_comercial}")
-    print(f"cuit: {cuit}")
-    print(f"inicio_actividad: {inicio_actividades}")
-    print(f"ingreso_brutos: {ingreso_brutos}")
-    print(f"contact_name: {contact_name}")
-    print(f"phone_number: {phone_number}")
-    print(f"email: {email}")
-    print(f"observation: {observation}")
+        if not entity_name or not razon_social or not domicilio_comercial or not cuit:
+            return jsonify(
+                {
+                    "mensaje": "Faltan campos requeridos",
+                    "status": "error",
+                    "error": "entity_name, razon_social, domicilio_comercial y cuit son campos obligatorios",
+                }
+            ), 400
 
-    db = Database()
-    # if not entity_name or not entity_type or not razon_social or not responsabilidad_iva or not domicilio_comercial or not cuit or not inicio_actividad or not ingreso_brutos or not contact_name or not phone_number or not email:
-    #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
+        # Convert responsabilidad_iva to integer if it's a string
+        if responsabilidad_iva:
+            try:
+                responsabilidad_iva = int(responsabilidad_iva)
+            except (ValueError, TypeError):
+                responsabilidad_iva = 0
 
-    result = db.add_record(
-        "entities",
-        {
-            "entity_name": entity_name,
-            "entity_type": entity_type,
-            "razon_social": razon_social,
-            "responsabilidad_iva": responsabilidad_iva,
-            "domicilio_comercial": domicilio_comercial,
-            "cuit": cuit,
-            "inicio_actividades": inicio_actividades,
-            "ingresos_brutos": ingreso_brutos,
-            "contact_name": contact_name,
-            "phone_number": phone_number,
-            "email": email,
-            "observations": observation,
-        },
-    )
-    print(f"result: {result}")
-    if result["success"]:
-        return jsonify(
-            {"mensaje": "Proveedor creado con éxito", "status": "éxito"}
-        ), 200
-    else:
+        print(f"entity_name: {entity_name}")
+        print(f"entity_type: {entity_type}")
+        print(f"razon_social: {razon_social}")
+        print(f"responsabilidad_iva: {responsabilidad_iva}")
+        print(f"domicilio_comercial: {domicilio_comercial}")
+        print(f"cuit: {cuit}")
+        print(f"inicio_actividad: {inicio_actividades}")
+        print(f"ingreso_brutos: {ingreso_brutos}")
+        print(f"contact_name: {contact_name}")
+        print(f"phone_number: {phone_number}")
+        print(f"email: {email}")
+        print(f"observations: {observations}")
+
+        db = Database()
+
+        result = db.add_record(
+            "entities",
+            {
+                "entity_name": entity_name,
+                "entity_type": entity_type,
+                "razon_social": razon_social,
+                "responsabilidad_iva": responsabilidad_iva,
+                "domicilio_comercial": domicilio_comercial,
+                "cuit": cuit,
+                "inicio_actividades": inicio_actividades,
+                "ingresos_brutos": ingreso_brutos,
+                "contact_name": contact_name,
+                "phone_number": phone_number,
+                "email": email,
+                "observations": observations,
+            },
+        )
+        print(f"result: {result}")
+        if result["success"]:
+            return jsonify(
+                {"mensaje": "Proveedor creado con éxito", "status": "éxito"}
+            ), 200
+        else:
+            # Check for specific error types
+            error_message = result["message"]
+            if "UNIQUE constraint failed: entities.cuit" in error_message:
+                return jsonify(
+                    {
+                        "mensaje": "Error: El CUIT ingresado ya existe en el sistema",
+                        "status": "error",
+                        "error": "CUIT duplicado",
+                    }
+                ), 400
+            else:
+                return jsonify(
+                    {
+                        "mensaje": "Error al crear el proveedor",
+                        "status": "error",
+                        "error": result["message"],
+                    }
+                ), 500
+    except Exception as e:
+        print(f"Error in recibir_datos: {str(e)}")
         return jsonify(
             {
-                "mensaje": "Error al crear el proveedor",
+                "mensaje": "Error interno del servidor",
                 "status": "error",
-                "error": result["message"],
+                "error": str(e),
             }
         ), 500
-
-    # Lo que obtengo lo muestro en la tabla provideres
 
 
 @provider_router.route("/", methods=["GET"])

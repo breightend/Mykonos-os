@@ -7,13 +7,13 @@ function CreateProvider() {
   const [, setLocation] = useLocation()
   const [formData, setFormData] = useState({
     entity_name: '',
-    entity_type: 'provider', //No me tengo que olvidar de poner proveedor
+    entity_type: 'provider',
     razon_social: '',
     responsabilidad_iva: '',
     domicilio_comercial: '',
     cuit: '',
-    inicio_actividades: '', //Colocar la fecha que es creada
-    ingresos_brutos: '0', //se setea en 0
+    inicio_actividades: '',
+    ingresos_brutos: '0',
     contact_name: '',
     phone_number: '',
     email: '',
@@ -26,6 +26,20 @@ function CreateProvider() {
 
     if (!formData.entity_name || formData.entity_name.trim() === '') {
       newErrors.entity_name = 'El nombre comercial es obligatorio.'
+    }
+
+    if (!formData.razon_social || formData.razon_social.trim() === '') {
+      newErrors.razon_social = 'La razón social es obligatoria.'
+    }
+
+    if (!formData.responsabilidad_iva || formData.responsabilidad_iva.trim() === '') {
+      newErrors.responsabilidad_iva = 'La responsabilidad IVA es obligatoria.'
+    } else if (isNaN(formData.responsabilidad_iva) || parseInt(formData.responsabilidad_iva) < 0) {
+      newErrors.responsabilidad_iva = 'La responsabilidad IVA debe ser un número válido.'
+    }
+
+    if (!formData.domicilio_comercial || formData.domicilio_comercial.trim() === '') {
+      newErrors.domicilio_comercial = 'El domicilio comercial es obligatorio.'
     }
 
     if (!formData.cuit || !/^\d{11}$/.test(formData.cuit)) {
@@ -51,20 +65,33 @@ function CreateProvider() {
     if (validate()) {
       try {
         console.log('Form data is valid.')
+        console.log('Sending data:', formData)
         const response = await postData(formData)
-        console.log(response)
-        setLocation('/proveedores')
+        console.log('Response:', response)
 
-        // Verifica si la respuesta fue exitosa según tu API
-        if (response.success || response.status === 200) {
+        if (response.status === 'éxito' || response.mensaje?.includes('éxito')) {
           setLocation('/proveedores')
         } else {
           console.error('Error en la respuesta del servidor:', response)
-          // Puedes mostrar un mensaje de error al usuario aquí
+          alert(`Error: ${response.mensaje || 'Error desconocido'}`)
         }
       } catch (error) {
         console.error('Error al enviar los datos:', error)
-        // Puedes mostrar un mensaje de error al usuario aquí
+
+        if (error.response?.data?.mensaje) {
+          alert(`Error: ${error.response.data.mensaje}`)
+        } else if (error.response?.data?.error) {
+          alert(`Error: ${error.response.data.error}`)
+        } else if (
+          error.response?.status === 400 &&
+          error.response?.data?.error === 'CUIT duplicado'
+        ) {
+          alert(
+            'Error: El CUIT ingresado ya existe en el sistema. Por favor, verifique el número ingresado.'
+          )
+        } else {
+          alert(`Error: ${error.message || 'Error desconocido al crear el proveedor'}`)
+        }
       }
     }
   }
@@ -98,19 +125,19 @@ function CreateProvider() {
               placeholder: 'Ingrese el nombre del comercio'
             },
             {
-              label: 'Razón social',
+              label: 'Razón social *',
               name: 'razon_social',
               type: 'text',
               placeholder: 'Ingrese razón social'
             },
             {
-              label: 'Responsabilidad IVA',
+              label: 'Responsabilidad IVA *',
               name: 'responsabilidad_iva',
               type: 'number',
               placeholder: '#####'
             },
             {
-              label: 'Domicilio',
+              label: 'Domicilio *',
               name: 'domicilio_comercial',
               type: 'text',
               placeholder: 'Avenida Siempreviva 742.'
@@ -129,7 +156,7 @@ function CreateProvider() {
               type: 'text',
               placeholder: 'Ingrese nombre de contacto'
             },
-            { label: 'Email', name: 'email', type: 'email', placeholder: 'ejemplo@correo.com' },
+            { label: 'Email *', name: 'email', type: 'email', placeholder: 'ejemplo@correo.com' },
             {
               label: 'Observaciones',
               name: 'observations',
