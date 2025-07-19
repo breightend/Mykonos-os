@@ -3,31 +3,33 @@ from database.database import Database
 
 product_router = Blueprint("product_router", __name__)
 
-@product_router.route('/', methods=['POST'])
+
+@product_router.route("/", methods=["POST"])
 def recibir_datos():
     data = request.json
-    # Obtenemos los datos del producto 
+    # Obtenemos los datos del producto
     barcode = data.get("barcode")
     provider_code = data.get("provider_code")
     product_name = data.get("product_name")
     group_id = data.get("group_id")
     provider_id = data.get("provider_id")
-    size_id = data.get("size_id")
     description = data.get("description")
     cost = data.get("cost")
     sale_price = data.get("sale_price")
     tax = data.get("tax")
     discount = data.get("discount")
-    color_id = data.get("color_id")
     comments = data.get("comments")
     user_id = data.get("user_id")
     image_ids = data.get("image_ids")
     brand_id = data.get("brand_id")
     creation_date = data.get("creation_date")
     last_modified_date = data.get("last_modified_date")
+    # Nuevos arrays para las relaciones muchos a muchos
+    size_ids = data.get("size_ids", [])  # Array de IDs de talles
+    color_ids = data.get("color_ids", [])  # Array de IDs de colores
 
     db = Database()
-    # if not barcode or not provider_code or not product_name or not group_id or not provider_id or not size_id or not description or not cost or not sale_price or not tax or not discount or not color_id or not comments or not user_id or not image_ids or not brand_id:
+    # if not barcode or not provider_code or not product_name or not group_id or not provider_id or not description or not cost or not sale_price or not tax or not discount or not comments or not user_id or not image_ids or not brand_id:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
     success = db.add_record(
         "products",
@@ -37,34 +39,57 @@ def recibir_datos():
             "product_name": product_name,
             "group_id": group_id,
             "provider_id": provider_id,
-            "size_id": size_id,
             "description": description,
             "cost": cost,
             "sale_price": sale_price,
             "tax": tax,
             "discount": discount,
-            "color_id": color_id,
             "comments": comments,
             "user_id": user_id,
             "image_ids": image_ids,
             "brand_id": brand_id,
             "creation_date": creation_date,
-            "last_modified_date": last_modified_date, 
+            "last_modified_date": last_modified_date,
         },
     )
-    if success:
-        return jsonify({"mensaje": "Producto creado con éxito", "status": "éxito"}), 200
+
+    if success.get("success"):
+        # Obtener el ID del producto recién creado
+        product_id = success.get("rowid")
+
+        # Agregar las relaciones con talles
+        for size_id in size_ids:
+            db.add_product_size_relationship(product_id, size_id)
+
+        # Agregar las relaciones con colores
+        for color_id in color_ids:
+            db.add_product_color_relationship(product_id, color_id)
+
+        return jsonify(
+            {
+                "mensaje": "Producto creado con éxito",
+                "status": "éxito",
+                "product_id": product_id,
+            }
+        ), 200
     else:
-        return jsonify({"mensaje": "Error al crear el producto", "status": "error"}), 500
-    
-    
+        return jsonify(
+            {
+                "mensaje": f"Error al crear el producto: {success.get('message')}",
+                "status": "error",
+            }
+        ), 500
+
+
 @product_router.route("/", methods=["GET"])
 def obtener_productos():
     # Obtener los productos de la base de datos
     db = Database()
     products = db.get_all_records("products")
     if not products:
-        return jsonify({"mensaje": "No se encontraron productos", "status": "error"}), 404
+        return jsonify(
+            {"mensaje": "No se encontraron productos", "status": "error"}
+        ), 404
     return jsonify(products), 200
 
 
@@ -102,7 +127,6 @@ def obtener_talles():
     if not sizes:
         return jsonify({"mensaje": "No se encontraron talles", "status": "error"}), 404
     return jsonify(sizes), 200
-
 
 
 @product_router.route("/sizeXcategory", methods=["GET"])
@@ -153,6 +177,7 @@ def obtener_categorias():
         ), 404
     return jsonify(categories), 200
 
+
 @product_router.route("/colors", methods=["POST"])
 def recibir_datos_color():
     data = request.json
@@ -185,11 +210,13 @@ def obtener_colores():
 @product_router.route("/colors/<color_id>", methods=["DELETE"])
 def eliminar_color(color_id):
     db = Database()
-    success = db.delete_record("colors", "id = ?",color_id)
+    success = db.delete_record("colors", "id = ?", color_id)
     if success:
         return jsonify({"mensaje": "Color eliminado con éxito", "status": "éxito"}), 200
     else:
-        return jsonify({"mensaje": "Error al eliminar el color", "status": "error"}), 500
+        return jsonify(
+            {"mensaje": "Error al eliminar el color", "status": "error"}
+        ), 500
 
 
 @product_router.route("/familyProducts", methods=["POST"])
@@ -204,27 +231,40 @@ def recibir_datos_familia_producto():
     # if not family_name or not description:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
     success = db.add_record(
-        "groups", {"group_name": group_name, "parent_group_id": parent_group_id, "marked_as_root": marked_as_root}   
+        "groups",
+        {
+            "group_name": group_name,
+            "parent_group_id": parent_group_id,
+            "marked_as_root": marked_as_root,
+        },
     )
     if success:
         return (
-            jsonify({"mensaje": "Familia de productos creada con éxito", "status": "éxito"}),
+            jsonify(
+                {"mensaje": "Familia de productos creada con éxito", "status": "éxito"}
+            ),
             200,
         )
     else:
         return (
-            jsonify({"mensaje": "Error al crear la familia de productos", "status": "error"}),
+            jsonify(
+                {"mensaje": "Error al crear la familia de productos", "status": "error"}
+            ),
             500,
         )
-    
+
+
 @product_router.route("/familyProducts", methods=["GET"])
 def obtener_familia_producto():
     # Obtener los colores de la base de datos
     db = Database()
     family_products = db.get_all_records("groups")
     if not family_products:
-        return jsonify({"mensaje": "No se encontraron familias de productos", "status": "error"}), 404
+        return jsonify(
+            {"mensaje": "No se encontraron familias de productos", "status": "error"}
+        ), 404
     return jsonify(family_products), 200
+
 
 @product_router.route("/familyProducts/<group_id>", methods=["PUT"])
 def actualizar_familia_producto(group_id):
@@ -246,15 +286,275 @@ def actualizar_familia_producto(group_id):
             "parent_group_id": parent_group_id,
             "marked_as_root": marked_as_root,
         },
-
     )
     if success:
         return (
-            jsonify({"mensaje": "Familia de productos actualizada con éxito", "status": "éxito"}),
+            jsonify(
+                {
+                    "mensaje": "Familia de productos actualizada con éxito",
+                    "status": "éxito",
+                }
+            ),
             200,
         )
     else:
         return (
-            jsonify({"mensaje": "Error al actualizar la familia de productos", "status": "error"}),
+            jsonify(
+                {
+                    "mensaje": "Error al actualizar la familia de productos",
+                    "status": "error",
+                }
+            ),
             500,
         )
+
+
+# ============== ENDPOINTS PARA RELACIONES MUCHOS A MUCHOS ==============
+
+
+@product_router.route("/<product_id>/sizes", methods=["POST"])
+def agregar_talle_a_producto(product_id):
+    """Agregar un talle a un producto específico"""
+    data = request.json
+    size_id = data.get("size_id")
+
+    if not size_id:
+        return jsonify({"mensaje": "Se requiere size_id", "status": "error"}), 400
+
+    db = Database()
+    result = db.add_product_size_relationship(product_id, size_id)
+
+    if result.get("success"):
+        return jsonify(
+            {"mensaje": "Talle agregado al producto con éxito", "status": "éxito"}
+        ), 200
+    else:
+        return jsonify(
+            {
+                "mensaje": f"Error al agregar el talle al producto: {result.get('message')}",
+                "status": "error",
+            }
+        ), 500
+
+
+@product_router.route("/<product_id>/sizes/<size_id>", methods=["DELETE"])
+def remover_talle_de_producto(product_id, size_id):
+    """Remover un talle de un producto específico"""
+    db = Database()
+    result = db.remove_product_size_relationship(product_id, size_id)
+
+    if result.get("success"):
+        return jsonify(
+            {"mensaje": "Talle removido del producto con éxito", "status": "éxito"}
+        ), 200
+    else:
+        return jsonify(
+            {
+                "mensaje": f"Error al remover el talle del producto: {result.get('message')}",
+                "status": "error",
+            }
+        ), 500
+
+
+@product_router.route("/<product_id>/colors", methods=["POST"])
+def agregar_color_a_producto(product_id):
+    """Agregar un color a un producto específico"""
+    data = request.json
+    color_id = data.get("color_id")
+
+    if not color_id:
+        return jsonify({"mensaje": "Se requiere color_id", "status": "error"}), 400
+
+    db = Database()
+    result = db.add_product_color_relationship(product_id, color_id)
+
+    if result.get("success"):
+        return jsonify(
+            {"mensaje": "Color agregado al producto con éxito", "status": "éxito"}
+        ), 200
+    else:
+        return jsonify(
+            {
+                "mensaje": f"Error al agregar el color al producto: {result.get('message')}",
+                "status": "error",
+            }
+        ), 500
+
+
+@product_router.route("/<product_id>/colors/<color_id>", methods=["DELETE"])
+def remover_color_de_producto(product_id, color_id):
+    """Remover un color de un producto específico"""
+    db = Database()
+    result = db.remove_product_color_relationship(product_id, color_id)
+
+    if result.get("success"):
+        return jsonify(
+            {"mensaje": "Color removido del producto con éxito", "status": "éxito"}
+        ), 200
+    else:
+        return jsonify(
+            {
+                "mensaje": f"Error al remover el color del producto: {result.get('message')}",
+                "status": "error",
+            }
+        ), 500
+
+
+@product_router.route("/<product_id>/sizes", methods=["GET"])
+def obtener_talles_de_producto(product_id):
+    """Obtener todos los talles de un producto específico"""
+    db = Database()
+    sizes = db.get_sizes_by_product(product_id)
+
+    if not sizes:
+        return jsonify(
+            {
+                "mensaje": "No se encontraron talles para este producto",
+                "status": "error",
+            }
+        ), 404
+    return jsonify(sizes), 200
+
+
+@product_router.route("/<product_id>/colors", methods=["GET"])
+def obtener_colores_de_producto(product_id):
+    """Obtener todos los colores de un producto específico"""
+    db = Database()
+    colors = db.get_colors_by_product(product_id)
+
+    if not colors:
+        return jsonify(
+            {
+                "mensaje": "No se encontraron colores para este producto",
+                "status": "error",
+            }
+        ), 404
+    return jsonify(colors), 200
+
+
+@product_router.route("/sizes/<size_id>/products", methods=["GET"])
+def obtener_productos_por_talle(size_id):
+    """Obtener todos los productos que tienen un talle específico"""
+    db = Database()
+    products = db.get_products_by_size(size_id)
+
+    if not products:
+        return jsonify(
+            {
+                "mensaje": "No se encontraron productos para este talle",
+                "status": "error",
+            }
+        ), 404
+    return jsonify(products), 200
+
+
+@product_router.route("/colors/<color_id>/products", methods=["GET"])
+def obtener_productos_por_color(color_id):
+    """Obtener todos los productos que tienen un color específico"""
+    db = Database()
+    products = db.get_products_by_color(color_id)
+
+    if not products:
+        return jsonify(
+            {
+                "mensaje": "No se encontraron productos para este color",
+                "status": "error",
+            }
+        ), 404
+    return jsonify(products), 200
+
+
+@product_router.route("/<product_id>/details", methods=["GET"])
+def obtener_producto_completo(product_id):
+    """Obtener un producto con todos sus talles y colores"""
+    db = Database()
+
+    # Obtener datos básicos del producto
+    product_result = db.get_record_by_id("products", product_id)
+    if not product_result.get("success"):
+        return jsonify({"mensaje": "Producto no encontrado", "status": "error"}), 404
+
+    product = product_result.get("record")
+
+    # Obtener talles del producto
+    sizes = db.get_sizes_by_product(product_id)
+
+    # Obtener colores del producto
+    colors = db.get_colors_by_product(product_id)
+
+    # Combinar toda la información
+    product_details = {
+        "product": product,
+        "sizes": sizes if sizes else [],
+        "colors": colors if colors else [],
+    }
+
+    return jsonify(product_details), 200
+
+
+@product_router.route("/<product_id>/sizes/bulk", methods=["POST"])
+def agregar_multiples_talles_a_producto(product_id):
+    """Agregar múltiples talles a un producto"""
+    data = request.json
+    size_ids = data.get("size_ids", [])
+
+    if not size_ids:
+        return jsonify(
+            {"mensaje": "Se requiere un array de size_ids", "status": "error"}
+        ), 400
+
+    db = Database()
+    success_count = 0
+
+    for size_id in size_ids:
+        result = db.add_product_size_relationship(product_id, size_id)
+        if result.get("success"):
+            success_count += 1
+
+    if success_count > 0:
+        return jsonify(
+            {
+                "mensaje": f"{success_count} talles agregados al producto con éxito",
+                "status": "éxito",
+                "agregados": success_count,
+                "total": len(size_ids),
+            }
+        ), 200
+    else:
+        return jsonify(
+            {"mensaje": "Error al agregar talles al producto", "status": "error"}
+        ), 500
+
+
+@product_router.route("/<product_id>/colors/bulk", methods=["POST"])
+def agregar_multiples_colores_a_producto(product_id):
+    """Agregar múltiples colores a un producto"""
+    data = request.json
+    color_ids = data.get("color_ids", [])
+
+    if not color_ids:
+        return jsonify(
+            {"mensaje": "Se requiere un array de color_ids", "status": "error"}
+        ), 400
+
+    db = Database()
+    success_count = 0
+
+    for color_id in color_ids:
+        result = db.add_product_color_relationship(product_id, color_id)
+        if result.get("success"):
+            success_count += 1
+
+    if success_count > 0:
+        return jsonify(
+            {
+                "mensaje": f"{success_count} colores agregados al producto con éxito",
+                "status": "éxito",
+                "agregados": success_count,
+                "total": len(color_ids),
+            }
+        ), 200
+    else:
+        return jsonify(
+            {"mensaje": "Error al agregar colores al producto", "status": "error"}
+        ), 500

@@ -21,6 +21,8 @@ class TABLES(Enum):
     BARCODES = "barcodes"
     STORAGE = "storage"
     PRODUCTS = "products"
+    PRODUCT_SIZES = "product_sizes"
+    PRODUCT_COLORS = "product_colors"
     IMAGES = "images"
     WAREHOUSE_STOCK = "warehouse_stock"
     INVENTORY_MOVEMETNS = "inventory_movements"
@@ -221,13 +223,11 @@ DATABASE_TABLES = {
             "product_name": "TEXT NOT NULL",  # Nombre del producto, requerido.
             "group_id": "INTEGER",  # ID del grupo al que pertenece el producto.
             "provider_id": "INTEGER",  # ID del proveedor, se relaciona con la tabla de entidades.
-            "size_id": "INTEGER",  # ID del tamaño del producto.
             "description": "TEXT",  # Descripción del producto, opcional.
             "cost": "REAL",  # Costo del producto.
             "sale_price": "REAL",  # Precio de venta del producto.
             "tax": "REAL",  # Impuesto aplicable al producto.
             "discount": "REAL",  # Descuento aplicado al producto.
-            "color_id": "INTEGER",  # ID del color del producto.
             "comments": "TEXT",  # Comentarios adicionales sobre el producto.
             "user_id": "INTEGER",  # ID del usuario que creó o modificó el producto.
             "images_ids": "TEXT",  # IDs de las imágenes asociadas al producto.
@@ -247,18 +247,6 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.GROUP,
                 "reference_column": "id",
                 "export_column_name": "group_name",
-            },
-            {  # Relación con la tabla de tamaños.
-                "column": "size_id",
-                "reference_table": TABLES.SIZES,
-                "reference_column": "id",
-                "export_column_name": "size_name",
-            },
-            {  # Relación con la tabla de colores.
-                "column": "color_id",
-                "reference_table": TABLES.COLORS,
-                "reference_column": "id",
-                "export_column_name": "color_name",
             },
             {  # Relación con la tabla de marcas.
                 "column": "brand_id",
@@ -281,6 +269,50 @@ DATABASE_TABLES = {
                 "reference_column": "id",
                 "export_column_name": "product_name",
             }
+        ],
+    },
+    TABLES.PRODUCT_SIZES: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada relación producto-talle.
+            "product_id": "INTEGER NOT NULL",  # ID del producto.
+            "size_id": "INTEGER NOT NULL",  # ID del talle.
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de creación de la relación.
+        },
+        "foreign_keys": [
+            {  # Relación con la tabla de productos.
+                "column": "product_id",
+                "reference_table": TABLES.PRODUCTS,
+                "reference_column": "id",
+                "export_column_name": "product_name",
+            },
+            {  # Relación con la tabla de talles.
+                "column": "size_id",
+                "reference_table": TABLES.SIZES,
+                "reference_column": "id",
+                "export_column_name": "size_name",
+            },
+        ],
+    },
+    TABLES.PRODUCT_COLORS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada relación producto-color.
+            "product_id": "INTEGER NOT NULL",  # ID del producto.
+            "color_id": "INTEGER NOT NULL",  # ID del color.
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de creación de la relación.
+        },
+        "foreign_keys": [
+            {  # Relación con la tabla de productos.
+                "column": "product_id",
+                "reference_table": TABLES.PRODUCTS,
+                "reference_column": "id",
+                "export_column_name": "product_name",
+            },
+            {  # Relación con la tabla de colores.
+                "column": "color_id",
+                "reference_table": TABLES.COLORS,
+                "reference_column": "id",
+                "export_column_name": "color_name",
+            },
         ],
     },
     TABLES.WAREHOUSE_STOCK: {
@@ -1147,6 +1179,63 @@ class Database:
             print(f"Error al obtener registros con JOIN: {e}")
             return []
 
+    def get_join_records(
+        self,
+        table1_name,
+        table2_name,
+        join_column1,
+        join_column2,
+        select_columns="t1.*, t2.*",
+        where_clause=None,
+        where_params=None,
+    ):
+        """
+        Performs an INNER JOIN between two tables and retrieves records.
+
+        Args:
+            table1_name (str): The name of the first table (aliased as t1).
+            table2_name (str): The name of the second table (aliased as t2).
+            join_column1 (str): The name of the join column in the first table.
+            join_column2 (str): The name of the join column in the second table.
+            select_columns (str): Comma-separated string of columns to select.
+            where_clause (str, optional): Additional WHERE clause (e.g., "t1.product_id = ?")
+            where_params (tuple, optional): Parameters for the WHERE clause
+
+        Returns:
+            list[dict]: List of records as dictionaries
+        """
+        # Basic validation
+        if not all([table1_name, table2_name, join_column1, join_column2]):
+            return []
+
+        sql = f"""
+            SELECT {select_columns}
+            FROM {table1_name} AS t1
+            INNER JOIN {table2_name} AS t2 ON t1.{join_column1} = t2.{join_column2}
+        """
+
+        if where_clause:
+            sql += f" WHERE {where_clause}"
+
+        try:
+            with self.create_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+
+                if where_params:
+                    cur.execute(sql, where_params)
+                else:
+                    cur.execute(sql)
+
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(row) for row in rows]
+                else:
+                    return []
+        except Exception as e:
+            print(f"Error al obtener registros con JOIN: {e}")
+            return []
+
     # Utility methods for many-to-many relationships
     def add_provider_brand_relationship(self, provider_id, brand_id):
         """
@@ -1406,6 +1495,198 @@ class Database:
             TABLES.USERSXSTORAGE.value,
             "id_user = ? AND id_storage = ?",
             (user_id, storage_id),
+        )
+
+        return {
+            "success": result["success"],
+            "message": result["message"],
+            "exists": result["success"] and result["record"] is not None,
+            "record": result["record"],
+        }
+
+    # Utility methods for product-size many-to-many relationships
+    def add_product_size_relationship(self, product_id, size_id):
+        """
+        Adds a many-to-many relationship between a product and a size.
+
+        Args:
+            product_id (int): The ID of the product
+            size_id (int): The ID of the size
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'rowid': int or None}
+        """
+        data = {"product_id": product_id, "size_id": size_id}
+        return self.add_record(TABLES.PRODUCT_SIZES.value, data)
+
+    def remove_product_size_relationship(self, product_id, size_id):
+        """
+        Removes a many-to-many relationship between a product and a size.
+
+        Args:
+            product_id (int): The ID of the product
+            size_id (int): The ID of the size
+
+        Returns:
+            dict: {'success': bool, 'message': str}
+        """
+        return self.delete_record(
+            TABLES.PRODUCT_SIZES.value,
+            "product_id = ? AND size_id = ?",
+            (product_id, size_id),
+        )
+
+    def get_sizes_by_product(self, product_id):
+        """
+        Gets all sizes associated with a specific product.
+
+        Args:
+            product_id (int): The ID of the product
+
+        Returns:
+            list[dict]: List of size records associated with the product
+        """
+        return self.get_join_records(
+            TABLES.PRODUCT_SIZES.value,
+            TABLES.SIZES.value,
+            "size_id",
+            "id",
+            "t2.*",  # Only select size columns
+            "t1.product_id = ?",
+            (product_id,),
+        )
+
+    def get_products_by_size(self, size_id):
+        """
+        Gets all products associated with a specific size.
+
+        Args:
+            size_id (int): The ID of the size
+
+        Returns:
+            list[dict]: List of product records associated with the size
+        """
+        return self.get_join_records(
+            TABLES.PRODUCT_SIZES.value,
+            TABLES.PRODUCTS.value,
+            "product_id",
+            "id",
+            "t2.*",  # Only select product columns
+            "t1.size_id = ?",
+            (size_id,),
+        )
+
+    def check_product_size_relationship_exists(self, product_id, size_id):
+        """
+        Checks if a product-size relationship exists.
+
+        Args:
+            product_id (int): The ID of the product
+            size_id (int): The ID of the size
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'exists': bool, 'record': dict or None}
+        """
+        result = self.get_record_by_clause(
+            TABLES.PRODUCT_SIZES.value,
+            "product_id = ? AND size_id = ?",
+            (product_id, size_id),
+        )
+
+        return {
+            "success": result["success"],
+            "message": result["message"],
+            "exists": result["success"] and result["record"] is not None,
+            "record": result["record"],
+        }
+
+    # Utility methods for product-color many-to-many relationships
+    def add_product_color_relationship(self, product_id, color_id):
+        """
+        Adds a many-to-many relationship between a product and a color.
+
+        Args:
+            product_id (int): The ID of the product
+            color_id (int): The ID of the color
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'rowid': int or None}
+        """
+        data = {"product_id": product_id, "color_id": color_id}
+        return self.add_record(TABLES.PRODUCT_COLORS.value, data)
+
+    def remove_product_color_relationship(self, product_id, color_id):
+        """
+        Removes a many-to-many relationship between a product and a color.
+
+        Args:
+            product_id (int): The ID of the product
+            color_id (int): The ID of the color
+
+        Returns:
+            dict: {'success': bool, 'message': str}
+        """
+        return self.delete_record(
+            TABLES.PRODUCT_COLORS.value,
+            "product_id = ? AND color_id = ?",
+            (product_id, color_id),
+        )
+
+    def get_colors_by_product(self, product_id):
+        """
+        Gets all colors associated with a specific product.
+
+        Args:
+            product_id (int): The ID of the product
+
+        Returns:
+            list[dict]: List of color records associated with the product
+        """
+        return self.get_join_records(
+            TABLES.PRODUCT_COLORS.value,
+            TABLES.COLORS.value,
+            "color_id",
+            "id",
+            "t2.*",  # Only select color columns
+            "t1.product_id = ?",
+            (product_id,),
+        )
+
+    def get_products_by_color(self, color_id):
+        """
+        Gets all products associated with a specific color.
+
+        Args:
+            color_id (int): The ID of the color
+
+        Returns:
+            list[dict]: List of product records associated with the color
+        """
+        return self.get_join_records(
+            TABLES.PRODUCT_COLORS.value,
+            TABLES.PRODUCTS.value,
+            "product_id",
+            "id",
+            "t2.*",  # Only select product columns
+            "t1.color_id = ?",
+            (color_id,),
+        )
+
+    def check_product_color_relationship_exists(self, product_id, color_id):
+        """
+        Checks if a product-color relationship exists.
+
+        Args:
+            product_id (int): The ID of the product
+            color_id (int): The ID of the color
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'exists': bool, 'record': dict or None}
+        """
+        result = self.get_record_by_clause(
+            TABLES.PRODUCT_COLORS.value,
+            "product_id = ? AND color_id = ?",
+            (product_id, color_id),
         )
 
         return {
