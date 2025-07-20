@@ -1,9 +1,11 @@
-import { PackagePlus, Search, House, Edit, Info, Boxes } from 'lucide-react'
+import { PackagePlus, Search, Edit, Info, Boxes } from 'lucide-react'
 import { useLocation } from 'wouter'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import ProductsFamily from '../modals/modalsInventory/productsFamily'
+import { inventoryService } from '../services/Inventory/inventoryService'
+import { fetchSucursales } from '../services/sucursales/sucursalesService'
 
 export default function Inventario() {
   const [, setLocation] = useLocation()
@@ -15,44 +17,90 @@ export default function Inventario() {
   const [showData, setShowData] = useState(false)
   const [modalShowDataOpen, setModalShowDataOpen] = useState(false)
 
-  const data = [
-    // Datos de ejemplo para la tabla
-    {
-      id: 1,
-      producto: 'Remera',
-      marca: 'Moravia',
-      cantidad: 50,
-      colores: 'Negro, Blanco',
-      fecha: '12/16/2020'
-    },
-    {
-      id: 2,
-      producto: 'Pantalón',
-      marca: "Levi's",
-      cantidad: 30,
-      colores: 'Azul, Negro',
-      fecha: '12/5/2020'
-    },
-    {
-      id: 3,
-      producto: 'Campera',
-      marca: 'Zara',
-      cantidad: 20,
-      colores: 'Rojo, Verde',
-      fecha: '8/15/2020'
-    },
-    {
-      id: 4,
-      producto: 'Buzo',
-      marca: 'Adidas',
-      cantidad: 40,
-      colores: 'Gris, Blanco',
-      fecha: '3/25/2021'
+  // Estados para datos reales
+  const [inventoryData, setInventoryData] = useState([])
+  const [storageList, setStorageList] = useState([])
+  const [selectedStorage, setSelectedStorage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const loadInventoryData = useCallback(async (storageId = null) => {
+    try {
+      setLoading(true)
+      const response = await inventoryService.getProductsByStorage(storageId)
+      if (response.status === 'success') {
+        // Agrupar productos por ID para mostrar total por sucursal
+        const groupedData = {}
+        response.data.forEach((item) => {
+          if (!groupedData[item.id]) {
+            groupedData[item.id] = {
+              id: item.id,
+              producto: item.producto,
+              marca: item.marca || 'Sin marca',
+              cantidad: 0,
+              colores: item.colores || 'Sin colores',
+              fecha: item.fecha || new Date().toLocaleDateString(),
+              sucursales: []
+            }
+          }
+          groupedData[item.id].cantidad += parseInt(item.cantidad) || 0
+          groupedData[item.id].sucursales.push({
+            sucursal: item.sucursal,
+            cantidad: item.cantidad
+          })
+        })
+
+        setInventoryData(Object.values(groupedData))
+      }
+    } catch (err) {
+      setError('Error al cargar el inventario')
+      console.error('Error:', err)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }, [])
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const storagesResponse = await fetchSucursales()
+
+      console.log('Cargando sucursales...', storagesResponse)
+      if (!storagesResponse) {
+        setError('No se pudieron cargar las sucursales')
+        return
+      }
+
+      // fetchSucursales retorna directamente el array, no un objeto con status
+      setStorageList(Array.isArray(storagesResponse) ? storagesResponse : [])
+      console.log('Sucursales cargadas:', storagesResponse)
+
+      // Cargar datos de inventario
+      await loadInventoryData()
+    } catch (err) {
+      setError('Error al cargar los datos iniciales')
+      console.error('Error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [loadInventoryData])
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    loadInitialData()
+  }, [loadInitialData])
+
+  // Cargar datos cuando cambie la sucursal seleccionada
+  useEffect(() => {
+    if (selectedStorage) {
+      loadInventoryData(selectedStorage)
+    } else {
+      loadInventoryData()
+    }
+  }, [selectedStorage, loadInventoryData])
 
   // Función para filtrar los datos
-  const filteredData = data.filter((row) => {
+  const filteredData = inventoryData.filter((row) => {
     if (searchById) {
       return row.id.toString().includes(searchTerm)
     } else {
@@ -68,6 +116,8 @@ export default function Inventario() {
 
   const handleInfoClick = () => {
     if (selectedRow) {
+      const selectedProduct = inventoryData.find((item) => item.id === selectedRow)
+      setShowData(selectedProduct)
       setModalShowDataOpen(true)
     }
   }
@@ -83,17 +133,24 @@ export default function Inventario() {
     }
   }
 
-  const handleSaveChanges = () => {
-    console.log('Datos guardados:', editedData)
-    setIsModalOpen(false)
+  const handleSaveChanges = async () => {
+    try {
+      // Aquí puedes implementar la lógica para guardar cambios
+      console.log('Datos guardados:', editedData)
+      setIsModalOpen(false)
+      // Recargar datos después de guardar
+      await loadInventoryData(selectedStorage)
+    } catch (err) {
+      console.error('Error al guardar cambios:', err)
+    }
   }
 
   const handleInputChange = (field, value) => {
     setEditedData((prev) => ({ ...prev, [field]: value }))
   }
-  const [familyModalOpen, setFamilyModalOpen] = useState(false)
-  const handleFamilyModal = () => {
-    setFamilyModalOpen(!familyModalOpen)
+
+  const handleStorageChange = (e) => {
+    setSelectedStorage(e.target.value)
   }
   return (
     <div className="bg-base-100 min-h-screen">
@@ -101,6 +158,13 @@ export default function Inventario() {
       <Navbar />
       <div className="ml-20 flex-1">
         <h2 className="text-warning mb-6 text-2xl font-bold">Inventario</h2>
+
+        {/* Mensaje de error */}
+        {error && (
+          <div className="alert alert-error mb-4">
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Barra de navegación */}
         <div className="mb-6 flex items-center justify-between">
@@ -145,8 +209,24 @@ export default function Inventario() {
             </li>
           </ul>
 
-          {/* Barra de búsqueda */}
+          {/* Filtros y búsqueda */}
           <div className="flex items-center gap-4">
+            {/* Selector de sucursal */}
+            <select
+              className="select select-bordered select-warning"
+              value={selectedStorage}
+              onChange={handleStorageChange}
+            >
+              <option value="">Todas las sucursales</option>
+              {storageList &&
+                storageList.map((storage) => (
+                  <option key={storage.id} value={storage.id}>
+                    {storage.name}
+                  </option>
+                ))}
+            </select>
+
+            {/* Barra de búsqueda */}
             <label className="input input-bordered input-warning flex items-center gap-2">
               <input
                 type="text"
@@ -171,36 +251,63 @@ export default function Inventario() {
 
         {/* Tabla de inventario */}
         <div className="bg-base-200 overflow-x-auto rounded-lg shadow-lg">
-          <table className="table w-full">
-            <thead className="bg-warning/10">
-              <tr>
-                <th className="text-warning">#</th>
-                <th className="text-warning">Producto</th>
-                <th className="text-warning">Marca</th>
-                <th className="text-warning">Cantidad</th>
-                <th className="text-warning">Colores</th>
-                <th className="text-warning">Fecha de edición</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((row) => (
-                <tr
-                  key={row.id}
-                  className={`hover:bg-warning/10 cursor-pointer ${
-                    selectedRow === row.id ? 'bg-warning/20' : ''
-                  }`}
-                  onClick={() => handleRowClick(row)}
-                >
-                  <th>{row.id}</th>
-                  <td>{row.producto}</td>
-                  <td>{row.marca}</td>
-                  <td>{row.cantidad}</td>
-                  <td>{row.colores}</td>
-                  <td>{row.fecha}</td>
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <span className="loading loading-spinner loading-lg"></span>
+              <span className="ml-2">Cargando inventario...</span>
+            </div>
+          ) : (
+            <table className="table w-full">
+              <thead className="bg-warning/10">
+                <tr>
+                  <th className="text-warning">#</th>
+                  <th className="text-warning">Producto</th>
+                  <th className="text-warning">Marca</th>
+                  <th className="text-warning">
+                    {selectedStorage ? 'Cantidad en sucursal' : 'Cantidad total'}
+                  </th>
+                  <th className="text-warning">Colores</th>
+                  <th className="text-warning">Fecha de edición</th>
+                  {!selectedStorage && <th className="text-warning">Sucursales</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredData.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={`hover:bg-warning/10 cursor-pointer ${
+                      selectedRow === row.id ? 'bg-warning/20' : ''
+                    }`}
+                    onClick={() => handleRowClick(row)}
+                  >
+                    <th>{row.id}</th>
+                    <td>{row.producto}</td>
+                    <td>{row.marca}</td>
+                    <td>
+                      <span
+                        className={`badge ${row.cantidad > 0 ? 'badge-success' : 'badge-error'}`}
+                      >
+                        {row.cantidad}
+                      </span>
+                    </td>
+                    <td>{row.colores}</td>
+                    <td>{row.fecha}</td>
+                    {!selectedStorage && (
+                      <td>
+                        <div className="flex flex-wrap gap-1">
+                          {row.sucursales?.map((sucursal, index) => (
+                            <div key={index} className="badge badge-outline text-xs">
+                              {sucursal.sucursal}: {sucursal.cantidad}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Modal de información */}
@@ -301,7 +408,6 @@ export default function Inventario() {
             </div>
           </div>
         )}
-        {/* Modal de familia de productos */}
         <ProductsFamily />
       </div>
     </div>

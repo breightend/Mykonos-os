@@ -21,6 +21,7 @@ import Sucursales from './components/sucursales'
 import NuevaSucursal from './creats/nuevaSucursal'
 import InfoSucursal from './components/infoSucursal'
 import CreateUser from './creats/createUser'
+import InfoInventory from './components/Inventory/infoInventory'
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
       <Route path="/home" component={Home} />
       <Route path="/ventas" component={Ventas} />
       <Route path="/inventario" component={Inventario} />
+      <Route path="/infoInventory" component={InfoInventory} />
       <Route path="/nuevoProducto" component={NuevoProducto} />
       <Route path="/usuario" component={Usuario} />
       <Route path="/proveedores" component={Proveedores} />

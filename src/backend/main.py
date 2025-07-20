@@ -7,6 +7,7 @@ from routes.provider_router import provider_router
 from routes.client_router import client_router
 from routes.product_router import product_router
 from routes.storage_router import storage_router
+from routes.inventory_router import inventory_router
 
 app = Flask(__name__)
 # Comprehensive CORS configuration to handle all preflight requests
@@ -23,6 +24,7 @@ app.register_blueprint(provider_router, url_prefix="/api/provider")
 app.register_blueprint(client_router, url_prefix="/api/client")
 app.register_blueprint(product_router, url_prefix="/api/product")
 app.register_blueprint(storage_router, url_prefix="/api/storage")
+app.register_blueprint(inventory_router, url_prefix="/api/inventory")
 
 
 @app.route("/")

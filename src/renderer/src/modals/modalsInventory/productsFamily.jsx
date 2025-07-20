@@ -19,9 +19,7 @@ export default function ProductsFamily() {
         setFamilyGroup(familyGroupResponse)
         const hierarchy = buildHierarchy(familyGroupResponse)
         setHierarchicalFamilyGroup(hierarchy)
-        console.log('Familia de productos jerárquica:', hierarchy)
 
-        console.log('Familia de productos:', familyGroupResponse)
       } catch (error) {
         console.error('Error fetching family products:', error)
       }

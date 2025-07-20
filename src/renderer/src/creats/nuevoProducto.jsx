@@ -17,7 +17,7 @@ import ColorSelect from '../components/ColorSelect'
 //TODO: colocar la condicion que si un color esta colocado en un producto no se puede eliminar, si no tiene ningun vinculo chau chau.
 export default function NuevoProducto() {
   // Estados para el formulario
-  const [description, setDescription] = useState('')
+  const [productName, setProductName] = useState('')
   const [tipo, setTipo] = useState('')
   const [marca, setMarca] = useState('')
   const [selectedProvider, setSelectedProvider] = useState('')
@@ -347,10 +347,10 @@ export default function NuevoProducto() {
     return {
       barcode: generatedBarcode,
       provider_code: `PROV-${selectedProvider}`,
-      product_name: '',
+      product_name: productName, // Changed from empty string to use productName state
       group_id: parseInt(tipo), // Usar el grupo seleccionado
       provider_id: parseInt(selectedProvider),
-      description: '',
+      description: '', // Keep as empty for now, or add a separate description field if needed
       cost: parseFloat(cost) || 0,
       sale_price: parseFloat(salePrice) || 0,
       tax: 0, // Por defecto
@@ -370,7 +370,7 @@ export default function NuevoProducto() {
   const validateForm = () => {
     const newErrors = {}
 
-    if (!description.trim()) newErrors.description = 'La descripción es requerida'
+    if (!productName.trim()) newErrors.productName = 'El nombre del producto es requerido'
     if (!tipo) newErrors.tipo = 'El grupo de producto es requerido'
     if (!selectedProvider) newErrors.provider = 'El proveedor es requerido'
     if (!marca) newErrors.marca = 'La marca es requerida'
@@ -394,7 +394,7 @@ export default function NuevoProducto() {
   }
 
   const clearForm = () => {
-    setDescription('')
+    setProductName('')
     setTipo('')
     setCost('')
     setSalePrice('')
@@ -522,25 +522,25 @@ export default function NuevoProducto() {
               </h2>
 
               <div className="space-y-6">
-                {/* Descripción */}
+                {/* Nombre del producto */}
                 <div>
                   <label className="label">
-                    <span className="label-text font-semibold">Descripción del producto</span>
+                    <span className="label-text font-semibold">Nombre del producto</span>
                     <span className="label-text-alt text-error">*</span>
                   </label>
                   <input
                     type="text"
                     placeholder="Ej: Remera básica algodón"
                     className={`input input-bordered focus:border-primary w-full ${
-                      errors.description ? 'input-error' : ''
+                      errors.productName ? 'input-error' : ''
                     }`}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
                     required
                   />
-                  {errors.description && (
+                  {errors.productName && (
                     <div className="label">
-                      <span className="label-text-alt text-error">{errors.description}</span>
+                      <span className="label-text-alt text-error">{errors.productName}</span>
                     </div>
                   )}
                 </div>
