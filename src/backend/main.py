@@ -16,7 +16,7 @@ CORS(
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     supports_credentials=False,  # Changed to False to avoid conflicts with wildcard origins
-    expose_headers=["Content-Type", "Authorization"]
+    expose_headers=["Content-Type", "Authorization"],
 )
 app.register_blueprint(usuario_router, url_prefix="/api/user")
 app.register_blueprint(provider_router, url_prefix="/api/provider")
@@ -42,8 +42,8 @@ def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
         response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "*")
-        response.headers.add('Access-Control-Allow-Methods', "*")
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        response.headers.add("Access-Control-Allow-Methods", "*")
         return response
 
 
