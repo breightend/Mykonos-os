@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { enviarData } from '../services/sucursales/usuario/usuarioService'
+import { enviarData } from '../services/usuario/usuarioService'
 import { fetchSucursales, assignEmployeeToSucursal } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft, Eye, EyeClosed } from 'lucide-react'

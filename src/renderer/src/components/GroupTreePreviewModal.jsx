@@ -30,13 +30,10 @@ function GroupTreePreviewNode({ group, level = 0 }) {
           )}
         </div>
 
-        {/* Nombre del grupo */}
         <span className="flex-1 text-sm">{group.group_name}</span>
 
-        {/* ID del grupo */}
         <span className="text-base-content/60 font-mono text-xs">#{group.id}</span>
 
-        {/* Badge para grupos raíz */}
         {group.marked_as_root === 1 && <span className="badge badge-xs badge-accent">RAÍZ</span>}
       </div>
 

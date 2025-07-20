@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, LoaderCircle, Save, Trash2, PackagePlus } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Save, Trash2, PackagePlus, Menu } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
@@ -13,9 +13,7 @@ import postData from '../services/products/productService'
 import { fetchFamilyProductsTree } from '../services/products/familyService'
 import GroupTreeSelector from '../components/GroupTreeSelector'
 import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
-
-//TODO: Poder eliminar colores y talles.
-//TODO: que no se puedan seleccionar dos talles iguales
+import ColorSelect from '../components/ColorSelect'
 
 export default function NuevoProducto() {
   // Estados para el formulario
@@ -52,9 +50,6 @@ export default function NuevoProducto() {
         const sizesResponse = await fetchSize()
         setTallesBD(sizesResponse)
 
-        // const categorySizeResponse = await fetchCategorySize()
-        // setCategoria(categorySizeResponse)
-
         const colorsResponse = await fetchColor()
         setColors(colorsResponse)
 
@@ -64,7 +59,6 @@ export default function NuevoProducto() {
         const grupoTreeData = await fetchFamilyProductsTree()
         setGrupoTree(grupoTreeData)
 
-        // Configurar colores disponibles por talle una vez que tenemos los datos
         if (colorsResponse && sizesResponse) {
           const coloresDisponibles = {}
           sizesResponse.forEach((talle) => {
@@ -90,11 +84,9 @@ export default function NuevoProducto() {
           const brandsByProviderResponse = await fetchBrandByProviders(selectedProvider)
           setBrandByProvider(brandsByProviderResponse)
 
-          // Si solo hay una marca, seleccionarla automáticamente
           if (brandsByProviderResponse.length === 1) {
             setMarca(brandsByProviderResponse[0].brand_name)
           } else {
-            // Resetear la marca seleccionada cuando cambia el proveedor y hay múltiples marcas
             setMarca('')
           }
         } catch (error) {
@@ -110,12 +102,10 @@ export default function NuevoProducto() {
     fetchBrandsForProvider()
   }, [selectedProvider])
 
-  // Manejar cambio de proveedor
   const handleProviderChange = (e) => {
     setSelectedProvider(e.target.value)
   }
 
-  // Manejar selección de grupo
   const handleGroupSelect = (group) => {
     setTipo(group.id.toString())
   }
@@ -135,7 +125,6 @@ export default function NuevoProducto() {
     const colorEliminado = nuevosTalles[talleIndex].colores[colorIndex].color
     const talleActual = nuevosTalles[talleIndex].talle
 
-    // Si hay un color eliminado, devolverlo a la lista de disponibles
     if (colorEliminado && talleActual) {
       setColoresDisponiblesPorTalle((prev) => ({
         ...prev,
@@ -152,7 +141,6 @@ export default function NuevoProducto() {
     const nuevosTalles = [...talles]
     const talleEliminado = nuevosTalles[talleIndex]
 
-    // Restaurar colores a la lista de disponibles del talle eliminado
     if (talleEliminado.talle) {
       setColoresDisponiblesPorTalle((prev) => ({
         ...prev,
@@ -165,21 +153,7 @@ export default function NuevoProducto() {
     handleCantidadTotal()
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const nuevaPrenda = {
-      proveedor: selectedProvider,
-      marca,
-      cantidad,
-      talles,
-      cantidadT: cantidadTotal
-    }
-    console.log('Prenda agregada:', nuevaPrenda)
-    // Aquí iría tu lógica para enviar los datos a la BD
-  }
-
   const agregarTalle = () => {
-    // Verificar que hay talles disponibles
     const tallesUsados = talles.map((t) => t.talle).filter(Boolean)
     const tallesDisponibles = tallesBD.filter((t) => !tallesUsados.includes(t.size_name))
 
@@ -194,11 +168,9 @@ export default function NuevoProducto() {
   const handleTalleChange = (talleIndex, value) => {
     const nuevosTalles = [...talles]
 
-    // Actualizar el talle
     nuevosTalles[talleIndex].talle = value
     setTalles(nuevosTalles)
 
-    // Actualizar colores disponibles para el nuevo talle
     if (value && colors.length > 0) {
       setColoresDisponiblesPorTalle((prev) => ({
         ...prev,
@@ -375,10 +347,10 @@ export default function NuevoProducto() {
     return {
       barcode: generatedBarcode,
       provider_code: `PROV-${selectedProvider}`,
-      product_name: description,
+      product_name: '',
       group_id: parseInt(tipo), // Usar el grupo seleccionado
       provider_id: parseInt(selectedProvider),
-      description,
+      description: '',
       cost: parseFloat(cost) || 0,
       sale_price: parseFloat(salePrice) || 0,
       tax: 0, // Por defecto
@@ -421,7 +393,6 @@ export default function NuevoProducto() {
     return Object.keys(newErrors).length === 0
   }
 
-  // Función para limpiar el formulario (excepto proveedor y marca)
   const clearForm = () => {
     setDescription('')
     setTipo('')
@@ -433,7 +404,6 @@ export default function NuevoProducto() {
     setCantidadTotal(0)
     setErrors({})
 
-    // Restaurar colores disponibles
     if (colors.length > 0 && tallesBD.length > 0) {
       const coloresDisponibles = {}
       tallesBD.forEach((talle) => {
@@ -443,7 +413,6 @@ export default function NuevoProducto() {
     }
   }
 
-  // Función para manejar el submit "Guardar"
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
 
@@ -456,7 +425,6 @@ export default function NuevoProducto() {
 
       console.log('Producto guardado exitosamente:', response)
 
-      // Redirigir al inventario
       setLocation('/inventario')
     } catch (error) {
       console.error('Error al guardar el producto:', error)
@@ -466,7 +434,6 @@ export default function NuevoProducto() {
     }
   }
 
-  // Función para manejar el submit "Agregar Prenda"
   const handleSubmitAgregarPrenda = async (e) => {
     e.preventDefault()
 
@@ -543,7 +510,7 @@ export default function NuevoProducto() {
 
       {/* Container principal con máximo ancho */}
       <div className="container mx-auto px-6 py-8">
-        <form onSubmit={handleSubmit} className="mx-auto max-w-6xl space-y-8">
+        <form className="mx-auto max-w-6xl space-y-8">
           {/* Sección: Información Básica */}
           <div className="card bg-base-100 border-base-300 border shadow-xl">
             <div className="card-body">
@@ -653,51 +620,38 @@ export default function NuevoProducto() {
                 Categorización y Origen
               </h2>
 
-                {/* Grupo/Tipo de Prenda */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Grupo de Producto</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <GroupTreeSelector
-                      groups={grupoTree}
-                      selectedGroupId={tipo ? parseInt(tipo) : null}
-                      onSelectGroup={handleGroupSelect}
-                      className={`flex-1 ${errors.tipo ? 'border-error' : ''}`}
-                      placeholder="Seleccione un grupo de producto..."
-                      emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
-                    />
-                    <div className="tooltip" data-tip="Ver estructura de grupos">
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-secondary"
-                        onClick={() => setShowGroupTreeModal(true)}
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                          />
-                        </svg>
-                      </button>
-                    </div>
+              {/* Grupo/Tipo de Prenda */}
+              <div>
+                <label className="label">
+                  <span className="label-text font-semibold">Grupo de Producto</span>
+                  <span className="label-text-alt text-error">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <GroupTreeSelector
+                    groups={grupoTree}
+                    selectedGroupId={tipo ? parseInt(tipo) : null}
+                    onSelectGroup={handleGroupSelect}
+                    className={`flex-1 ${errors.tipo ? 'border-error' : ''}`}
+                    placeholder="Seleccione un grupo de producto..."
+                    emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
+                  />
+                  <div className="tooltip" data-tip="Ver estructura de grupos">
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-secondary"
+                      onClick={() => setShowGroupTreeModal(true)}
+                    >
+                      <Menu className="h-4 w-4" />
+                    </button>
                   </div>
-                  {errors.tipo && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">{errors.tipo}</span>
-                    </div>
-                  )}
                 </div>
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-
+                {errors.tipo && (
+                  <div className="label">
+                    <span className="label-text-alt text-error">{errors.tipo}</span>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Proveedor */}
                 <div>
                   <label className="label">
@@ -978,44 +932,34 @@ export default function NuevoProducto() {
                               className="bg-base-100 border-base-300 flex items-center gap-3 rounded-lg border p-3"
                             >
                               <div className="flex-1">
-                                <select
+                                <ColorSelect
+                                  colors={
+                                    coloresDisponiblesPorTalle[talle.talle] !== undefined
+                                      ? colors.filter((colorItem) =>
+                                          coloresDisponiblesPorTalle[talle.talle]?.includes(
+                                            colorItem.color_name
+                                          )
+                                        )
+                                      : []
+                                  }
                                   value={color.color || ''}
-                                  onChange={(e) =>
+                                  onChange={(selectedColorName) =>
                                     handleColorSelect(
                                       talleIndex,
                                       colorIndex,
                                       'color',
-                                      e.target.value
+                                      selectedColorName
                                     )
                                   }
-                                  className="select select-bordered select-sm focus:border-secondary w-full"
+                                  className="w-full"
+                                  placeholder={
+                                    coloresDisponiblesPorTalle[talle.talle] !== undefined
+                                      ? 'Seleccione un color'
+                                      : 'Seleccione un talle primero'
+                                  }
+                                  disabled={coloresDisponiblesPorTalle[talle.talle] === undefined}
                                   required
-                                >
-                                  <option value="" disabled>
-                                    Seleccione un color
-                                  </option>
-                                  {coloresDisponiblesPorTalle[talle.talle] !== undefined ? (
-                                    colors.map((colorItem) => {
-                                      const isColorAvailable = coloresDisponiblesPorTalle[
-                                        talle.talle
-                                      ]?.includes(colorItem.color_name)
-
-                                      return (
-                                        <option
-                                          key={colorItem.id}
-                                          value={colorItem.color_name}
-                                          disabled={!isColorAvailable}
-                                        >
-                                          {colorItem.color_name}
-                                        </option>
-                                      )
-                                    })
-                                  ) : (
-                                    <option value="No hay colores disponibles">
-                                      Seleccione un talle primero
-                                    </option>
-                                  )}
-                                </select>
+                                />
                               </div>
                               <div className="w-24">
                                 <input

@@ -4,6 +4,15 @@ from database.database import Database
 product_router = Blueprint("product_router", __name__)
 
 
+# Add CORS headers to all responses in this blueprint
+@product_router.after_request
+def after_request(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+    return response
+
+
 @product_router.route("/", methods=["POST"])
 def recibir_datos():
     data = request.json
@@ -588,3 +597,11 @@ def agregar_multiples_colores_a_producto(product_id):
         return jsonify(
             {"mensaje": "Error al agregar colores al producto", "status": "error"}
         ), 500
+
+
+# Global OPTIONS handler for all routes
+@product_router.route("/<path:path>", methods=["OPTIONS"])
+@product_router.route("/", methods=["OPTIONS"])
+def handle_options(path=None):
+    """Handle preflight OPTIONS requests for all routes"""
+    return "", 200
