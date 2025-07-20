@@ -14,7 +14,7 @@ import { fetchFamilyProductsTree } from '../services/products/familyService'
 import GroupTreeSelector from '../components/GroupTreeSelector'
 import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 import ColorSelect from '../components/ColorSelect'
-
+//TODO: colocar la condicion que si un color esta colocado en un producto no se puede eliminar, si no tiene ningun vinculo chau chau.
 export default function NuevoProducto() {
   // Estados para el formulario
   const [description, setDescription] = useState('')

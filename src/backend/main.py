@@ -1,5 +1,5 @@
 import webbrowser
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 from commons import create_admin
 from routes.usuario_router import usuario_router
@@ -12,10 +12,11 @@ app = Flask(__name__)
 # Comprehensive CORS configuration to handle all preflight requests
 CORS(
     app,
-    origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    supports_credentials=False,  # Changed to False to avoid conflicts with wildcard origins
+    expose_headers=["Content-Type", "Authorization"]
 )
 app.register_blueprint(usuario_router, url_prefix="/api/user")
 app.register_blueprint(provider_router, url_prefix="/api/provider")
@@ -33,6 +34,17 @@ def index():
 @app.route("/saludo")
 def get_data():
     return jsonify({"mensaje": "Hola desde Flask", "status": "éxito"})
+
+
+# Global OPTIONS handler for any unhandled preflight requests
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        return response
 
 
 def open_browser():
