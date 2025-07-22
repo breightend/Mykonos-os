@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import ProductsFamily from '../modals/modalsInventory/productsFamily'
+import ProductDetailModal from '../modals/ProductDetailModal/ProductDetailModal'
 import { inventoryService } from '../services/Inventory/inventoryService'
-import { fetchSucursales } from '../services/sucursales/sucursalesService'
 
 export default function Inventario() {
   const [, setLocation] = useLocation()
@@ -17,44 +17,39 @@ export default function Inventario() {
   const [showData, setShowData] = useState(false)
   const [modalShowDataOpen, setModalShowDataOpen] = useState(false)
 
-  // Estados para datos reales
+  // Nuevo estado para el modal de detalles
+  const [productDetailModalOpen, setProductDetailModalOpen] = useState(false)
+  const [selectedProductId, setSelectedProductId] = useState(null)
+
   const [inventoryData, setInventoryData] = useState([])
   const [storageList, setStorageList] = useState([])
   const [selectedStorage, setSelectedStorage] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // Nueva función para cargar el resumen de productos
   const loadInventoryData = useCallback(async (storageId = null) => {
     try {
       setLoading(true)
-      const response = await inventoryService.getProductsByStorage(storageId)
-      if (response.status === 'success') {
-        // Agrupar productos por ID para mostrar total por sucursal
-        const groupedData = {}
-        response.data.forEach((item) => {
-          if (!groupedData[item.id]) {
-            groupedData[item.id] = {
-              id: item.id,
-              producto: item.producto,
-              marca: item.marca || 'Sin marca',
-              cantidad: 0,
-              colores: item.colores || 'Sin colores',
-              fecha: item.fecha || new Date().toLocaleDateString(),
-              sucursales: []
-            }
-          }
-          groupedData[item.id].cantidad += parseInt(item.cantidad) || 0
-          groupedData[item.id].sucursales.push({
-            sucursal: item.sucursal,
-            cantidad: item.cantidad
-          })
-        })
+      console.log('📦 Cargando resumen de productos...')
 
-        setInventoryData(Object.values(groupedData))
+      const response = await inventoryService.getProductsSummary(storageId)
+
+      if (response.status === 'success') {
+        console.log('✅ Resumen de productos cargado:', response.data)
+        setInventoryData(response.data)
+      } else {
+        console.error('❌ Respuesta del servidor no exitosa:', response)
+        setError('La respuesta del servidor no fue exitosa')
       }
     } catch (err) {
       setError('Error al cargar el inventario')
-      console.error('Error:', err)
+      console.error('💥 Error completo:', err)
+      console.error('📄 Mensaje del error:', err.message)
+      if (err.response) {
+        console.error('🌐 Respuesta del error:', err.response.data)
+        console.error('🔢 Status del error:', err.response.status)
+      }
     } finally {
       setLoading(false)
     }
@@ -63,34 +58,47 @@ export default function Inventario() {
   const loadInitialData = useCallback(async () => {
     try {
       setLoading(true)
-      const storagesResponse = await fetchSucursales()
+      setError(null)
+      console.log('🏁 Iniciando carga de datos iniciales...')
 
-      console.log('Cargando sucursales...', storagesResponse)
-      if (!storagesResponse) {
-        setError('No se pudieron cargar las sucursales')
-        return
+      // Primero cargar las sucursales
+      console.log('🏪 Cargando sucursales...')
+      const storagesResponse = await inventoryService.getStorageList()
+
+      if (!storagesResponse || storagesResponse.status !== 'success') {
+        throw new Error('No se pudieron cargar las sucursales - respuesta no exitosa')
       }
 
-      // fetchSucursales retorna directamente el array, no un objeto con status
-      setStorageList(Array.isArray(storagesResponse) ? storagesResponse : [])
-      console.log('Sucursales cargadas:', storagesResponse)
+      const storageArray = Array.isArray(storagesResponse.data) ? storagesResponse.data : []
+      setStorageList(storageArray)
+      console.log('✅ Sucursales cargadas:', storageArray.length, 'sucursales')
 
-      // Cargar datos de inventario
+      // Luego cargar el inventario
+      console.log('📦 Cargando inventario inicial...')
       await loadInventoryData()
     } catch (err) {
-      setError('Error al cargar los datos iniciales')
-      console.error('Error:', err)
+      const errorMessage = err.message || 'Error desconocido al cargar datos iniciales'
+      setError(errorMessage)
+      console.error('💥 Error en loadInitialData:', err)
+
+      // Si fallan las sucursales, al menos intentamos cargar productos
+      if (err.message?.includes('sucursales')) {
+        console.log('🔄 Intentando cargar inventario sin sucursales...')
+        try {
+          await loadInventoryData()
+        } catch (inventoryErr) {
+          console.error('💥 También falló la carga de inventario:', inventoryErr)
+        }
+      }
     } finally {
       setLoading(false)
     }
   }, [loadInventoryData])
 
-  // Cargar datos al montar el componente
   useEffect(() => {
     loadInitialData()
   }, [loadInitialData])
 
-  // Cargar datos cuando cambie la sucursal seleccionada
   useEffect(() => {
     if (selectedStorage) {
       loadInventoryData(selectedStorage)
@@ -107,8 +115,7 @@ export default function Inventario() {
       return (
         row.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.colores.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.fecha.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.fecha_edicion.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.id.toString().includes(searchTerm)
       )
     }
@@ -120,6 +127,13 @@ export default function Inventario() {
       setShowData(selectedProduct)
       setModalShowDataOpen(true)
     }
+  }
+
+  // Nueva función para manejar doble clic en una fila
+  const handleRowDoubleClick = (row) => {
+    console.log('🔍 Doble clic en producto:', row.id)
+    setSelectedProductId(row.id)
+    setProductDetailModalOpen(true)
   }
 
   const handleRowClick = (row) => {
@@ -162,7 +176,18 @@ export default function Inventario() {
         {/* Mensaje de error */}
         {error && (
           <div className="alert alert-error mb-4">
-            <span>{error}</span>
+            <div className="flex items-center justify-between">
+              <span>{error}</span>
+              <button
+                className="btn btn-sm btn-outline btn-error"
+                onClick={() => {
+                  setError(null)
+                  loadInitialData()
+                }}
+              >
+                Reintentar
+              </button>
+            </div>
           </div>
         )}
 
@@ -266,45 +291,75 @@ export default function Inventario() {
                   <th className="text-warning">
                     {selectedStorage ? 'Cantidad en sucursal' : 'Cantidad total'}
                   </th>
-                  <th className="text-warning">Colores</th>
                   <th className="text-warning">Fecha de edición</th>
-                  {!selectedStorage && <th className="text-warning">Sucursales</th>}
+                  {!selectedStorage && <th className="text-warning">Sucursales con stock</th>}
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={`hover:bg-warning/10 cursor-pointer ${
-                      selectedRow === row.id ? 'bg-warning/20' : ''
-                    }`}
-                    onClick={() => handleRowClick(row)}
-                  >
-                    <th>{row.id}</th>
-                    <td>{row.producto}</td>
-                    <td>{row.marca}</td>
-                    <td>
-                      <span
-                        className={`badge ${row.cantidad > 0 ? 'badge-success' : 'badge-error'}`}
-                      >
-                        {row.cantidad}
-                      </span>
-                    </td>
-                    <td>{row.colores}</td>
-                    <td>{row.fecha}</td>
-                    {!selectedStorage && (
-                      <td>
-                        <div className="flex flex-wrap gap-1">
-                          {row.sucursales?.map((sucursal, index) => (
-                            <div key={index} className="badge badge-outline text-xs">
-                              {sucursal.sucursal}: {sucursal.cantidad}
-                            </div>
-                          ))}
+                {filteredData.length === 0 && !loading ? (
+                  <tr>
+                    <td colSpan={selectedStorage ? 5 : 6} className="p-8 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="text-4xl">📦</div>
+                        <div>
+                          <p className="text-lg font-semibold">No hay productos disponibles</p>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {searchTerm
+                              ? 'No se encontraron productos que coincidan con tu búsqueda'
+                              : selectedStorage
+                                ? 'Esta sucursal no tiene productos en stock'
+                                : 'No hay productos cargados en el sistema'}
+                          </p>
+                          {!searchTerm && (
+                            <button
+                              className="btn btn-warning btn-sm mt-3"
+                              onClick={() => loadInitialData()}
+                            >
+                              Recargar datos
+                            </button>
+                          )}
                         </div>
-                      </td>
-                    )}
+                      </div>
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredData.map((row) => (
+                    <tr
+                      key={row.id}
+                      className={`hover:bg-warning/10 cursor-pointer ${
+                        selectedRow === row.id ? 'bg-warning/20' : ''
+                      }`}
+                      onClick={() => handleRowClick(row)}
+                      onDoubleClick={() => handleRowDoubleClick(row)}
+                      title="Doble clic para ver detalles completos"
+                    >
+                      <th>{row.id}</th>
+                      <td>{row.producto}</td>
+                      <td>{row.marca}</td>
+                      <td>
+                        <span
+                          className={`badge ${row.cantidad_total > 0 ? 'badge-success' : 'badge-error'}`}
+                        >
+                          {row.cantidad_total}
+                        </span>
+                      </td>
+                      <td>
+                        {new Date(row.fecha_edicion).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </td>
+                      {!selectedStorage && (
+                        <td>
+                          <span className="badge badge-outline">
+                            {row.sucursales_con_stock} sucursales
+                          </span>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}
@@ -408,6 +463,14 @@ export default function Inventario() {
             </div>
           </div>
         )}
+
+        {/* Modal de detalles del producto */}
+        <ProductDetailModal
+          isOpen={productDetailModalOpen}
+          onClose={() => setProductDetailModalOpen(false)}
+          productId={selectedProductId}
+        />
+
         <ProductsFamily />
       </div>
     </div>
