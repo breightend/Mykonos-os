@@ -1695,3 +1695,75 @@ class Database:
             "exists": result["success"] and result["record"] is not None,
             "record": result["record"],
         }
+
+    def add_product_image(self, product_id, image_data):
+        """
+        Agrega una imagen a un producto
+
+        Args:
+            product_id (int): ID del producto
+            image_data (bytes): Datos de la imagen en formato BLOB
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'image_id': int or None}
+        """
+        try:
+            result = self.add_record(
+                TABLES.IMAGES.value,
+                {"image_data": image_data, "product_id": product_id},
+            )
+
+            if result.get("success"):
+                return {
+                    "success": True,
+                    "message": "Imagen agregada exitosamente",
+                    "image_id": result.get("rowid"),
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Error al agregar imagen: {result.get('message')}",
+                    "image_id": None,
+                }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al agregar imagen: {str(e)}",
+                "image_id": None,
+            }
+
+    def get_product_image(self, product_id):
+        """
+        Obtiene la primera imagen de un producto
+
+        Args:
+            product_id (int): ID del producto
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'image_data': bytes or None}
+        """
+        try:
+            result = self.get_record_by_clause(
+                TABLES.IMAGES.value, "product_id = ?", (product_id,)
+            )
+
+            if result.get("success") and result.get("record"):
+                return {
+                    "success": True,
+                    "message": "Imagen encontrada",
+                    "image_data": result["record"].get("image_data"),
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "No se encontró imagen para este producto",
+                    "image_data": None,
+                }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al obtener imagen: {str(e)}",
+                "image_data": None,
+            }

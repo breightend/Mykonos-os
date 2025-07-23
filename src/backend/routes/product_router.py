@@ -20,15 +20,15 @@ def recibir_datos():
     discount = data.get("discount")
     comments = data.get("comments")
     user_id = data.get("user_id")
-    images_ids = data.get(
-        "images_ids"
-    )  # Changed from image_ids to match database schema
+    images_ids = data.get("images_ids")  # Campo legacy - mantenemos por compatibilidad
     brand_id = data.get("brand_id")
     creation_date = data.get("creation_date")
     last_modified_date = data.get("last_modified_date")
     # Nuevos arrays para las relaciones muchos a muchos
     size_ids = data.get("size_ids", [])  # Array de IDs de talles
     color_ids = data.get("color_ids", [])  # Array de IDs de colores
+    # Datos de imagen en base64
+    product_image = data.get("product_image")  # Imagen en formato base64
 
     db = Database()
     # if not barcode or not provider_code or not product_name or not group_id or not provider_id or not description or not cost or not sale_price or not tax or not discount or not comments or not user_id or not image_ids or not brand_id:
@@ -59,6 +59,34 @@ def recibir_datos():
         # Obtener el ID del producto recién creado
         product_id = success.get("rowid")
 
+        # Procesar imagen si está presente
+        image_id = None
+        if product_image:
+            try:
+                import base64
+
+                # Remover el prefijo data URI si está presente
+                if product_image.startswith("data:"):
+                    product_image = product_image.split(",")[1]
+
+                # Decodificar base64 a bytes
+                image_bytes = base64.b64decode(product_image)
+
+                # Guardar imagen en la base de datos
+                image_result = db.add_product_image(product_id, image_bytes)
+                if image_result.get("success"):
+                    image_id = image_result.get("image_id")
+                    print(f"✅ Imagen guardada exitosamente con ID: {image_id}")
+
+                    # Actualizar el campo images_ids del producto con el ID de la imagen
+                    db.update_record(
+                        "products", {"images_ids": str(image_id)}, f"id = {product_id}"
+                    )
+                else:
+                    print(f"❌ Error al guardar imagen: {image_result.get('message')}")
+            except Exception as e:
+                print(f"❌ Error al procesar imagen: {str(e)}")
+
         # Agregar las relaciones con talles
         for size_id in size_ids:
             db.add_product_size_relationship(product_id, size_id)
@@ -72,6 +100,7 @@ def recibir_datos():
                 "mensaje": "Producto creado con éxito",
                 "status": "éxito",
                 "product_id": product_id,
+                "image_id": image_id,
             }
         ), 200
     else:
@@ -80,6 +109,42 @@ def recibir_datos():
                 "mensaje": f"Error al crear el producto: {success.get('message')}",
                 "status": "error",
             }
+        ), 400
+
+
+@product_router.route("/<int:product_id>/image", methods=["GET"])
+def get_product_image(product_id):
+    """
+    Obtiene la imagen de un producto específico
+    """
+    try:
+        db = Database()
+        image_result = db.get_product_image(product_id)
+
+        if image_result.get("success") and image_result.get("image_data"):
+            import base64
+
+            # Convertir bytes a base64
+            image_base64 = base64.b64encode(image_result["image_data"]).decode("utf-8")
+
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "Imagen encontrada",
+                    "image_data": image_base64,
+                }
+            ), 200
+        else:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "No se encontró imagen para este producto",
+                }
+            ), 404
+
+    except Exception as e:
+        return jsonify(
+            {"status": "error", "message": f"Error al obtener imagen: {str(e)}"}
         ), 500
 
 

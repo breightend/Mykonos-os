@@ -288,6 +288,66 @@ def get_product_details(product_id):
             [s for s in product_data["stock_por_sucursal"] if s["cantidad"] > 0]
         )
 
+        # Obtener imagen del producto si existe
+        product_data["product_image"] = None
+        print(
+            f"🔍 DEBUG product-details: Checking for images, images_ids = {product_data.get('images_ids')}"
+        )
+
+        if product_data.get("images_ids"):
+            try:
+                # Buscar la imagen en la tabla de imágenes
+                image_query = """
+                SELECT image_data 
+                FROM images 
+                WHERE product_id = ? 
+                ORDER BY id 
+                LIMIT 1
+                """
+                print(
+                    f"🔍 DEBUG product-details: Ejecutando query de imagen para product_id = {product_id}"
+                )
+                image_result = db.execute_query(image_query, (product_id,))
+                print(
+                    f"🔍 DEBUG product-details: Resultado imagen query: {len(image_result) if image_result else 0} registros"
+                )
+
+                if image_result and len(image_result) > 0:
+                    image_row = image_result[0]
+                    if isinstance(image_row, dict):
+                        image_data = image_row.get("image_data")
+                    else:
+                        image_data = image_row[0]
+
+                    # Convertir BLOB a base64
+                    if image_data:
+                        import base64
+
+                        product_data["product_image"] = base64.b64encode(
+                            image_data
+                        ).decode("utf-8")
+                        print(
+                            f"🖼️ DEBUG product-details: Imagen encontrada para producto {product_id}, tamaño: {len(product_data['product_image'])} caracteres"
+                        )
+                    else:
+                        print(
+                            f"🖼️ DEBUG product-details: Imagen vacía para producto {product_id}"
+                        )
+                else:
+                    print(
+                        f"🖼️ DEBUG product-details: No se encontró imagen para producto {product_id}"
+                    )
+            except Exception as img_error:
+                print(f"❌ DEBUG product-details: Error al obtener imagen: {img_error}")
+                import traceback
+
+                traceback.print_exc()
+                product_data["product_image"] = None
+        else:
+            print(
+                f"🖼️ DEBUG product-details: No hay images_ids definido para producto {product_id}"
+            )
+
         return jsonify({"status": "success", "data": product_data}), 200
 
     except Exception as e:
