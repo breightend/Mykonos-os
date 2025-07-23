@@ -1,4 +1,6 @@
 import { Route, Switch } from 'wouter'
+import { SessionProvider } from './contexts/SessionContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Clientes from './components/clientes'
 import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
 import Empleados from './components/empleados'
@@ -26,32 +28,126 @@ import MoveInventory from './components/Inventory/moveInventory'
 
 function App() {
   return (
-    <Switch>
-      <Route path="/" component={Login} />
-      <Route path="/home" component={Home} />
-      <Route path="/ventas" component={Ventas} />
-      <Route path="/inventario" component={Inventario} />
-      <Route path="/infoInventory" component={InfoProducto} />
-      <Route path="/nuevoProducto" component={NuevoProducto} />
-      <Route path="/usuario" component={Usuario} />
-      <Route path="/proveedores" component={Proveedores} />
-      <Route path="/clientes" component={Clientes} />
-      <Route path="/informes" component={Informe} />
-      <Route path="/formaPago" component={FormasPago} />
-      <Route path="/confirmacionDatosDeCompra" component={ConfirmacionDatosDeCompra} />
-      <Route path="/createUser" component={CreateUser} />
-      <Route path="/empleados" component={Empleados} />
-      <Route path="/infoEmpleado" component={InfoEmpleado} />
-      <Route path="/nuevoProveedor" component={CreateProvider} />
-      <Route path="/nuevoCliente" component={CreateClient} />
-      <Route path="/infoCliente" component={InfoClientes} />
-      <Route path="/infoProvider" component={InfoProvider} />
-      <Route path="/sucursales" component={Sucursales} />
-      <Route path="/nuevaSucursal" component={NuevaSucursal} />
-      <Route path="/infoSucursal" component={InfoSucursal} />
-      <Route path="/estadisticas" component={Estadisticas} />
-      <Route path="/moveInventory" component={MoveInventory} />
-    </Switch>
+    <SessionProvider>
+      <Switch>
+        <Route path="/" component={Login} />
+        <Route path="/home">
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/ventas">
+          <ProtectedRoute>
+            <Ventas />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/inventario">
+          <ProtectedRoute>
+            <Inventario />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/infoInventory">
+          <ProtectedRoute>
+            <InfoProducto />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/nuevoProducto">
+          <ProtectedRoute>
+            <NuevoProducto />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/usuario">
+          <ProtectedRoute>
+            <Usuario />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/proveedores">
+          <ProtectedRoute>
+            <Proveedores />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/clientes">
+          <ProtectedRoute>
+            <Clientes />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/informes">
+          <ProtectedRoute>
+            <Informe />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/formaPago">
+          <ProtectedRoute>
+            <FormasPago />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/confirmacionDatosDeCompra">
+          <ProtectedRoute>
+            <ConfirmacionDatosDeCompra />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/createUser">
+          <ProtectedRoute>
+            <CreateUser />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/empleados">
+          <ProtectedRoute>
+            <Empleados />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/infoEmpleado">
+          <ProtectedRoute>
+            <InfoEmpleado />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/nuevoProveedor">
+          <ProtectedRoute>
+            <CreateProvider />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/nuevoCliente">
+          <ProtectedRoute>
+            <CreateClient />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/infoCliente">
+          <ProtectedRoute>
+            <InfoClientes />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/infoProvider">
+          <ProtectedRoute>
+            <InfoProvider />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/sucursales">
+          <ProtectedRoute>
+            <Sucursales />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/nuevaSucursal">
+          <ProtectedRoute>
+            <NuevaSucursal />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/infoSucursal">
+          <ProtectedRoute>
+            <InfoSucursal />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/estadisticas">
+          <ProtectedRoute>
+            <Estadisticas />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/moveInventory">
+          <ProtectedRoute>
+            <MoveInventory />
+          </ProtectedRoute>
+        </Route>
+      </Switch>
+    </SessionProvider>
   )
 }
 

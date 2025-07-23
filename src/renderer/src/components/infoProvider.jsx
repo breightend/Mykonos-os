@@ -11,10 +11,12 @@ import {
   assignBrandToProvider,
   removeBrandFromProvider
 } from '../services/proveedores/brandService'
+import { fetchPurchasesByProvider } from '../services/proveedores/purchaseService'
 import EditarProveedorModal from '../modals/modalsProveedor/editarProveedorModal'
 import AgregarPagoModal from '../modals/modalsProveedor/agregarPagoModal'
 import EliminarProveedorModal from '../modals/modalsProveedor/eliminarProveedorModal'
 import AgregarCompraModal from '../modals/modalsProveedor/agregarCompraModal'
+import PurchaseDetailsModal from './PurchaseDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function InfoProvider() {
@@ -28,6 +30,16 @@ export default function InfoProvider() {
   const [providerBrands, setProviderBrands] = useState([])
   const [allBrands, setAllBrands] = useState([])
   const [loading, setLoading] = useState(false)
+
+  // Purchase management state
+  const [purchases, setPurchases] = useState([])
+  const [loadingPurchases, setLoadingPurchases] = useState(false)
+
+  // Purchase details modal
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState(null)
+  const [showPurchaseDetails, setShowPurchaseDetails] = useState(false)
+
+  // Modal states
   const [showCreateBrandModal, setShowCreateBrandModal] = useState(false)
   const [showEditBrandModal, setShowEditBrandModal] = useState(false)
   const [showAssignBrandModal, setShowAssignBrandModal] = useState(false)
@@ -42,22 +54,33 @@ export default function InfoProvider() {
     async function fetchData() {
       try {
         setLoading(true)
+        setLoadingPurchases(true)
+
+        // Cargar información del proveedor
         const data = await fetchProviderById(providerId)
         console.log(data)
         setProvider(data)
 
+        // Cargar marcas del proveedor
         const brands = await fetchBrandByProviders(providerId)
         console.log('Fetched provider brands:', brands)
         setProviderBrands(Array.isArray(brands) ? brands : [])
 
+        // Cargar todas las marcas
         const allBrandsData = await fetchBrand()
         console.log('Fetched all brands:', allBrandsData)
         setAllBrands(Array.isArray(allBrandsData) ? allBrandsData : [])
+
+        // Cargar compras del proveedor
+        const purchasesData = await fetchPurchasesByProvider(providerId)
+        console.log('Fetched provider purchases:', purchasesData)
+        setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
       } catch (error) {
         console.error('Error fetching data:', error)
         toast.error('Error al cargar la información')
       } finally {
         setLoading(false)
+        setLoadingPurchases(false)
       }
     }
     if (providerId) {
@@ -213,6 +236,30 @@ export default function InfoProvider() {
       description: brand.description || ''
     })
     setShowEditBrandModal(true)
+  }
+
+  // Purchase related functions
+  const handleViewPurchaseDetails = (purchaseId) => {
+    setSelectedPurchaseId(purchaseId)
+    setShowPurchaseDetails(true)
+  }
+
+  const handleClosePurchaseDetails = () => {
+    setShowPurchaseDetails(false)
+    setSelectedPurchaseId(null)
+  }
+
+  const handlePurchaseUpdate = async () => {
+    // Recargar las compras cuando se actualice una
+    try {
+      setLoadingPurchases(true)
+      const purchasesData = await fetchPurchasesByProvider(providerId)
+      setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
+    } catch (error) {
+      console.error('Error reloading purchases:', error)
+    } finally {
+      setLoadingPurchases(false)
+    }
   }
 
   const getUnassignedBrands = () => {
@@ -403,7 +450,7 @@ export default function InfoProvider() {
               </table>
             )}
           </div>
-          <h1 className="text-3xl font-bold"> Registro de operaciones </h1>
+          <h1 className="text-3xl font-bold"> Compras y Operaciones </h1>
         </div>
         <div className="w-full">
           <div className="flex justify-end gap-4">
@@ -421,44 +468,94 @@ export default function InfoProvider() {
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="table-xs table-zebra w-full">
-            {/* head */}
-            <thead>
-              <tr>
-                <th></th>
-                <th>Fecha</th>
-                <th>Operación</th>
-                <th>Cantidad</th>
-                <th>Monto</th>
-                <th>Descripción</th>
-                <th>Vendedor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* row 1 */}
-              <tr>
-                <th>1</th>
-                <td>Cy Ganderton</td>
-                <td>Quality Control Specialist</td>
-                <td>Blue</td>
-              </tr>
-              {/* row 2 */}
-              <tr>
-                <th>2</th>
-                <td>Hart Hagerty</td>
-                <td>Desktop Support Technician</td>
-                <td>Purple</td>
-              </tr>
-              {/* row 3 */}
-              <tr>
-                <th>3</th>
-                <td>Brice Swyre</td>
-                <td>Tax Accountant</td>
-                <td>Red</td>
-              </tr>
-            </tbody>
-          </table>
+
+        {/* Tabla de Compras */}
+        <div className="bg-base-200 mt-4 overflow-x-auto rounded-lg border p-4 shadow-md">
+          <h3 className="mb-4 text-lg font-semibold">Historial de Compras</h3>
+          {loadingPurchases ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="loading loading-spinner loading-lg"></div>
+              <span className="ml-2">Cargando compras...</span>
+            </div>
+          ) : (
+            <table className="table-zebra table w-full">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                  <th>Subtotal</th>
+                  <th>Descuento</th>
+                  <th>Total</th>
+                  <th>Método de Pago</th>
+                  <th>N° Factura</th>
+                  <th>Fecha Entrega</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(purchases) && purchases.length > 0 ? (
+                  purchases.map((purchase) => (
+                    <tr key={purchase.id} className="hover:bg-gray-50">
+                      <td>{purchase.id}</td>
+                      <td>
+                        {purchase.purchase_date
+                          ? new Date(purchase.purchase_date).toLocaleDateString()
+                          : 'N/A'}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            purchase.status === 'Recibido'
+                              ? 'badge-success'
+                              : purchase.status === 'Pendiente de entrega'
+                                ? 'badge-warning'
+                                : 'badge-error'
+                          }`}
+                        >
+                          {purchase.status || 'Pendiente'}
+                        </span>
+                      </td>
+                      <td>${purchase.subtotal?.toFixed(2) || '0.00'}</td>
+                      <td>${purchase.discount?.toFixed(2) || '0.00'}</td>
+                      <td className="font-semibold">${purchase.total?.toFixed(2) || '0.00'}</td>
+                      <td>{purchase.payment_method || 'N/A'}</td>
+                      <td>{purchase.invoice_number || 'N/A'}</td>
+                      <td>
+                        {purchase.delivery_date
+                          ? new Date(purchase.delivery_date).toLocaleDateString()
+                          : 'Pendiente'}
+                      </td>
+                      <td>
+                        <div className="flex gap-1">
+                          <button
+                            className="btn btn-ghost btn-xs text-blue-600"
+                            onClick={() => handleViewPurchaseDetails(purchase.id)}
+                          >
+                            Ver
+                          </button>
+                          {purchase.status === 'Pendiente de entrega' && (
+                            <button
+                              className="btn btn-ghost btn-xs text-green-600"
+                              onClick={() => handleViewPurchaseDetails(purchase.id)}
+                            >
+                              Recibir
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="10" className="py-4 text-center text-gray-500">
+                      No hay compras registradas
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
       <div className="mt-4 mr-4 flex justify-end">
@@ -646,6 +743,13 @@ export default function InfoProvider() {
           </div>
         </div>
       )}
+
+      <PurchaseDetailsModal
+        purchaseId={selectedPurchaseId}
+        isOpen={showPurchaseDetails}
+        onClose={handleClosePurchaseDetails}
+        onUpdate={handlePurchaseUpdate}
+      />
 
       <Toaster position="bottom-right" />
     </div>

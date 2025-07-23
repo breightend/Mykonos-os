@@ -2,12 +2,14 @@ import webbrowser
 from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 from commons import create_admin
+from routes.auth import auth_bp
 from routes.usuario_router import usuario_router
 from routes.provider_router import provider_router
 from routes.client_router import client_router
 from routes.product_router import product_router
 from routes.storage_router import storage_router
 from routes.inventory_router import inventory_router
+from routes.purchase_router import purchase_bp
 
 app = Flask(__name__)
 # Comprehensive CORS configuration to handle all preflight requests
@@ -19,12 +21,14 @@ CORS(
     supports_credentials=False,  # Changed to False to avoid conflicts with wildcard origins
     expose_headers=["Content-Type", "Authorization"],
 )
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(usuario_router, url_prefix="/api/user")
 app.register_blueprint(provider_router, url_prefix="/api/provider")
 app.register_blueprint(client_router, url_prefix="/api/client")
 app.register_blueprint(product_router, url_prefix="/api/product")
 app.register_blueprint(storage_router, url_prefix="/api/storage")
 app.register_blueprint(inventory_router, url_prefix="/api/inventory")
+app.register_blueprint(purchase_bp, url_prefix="/api/purchases")
 
 
 @app.route("/")

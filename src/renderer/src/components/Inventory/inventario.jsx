@@ -345,7 +345,7 @@ export default function Inventario() {
                       onDoubleClick={() => handleRowDoubleClick(row)}
                       title="Doble clic para ver detalles completos"
                     >
-                      <th>{row.id}</th>
+                      <th>{row.barcode}</th>
                       <td>{row.producto}</td>
                       <td>{row.marca}</td>
                       <td>

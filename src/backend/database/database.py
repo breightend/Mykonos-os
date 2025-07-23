@@ -33,6 +33,7 @@ class TABLES(Enum):
     PURCHASES_DETAIL = "purchases_detail"
     PROVEEDORXMARCA = "proveedorxmarca"
     USERSXSTORAGE = "usersxstorage"
+    SESSIONS = "sessions"
 
 
 DATABASE_TABLES = {
@@ -405,17 +406,19 @@ DATABASE_TABLES = {
     },
     TABLES.PURCHASES: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único de la venta
-            "entity_id": "INTEGER",  # Id de la entidad
-            "purchase_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la venta
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único de la compra
+            "entity_id": "INTEGER",  # Id de la entidad (proveedor)
+            "purchase_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la compra
             "subtotal": "REAL NOT NULL",  # Suma total antes de descuentos
             "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
             "total": "REAL NOT NULL",  # Total final después de aplicar descuentos
             "payment_method": "TEXT",  # Medio de pago (efectivo, tarjeta, etc.)
-            "transaction_number": "TEXT",  # Número del comprobante te transferencia/ticket de la venta
-            "invoice_number": "TEXT",  # Número de factura de la venta
+            "transaction_number": "TEXT",  # Número del comprobante te transferencia/ticket de la compra
+            "invoice_number": "TEXT",  # Número de factura de la compra
             "notes": "TEXT",  # Nota de texto para dejar comentarios
-            "file_id": "INTEGER",  # Id del arhcivo adjunto de la compra TODO: Tenes cuidado con esto
+            "file_id": "INTEGER",  # Id del archivo adjunto de la compra
+            "status": "TEXT DEFAULT 'Pendiente de entrega'",  # Estado de la compra: 'Pendiente de entrega', 'Recibido', 'Cancelado'
+            "delivery_date": "TEXT",  # Fecha de entrega/recepción de la compra
         },
         "foreign_keys": [
             {  # Relación con tabla de clientes si es necesario
@@ -434,14 +437,14 @@ DATABASE_TABLES = {
     },
     TABLES.PURCHASES_DETAIL: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único del detalle de la venta
-            "purchase_id": "INTEGER NOT NULL",  # ID de la venta relacionada
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único del detalle de la compra
+            "purchase_id": "INTEGER NOT NULL",  # ID de la compra relacionada
             "product_id": "INTEGER",  # ID del producto
-            "sale_price": "REAL NOT NULL",  # Precio del producto en el momento de la venta
-            "quantity": "INTEGER NOT NULL CHECK (quantity > 0)",  # Cantidad de productos vendidos
+            "cost_price": "REAL NOT NULL",  # Precio de costo del producto en el momento de la compra
+            "quantity": "INTEGER NOT NULL CHECK (quantity > 0)",  # Cantidad de productos comprados
             "discount": "REAL DEFAULT 0.0",  # Descuento aplicado al producto
             "subtotal": "REAL NOT NULL",  # Subtotal para el producto (precio * cantidad)
-            "metadata": "TEXT",  # Informacion adicional de la venta
+            "metadata": "TEXT",  # Información adicional de la compra
         },
         "foreign_keys": [
             {  # Relación con la tabla de ventas
@@ -479,6 +482,33 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.STORAGE,
                 "reference_column": "id",
                 "export_column_name": "name",  # <- columna de referencia cuando se exportan tablas
+            },
+        ],
+    },
+    TABLES.SESSIONS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # ID único de la sesión
+            "user_id": "INTEGER NOT NULL",  # ID del usuario logueado
+            "storage_id": "INTEGER NOT NULL",  # ID de la sucursal seleccionada
+            "session_token": "TEXT NOT NULL UNIQUE",  # Token único de sesión
+            "login_time": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Hora de inicio de sesión
+            "last_activity": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Última actividad
+            "is_active": "INTEGER DEFAULT 1",  # Sesión activa (1) o inactiva (0)
+            "ip_address": "TEXT",  # Dirección IP del cliente
+            "user_agent": "TEXT",  # Información del navegador/cliente
+        },
+        "foreign_keys": [
+            {  # Relación con la tabla de usuarios.
+                "column": "user_id",
+                "reference_table": TABLES.USERS,
+                "reference_column": "id",
+                "export_column_name": "username",
+            },
+            {  # Relación con la tabla de almacenes.
+                "column": "storage_id",
+                "reference_table": TABLES.STORAGE,
+                "reference_column": "id",
+                "export_column_name": "name",
             },
         ],
     },
