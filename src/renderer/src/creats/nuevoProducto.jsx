@@ -41,6 +41,7 @@ export default function NuevoProducto() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState({})
   const [productImage, setProductImage] = useState('')
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [errors, setErrors] = useState({})
   const [showGroupTreeModal, setShowGroupTreeModal] = useState(false)
 
@@ -76,7 +77,6 @@ export default function NuevoProducto() {
     fetchData()
   }, [])
 
-  // UseEffect para cargar marcas cuando se selecciona un proveedor
   useEffect(() => {
     const fetchBrandsForProvider = async () => {
       if (selectedProvider) {
@@ -258,14 +258,52 @@ export default function NuevoProducto() {
     accept: {
       'image/*': []
     },
-    onDrop: async (acceptedFiles) => {
-      const file = acceptedFiles[0]
-      const base64 = await convertToBase64(file)
-      setProductImage(base64)
+    maxSize: 10485760, // 10MB en bytes
+    onDrop: async (acceptedFiles, rejectedFiles) => {
+      // Manejar archivos rechazados
+      if (rejectedFiles.length > 0) {
+        const rejection = rejectedFiles[0]
+        if (rejection.errors.some((e) => e.code === 'file-too-large')) {
+          setErrors((prev) => ({
+            ...prev,
+            productImage: 'La imagen es demasiado grande. Máximo 10MB.'
+          }))
+          return
+        }
+        if (rejection.errors.some((e) => e.code === 'file-invalid-type')) {
+          setErrors((prev) => ({
+            ...prev,
+            productImage: 'Formato de imagen no válido. Use PNG, JPG o WEBP.'
+          }))
+          return
+        }
+      }
 
-      // Limpiar error de imagen si existe
-      if (errors.productImage) {
-        setErrors((prev) => ({ ...prev, productImage: '' }))
+      // Procesar archivo válido
+      if (acceptedFiles.length > 0) {
+        const file = acceptedFiles[0]
+        try {
+          setIsUploadingImage(true)
+          const base64 = await convertToBase64(file)
+          setProductImage(base64)
+          console.log(
+            '✅ Imagen cargada exitosamente:',
+            file.name,
+            'Tamaño:',
+            (file.size / 1024 / 1024).toFixed(2),
+            'MB'
+          )
+
+          // Limpiar error de imagen si existe
+          if (errors.productImage) {
+            setErrors((prev) => ({ ...prev, productImage: '' }))
+          }
+        } catch (error) {
+          console.error('❌ Error al convertir imagen:', error)
+          setErrors((prev) => ({ ...prev, productImage: 'Error al procesar la imagen.' }))
+        } finally {
+          setIsUploadingImage(false)
+        }
       }
     }
   })
@@ -343,6 +381,17 @@ export default function NuevoProducto() {
     // Generar código de barras temporal si no existe
     const generatedBarcode = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
+    // Preparar imagen para envío (extraer solo el base64 sin el prefijo data URI)
+    let imageToSend = null
+    if (productImage) {
+      // Si la imagen tiene el prefijo data:image/...;base64, lo extraemos
+      if (productImage.startsWith('data:')) {
+        imageToSend = productImage.split(',')[1] // Extraer solo la parte base64
+      } else {
+        imageToSend = productImage // Ya es solo base64
+      }
+    }
+
     // Preparar datos del producto para el backend
     return {
       barcode: generatedBarcode,
@@ -357,12 +406,13 @@ export default function NuevoProducto() {
       discount: 0, // Por defecto
       comments: comments || null,
       user_id: 1, // Usuario por defecto por ahora
-      images_ids: productImage ? '1' : null, // Por defecto
+      images_ids: null, // Se actualizará automáticamente en el backend
       brand_id: brandId,
       creation_date: new Date().toISOString(),
       last_modified_date: new Date().toISOString(),
       size_ids: sizeIds,
-      color_ids: colorIds
+      color_ids: colorIds,
+      product_image: imageToSend // Imagen en formato base64 limpio
     }
   }
 
@@ -425,6 +475,11 @@ export default function NuevoProducto() {
 
       console.log('Producto guardado exitosamente:', response)
 
+      // Mostrar mensaje de éxito si hay imagen
+      if (productImage && response.image_id) {
+        console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
+      }
+
       setLocation('/inventario')
     } catch (error) {
       console.error('Error al guardar el producto:', error)
@@ -446,11 +501,20 @@ export default function NuevoProducto() {
 
       console.log('Producto agregado exitosamente:', response)
 
+      // Mostrar mensaje de éxito si hay imagen
+      if (productImage && response.image_id) {
+        console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
+      }
+
       // Limpiar formulario pero mantener proveedor y marca
       clearForm()
 
       // Mostrar mensaje de éxito temporal
-      setErrors({ success: 'Producto agregado exitosamente. Puede agregar otro.' })
+      const successMessage = productImage
+        ? 'Producto e imagen agregados exitosamente. Puede agregar otro.'
+        : 'Producto agregado exitosamente. Puede agregar otro.'
+
+      setErrors({ success: successMessage })
       setTimeout(() => setErrors({}), 3000)
     } catch (error) {
       console.error('Error al agregar el producto:', error)
@@ -574,29 +638,35 @@ export default function NuevoProducto() {
                         : errors.productImage
                           ? 'border-error bg-error/5'
                           : 'border-base-300 hover:bg-base-200/50'
-                    }`}
+                    } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
                   >
                     <input {...getInputProps()} />
                     <div className="space-y-2">
                       <div className="bg-primary/10 mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-                        <svg
-                          className="text-primary h-6 w-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                          />
-                        </svg>
+                        {isUploadingImage ? (
+                          <LoaderCircle className="text-primary h-6 w-6 animate-spin" />
+                        ) : (
+                          <svg
+                            className="text-primary h-6 w-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                            />
+                          </svg>
+                        )}
                       </div>
                       <p className="text-sm font-medium">
-                        {isDragActive
-                          ? '¡Suelta la imagen aquí!'
-                          : 'Arrastra la imagen o haz clic para seleccionar'}
+                        {isUploadingImage
+                          ? 'Procesando imagen...'
+                          : isDragActive
+                            ? '¡Suelta la imagen aquí!'
+                            : 'Arrastra la imagen o haz clic para seleccionar'}
                       </p>
                       <p className="text-base-content/60 text-xs">PNG, JPG, WEBP hasta 10MB</p>
                     </div>

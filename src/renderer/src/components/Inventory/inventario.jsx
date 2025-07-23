@@ -1,11 +1,11 @@
-import { PackagePlus, Search, Edit, Info, Boxes } from 'lucide-react'
+import { PackagePlus, Search, Edit, Info, Boxes, Truck } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState, useEffect, useCallback } from 'react'
-import MenuVertical from '../componentes especificos/menuVertical'
-import Navbar from '../componentes especificos/navbar'
-import ProductsFamily from '../modals/modalsInventory/productsFamily'
-import ProductDetailModal from '../modals/ProductDetailModal/ProductDetailModal'
-import { inventoryService } from '../services/Inventory/inventoryService'
+import MenuVertical from '../../componentes especificos/menuVertical'
+import Navbar from '../../componentes especificos/navbar'
+import ProductsFamily from '../../modals/modalsInventory/productsFamily'
+import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailModal'
+import { inventoryService } from '../../services/inventory/inventoryService'
 
 export default function Inventario() {
   const [, setLocation] = useLocation()
@@ -166,6 +166,9 @@ export default function Inventario() {
   const handleStorageChange = (e) => {
     setSelectedStorage(e.target.value)
   }
+  const handleMoveInventoryClick = () => {
+    setLocation('/moveInventory')
+  }
   return (
     <div className="bg-base-100 min-h-screen">
       <MenuVertical currentPath="/inventario" />
@@ -230,6 +233,15 @@ export default function Inventario() {
                 disabled={!selectedRow}
               >
                 <Info className="h-5 w-5" />
+              </button>
+            </li>
+            <li>
+              <button
+                className="btn btn-ghost tooltip tooltip-bottom"
+                data-tip="Mover producto entre sucursales"
+                onClick={handleMoveInventoryClick}
+              >
+                <Truck className="h-5 w-5" />
               </button>
             </li>
           </ul>

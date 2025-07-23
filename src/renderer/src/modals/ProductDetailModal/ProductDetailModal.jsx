@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { X, Package, Warehouse, Tag, DollarSign, Calendar, Info } from 'lucide-react'
-import { inventoryService } from '../../services/Inventory/inventoryService'
+import { inventoryService } from '../../services/inventory/inventoryService'
 
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
@@ -36,9 +36,9 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   }
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-AR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'ARS'
     }).format(value || 0)
   }
 
@@ -56,19 +56,20 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   if (!isOpen) return null
 
   return (
-    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md">
       <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+        <div className="to-primary/60 from-primary flex items-center justify-between border-b border-gray-200 bg-gradient-to-r p-6 text-black">
           <div className="flex items-center space-x-3">
             <Package className="h-6 w-6" />
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-xl font-bold">
               {loading ? 'Cargando...' : productDetails?.product_name || 'Detalles del Producto'}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-white transition-colors hover:text-gray-200"
+            className="cursor-pointer p-1 transition-colors hover:scale-110 hover:text-gray-900"
+            type="button"
           >
             <X className="h-6 w-6" />
           </button>
@@ -94,6 +95,39 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
           {productDetails && !loading && !error && (
             <div className="space-y-6 p-6">
+              {/* Imagen del Producto - Sección Principal */}
+              <div className="mb-8 flex justify-center">
+                <div className="w-full max-w-md">
+                  <h3 className="mb-4 text-center text-lg font-semibold text-gray-800">
+                    {productDetails.product_name}
+                  </h3>
+                  <div className="flex justify-center">
+                    {productDetails.product_image ? (
+                      <div className="group relative">
+                        <img
+                          src={`data:image/jpeg;base64,${productDetails.product_image}`}
+                          alt={productDetails.product_name}
+                          className="h-80 w-80 rounded-xl border-2 border-gray-200 object-cover shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            e.target.nextSibling.style.display = 'flex'
+                          }}
+                        />
+                        <div className="hidden h-80 w-80 flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-gray-100">
+                          <Package className="mb-4 h-20 w-20 text-gray-400" />
+                          <span className="text-lg text-gray-500">Imagen no disponible</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex h-80 w-80 flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-gray-100">
+                        <Package className="mb-4 h-20 w-20 text-gray-400" />
+                        <span className="text-lg text-gray-500">Sin imagen disponible</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Información Básica */}
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="rounded-lg bg-gray-50 p-4">
@@ -271,7 +305,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                 </div>
               </div>
 
-              {/* Información Adicional */}
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-800">
                   <Calendar className="mr-2 h-5 w-5 text-blue-600" />
@@ -281,10 +314,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                   <div>
                     <span className="font-medium text-gray-600">Última modificación:</span>
                     <p className="text-gray-800">{formatDate(productDetails.last_modified_date)}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-600">IDs de imágenes:</span>
-                    <p className="text-gray-800">{productDetails.images_ids || 'No disponible'}</p>
                   </div>
                   {productDetails.comments && (
                     <div className="md:col-span-2">
