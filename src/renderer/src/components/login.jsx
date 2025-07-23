@@ -54,7 +54,8 @@ export default function Login() {
       return
     }
 
-    if (!formData.storageId) {
+    // Solo requerir sucursal si hay sucursales disponibles
+    if (storages.length > 0 && !formData.storageId) {
       setFormError('Debe seleccionar una sucursal')
       return
     }
@@ -63,7 +64,9 @@ export default function Login() {
     setFormError('')
 
     try {
-      const result = await login(formData.username, formData.password, parseInt(formData.storageId))
+      // Si no hay sucursales, enviar null como storage_id
+      const storageId = storages.length > 0 ? parseInt(formData.storageId) : null
+      const result = await login(formData.username, formData.password, storageId)
 
       if (result.success) {
         // Redirigir al home
@@ -150,31 +153,39 @@ export default function Login() {
                 />
               </label>
 
-              {/* Selector de Sucursal */}
-              <select
-                name="storageId"
-                value={formData.storageId}
-                onChange={handleInputChange}
-                className="select w-full"
-                required
-                disabled={isSubmitting || loading}
-              >
-                <option value="" disabled>
-                  {storages.length === 0 ? 'Cargando sucursales...' : 'Seleccionar Sucursal'}
-                </option>
-                {storages.map((storage) => (
-                  <option key={storage.id} value={storage.id}>
-                    {storage.name} {storage.address && `- ${storage.address}`}
+              {/* Selector de Sucursal - Solo mostrar si hay sucursales disponibles */}
+              {storages.length > 0 ? (
+                <select
+                  name="storageId"
+                  value={formData.storageId}
+                  onChange={handleInputChange}
+                  className="select w-full"
+                  required
+                  disabled={isSubmitting || loading}
+                >
+                  <option value="" disabled>
+                    Seleccionar Sucursal
                   </option>
-                ))}
-              </select>
+                  {storages.map((storage) => (
+                    <option key={storage.id} value={storage.id}>
+                      {storage.name} {storage.address && `- ${storage.address}`}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="alert alert-warning">
+                  <span className="text-sm">
+                    ⚠️ No hay sucursales configuradas. Solo administradores pueden acceder.
+                  </span>
+                </div>
+              )}
 
               {/* Botón de envío */}
               <div className="card-actions flex justify-end">
                 <button
                   type="submit"
                   className="btn btn-primary text-black"
-                  disabled={isSubmitting || loading || storages.length === 0}
+                  disabled={isSubmitting || loading}
                 >
                   {isSubmitting ? (
                     <>

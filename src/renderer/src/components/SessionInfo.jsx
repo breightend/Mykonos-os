@@ -1,9 +1,9 @@
-import { LogOut, User, MapPin, Clock } from 'lucide-react'
+import { LogOut, User, Building2, Shield, Clock } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
 import { useLocation } from 'wouter'
 
 const SessionInfo = () => {
-  const { session, logout, getCurrentUser, getCurrentStorage } = useSession()
+  const { session, logout, isAdmin } = useSession()
   const [, setLocation] = useLocation()
 
   const handleLogout = async () => {
@@ -21,8 +21,17 @@ const SessionInfo = () => {
     return null
   }
 
-  const user = getCurrentUser()
-  const storage = getCurrentStorage()
+  const getRoleIcon = () => {
+    return isAdmin() ? (
+      <Shield className="h-4 w-4 text-yellow-500" />
+    ) : (
+      <User className="h-4 w-4 text-blue-500" />
+    )
+  }
+
+  const getRoleText = () => {
+    return isAdmin() ? 'Administrador' : 'Empleado'
+  }
 
   return (
     <div className="dropdown dropdown-end">
@@ -44,10 +53,11 @@ const SessionInfo = () => {
         </li>
         <li className="px-4 py-2">
           <div className="text-sm">
-            <div className="font-semibold">{user?.fullname}</div>
-            <div className="text-gray-500">@{user?.username}</div>
-            <div className="badge badge-outline badge-sm mt-1">
-              {user?.role === 'administrator' ? 'Administrador' : 'Empleado'}
+            <div className="font-semibold">{session.fullname}</div>
+            <div className="text-gray-500">@{session.username}</div>
+            <div className="badge badge-outline badge-sm mt-1 flex items-center gap-1">
+              {getRoleIcon()}
+              {getRoleText()}
             </div>
           </div>
         </li>
@@ -57,17 +67,35 @@ const SessionInfo = () => {
         {/* Información de la sucursal */}
         <li className="menu-title">
           <span className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
+            <Building2 className="h-4 w-4" />
             Sucursal Actual
           </span>
         </li>
         <li className="px-4 py-2">
           <div className="text-sm">
-            <div className="text-primary font-semibold">{storage?.name}</div>
-            <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-              <Clock className="h-3 w-3" />
-              Sesión activa
-            </div>
+            {session.storage_id ? (
+              <>
+                <div className="text-primary font-semibold">{session.storage_name}</div>
+                <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                  <Clock className="h-3 w-3" />
+                  Sesión activa
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-warning font-semibold">Sin sucursal asignada</div>
+                {isAdmin() && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Acceso de administrador - Configure sucursales en el sistema
+                  </div>
+                )}
+                {!isAdmin() && (
+                  <div className="text-error mt-1 text-xs">
+                    Contacte al administrador para asignar sucursal
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </li>
 

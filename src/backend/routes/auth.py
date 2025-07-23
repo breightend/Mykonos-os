@@ -33,10 +33,21 @@ def login():
                 {"success": False, "message": "Usuario y contraseña son requeridos."}
             ), 400
 
-        if not storage_id:
-            return jsonify(
-                {"success": False, "message": "Debe seleccionar una sucursal."}
-            ), 400
+        # Verificar si hay sucursales disponibles
+        db = Database()
+        available_storages = db.get_all_records_by_clause(
+            "storage", "status = ?", "Activo"
+        )
+
+        if available_storages and len(available_storages) > 0:
+            # Si hay sucursales disponibles, es requerido seleccionar una
+            if not storage_id:
+                return jsonify(
+                    {"success": False, "message": "Debe seleccionar una sucursal."}
+                ), 400
+        else:
+            # Si no hay sucursales, usar None como storage_id
+            storage_id = None
 
         auth_response = authenticate_user(
             username, password, storage_id, ip_address, user_agent

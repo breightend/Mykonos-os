@@ -48,20 +48,30 @@ def authenticate_user(username, password, storage_id, ip_address=None, user_agen
     if not check_password_hash(db_password, password):
         return {"success": False, "message": "Contraseña incorrecta."}
 
-    # Verificar que la sucursal existe
-    storage_response = db.get_record_by_id("storage", storage_id)
-    if not storage_response["success"] or not storage_response["record"]:
-        return {"success": False, "message": "Sucursal no encontrada."}
+    # Manejar el caso donde no hay sucursales disponibles
+    storage_info = None
+    if storage_id is not None:
+        # Verificar que la sucursal existe
+        storage_response = db.get_record_by_id("storage", storage_id)
+        if not storage_response["success"] or not storage_response["record"]:
+            return {"success": False, "message": "Sucursal no encontrada."}
 
-    storage_info = storage_response["record"]
-    if storage_info.get("status") != "Activo":
-        return {"success": False, "message": "Sucursal inactiva."}
+        storage_info = storage_response["record"]
+        if storage_info.get("status") != "Activo":
+            return {"success": False, "message": "Sucursal inactiva."}
 
-    # Verificar que el usuario tiene acceso a esta sucursal (solo para empleados)
-    if user_role == "employee":
-        has_access = db.check_user_storage_relationship_exists(user_id, storage_id)
-        if not has_access:
-            return {"success": False, "message": "No tiene acceso a esta sucursal."}
+        # Verificar que el usuario tiene acceso a esta sucursal (solo para empleados)
+        if user_role == "employee":
+            has_access = db.check_user_storage_relationship_exists(user_id, storage_id)
+            if not has_access:
+                return {"success": False, "message": "No tiene acceso a esta sucursal."}
+    else:
+        # No hay sucursales disponibles, solo permitir administradores
+        if user_role != "administrator":
+            return {
+                "success": False,
+                "message": "No hay sucursales disponibles. Solo administradores pueden acceder.",
+            }
 
     # Cerrar sesiones anteriores del usuario
     close_user_sessions(user_id)
@@ -77,6 +87,7 @@ def authenticate_user(username, password, storage_id, ip_address=None, user_agen
         "ip_address": ip_address,
         "user_agent": user_agent,
         "is_active": 1,
+        # Los campos login_time y last_activity se establecen automáticamente con DEFAULT CURRENT_TIMESTAMP
     }
 
     session_result = db.add_record("sessions", session_data)
@@ -91,7 +102,7 @@ def authenticate_user(username, password, storage_id, ip_address=None, user_agen
         "fullname": user_record["fullname"],
         "role": user_role,
         "storage_id": storage_id,
-        "storage_name": storage_info["name"],
+        "storage_name": storage_info["name"] if storage_info else "Sin sucursal",
         "session_token": session_token,
         "session_id": session_result["rowid"],
     }
@@ -154,12 +165,12 @@ def validate_session(session_token):
 
     user = user_response["record"]
 
-    # Obtener datos de la sucursal
-    storage_response = db.get_record_by_id("storage", session["storage_id"])
-    if not storage_response["success"]:
-        return {"success": False, "message": "Sucursal no encontrada."}
-
-    storage = storage_response["record"]
+    # Obtener datos de la sucursal (si existe)
+    storage_name = "Sin sucursal"
+    if session["storage_id"]:
+        storage_response = db.get_record_by_id("storage", session["storage_id"])
+        if storage_response["success"] and storage_response["record"]:
+            storage_name = storage_response["record"]["name"]
 
     return {
         "success": True,
@@ -169,8 +180,8 @@ def validate_session(session_token):
             "username": user["username"],
             "fullname": user["fullname"],
             "role": user["role"],
-            "storage_id": storage["id"],
-            "storage_name": storage["name"],
+            "storage_id": session["storage_id"],
+            "storage_name": storage_name,
             "session_token": session_token,
             "session_id": session["id"],
         },

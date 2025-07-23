@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test de Login - Mykonos</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      .info {
+        color: blue;
+      }
+      .log {
+        background: #f5f5f5;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      input {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔧 Test de Login - Mykonos OS</h1>
+
+      <div>
+        <h3>Información del Sistema:</h3>
+        <div id="system-info" class="log"></div>
+      </div>
+
+      <div>
+        <h3>Test de Login:</h3>
+        <input type="text" id="username" value="admin" placeholder="Usuario" />
+        <input type="password" id="password" value="admin123" placeholder="Contraseña" />
+        <button onclick="testLogin()">🔑 Probar Login</button>
+        <button onclick="testValidation()">✅ Probar Validación</button>
+        <button onclick="clearSession()">🧹 Limpiar Sesión</button>
+      </div>
+
+      <div>
+        <h3>Logs:</h3>
+        <div id="logs" class="log"></div>
+      </div>
+    </div>
+
+    <script>
+      // Funciones de logging
+      function log(message, type = 'info') {
+        const logs = document.getElementById('logs')
+        const timestamp = new Date().toLocaleTimeString()
+        const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info'
+        logs.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`
+        logs.scrollTop = logs.scrollHeight
+        console.log(`[${timestamp}] ${message}`)
+      }
+
+      // Información del sistema
+      function updateSystemInfo() {
+        const info = document.getElementById('system-info')
+        const sessionToken = localStorage.getItem('session_token')
+        info.innerHTML = `
+                <strong>Estado del navegador:</strong><br>
+                - Session Token: ${sessionToken ? sessionToken.substring(0, 20) + '...' : 'No existe'}<br>
+                - Local Storage: ${Object.keys(localStorage).length} elementos<br>
+                - URL Actual: ${window.location.href}<br>
+                - User Agent: ${navigator.userAgent.substring(0, 50)}...
+            `
+      }
+
+      // Test de login
+      async function testLogin() {
+        const username = document.getElementById('username').value
+        const password = document.getElementById('password').value
+
+        log('🔄 Iniciando test de login...', 'info')
+        log(`Usuario: ${username}`, 'info')
+
+        try {
+          const response = await fetch('http://localhost:5000/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              username: username,
+              password: password,
+              storage_id: null // Sin sucursal para admin
+            })
+          })
+
+          const data = await response.json()
+          log(`Respuesta del servidor: ${response.status}`, 'info')
+
+          if (data.success) {
+            log('✅ Login exitoso!', 'success')
+            log(`Token: ${data.session_data.session_token.substring(0, 20)}...`, 'success')
+            log(`Usuario: ${data.session_data.username}`, 'success')
+            log(`Rol: ${data.session_data.role}`, 'success')
+
+            // Guardar token
+            localStorage.setItem('session_token', data.session_data.session_token)
+            log('💾 Token guardado en localStorage', 'success')
+
+            updateSystemInfo()
+          } else {
+            log(`❌ Login falló: ${data.message}`, 'error')
+          }
+        } catch (error) {
+          log(`🚨 Error de conexión: ${error.message}`, 'error')
+        }
+      }
+
+      // Test de validación
+      async function testValidation() {
+        const sessionToken = localStorage.getItem('session_token')
+
+        if (!sessionToken) {
+          log('❌ No hay token de sesión. Haz login primero.', 'error')
+          return
+        }
+
+        log('🔄 Probando validación de sesión...', 'info')
+
+        try {
+          const response = await fetch('http://localhost:5000/api/auth/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              session_token: sessionToken
+            })
+          })
+
+          const data = await response.json()
+          log(`Respuesta de validación: ${response.status}`, 'info')
+
+          if (data.success) {
+            log('✅ Validación exitosa!', 'success')
+            log(`Usuario: ${data.session_data.username}`, 'success')
+            log(`Rol: ${data.session_data.role}`, 'success')
+            log(`Sucursal: ${data.session_data.storage_name}`, 'success')
+          } else {
+            log(`❌ Validación falló: ${data.message}`, 'error')
+            // Limpiar token inválido
+            localStorage.removeItem('session_token')
+            updateSystemInfo()
+          }
+        } catch (error) {
+          log(`🚨 Error en validación: ${error.message}`, 'error')
+        }
+      }
+
+      // Limpiar sesión
+      function clearSession() {
+        localStorage.removeItem('session_token')
+        log('🧹 Token de sesión eliminado', 'info')
+        updateSystemInfo()
+      }
+
+      // Test automático al cargar
+      async function autoTest() {
+        log('🚀 Iniciando test automático...', 'info')
+        updateSystemInfo()
+
+        // Verificar conexión con backend
+        try {
+          const response = await fetch('http://localhost:5000/api/auth/storages')
+          if (response.ok) {
+            log('✅ Conexión con backend: OK', 'success')
+          } else {
+            log(`⚠️ Backend responde pero con error: ${response.status}`, 'error')
+          }
+        } catch (error) {
+          log('🚨 No se puede conectar al backend', 'error')
+          log('Verifica que el servidor esté corriendo en puerto 5000', 'error')
+        }
+      }
+
+      // Ejecutar al cargar la página
+      window.onload = function () {
+        autoTest()
+
+        // Actualizar info cada 5 segundos
+        setInterval(updateSystemInfo, 5000)
+      }
+    </script>
+  </body>
+</html>

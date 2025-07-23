@@ -489,7 +489,7 @@ DATABASE_TABLES = {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # ID único de la sesión
             "user_id": "INTEGER NOT NULL",  # ID del usuario logueado
-            "storage_id": "INTEGER NOT NULL",  # ID de la sucursal seleccionada
+            "storage_id": "INTEGER",  # ID de la sucursal seleccionada (nullable para login sin sucursales)
             "session_token": "TEXT NOT NULL UNIQUE",  # Token único de sesión
             "login_time": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Hora de inicio de sesión
             "last_activity": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Última actividad

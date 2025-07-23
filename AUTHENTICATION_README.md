@@ -161,12 +161,29 @@ Los administradores solo pueden ser creados mediante:
 
 1. **Usuario accede al login** (`/`)
 2. **Carga sucursales disponibles** (GET `/api/auth/storages`)
-3. **Ingresa credenciales** y selecciona sucursal
+3. **Ingresa credenciales** y opcionalmente selecciona sucursal
+   - Si hay sucursales disponibles: debe seleccionar una
+   - Si no hay sucursales: solo administradores pueden acceder (sin selección)
 4. **Backend valida** usuario, contraseña y permisos
 5. **Se crea sesión** en base de datos con token único
 6. **Frontend almacena token** y navega a `/home`
 7. **Rutas protegidas verifican** token en cada acceso
-8. **SessionInfo muestra** datos de usuario y sucursal
+8. **SessionInfo muestra** datos de usuario y sucursal (o "Sin sucursal" si no hay)
+
+## ✨ Funcionalidades Especiales
+
+### Manejo de Sistema Sin Sucursales
+
+- **Primera instalación**: Si no hay sucursales configuradas, solo administradores pueden acceder
+- **Login sin sucursal**: No se requiere seleccionar sucursal si no hay ninguna disponible
+- **Sesión sin sucursal**: Se muestra "Sin sucursal asignada" en la interfaz
+- **Notificación**: Administradores ven aviso para configurar sucursales
+
+### Control de Acceso Inteligente
+
+- **Administradores**: Acceso completo independientemente de sucursales
+- **Empleados**: Requieren sucursal asignada para acceder
+- **Validación automática**: Sistema verifica permisos usuario-sucursal
 
 ## 🗂️ Archivos Modificados/Creados
 
@@ -197,6 +214,16 @@ Los administradores solo pueden ser creados mediante:
 
 ## 🆘 Solución de Problemas
 
+### Primer Login (Sin Sucursales)
+
+**Problema**: "No hay sucursales configuradas"
+**Solución**:
+
+1. Crear usuario administrador: `python admin_manager.py`
+2. Hacer login como administrador (usuario: `admin`, contraseña: `admin123`)
+3. Crear al menos una sucursal desde el panel de administración
+4. Los empleados podrán acceder una vez asignados a sucursales
+
 ### Error "Usuario no encontrado"
 
 - Verificar que existe al menos un usuario administrador
@@ -216,6 +243,15 @@ Los administradores solo pueden ser creados mediante:
 
 - El token se limpia automáticamente al ser inválido
 - El usuario será redirigido al login
+
+### Empleado sin acceso a sucursales
+
+**Problema**: Empleado no puede seleccionar ninguna sucursal
+**Solución**:
+
+1. Administrador debe asignar sucursales al empleado
+2. Usar la interfaz de gestión de empleados
+3. Verificar la tabla `usersxstorage` en la base de datos
 
 ---
 
