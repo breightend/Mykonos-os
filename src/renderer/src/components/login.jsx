@@ -3,10 +3,10 @@ import { KeyRound, UserRound, AlertCircle, Loader2 } from 'lucide-react'
 import Settings from '../componentes especificos/settings'
 import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
-
+import { fetchSucursales } from '../services/sucursales/sucursalesService'
 export default function Login() {
   const [, setLocation] = useLocation()
-  const { login, getStorages, loading, error } = useSession()
+  const { login, loading, error } = useSession()
 
   const [formData, setFormData] = useState({
     username: '',
@@ -17,18 +17,28 @@ export default function Login() {
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Cargar sucursales al montar el componente
   useEffect(() => {
     const loadStorages = async () => {
       try {
-        const storageList = await getStorages()
-        setStorages(storageList)
+        const storageList = await fetchSucursales()
+
+        // Si storageList es directamente un array, usarlo; si no, usar storageList.data
+        const storagesData = Array.isArray(storageList) ? storageList : storageList.data
+        console.log('Datos de sucursales a usar:', storagesData)
+
+        setStorages(storagesData || [])
       } catch (err) {
         console.error('Error cargando sucursales:', err)
       }
     }
     loadStorages()
-  }, [getStorages])
+  }, [])
+
+  // Efecto para monitorear cambios en el estado storages
+  useEffect(() => {
+    console.log('Estado storages actualizado:', storages)
+    console.log('Cantidad de sucursales:', storages?.length || 0)
+  }, [storages])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -36,14 +46,12 @@ export default function Login() {
       ...prev,
       [name]: value
     }))
-    // Limpiar errores al escribir
     if (formError) setFormError('')
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validaciones
     if (!formData.username.trim()) {
       setFormError('El usuario es requerido')
       return
@@ -54,8 +62,7 @@ export default function Login() {
       return
     }
 
-    // Solo requerir sucursal si hay sucursales disponibles
-    if (storages.length > 0 && !formData.storageId) {
+    if (storages && storages.length > 0 && !formData.storageId) {
       setFormError('Debe seleccionar una sucursal')
       return
     }
@@ -64,12 +71,10 @@ export default function Login() {
     setFormError('')
 
     try {
-      // Si no hay sucursales, enviar null como storage_id
-      const storageId = storages.length > 0 ? parseInt(formData.storageId) : null
+      const storageId = storages && storages.length > 0 ? parseInt(formData.storageId) : null
       const result = await login(formData.username, formData.password, storageId)
 
       if (result.success) {
-        // Redirigir al home
         setLocation('/home')
       } else {
         setFormError(result.message)
@@ -80,7 +85,6 @@ export default function Login() {
       setIsSubmitting(false)
     }
   }
-
   return (
     <div className="image-full relative z-0 w-full bg-cover bg-center">
       <figure className="absolute inset-0">
@@ -154,7 +158,7 @@ export default function Login() {
               </label>
 
               {/* Selector de Sucursal - Solo mostrar si hay sucursales disponibles */}
-              {storages.length > 0 ? (
+              {storages && storages.length > 0 ? (
                 <select
                   name="storageId"
                   value={formData.storageId}

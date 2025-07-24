@@ -24,12 +24,14 @@ class TABLES(Enum):
     PRODUCT_SIZES = "product_sizes"
     PRODUCT_COLORS = "product_colors"
     IMAGES = "images"
-    WAREHOUSE_STOCK = "warehouse_stock"
+    WAREHOUSE_STOCK = (
+        "warehouse_stock"  # Relacion muchos a muchos entre sucursal y productos
+    )
     INVENTORY_MOVEMETNS = "inventory_movements"
     INVENTORY_MOVEMETNS_GROUPS = "inventory_movements_groups"
     RESPONSABILIDADES_AFIP = "responsabilidades_afip"
     BRANDS = "brands"
-    PURCHASES = "purchases"
+    PURCHASES = "purchases"  # compra de mercaderia
     PURCHASES_DETAIL = "purchases_detail"
     PROVEEDORXMARCA = "proveedorxmarca"
     USERSXSTORAGE = "usersxstorage"
@@ -1796,4 +1798,112 @@ class Database:
                 "success": False,
                 "message": f"Error al obtener imagen: {str(e)}",
                 "image_data": None,
+            }
+
+    # Stock management methods
+    def add_or_update_stock(self, product_id, branch_id, quantity):
+        """
+        Agrega o actualiza el stock de un producto en una sucursal específica.
+
+        Args:
+            product_id (int): ID del producto
+            branch_id (int): ID de la sucursal
+            quantity (int): Cantidad a agregar o actualizar
+
+        Returns:
+            dict: {'success': bool, 'message': str}
+        """
+        try:
+            # Verificar si ya existe stock para este producto en esta sucursal
+            existing_stock = self.get_record_by_clause(
+                TABLES.WAREHOUSE_STOCK.value,
+                "product_id = ? AND branch_id = ?",
+                (product_id, branch_id),
+            )
+
+            if existing_stock.get("success") and existing_stock.get("record"):
+                # Actualizar stock existente
+                current_quantity = existing_stock["record"].get("quantity", 0)
+                new_quantity = current_quantity + quantity
+
+                update_data = {
+                    "id": existing_stock["record"]["id"],
+                    "quantity": new_quantity,
+                    "last_updated": "datetime('now', 'localtime')",
+                }
+                return self.update_record(TABLES.WAREHOUSE_STOCK.value, update_data)
+            else:
+                # Crear nuevo registro de stock
+                stock_data = {
+                    "product_id": product_id,
+                    "branch_id": branch_id,
+                    "quantity": quantity,
+                }
+                return self.add_record(TABLES.WAREHOUSE_STOCK.value, stock_data)
+
+        except Exception as e:
+            return {"success": False, "message": f"Error al manejar stock: {str(e)}"}
+
+    def set_initial_stock(self, product_id, branch_id, quantity):
+        """
+        Establece el stock inicial de un producto en una sucursal específica.
+
+        Args:
+            product_id (int): ID del producto
+            branch_id (int): ID de la sucursal
+            quantity (int): Cantidad inicial
+
+        Returns:
+            dict: {'success': bool, 'message': str}
+        """
+        try:
+            stock_data = {
+                "product_id": product_id,
+                "branch_id": branch_id,
+                "quantity": quantity,
+            }
+            return self.add_record(TABLES.WAREHOUSE_STOCK.value, stock_data)
+
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al establecer stock inicial: {str(e)}",
+            }
+
+    def get_product_stock_by_branch(self, product_id, branch_id):
+        """
+        Obtiene el stock de un producto en una sucursal específica.
+
+        Args:
+            product_id (int): ID del producto
+            branch_id (int): ID de la sucursal
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'quantity': int}
+        """
+        try:
+            result = self.get_record_by_clause(
+                TABLES.WAREHOUSE_STOCK.value,
+                "product_id = ? AND branch_id = ?",
+                (product_id, branch_id),
+            )
+
+            if result.get("success") and result.get("record"):
+                return {
+                    "success": True,
+                    "message": "Stock encontrado",
+                    "quantity": result["record"].get("quantity", 0),
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "No se encontró stock para este producto en esta sucursal",
+                    "quantity": 0,
+                }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al obtener stock: {str(e)}",
+                "quantity": 0,
             }

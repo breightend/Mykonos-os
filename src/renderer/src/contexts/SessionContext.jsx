@@ -82,6 +82,7 @@ export const SessionProvider = ({ children }) => {
         localStorage.setItem('session_token', data.session_data.session_token)
 
         // Actualizar estado de sesión
+        console.log('🔐 Datos de sesión recibidos:', data.session_data)
         setSession(data.session_data)
         setError(null)
 
@@ -122,22 +123,6 @@ export const SessionProvider = ({ children }) => {
     }
   }
 
-  const getStorages = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/storages')
-      const data = await response.json()
-
-      if (data.success) {
-        return data.storages
-      } else {
-        throw new Error(data.message)
-      }
-    } catch (err) {
-      console.error('Error obteniendo sucursales:', err)
-      return []
-    }
-  }
-
   const isAuthenticated = () => {
     return session !== null
   }
@@ -147,12 +132,36 @@ export const SessionProvider = ({ children }) => {
   }
 
   const getCurrentStorage = () => {
-    return session
-      ? {
-          id: session.storage_id,
-          name: session.storage_name
-        }
-      : null
+    console.log('🏪 Sesión actual completa:', session)
+    console.log(
+      '🏪 Todas las propiedades de session:',
+      session ? Object.keys(session) : 'No session'
+    )
+    console.log('🏪 Storage ID en sesión:', session?.storage_id)
+    console.log('🏪 Storage Name en sesión:', session?.storage_name)
+
+    // Si no hay sesión, devolver null
+    if (!session) {
+      console.log('🏪 No hay sesión activa')
+      return null
+    }
+
+    // Si no hay storage_id, significa que probablemente es un admin sin sucursal
+    if (!session.storage_id) {
+      console.log('🏪 No hay storage_id en la sesión - probablemente admin')
+      return {
+        id: null,
+        name: 'Sin sucursal'
+      }
+    }
+
+    const storageData = {
+      id: session.storage_id,
+      name: session.storage_name || 'Sucursal desconocida'
+    }
+
+    console.log('🏪 Datos de storage devueltos:', storageData)
+    return storageData
   }
 
   const getCurrentUser = () => {
@@ -172,7 +181,6 @@ export const SessionProvider = ({ children }) => {
     error,
     login,
     logout,
-    getStorages,
     isAuthenticated,
     isAdmin,
     getCurrentStorage,

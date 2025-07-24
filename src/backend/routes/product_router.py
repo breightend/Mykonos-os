@@ -29,6 +29,9 @@ def recibir_datos():
     color_ids = data.get("color_ids", [])  # Array de IDs de colores
     # Datos de imagen en base64
     product_image = data.get("product_image")  # Imagen en formato base64
+    # Datos para el stock inicial
+    storage_id = data.get("storage_id")  # ID de la sucursal para el stock inicial
+    initial_quantity = data.get("initial_quantity", 0)  # Cantidad inicial para el stock
 
     db = Database()
     # if not barcode or not provider_code or not product_name or not group_id or not provider_id or not description or not cost or not sale_price or not tax or not discount or not comments or not user_id or not image_ids or not brand_id:
@@ -94,6 +97,16 @@ def recibir_datos():
         # Agregar las relaciones con colores
         for color_id in color_ids:
             db.add_product_color_relationship(product_id, color_id)
+
+        # Crear stock inicial si se especifica una sucursal y cantidad
+        if storage_id and initial_quantity > 0:
+            stock_result = db.set_initial_stock(
+                product_id, storage_id, initial_quantity
+            )
+            if not stock_result.get("success"):
+                print(
+                    f"⚠️ Advertencia: Error al crear stock inicial: {stock_result.get('message')}"
+                )
 
         return jsonify(
             {
@@ -190,9 +203,11 @@ def obtener_talles():
     # Obtener los talles de la base de datos
     db = Database()
     sizes = db.get_all_records("sizes")
-    print(sizes)
+    print(f"Sizes encontrados: {sizes}")
+    # Devolver array vacío si no hay datos, no un error
     if not sizes:
-        return jsonify({"mensaje": "No se encontraron talles", "status": "error"}), 404
+        print("No hay talles en la base de datos, devolviendo array vacío")
+        return jsonify([]), 200
     return jsonify(sizes), 200
 
 
@@ -202,8 +217,13 @@ def obtenerSizeXCategory():
     category_response = db.get_join_records(
         "size_categories", "sizes", "id", "category_id"
     )
+    print(f"SizeXCategory encontrado: {category_response}")
+    # Devolver array vacío si no hay datos, no un error
     if not category_response:
-        return jsonify({"mensaje": "No se encontraron talles", "status": "error"}), 404
+        print(
+            "No hay relaciones size-category en la base de datos, devolviendo array vacío"
+        )
+        return jsonify([]), 200
     return jsonify(category_response), 200
 
 
@@ -234,14 +254,14 @@ def recibir_datos_categoria():
 
 @product_router.route("/category", methods=["GET"])
 def obtener_categorias():
-    # Obtener los talles de la base de datos
+    # Obtener las categorías de la base de datos
     db = Database()
     categories = db.get_all_records("size_categories")
-    print(categories)
+    print(f"Categorías encontradas: {categories}")
+    # Devolver array vacío si no hay datos, no un error
     if not categories:
-        return jsonify(
-            {"mensaje": "No se encontraron categorías", "status": "error"}
-        ), 404
+        print("No hay categorías en la base de datos, devolviendo array vacío")
+        return jsonify([]), 200
     return jsonify(categories), 200
 
 
@@ -652,6 +672,72 @@ def agregar_multiples_colores_a_producto(product_id):
     else:
         return jsonify(
             {"mensaje": "Error al agregar colores al producto", "status": "error"}
+        ), 500
+
+
+@product_router.route("/<int:product_id>/stock/<int:branch_id>", methods=["GET"])
+def get_product_stock(product_id, branch_id):
+    """
+    Obtiene el stock de un producto en una sucursal específica.
+    """
+    try:
+        db = Database()
+        result = db.get_product_stock_by_branch(product_id, branch_id)
+
+        if result.get("success"):
+            return jsonify(
+                {
+                    "success": True,
+                    "product_id": product_id,
+                    "branch_id": branch_id,
+                    "quantity": result.get("quantity", 0),
+                    "message": result.get("message"),
+                }
+            ), 200
+        else:
+            return jsonify(
+                {
+                    "success": False,
+                    "product_id": product_id,
+                    "branch_id": branch_id,
+                    "quantity": 0,
+                    "message": result.get("message"),
+                }
+            ), 404
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error al obtener stock: {str(e)}"}
+        ), 500
+
+
+@product_router.route("/stock/by-branch/<int:branch_id>", methods=["GET"])
+def get_all_stock_by_branch(branch_id):
+    """
+    Obtiene todo el stock de una sucursal específica.
+    """
+    try:
+        db = Database()
+        # Obtener todos los registros de stock para la sucursal
+        stock_records = db.get_all_records_by_clause(
+            "warehouse_stock", "branch_id = ?", branch_id
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "branch_id": branch_id,
+                "stock_records": stock_records,
+                "total_products": len(stock_records),
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify(
+            {
+                "success": False,
+                "message": f"Error al obtener stock de la sucursal: {str(e)}",
+            }
         ), 500
 
 

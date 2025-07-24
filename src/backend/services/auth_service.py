@@ -102,11 +102,12 @@ def authenticate_user(username, password, storage_id, ip_address=None, user_agen
         "fullname": user_record["fullname"],
         "role": user_role,
         "storage_id": storage_id,
-        "storage_name": storage_info["name"] if storage_info else "Sin sucursal",
+        "storage_name": storage_info.get("name") if storage_info else "Sin sucursal",
         "session_token": session_token,
         "session_id": session_result["rowid"],
     }
 
+    print(f"🔐 Datos de respuesta del login: {response_data}")
     return {"success": True, "message": "Login exitoso.", "session_data": response_data}
 
 

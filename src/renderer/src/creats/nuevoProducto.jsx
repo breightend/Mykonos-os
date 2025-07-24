@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { ArrowLeft, LoaderCircle, Save, Trash2, PackagePlus, Menu } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
+import { useSession } from '../contexts/SessionContext'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
 import BarcodeGenerator from '../componentes especificos/Barcode'
@@ -16,6 +17,15 @@ import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 import ColorSelect from '../components/ColorSelect'
 //TODO: colocar la condicion que si un color esta colocado en un producto no se puede eliminar, si no tiene ningun vinculo chau chau.
 export default function NuevoProducto() {
+  // Contexto de sesión para obtener el storage actual
+  const { getCurrentStorage, getCurrentUser } = useSession()
+  const currentStorage = getCurrentStorage()
+  const currentUser = getCurrentUser()
+
+  // Logging para debug
+  console.log('🏪 [NuevoProducto] Current Storage:', currentStorage)
+  console.log('👤 [NuevoProducto] Current User:', currentUser)
+
   // Estados para el formulario
   const [productName, setProductName] = useState('')
   const [tipo, setTipo] = useState('')
@@ -24,7 +34,7 @@ export default function NuevoProducto() {
   const [cost, setCost] = useState('')
   const [salePrice, setSalePrice] = useState('')
   const [comments, setComments] = useState('')
-  const [cantidad] = useState(0)
+  const [providerCode, setProviderCode] = useState('')
   const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
@@ -395,7 +405,7 @@ export default function NuevoProducto() {
     // Preparar datos del producto para el backend
     return {
       barcode: generatedBarcode,
-      provider_code: `PROV-${selectedProvider}`,
+      provider_code: providerCode,
       product_name: productName, // Changed from empty string to use productName state
       group_id: parseInt(tipo), // Usar el grupo seleccionado
       provider_id: parseInt(selectedProvider),
@@ -405,14 +415,17 @@ export default function NuevoProducto() {
       tax: 0, // Por defecto
       discount: 0, // Por defecto
       comments: comments || null,
-      user_id: 1, // Usuario por defecto por ahora
+      user_id: currentUser?.id || 1, // Usuario actual o por defecto
       images_ids: null, // Se actualizará automáticamente en el backend
       brand_id: brandId,
       creation_date: new Date().toISOString(),
       last_modified_date: new Date().toISOString(),
       size_ids: sizeIds,
       color_ids: colorIds,
-      product_image: imageToSend // Imagen en formato base64 limpio
+      product_image: imageToSend, // Imagen en formato base64 limpio
+      // Datos para el stock inicial
+      storage_id: currentStorage?.id || null, // Storage de la sesión actual
+      initial_quantity: cantidadTotal // Cantidad total para el stock inicial
     }
   }
 
@@ -428,6 +441,11 @@ export default function NuevoProducto() {
     if (!salePrice || parseFloat(salePrice) <= 0)
       newErrors.salePrice = 'El precio de venta debe ser mayor a 0'
     if (cantidadTotal <= 0) newErrors.cantidad = 'Debe agregar al menos una unidad'
+
+    // Validar que si hay una sucursal seleccionada, debe haber cantidad
+    if (currentStorage && cantidadTotal <= 0) {
+      newErrors.cantidad = 'Debe especificar la cantidad para la sucursal seleccionada'
+    }
 
     // Validar que todos los talles tengan colores con cantidad
     const hasInvalidTalles = talles.some((talle) => {
@@ -449,6 +467,7 @@ export default function NuevoProducto() {
     setCost('')
     setSalePrice('')
     setComments('')
+    setProviderCode('')
     setProductImage('')
     setTalles([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
     setCantidadTotal(0)
@@ -574,6 +593,24 @@ export default function NuevoProducto() {
 
       {/* Container principal con máximo ancho */}
       <div className="container mx-auto px-6 py-8">
+        {/* Información de la sesión actual */}
+        {currentStorage && (
+          <div className="alert alert-info mb-6">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">📍 Sucursal:</span>
+                <span>{currentStorage.name}</span>
+              </div>
+              <div className="divider divider-horizontal"></div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">👤 Usuario:</span>
+                <span>{currentUser?.fullname || currentUser?.username}</span>
+              </div>
+            </div>
+            <div className="text-sm opacity-75">El stock inicial se asignará a esta sucursal</div>
+          </div>
+        )}
+
         <form className="mx-auto max-w-6xl space-y-8">
           {/* Sección: Información Básica */}
           <div className="card bg-base-100 border-base-300 border shadow-xl">
@@ -613,7 +650,7 @@ export default function NuevoProducto() {
                 <div>
                   <label className="label">
                     <span className="label-text font-semibold">Imagen del producto</span>
-                    <span className="label-text-alt text-base-content/60">Opcional</span>
+                    <span className="label-text-alt text-base-content/60">(Opcional)</span>
                   </label>
 
                   {productImage && (
@@ -790,6 +827,22 @@ export default function NuevoProducto() {
                       </span>
                     </div>
                   )}
+                </div>
+
+                {/* Código del proveedor */}
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">Código del proveedor</span>
+                    <span className="label-text-alt text-base-content/60">(Opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="providerCode"
+                    placeholder="Código interno del proveedor"
+                    value={providerCode}
+                    onChange={(e) => setProviderCode(e.target.value)}
+                    className="input input-bordered focus:border-secondary w-full"
+                  />
                 </div>
               </div>
             </div>
@@ -1104,7 +1157,7 @@ export default function NuevoProducto() {
               <div>
                 <label className="label">
                   <span className="label-text font-semibold">Comentarios o notas</span>
-                  <span className="label-text-alt text-base-content/60">Opcional</span>
+                  <span className="label-text-alt text-base-content/60">(Opcional)</span>
                 </label>
                 <textarea
                   name="comments"

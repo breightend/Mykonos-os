@@ -1,4 +1,4 @@
-import { Ruler } from 'lucide-react'
+import { ChevronsUp, Plus, Ruler } from 'lucide-react'
 import {
   fetchCategorySize,
   postDataSize,
@@ -18,14 +18,14 @@ export default function ModalSize() {
   })
   const [category, setCategory] = useState([])
   const [sizes, setSizes] = useState([])
-  const [sizeXcategory, setSizeXcategory] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [, setSizeXcategory] = useState([])
+  const [, setLoading] = useState(false)
   const [mostrarAgregarCategoria, setMostrarAgregarCategoria] = useState(false)
   const [error, setError] = useState('')
 
   const handleMostrarAgregarCategoria = () => {
     setMostrarAgregarCategoria(!mostrarAgregarCategoria)
-    setError('') // Clear error when toggling category form
+    setError('')
   }
 
   const handleChange = (e) => {
@@ -34,15 +34,14 @@ export default function ModalSize() {
       ...formData,
       [name]: value
     })
-    setError('') // Clear error on input change
+    setError('')
   }
 
   const handleSubmitSize = async (e) => {
     e.preventDefault()
-    setError('') // Clear previous error
+    setError('')
     const { size_name, category_id } = formData
 
-    // Check if the size already exists for the selected category
     const sizeExists = sizes.some(
       (size) =>
         size.size_name.toLowerCase() === size_name.toLowerCase() &&
@@ -56,13 +55,20 @@ export default function ModalSize() {
 
     try {
       const response = await postDataSize(formData)
-      console.log(response)
+      console.log('Talle agregado:', response)
+
+      // Limpiar formulario
       setFormData({
+        ...formData,
         size_name: '',
         category_id: '',
         description: ''
       })
-      fetchSize()
+
+      // Refrescar la lista de talles
+      const updatedSizes = await fetchSize()
+      setSizes(updatedSizes)
+      console.log('Talles actualizados:', updatedSizes)
     } catch (error) {
       console.error('Error:', error)
       setError('Ocurrió un error al agregar el talle.')
@@ -86,13 +92,21 @@ export default function ModalSize() {
 
     try {
       const response = await postDataCategory(formData)
-      console.log(response)
+      console.log('Categoría agregada:', response)
+
+      // Limpiar formulario
       setFormData({
+        ...formData,
         category_name: '',
         permanent: 1
       })
-      fetchCategorySize()
-      setMostrarAgregarCategoria(false) // Hide the category form after successful submission
+
+      // Refrescar la lista de categorías
+      const updatedCategories = await fetchCategorySize()
+      setCategory(updatedCategories)
+      console.log('Categorías actualizadas:', updatedCategories)
+
+      setMostrarAgregarCategoria(false)
     } catch (error) {
       console.error('Error:', error)
       setError('Ocurrió un error al agregar la categoría.')
@@ -137,7 +151,7 @@ export default function ModalSize() {
             <button className="btn btn-sm btn-circle btn-ghost absolute top-2 right-2">✕</button>
           </form>
           <h3 className="mb-4 text-lg font-bold">Talles Existentes</h3>
-          <div className="border-base-300 mb-4 max-h-96 overflow-y-auto rounded-lg  border-2 p-2">
+          <div className="border-base-300 mb-4 max-h-96 overflow-y-auto rounded-lg border-2 p-2">
             <table className="table w-full">
               {category &&
                 category.map((cat) => (
@@ -240,35 +254,9 @@ export default function ModalSize() {
                 <h4 className="font-semibold">Agregar Categoría</h4>
                 <button className="btn btn-xs" onClick={handleMostrarAgregarCategoria}>
                   {mostrarAgregarCategoria ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 13l-7 7-7-7m14-6l-7 7-7-7"
-                      />
-                    </svg>
+                    <ChevronsUp className="h-4 w-4" />
                   ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
+                    <Plus className="h-4 w-4" />
                   )}
                 </button>
               </div>
@@ -287,7 +275,11 @@ export default function ModalSize() {
                       onChange={handleChange}
                     />
                   </div>
-                  <button className="btn btn-sm btn-primary" onClick={handleSubmitCategorySize}>
+                  <button
+                    className="btn btn-sm btn-primary"
+                    type="button"
+                    onClick={handleSubmitCategorySize}
+                  >
                     Agregar Categoría
                   </button>
                 </div>

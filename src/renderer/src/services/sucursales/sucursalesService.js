@@ -11,7 +11,6 @@ export async function fetchSucursales() {
     }
 }
 
-// Alias for fetchSucursales to maintain compatibility
 export const fetchStorages = fetchSucursales
 
 // Get sucursal by ID
