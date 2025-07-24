@@ -13,23 +13,25 @@ def get_all_storage():
         records = db.get_all_records("storage")
         print(f"🏪 Sucursales encontradas: {len(records) if records else 0}")
 
-        # Devolver en formato consistente
-        response = {
-            "status": "success",
-            "data": records if records else [],
-            "message": "Sucursales obtenidas exitosamente",
-        }
-        print(f"🏪 Enviando respuesta: {response}")
-        return jsonify(response), 200
+        # Asegurar que records es una lista
+        if records is None:
+            records = []
+
+        # Log detallado de los registros
+        print(f"🏪 Registros detallados: {records}")
+
+        # Devolver siempre un array, sin wrapper de respuesta para compatibilidad
+        print(f"🏪 Enviando {len(records)} sucursales")
+        return jsonify(records), 200
+
     except Exception as e:
         print(f"❌ Error en get_all_storage: {e}")
-        return jsonify(
-            {
-                "status": "error",
-                "data": [],
-                "message": f"Error al obtener sucursales: {str(e)}",
-            }
-        ), 500
+        import traceback
+
+        print(f"❌ Traceback: {traceback.format_exc()}")
+
+        # En caso de error, devolver array vacío
+        return jsonify([]), 200
 
 
 # Anda

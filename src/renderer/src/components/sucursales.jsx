@@ -115,12 +115,28 @@ function Sucursales() {
 
   const fetchData = async () => {
     try {
+      console.log('🔄 Iniciando fetchData...')
       const data = await fetchSucursales()
-      setSucursales(data)
-      setFilteredSucursales(data)
+      console.log('📊 Datos recibidos en fetchData:', data)
+      console.log('📊 Tipo de datos:', typeof data)
+      console.log('📊 Es array:', Array.isArray(data))
+
+      if (Array.isArray(data)) {
+        setSucursales(data)
+        setFilteredSucursales(data)
+        console.log('✅ Sucursales establecidas exitosamente:', data.length, 'elementos')
+      } else {
+        console.warn('⚠️ Los datos no son un array:', data)
+        setSucursales([])
+        setFilteredSucursales([])
+        toast.error('Los datos de sucursales tienen formato incorrecto')
+      }
     } catch (error) {
-      console.error('Error fetching data:', error)
-      toast.error('Error al cargar sucursales')
+      console.error('❌ Error fetching data:', error)
+      toast.error(`Error al cargar sucursales: ${error.message}`)
+      // Establecer arrays vacíos en caso de error
+      setSucursales([])
+      setFilteredSucursales([])
     }
   }
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import inventoryService from '../../services/inventory/inventoryService'
 import { useLocation } from 'wouter'
 import { ArrowLeft, Package, CheckSquare, Square, ArrowRight } from 'lucide-react'
-
+import { useSession } from '../../contexts/SessionContext'
 export default function MoveInventory() {
   const [storageList, setStorageList] = useState([]) // Lista de sucursales
   const [productsList, setProductsList] = useState([]) // Lista de productos
@@ -14,6 +14,10 @@ export default function MoveInventory() {
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [error, setError] = useState(null)
   const [step, setStep] = useState(1) // 1: Seleccionar origen, 2: Seleccionar productos, 3: Seleccionar destino
+
+  const { getCurrentStorage, getCurrentUser } = useSession()
+  const currentStorage = getCurrentStorage()
+  const currentUser = getCurrentUser()
 
   const handleDestinationChange = (event) => {
     setSelectedDestination(event.target.value)
@@ -141,7 +145,7 @@ export default function MoveInventory() {
 
       <p className="mb-4">Selecciona productos de una sucursal y muévelos a otra sucursal.</p>
 
-      {/* Indicador de pasos */}
+
       <div className="mb-6">
         <ul className="steps w-full">
           <li className={`step ${step >= 1 ? 'step-primary' : ''}`}>Sucursal Origen</li>

@@ -3,6 +3,7 @@ import { useLocation } from 'wouter'
 import { ArrowLeft, LoaderCircle, Save, Trash2, PackagePlus, Menu } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from '../contexts/SessionContext'
+import { useSettings } from '../contexts/settingsContext'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
 import BarcodeGenerator from '../componentes especificos/Barcode'
@@ -19,6 +20,7 @@ import ColorSelect from '../components/ColorSelect'
 export default function NuevoProducto() {
   // Contexto de sesión para obtener el storage actual
   const { getCurrentStorage, getCurrentUser } = useSession()
+  const { calculateSalePrice, settings } = useSettings()
   const currentStorage = getCurrentStorage()
   const currentUser = getCurrentUser()
 
@@ -31,6 +33,7 @@ export default function NuevoProducto() {
   const [salePrice, setSalePrice] = useState('')
   const [comments, setComments] = useState('')
   const [providerCode, setProviderCode] = useState('')
+  const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
   const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
@@ -84,6 +87,11 @@ export default function NuevoProducto() {
     }
     fetchData()
   }, [])
+
+  // Sincronizar el estado local con la configuración global
+  useEffect(() => {
+    setUseAutoCalculation(settings.autoCalculatePrice)
+  }, [settings.autoCalculatePrice])
 
   useEffect(() => {
     const fetchBrandsForProvider = async () => {
@@ -463,6 +471,7 @@ export default function NuevoProducto() {
     setComments('')
     setProviderCode('')
     setProductImage('')
+    setUseAutoCalculation(settings.autoCalculatePrice) // Resetear al valor por defecto
     setTalles([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
     setCantidadTotal(0)
     setErrors({})
@@ -852,6 +861,48 @@ export default function NuevoProducto() {
                 Precios y Costos
               </h2>
 
+              {/* Control de cálculo automático */}
+              {settings.autoCalculatePrice && (
+                <div className="alert alert-info mb-6">
+                  <div className="flex w-full items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-info text-2xl">🧮</span>
+                      <div>
+                        <div className="font-semibold">Cálculo Automático de Precios</div>
+                        <div className="text-sm opacity-75">
+                          Configuración actual:{' '}
+                          {settings.markupType === 'percentage'
+                            ? `${settings.priceMarkupPercentage}% de ganancia`
+                            : `$${settings.priceMarkupPercentage} de ganancia fija`}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="form-control">
+                      <label className="label cursor-pointer gap-3">
+                        <span className="label-text font-medium">
+                          {useAutoCalculation ? 'Automático' : 'Manual'}
+                        </span>
+                        <input
+                          type="checkbox"
+                          className="toggle toggle-primary"
+                          checked={useAutoCalculation}
+                          onChange={(e) => {
+                            setUseAutoCalculation(e.target.checked)
+                            if (!e.target.checked) {
+                              setSalePrice('')
+                            }
+                            else if (e.target.checked && cost && parseFloat(cost) > 0) {
+                              const calculatedPrice = calculateSalePrice(cost)
+                              setSalePrice(calculatedPrice)
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Costo */}
                 <div>
@@ -866,7 +917,21 @@ export default function NuevoProducto() {
                       step="0.01"
                       placeholder="0.00"
                       value={cost}
-                      onChange={(e) => setCost(e.target.value)}
+                      onChange={(e) => {
+                        const newCost = e.target.value
+                        setCost(newCost)
+
+                        // Calcular precio de venta automáticamente solo si está habilitado globalmente Y el usuario lo quiere
+                        if (
+                          settings.autoCalculatePrice &&
+                          useAutoCalculation &&
+                          newCost &&
+                          parseFloat(newCost) > 0
+                        ) {
+                          const calculatedPrice = calculateSalePrice(newCost)
+                          setSalePrice(calculatedPrice)
+                        }
+                      }}
                       className={`input input-bordered join-item focus:border-accent flex-1 ${
                         errors.cost ? 'input-error' : ''
                       }`}
@@ -885,18 +950,42 @@ export default function NuevoProducto() {
                   <label className="label">
                     <span className="label-text font-semibold">Precio de venta</span>
                     <span className="label-text-alt text-error">*</span>
+                    {settings.autoCalculatePrice && useAutoCalculation && (
+                      <span className="label-text-alt text-success text-xs">
+                        📊 Cálculo automático activo
+                      </span>
+                    )}
+                    {settings.autoCalculatePrice && !useAutoCalculation && (
+                      <span className="label-text-alt text-warning text-xs">
+                        ✏️ Modo manual activo
+                      </span>
+                    )}
                   </label>
                   <div className="join w-full">
                     <span className="join-item btn btn-outline btn-disabled">$</span>
                     <input
                       type="number"
                       step="0.01"
-                      placeholder="0.00"
+                      placeholder={
+                        settings.autoCalculatePrice && useAutoCalculation
+                          ? 'Se calculará automáticamente'
+                          : '0.00'
+                      }
                       value={salePrice}
                       onChange={(e) => setSalePrice(e.target.value)}
                       className={`input input-bordered join-item focus:border-accent flex-1 ${
                         errors.salePrice ? 'input-error' : ''
+                      } ${
+                        settings.autoCalculatePrice && useAutoCalculation && cost
+                          ? 'bg-success/10 border-success/30'
+                          : ''
                       }`}
+                      disabled={
+                        settings.autoCalculatePrice &&
+                        useAutoCalculation &&
+                        cost &&
+                        parseFloat(cost) > 0
+                      }
                       required
                     />
                   </div>
@@ -905,6 +994,17 @@ export default function NuevoProducto() {
                       <span className="label-text-alt text-error">{errors.salePrice}</span>
                     </div>
                   )}
+                  {settings.autoCalculatePrice && useAutoCalculation && (
+                    <div className="label">
+                      <span className="label-text-alt text-info text-xs">
+                        💡{' '}
+                        {settings.markupType === 'percentage'
+                          ? `Ganancia: ${settings.priceMarkupPercentage}%`
+                          : `Ganancia fija: $${settings.priceMarkupPercentage}`}
+                      </span>
+                    </div>
+                  )}
+
                   {cost && salePrice && (
                     <div className="label">
                       <span className="label-text-alt text-info">
