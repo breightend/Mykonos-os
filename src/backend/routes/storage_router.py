@@ -7,9 +7,29 @@ storage_router = Blueprint("storage_router", __name__)
 # Anda
 @storage_router.route("/", methods=["GET"])
 def get_all_storage():
-    db = Database()
-    records = db.get_all_records("storage")
-    return jsonify(records), 200
+    try:
+        print("🏪 Petición GET a /api/storage/")
+        db = Database()
+        records = db.get_all_records("storage")
+        print(f"🏪 Sucursales encontradas: {len(records) if records else 0}")
+
+        # Devolver en formato consistente
+        response = {
+            "status": "success",
+            "data": records if records else [],
+            "message": "Sucursales obtenidas exitosamente",
+        }
+        print(f"🏪 Enviando respuesta: {response}")
+        return jsonify(response), 200
+    except Exception as e:
+        print(f"❌ Error en get_all_storage: {e}")
+        return jsonify(
+            {
+                "status": "error",
+                "data": [],
+                "message": f"Error al obtener sucursales: {str(e)}",
+            }
+        ), 500
 
 
 # Anda
@@ -112,7 +132,8 @@ def delete_storage(storage_id):
     else:
         return jsonify({"mensaje": result["message"], "status": "error"}), 500
 
-#obtiene empleados de una sucursal
+
+# obtiene empleados de una sucursal
 @storage_router.route("/<storage_id>/employees", methods=["GET"])
 def get_storage_employees(storage_id):
     db = Database()

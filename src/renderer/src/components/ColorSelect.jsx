@@ -16,6 +16,16 @@ export default function ColorSelect({
   // Encontrar el color seleccionado
   const selectedColor = colors.find((color) => color.color_name === value)
 
+  // Debug logs
+  useEffect(() => {
+    console.log('🎨 ColorSelect Props:', {
+      colors: colors.length,
+      value,
+      selectedColor,
+      colorsData: colors.slice(0, 3) // Mostrar solo los primeros 3 para no saturar el log
+    })
+  }, [colors, value, selectedColor])
+
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {

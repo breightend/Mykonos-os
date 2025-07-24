@@ -135,13 +135,13 @@ export default function ModalColor() {
 
             <div className="modal-action">
               <button
-                type="submit"
+                type="button"
                 className="btn btn-neutral"
                 onClick={() => document.getElementById('colorModal').close()}
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn btn-success" onClick={handleSubmit}>
+              <button type="button" className="btn btn-success" onClick={handleSubmit}>
                 Agregar
               </button>
             </div>

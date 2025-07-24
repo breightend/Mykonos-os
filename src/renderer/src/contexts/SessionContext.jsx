@@ -41,6 +41,9 @@ export const SessionProvider = ({ children }) => {
       const data = await response.json()
 
       if (data.success) {
+        console.log('🔐 Validación de token exitosa:', data.session_data)
+        console.log('🔐 Storage ID en validación:', data.session_data.storage_id)
+        console.log('🔐 Storage Name en validación:', data.session_data.storage_name)
         setSession(data.session_data)
         setError(null)
       } else {
@@ -83,6 +86,8 @@ export const SessionProvider = ({ children }) => {
 
         // Actualizar estado de sesión
         console.log('🔐 Datos de sesión recibidos:', data.session_data)
+        console.log('🔐 Storage ID recibido:', data.session_data.storage_id)
+        console.log('🔐 Storage Name recibido:', data.session_data.storage_name)
         setSession(data.session_data)
         setError(null)
 
@@ -175,6 +180,49 @@ export const SessionProvider = ({ children }) => {
       : null
   }
 
+  const changeBranchStorage = async (newStorageId) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      console.log('🔄 Cambiando sucursal a ID:', newStorageId)
+
+      const sessionToken = localStorage.getItem('session_token')
+      if (!sessionToken) {
+        throw new Error('No hay token de sesión')
+      }
+
+      const response = await fetch('http://localhost:5000/api/auth/change-storage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          session_token: sessionToken,
+          new_storage_id: newStorageId
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        console.log('✅ Sucursal cambiada exitosamente:', data.session_data)
+        setSession(data.session_data)
+        setError(null)
+        return { success: true, message: data.message }
+      } else {
+        setError(data.message)
+        return { success: false, message: data.message }
+      }
+    } catch (err) {
+      console.error('❌ Error cambiando sucursal:', err)
+      setError('Error de conexión')
+      return { success: false, message: 'Error de conexión' }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const value = {
     session,
     loading,
@@ -185,7 +233,8 @@ export const SessionProvider = ({ children }) => {
     isAdmin,
     getCurrentStorage,
     getCurrentUser,
-    checkExistingSession
+    checkExistingSession,
+    changeBranchStorage
   }
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

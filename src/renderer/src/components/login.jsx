@@ -72,7 +72,14 @@ export default function Login() {
 
     try {
       const storageId = storages && storages.length > 0 ? parseInt(formData.storageId) : null
+      console.log('🔐 Datos de login:', {
+        username: formData.username,
+        storageId,
+        storagesAvailable: storages?.length || 0
+      })
+
       const result = await login(formData.username, formData.password, storageId)
+      console.log('🔐 Resultado de login:', result)
 
       if (result.success) {
         setLocation('/home')

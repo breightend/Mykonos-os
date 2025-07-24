@@ -36,7 +36,12 @@ def login():
         # Verificar si hay sucursales disponibles
         db = Database()
         available_storages = db.get_all_records_by_clause(
-            "storage", "status = ?", "Activo"
+            "storage", "status = ?", "Active"
+        )
+
+        print(f"🔐 Login request - Usuario: {username}, Storage ID: {storage_id}")
+        print(
+            f"🔐 Sucursales disponibles: {len(available_storages) if available_storages else 0}"
         )
 
         if available_storages and len(available_storages) > 0:
@@ -177,3 +182,85 @@ def get_user_active_sessions(user_id):
     except Exception as e:
         print(f"Error obteniendo sesiones del usuario {user_id}: {e}")
         return jsonify({"success": False, "message": "Error al obtener sesiones."}), 500
+
+
+@auth_bp.route("/change-storage", methods=["POST"])
+def change_storage():
+    """
+    Cambia la sucursal activa del usuario en la sesión actual.
+
+    Returns:
+        JSON con mensaje de éxito o error y los nuevos datos de sesión.
+    """
+    try:
+        data = request.get_json()
+        session_token = data.get("session_token")
+        new_storage_id = data.get("new_storage_id")
+
+        if not session_token:
+            return jsonify(
+                {"success": False, "message": "Token de sesión requerido."}
+            ), 400
+
+        print(
+            f"🔄 Solicitud de cambio de sucursal - Token: {session_token[:10]}..., Nueva sucursal: {new_storage_id}"
+        )
+
+        from services.auth_service import change_user_storage
+
+        change_response = change_user_storage(session_token, new_storage_id)
+
+        if change_response["success"]:
+            return jsonify(change_response), 200
+        else:
+            return jsonify(change_response), 400
+
+    except Exception as e:
+        print(f"Error en change_storage: {e}")
+        return jsonify(
+            {"success": False, "message": "Error interno del servidor."}
+        ), 500
+
+
+@auth_bp.route("/user-storages", methods=["POST"])
+def get_user_storages():
+    """
+    Obtiene las sucursales a las que el usuario actual tiene acceso.
+
+    Returns:
+        JSON con la lista de sucursales permitidas.
+    """
+    try:
+        data = request.get_json()
+        session_token = data.get("session_token")
+
+        if not session_token:
+            return jsonify(
+                {"success": False, "message": "Token de sesión requerido."}
+            ), 400
+
+        # Validar sesión
+        validation_response = validate_session(session_token)
+        if not validation_response["success"]:
+            return jsonify(validation_response), 401
+
+        user_id = validation_response["session_data"]["user_id"]
+
+        # Obtener sucursales permitidas
+        from services.auth_service import get_user_allowed_storages
+
+        allowed_storages = get_user_allowed_storages(user_id)
+
+        return jsonify(
+            {
+                "success": True,
+                "storages": allowed_storages,
+                "message": "Sucursales obtenidas exitosamente.",
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"Error en get_user_storages: {e}")
+        return jsonify(
+            {"success": False, "message": "Error interno del servidor."}
+        ), 500

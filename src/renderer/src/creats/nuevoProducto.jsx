@@ -22,10 +22,6 @@ export default function NuevoProducto() {
   const currentStorage = getCurrentStorage()
   const currentUser = getCurrentUser()
 
-  // Logging para debug
-  console.log('🏪 [NuevoProducto] Current Storage:', currentStorage)
-  console.log('👤 [NuevoProducto] Current User:', currentUser)
-
   // Estados para el formulario
   const [productName, setProductName] = useState('')
   const [tipo, setTipo] = useState('')
@@ -62,6 +58,7 @@ export default function NuevoProducto() {
         setTallesBD(sizesResponse)
 
         const colorsResponse = await fetchColor()
+        console.log('🎨 Colores cargados desde la API:', colorsResponse)
         setColors(colorsResponse)
 
         const providerResponse = await fetchProvider()
@@ -76,6 +73,7 @@ export default function NuevoProducto() {
             coloresDisponibles[talle.size_name] = colorsResponse.map((color) => color.color_name)
           })
           setColoresDisponiblesPorTalle(coloresDisponibles)
+          console.log('🎨 Colores disponibles por talle:', coloresDisponibles)
         }
       } catch (error) {
         console.error('Error Fetching data: ', error)
@@ -354,14 +352,11 @@ export default function NuevoProducto() {
       byteArrays.push(byteArray)
     }
 
-    // Crear blob a partir de matrices de bytes
     const blob = new Blob(byteArrays, { type: contentType })
 
-    // Crear y devolver URL del objeto
     return URL.createObjectURL(blob)
   }
 
-  // Función para preparar los datos del producto
   const prepareProductData = () => {
     // Obtener IDs de talles y colores únicos
     const uniqueSizes = [...new Set(talles.map((t) => t.talle).filter(Boolean))]
@@ -402,7 +397,6 @@ export default function NuevoProducto() {
       }
     }
 
-    // Preparar datos del producto para el backend
     return {
       barcode: generatedBarcode,
       provider_code: providerCode,
@@ -415,16 +409,16 @@ export default function NuevoProducto() {
       tax: 0, // Por defecto
       discount: 0, // Por defecto
       comments: comments || null,
-      user_id: currentUser?.id || 1, // Usuario actual o por defecto
-      images_ids: null, // Se actualizará automáticamente en el backend
+      user_id: currentUser?.id || 1,
+      images_ids: null,
       brand_id: brandId,
       creation_date: new Date().toISOString(),
       last_modified_date: new Date().toISOString(),
       size_ids: sizeIds,
       color_ids: colorIds,
-      product_image: imageToSend, // Imagen en formato base64 limpio
+      product_image: imageToSend,
       // Datos para el stock inicial
-      storage_id: currentStorage?.id || null, // Storage de la sesión actual
+      storage_id: currentStorage?.id || null,
       initial_quantity: cantidadTotal // Cantidad total para el stock inicial
     }
   }
@@ -1066,14 +1060,16 @@ export default function NuevoProducto() {
                                       : []
                                   }
                                   value={color.color || ''}
-                                  onChange={(selectedColorName) =>
+                                  onChange={(selectedColorName) => {
+                                    console.log('🎨 Color seleccionado:', selectedColorName)
+                                    console.log('🎨 Color actual en state:', color.color)
                                     handleColorSelect(
                                       talleIndex,
                                       colorIndex,
                                       'color',
                                       selectedColorName
                                     )
-                                  }
+                                  }}
                                   className="w-full"
                                   placeholder={
                                     coloresDisponiblesPorTalle[talle.talle] !== undefined

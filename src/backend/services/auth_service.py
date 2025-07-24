@@ -57,7 +57,7 @@ def authenticate_user(username, password, storage_id, ip_address=None, user_agen
             return {"success": False, "message": "Sucursal no encontrada."}
 
         storage_info = storage_response["record"]
-        if storage_info.get("status") != "Activo":
+        if storage_info.get("status") != "Active":
             return {"success": False, "message": "Sucursal inactiva."}
 
         # Verificar que el usuario tiene acceso a esta sucursal (solo para empleados)
@@ -107,7 +107,15 @@ def authenticate_user(username, password, storage_id, ip_address=None, user_agen
         "session_id": session_result["rowid"],
     }
 
-    print(f"🔐 Datos de respuesta del login: {response_data}")
+    print(f"🔐 Datos de respuesta del login:")
+    print(f"   - User ID: {user_id}")
+    print(f"   - Username: {user_record['username']}")
+    print(f"   - Role: {user_role}")
+    print(f"   - Storage ID: {storage_id}")
+    print(
+        f"   - Storage Name: {storage_info.get('name') if storage_info else 'Sin sucursal'}"
+    )
+    print(f"🔐 Response completa: {response_data}")
     return {"success": True, "message": "Login exitoso.", "session_data": response_data}
 
 
@@ -234,4 +242,151 @@ def get_user_sessions(user_id):
         return sessions if sessions else []
     except Exception as e:
         print(f"Error obteniendo sesiones del usuario {user_id}: {e}")
+        return []
+
+
+def change_user_storage(session_token, new_storage_id):
+    """
+    Cambia la sucursal activa de una sesión existente.
+
+    Args:
+        session_token (str): Token de sesión válido.
+        new_storage_id (int): ID de la nueva sucursal (puede ser None).
+
+    Returns:
+        dict: {'success': bool, 'message': str, 'session_data': dict (si éxito)}
+    """
+    try:
+        print(f"🔄 Iniciando cambio de sucursal para token: {session_token[:10]}...")
+
+        # Validar sesión actual
+        session_validation = validate_session(session_token)
+        if not session_validation["success"]:
+            return {"success": False, "message": "Sesión inválida o expirada."}
+
+        current_session_data = session_validation["session_data"]
+        user_id = current_session_data["user_id"]
+        user_role = current_session_data["role"]
+
+        print(
+            f"🔄 Usuario: {user_id}, Rol: {user_role}, Nueva sucursal: {new_storage_id}"
+        )
+
+        # Validar nueva sucursal si se proporcionó
+        storage_info = None
+        if new_storage_id is not None:
+            storage_response = db.get_record_by_id("storage", new_storage_id)
+            if not storage_response["success"] or not storage_response["record"]:
+                return {"success": False, "message": "Sucursal no encontrada."}
+
+            storage_info = storage_response["record"]
+            if storage_info.get("status") != "Active":
+                return {"success": False, "message": "Sucursal inactiva."}
+
+            # Verificar permisos del usuario sobre la sucursal (solo para empleados)
+            if user_role == "employee":
+                has_access = db.check_user_storage_relationship_exists(
+                    user_id, new_storage_id
+                )
+                if not has_access:
+                    return {
+                        "success": False,
+                        "message": "No tiene acceso a esta sucursal.",
+                    }
+
+        # Actualizar la sesión en la base de datos
+        session_response = db.get_record_by_clause(
+            "sessions", "session_token=? AND is_active=1", session_token
+        )
+
+        if not session_response["success"] or not session_response["record"]:
+            return {"success": False, "message": "Sesión no encontrada."}
+
+        session_record = session_response["record"]
+        session_id = session_record["id"]
+
+        # Actualizar storage_id en la sesión
+        update_result = db.execute_query(
+            "UPDATE sessions SET storage_id = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?",
+            (new_storage_id, session_id),
+        )
+
+        if not update_result:
+            return {"success": False, "message": "Error al actualizar la sesión."}
+
+        # Obtener datos del usuario para la respuesta
+        user_response = db.get_record_by_id("users", user_id)
+        if not user_response["success"]:
+            return {"success": False, "message": "Usuario no encontrado."}
+
+        user = user_response["record"]
+
+        # Preparar datos de respuesta actualizados
+        response_data = {
+            "user_id": user_id,
+            "username": user["username"],
+            "fullname": user["fullname"],
+            "role": user_role,
+            "storage_id": new_storage_id,
+            "storage_name": storage_info.get("name")
+            if storage_info
+            else "Sin sucursal",
+            "session_token": session_token,
+            "session_id": session_id,
+        }
+
+        print(f"✅ Sucursal cambiada exitosamente:")
+        print(f"   - Usuario: {user['username']}")
+        print(
+            f"   - Nueva sucursal: {storage_info.get('name') if storage_info else 'Sin sucursal'}"
+        )
+        print(f"   - Storage ID: {new_storage_id}")
+
+        return {
+            "success": True,
+            "message": "Sucursal cambiada exitosamente.",
+            "session_data": response_data,
+        }
+
+    except Exception as e:
+        print(f"❌ Error en change_user_storage: {e}")
+        return {"success": False, "message": "Error interno del servidor."}
+
+
+def get_user_allowed_storages(user_id):
+    """
+    Obtiene las sucursales a las que un usuario tiene acceso.
+
+    Args:
+        user_id (int): ID del usuario.
+
+    Returns:
+        list: Lista de sucursales con acceso.
+    """
+    try:
+        # Obtener información del usuario
+        user_response = db.get_record_by_id("users", user_id)
+        if not user_response["success"] or not user_response["record"]:
+            return []
+
+        user = user_response["record"]
+        user_role = user.get("role", "employee")
+
+        if user_role == "administrator":
+            # Los administradores tienen acceso a todas las sucursales activas
+            storages = db.get_all_records_by_clause("storage", "status = ?", "Active")
+            return storages if storages else []
+        else:
+            # Los empleados solo tienen acceso a sus sucursales asignadas
+            # Usando la tabla de relaciones usuario-sucursal
+            query = """
+                SELECT s.* FROM storage s
+                INNER JOIN user_storage us ON s.id = us.storage_id
+                WHERE us.user_id = ? AND s.status = 'Active'
+            """
+            storages = db.execute_query(query, (user_id,))
+            return storages if storages else []
+
+    except Exception as e:
+        print(f"Error obteniendo sucursales permitidas para usuario {user_id}: {e}")
         return []

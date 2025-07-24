@@ -6,9 +6,12 @@ import Navbar from '../../componentes especificos/navbar'
 import ProductsFamily from '../../modals/modalsInventory/productsFamily'
 import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailModal'
 import { inventoryService } from '../../services/inventory/inventoryService'
+import { fetchSucursales } from '../../services/sucursales/sucursalesService'
+import { useSession } from '../../contexts/SessionContext'
 
 export default function Inventario() {
   const [, setLocation] = useLocation()
+  const { getCurrentStorage } = useSession()
   const [selectedRow, setSelectedRow] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editedData, setEditedData] = useState({})
@@ -27,7 +30,9 @@ export default function Inventario() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Nueva función para cargar el resumen de productos
+  // Obtener información de la sucursal actual
+  const currentStorage = getCurrentStorage()
+
   const loadInventoryData = useCallback(async (storageId = null) => {
     try {
       setLoading(true)
@@ -59,23 +64,36 @@ export default function Inventario() {
     try {
       setLoading(true)
       setError(null)
-      console.log('🏁 Iniciando carga de datos iniciales...')
+
+      // Obtener información de la sucursal actual del usuario
+      const currentStorage = getCurrentStorage()
+      console.log('🏪 Sucursal actual del usuario:', currentStorage)
 
       // Primero cargar las sucursales
       console.log('🏪 Cargando sucursales...')
-      const storagesResponse = await inventoryService.getStorageList()
+      const storagesResponse = await fetchSucursales()
+      console.log('✅ Respuesta de sucursales:', storagesResponse)
 
       if (!storagesResponse || storagesResponse.status !== 'success') {
         throw new Error('No se pudieron cargar las sucursales - respuesta no exitosa')
       }
-
       const storageArray = Array.isArray(storagesResponse.data) ? storagesResponse.data : []
       setStorageList(storageArray)
       console.log('✅ Sucursales cargadas:', storageArray.length, 'sucursales')
 
+      // Establecer la sucursal por defecto basada en la sesión del usuario
+      if (currentStorage?.id) {
+        console.log('🏪 Estableciendo sucursal por defecto:', currentStorage.id)
+        setSelectedStorage(currentStorage.id.toString())
+      } else {
+        console.log('🏪 No hay sucursal asignada, mostrando todas')
+        setSelectedStorage('')
+      }
+
       // Luego cargar el inventario
       console.log('📦 Cargando inventario inicial...')
-      await loadInventoryData()
+      const initialStorageId = currentStorage?.id || null
+      await loadInventoryData(initialStorageId)
     } catch (err) {
       const errorMessage = err.message || 'Error desconocido al cargar datos iniciales'
       setError(errorMessage)
@@ -93,7 +111,7 @@ export default function Inventario() {
     } finally {
       setLoading(false)
     }
-  }, [loadInventoryData])
+  }, [loadInventoryData, getCurrentStorage])
 
   useEffect(() => {
     loadInitialData()
@@ -174,7 +192,25 @@ export default function Inventario() {
       <MenuVertical currentPath="/inventario" />
       <Navbar />
       <div className="ml-20 flex-1">
-        <h2 className="text-warning mb-6 text-2xl font-bold">Inventario</h2>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-warning text-2xl font-bold">Inventario</h2>
+            {selectedStorage ? (
+              <p className="mt-1 text-sm text-gray-600">
+                {selectedStorage === currentStorage?.id?.toString()
+                  ? `🏢 Mostrando productos de: ${currentStorage?.name} (Mi sucursal)`
+                  : `🏪 Mostrando productos de: ${
+                      storageList.find((s) => s.id.toString() === selectedStorage)?.name ||
+                      'Sucursal desconocida'
+                    }`}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-gray-600">
+                🌍 Mostrando productos de todas las sucursales
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Mensaje de error */}
         {error && (
@@ -189,6 +225,21 @@ export default function Inventario() {
                 }}
               >
                 Reintentar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Info sobre la carga de sucursales */}
+        {storageList.length === 0 && !loading && !error && (
+          <div className="alert alert-warning mb-4">
+            <div className="flex items-center justify-between">
+              <span>⚠️ No se pudieron cargar las sucursales. Mostrando todos los productos.</span>
+              <button
+                className="btn btn-sm btn-outline btn-warning"
+                onClick={() => loadInitialData()}
+              >
+                Recargar sucursales
               </button>
             </div>
           </div>
@@ -249,19 +300,29 @@ export default function Inventario() {
           {/* Filtros y búsqueda */}
           <div className="flex items-center gap-4">
             {/* Selector de sucursal */}
-            <select
-              className="select select-bordered select-warning"
-              value={selectedStorage}
-              onChange={handleStorageChange}
-            >
-              <option value="">Todas las sucursales</option>
-              {storageList &&
-                storageList.map((storage) => (
-                  <option key={storage.id} value={storage.id}>
-                    {storage.name}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Sucursal:</span>
+              <select
+                className="select select-bordered select-warning min-w-48"
+                value={selectedStorage}
+                onChange={handleStorageChange}
+              >
+                <option value="">🌍 Todas las sucursales</option>
+                {currentStorage && (
+                  <option value={currentStorage.id} className="font-semibold">
+                    🏢 {currentStorage.name} (Mi sucursal)
                   </option>
-                ))}
-            </select>
+                )}
+                {storageList &&
+                  storageList
+                    .filter((storage) => storage.id !== currentStorage?.id)
+                    .map((storage) => (
+                      <option key={storage.id} value={storage.id}>
+                        🏪 {storage.name}
+                      </option>
+                    ))}
+              </select>
+            </div>
 
             {/* Barra de búsqueda */}
             <label className="input input-bordered input-warning flex items-center gap-2">

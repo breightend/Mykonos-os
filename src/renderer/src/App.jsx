@@ -25,6 +25,7 @@ import CreateUser from './creats/createUser'
 import InfoProducto from './components/inventory/infoInventory'
 import Estadisticas from './components/stadistics/estadisticas'
 import MoveInventory from './components/Inventory/moveInventory'
+import TestColorPage from './test/TestColorPage'
 
 function App() {
   return (
@@ -54,6 +55,11 @@ function App() {
         <Route path="/nuevoProducto">
           <ProtectedRoute>
             <NuevoProducto />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/test-colors">
+          <ProtectedRoute>
+            <TestColorPage />
           </ProtectedRoute>
         </Route>
         <Route path="/usuario">

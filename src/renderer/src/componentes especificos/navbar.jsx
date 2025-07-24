@@ -1,5 +1,5 @@
 import { useSession } from '../contexts/SessionContext'
-import { Home, Building2, MapPin } from 'lucide-react'
+import { Building2, MapPin } from 'lucide-react'
 
 export default function Navbar() {
   const { getCurrentStorage } = useSession()
@@ -17,7 +17,7 @@ export default function Navbar() {
           <div className="navbar-start">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-primary text-2xl font-bold">Mykonos OS</h1>
+                <h1 className="text-primary text-3xl font-bold">Mykonos OS</h1>
                 <p className="text-base-content/70 text-sm">Sistema de Gestión</p>
               </div>
             </div>

@@ -3,10 +3,15 @@ import axios from 'axios'
 // Get all sucursales
 export async function fetchSucursales() {
     try {
+        console.log('🌐 Intentando fetch a: http://localhost:5000/api/storage/')
         const response = await axios.get('http://localhost:5000/api/storage/')
+        console.log('✅ Respuesta recibida:', response)
+        console.log('📊 Datos de sucursales:', response.data)
         return response.data
     } catch (error) {
-        console.error('Error fetching sucursales:', error)
+        console.error('❌ Error fetching sucursales:', error)
+        console.error('❌ Error response:', error.response?.data)
+        console.error('❌ Error status:', error.response?.status)
         throw error
     }
 }
