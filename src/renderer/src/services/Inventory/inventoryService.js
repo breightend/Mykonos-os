@@ -157,6 +157,75 @@ export const inventoryService = {
             })
             throw error
         }
+    },
+
+    /**
+     * Crea un nuevo movimiento de inventario entre sucursales
+     * @param {number} fromStorageId - ID de la sucursal origen
+     * @param {number} toStorageId - ID de la sucursal destino
+     * @param {Array} products - Array de productos con {id, quantity}
+     * @returns {Promise} Resultado del movimiento
+     */
+    async createMovement(fromStorageId, toStorageId, products) {
+        try {
+            const response = await axios.post(`${API_URL}/movements`, {
+                from_storage_id: fromStorageId,
+                to_storage_id: toStorageId,
+                products: products
+            })
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al crear movimiento:', error)
+            throw error
+        }
+    },
+
+    /**
+     * Obtiene envíos pendientes para una sucursal
+     * @param {number} storageId - ID de la sucursal
+     * @returns {Promise} Lista de envíos pendientes
+     */
+    async getPendingShipments(storageId) {
+        try {
+            const response = await axios.get(`${API_URL}/pending-shipments/${storageId}`)
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al obtener envíos pendientes:', error)
+            throw error
+        }
+    },
+
+    /**
+     * Actualiza el estado de un envío
+     * @param {number} shipmentId - ID del envío
+     * @param {string} status - Nuevo estado ('recibido', 'no_recibido')
+     * @returns {Promise} Resultado de la actualización
+     */
+    async updateShipmentStatus(shipmentId, status) {
+        try {
+            const response = await axios.put(`${API_URL}/shipments/${shipmentId}/status`, {
+                status: status
+            })
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al actualizar estado del envío:', error)
+            throw error
+        }
+    },
+
+    /**
+     * Obtiene envíos realizados desde una sucursal
+     * @param {number} storageId - ID de la sucursal
+     * @returns {Promise} Lista de envíos realizados
+     */
+    async getSentShipments(storageId) {
+        try {
+            const response = await axios.get(`${API_URL}/sent-shipments/${storageId}`)
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al obtener envíos realizados:', error)
+            throw error
+        }
     }
 }
 

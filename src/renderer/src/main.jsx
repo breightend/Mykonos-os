@@ -7,7 +7,6 @@ import { ThemeProvider } from './contexts/themeContext'
 import { SettingsProvider } from './contexts/settingsContext'
 import { SellProvider } from './contexts/sellContext'
 
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>

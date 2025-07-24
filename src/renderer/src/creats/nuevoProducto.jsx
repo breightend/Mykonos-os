@@ -598,7 +598,7 @@ export default function NuevoProducto() {
       <div className="container mx-auto px-6 py-8">
         {/* Información de la sesión actual */}
         {currentStorage && (
-          <div className="alert alert-info mb-6">
+          <div className="alert bg-accent mb-6">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="font-semibold">📍 Sucursal:</span>
@@ -609,6 +609,7 @@ export default function NuevoProducto() {
                 <span className="font-semibold">👤 Usuario:</span>
                 <span>{currentUser?.fullname || currentUser?.username}</span>
               </div>
+              <div className="divider divider-horizontal"></div>
             </div>
             <div className="text-sm opacity-75">El stock inicial se asignará a esta sucursal</div>
           </div>
@@ -863,7 +864,7 @@ export default function NuevoProducto() {
 
               {/* Control de cálculo automático */}
               {settings.autoCalculatePrice && (
-                <div className="alert alert-info mb-6">
+                <div className="alert bg-accent mb-6">
                   <div className="flex w-full items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-info text-2xl">🧮</span>
@@ -884,14 +885,13 @@ export default function NuevoProducto() {
                         </span>
                         <input
                           type="checkbox"
-                          className="toggle toggle-primary"
+                          className="toggle toggle-secondary"
                           checked={useAutoCalculation}
                           onChange={(e) => {
                             setUseAutoCalculation(e.target.checked)
                             if (!e.target.checked) {
                               setSalePrice('')
-                            }
-                            else if (e.target.checked && cost && parseFloat(cost) > 0) {
+                            } else if (e.target.checked && cost && parseFloat(cost) > 0) {
                               const calculatedPrice = calculateSalePrice(cost)
                               setSalePrice(calculatedPrice)
                             }

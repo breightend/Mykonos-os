@@ -143,7 +143,7 @@ export default function ModalSize() {
         data-tip="Agregar nuevo talle"
         onClick={() => document.getElementById('sizeModal').showModal()}
       >
-        <Ruler className="h-6 w-6" />
+        <Ruler className="h-6 w-6 text-secondary" />
       </button>
       <dialog id="sizeModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">

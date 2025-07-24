@@ -66,7 +66,7 @@ export default function ModalColor() {
         data-tip="Agregar nuevo color"
         onClick={() => document.getElementById('colorModal').showModal()}
       >
-        <Palette />
+        <Palette className="text-accent" />
       </button>
       <dialog id="colorModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">

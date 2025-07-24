@@ -26,7 +26,7 @@ export default function MenuVertical({ currentPath }) {
 
   return (
     <div
-      className={`bg-accent dark:bg-secondary fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out dark:text-black ${isMenuOpen ? 'w-48' : 'w-16'}`}
+      className={`bg-primary/80 dark:bg-secondary fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out dark:text-black ${isMenuOpen ? 'w-48' : 'w-16'}`}
       onMouseEnter={() => setIsMenuOpen(true)}
       onMouseLeave={() => setIsMenuOpen(false)}
     >
