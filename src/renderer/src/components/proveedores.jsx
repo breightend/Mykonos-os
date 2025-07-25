@@ -1,5 +1,6 @@
-import { Info, Search, UserPlus, Package } from 'lucide-react'
+import { Search, UserPlus, Package, FileChartPie } from 'lucide-react'
 import { useLocation } from 'wouter'
+import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useEffect, useState } from 'react'
@@ -7,6 +8,9 @@ import { fetchProvider } from '../services/proveedores/proveedorService'
 import { fetchProviderJoinBrand } from '../services/proveedores/brandService'
 import toast, { Toaster } from 'react-hot-toast'
 
+pinwheel.register()
+
+//TODO: Agregar resumen de compra total de los proveedores.
 export default function Proveedores() {
   const [, setLocation] = useLocation()
   const [proveedores, setProveedores] = useState([])
@@ -16,7 +20,6 @@ export default function Proveedores() {
   const [searchById, setSearchById] = useState(false)
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState(null)
 
-  // Brand management state
   const [showBrandsModal, setShowBrandsModal] = useState(false)
   const [providerBrandData, setProviderBrandData] = useState([])
   const [brandSearchTerm, setBrandSearchTerm] = useState('')
@@ -76,7 +79,7 @@ export default function Proveedores() {
       try {
         const data = await fetchProvider()
         setProveedores(data)
-        setFilteredProveedores(data) // Inicialmente mostrar todos
+        setFilteredProveedores(data) 
       } catch (error) {
         console.error('Error fetching data:', error)
       }
@@ -109,17 +112,20 @@ export default function Proveedores() {
               onClick={handleShowBrandsModal}
               disabled={loading}
             >
-              <Package className="h-5 w-5" />
+              {loading ? (
+                <l-pinwheel size="20" stroke="2" speed="0.9" color="#d97706"></l-pinwheel>
+              ) : (
+                <Package className="h-5 w-5" />
+              )}
             </button>
           </li>
           <li>
             <button
               className="btn btn-ghost tooltip tooltip-bottom"
-              data-tip="Información del proveedor"
-              onClick={() => setLocation(`/infoProvider?id=${proveedorSeleccionado.id}`)}
-              disabled={!proveedorSeleccionado}
+              data-tip="Resumen proveedores"
+              onClick={() => setLocation('/resumenProveedores')}
             >
-              <Info className="h-5 w-5" />
+              <FileChartPie className="h-5 w-5" />
             </button>
           </li>
         </ul>

@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Trash2, Plus, Edit2, X, Users, Package } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Plus, Edit2, X, Users, Package, HandCoins, ShoppingBasket } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
 import { fetchProviderById } from '../services/proveedores/proveedorService'
@@ -416,21 +416,24 @@ export default function InfoProvider() {
                           <div className="flex gap-1">
                             <button
                               onClick={() => openEditBrandModal(brand)}
-                              className="btn btn-ghost btn-sm text-blue-600 hover:bg-blue-50"
+                              className="btn btn-ghost btn-sm tooltip tooltip-bottom text-blue-600 hover:bg-blue-50"
+                              data-tip="Editar Marca"
                               disabled={loading}
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleRemoveBrand(brand.id)}
-                              className="btn btn-ghost btn-sm text-orange-600 hover:bg-orange-50"
+                              className="btn btn-ghost btn-sm tooltip tooltip-bottom text-orange-600 hover:bg-orange-50"
+                              data-tip="Eliminar Marca"
                               disabled={loading}
                             >
                               <X className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteBrand(brand.id)}
-                              className="btn btn-ghost btn-sm text-red-600 hover:bg-red-50"
+                              className="btn btn-ghost btn-sm tooltip tooltip-bottom text-red-600 hover:bg-red-50"
+                              data-tip="Eliminar Marca"
                               disabled={loading}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -458,12 +461,14 @@ export default function InfoProvider() {
               className="btn btn-accent"
               onClick={() => document.getElementById('agregandoCompra').showModal()}
             >
+              <ShoppingBasket className="mr-2 h-5 w-5" />
               Agregar compra
             </button>
             <button
               className="btn btn-primary"
               onClick={() => document.getElementById('agregandoPago').showModal()}
             >
+              <HandCoins className="mr-2 h-5 w-5" />
               Agregar pago
             </button>
           </div>

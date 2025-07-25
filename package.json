@@ -22,6 +22,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@tailwindcss/postcss": "^4.0.6",
     "axios": "^1.8.4",
+    "ldrs": "^1.1.7",
     "lucide-react": "^0.475.0",
     "pikaday": "^1.8.2",
     "postcss": "^8.5.2",

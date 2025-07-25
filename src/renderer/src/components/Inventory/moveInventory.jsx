@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { pinwheel } from 'ldrs'
 import inventoryService from '../../services/inventory/inventoryService'
 import { useLocation } from 'wouter'
 import {
@@ -14,6 +15,8 @@ import {
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
 
+pinwheel.register()
+//TODO: hacer que ande! Y que se conecten entre sucursales
 export default function MoveInventory() {
   const [storageList, setStorageList] = useState([]) // Lista de sucursales
   const [productsList, setProductsList] = useState([]) // Lista de productos
@@ -71,36 +74,40 @@ export default function MoveInventory() {
     try {
       setLoadingShipments(true)
       if (currentStorage?.id) {
-        // Aquí iría la llamada al API para obtener envíos salientes
-        // const response = await inventoryService.getSentShipments(currentStorage.id)
-
-        // Datos de ejemplo para envíos salientes
-        const mockSentShipments = [
-          {
-            id: 3,
-            fromStorage: currentStorage?.name || 'Mi Sucursal',
-            toStorage: 'Sucursal Norte',
-            products: [
-              { name: 'Producto X', quantity: 10 },
-              { name: 'Producto Y', quantity: 5 }
-            ],
-            status: 'empacado',
-            createdAt: '2024-01-16'
-          },
-          {
-            id: 4,
-            fromStorage: currentStorage?.name || 'Mi Sucursal',
-            toStorage: 'Sucursal Sur',
-            products: [{ name: 'Producto Z', quantity: 3 }],
-            status: 'en_transito',
-            createdAt: '2024-01-15'
-          }
-        ]
-        setSentShipments(mockSentShipments)
+        const response = await inventoryService.getSentShipments(currentStorage.id)
+        if (response.status === 'success' && response.data) {
+          setSentShipments(response.data)
+        } else {
+          // Datos de ejemplo si no hay envíos todavía
+          setSentShipments([])
+        }
       }
     } catch (error) {
       console.error('❌ Error cargando envíos salientes:', error)
       setError(error.message || 'Error al cargar envíos salientes')
+      // Mostrar datos de ejemplo en caso de error (para desarrollo)
+      const mockSentShipments = [
+        {
+          id: 3,
+          fromStorage: currentStorage?.name || 'Mi Sucursal',
+          toStorage: 'Sucursal Norte',
+          products: [
+            { name: 'Producto X', quantity: 10 },
+            { name: 'Producto Y', quantity: 5 }
+          ],
+          status: 'empacado',
+          createdAt: '2024-01-16'
+        },
+        {
+          id: 4,
+          fromStorage: currentStorage?.name || 'Mi Sucursal',
+          toStorage: 'Sucursal Sur',
+          products: [{ name: 'Producto Z', quantity: 3 }],
+          status: 'en_transito',
+          createdAt: '2024-01-15'
+        }
+      ]
+      setSentShipments(mockSentShipments)
     } finally {
       setLoadingShipments(false)
     }
@@ -108,15 +115,16 @@ export default function MoveInventory() {
 
   const updateSentShipmentStatus = async (shipmentId, newStatus) => {
     try {
-      // Aquí iría la llamada al API para actualizar el estado
-      // const response = await inventoryService.updateShipmentStatus(shipmentId, newStatus)
+      const response = await inventoryService.updateShipmentStatus(shipmentId, newStatus)
 
-      setSentShipments((prev) =>
-        prev.map((shipment) =>
-          shipment.id === shipmentId ? { ...shipment, status: newStatus } : shipment
+      if (response.status === 'success') {
+        setSentShipments((prev) =>
+          prev.map((shipment) =>
+            shipment.id === shipmentId ? { ...shipment, status: newStatus } : shipment
+          )
         )
-      )
-      console.log(`✅ Envío ${shipmentId} actualizado a estado: ${newStatus}`)
+        console.log(`✅ Envío ${shipmentId} actualizado a estado: ${newStatus}`)
+      }
     } catch (error) {
       console.error('❌ Error actualizando estado del envío:', error)
       // Actualizar localmente mientras tanto
@@ -136,34 +144,36 @@ export default function MoveInventory() {
         if (response.status === 'success' && response.data) {
           setPendingShipments(response.data)
         } else {
-          // Datos de ejemplo si no hay endpoint todavía
-          const mockShipments = [
-            {
-              id: 1,
-              fromStorage: 'Sucursal Centro',
-              toStorage: currentStorage?.name || 'Mi Sucursal',
-              products: [
-                { name: 'Producto A', quantity: 5 },
-                { name: 'Producto B', quantity: 3 }
-              ],
-              status: 'en_transito',
-              createdAt: '2024-01-15'
-            },
-            {
-              id: 2,
-              fromStorage: 'Sucursal Norte',
-              toStorage: currentStorage?.name || 'Mi Sucursal',
-              products: [{ name: 'Producto C', quantity: 2 }],
-              status: 'empacado',
-              createdAt: '2024-01-14'
-            }
-          ]
-          setPendingShipments(mockShipments)
+          // Datos de ejemplo si no hay envíos todavía
+          setPendingShipments([])
         }
       }
     } catch (error) {
       console.error('❌ Error cargando envíos pendientes:', error)
       setError(error.message || 'Error al cargar envíos pendientes')
+      // Mostrar datos de ejemplo en caso de error (para desarrollo)
+      const mockShipments = [
+        {
+          id: 1,
+          fromStorage: 'Sucursal Centro',
+          toStorage: currentStorage?.name || 'Mi Sucursal',
+          products: [
+            { name: 'Producto A', quantity: 5 },
+            { name: 'Producto B', quantity: 3 }
+          ],
+          status: 'en_transito',
+          createdAt: '2024-01-15'
+        },
+        {
+          id: 2,
+          fromStorage: 'Sucursal Norte',
+          toStorage: currentStorage?.name || 'Mi Sucursal',
+          products: [{ name: 'Producto C', quantity: 2 }],
+          status: 'empacado',
+          createdAt: '2024-01-14'
+        }
+      ]
+      setPendingShipments(mockShipments)
     } finally {
       setLoadingShipments(false)
     }
@@ -397,9 +407,9 @@ export default function MoveInventory() {
             </div>
 
             {loadingShipments && (
-              <div className="flex items-center gap-2">
-                <span className="loading loading-spinner loading-sm"></span>
-                <span>Cargando envíos pendientes...</span>
+              <div className="flex items-center gap-3">
+                <l-pinwheel size="25" stroke="2.5" speed="0.9" color="#d97706"></l-pinwheel>
+                <span className="text-warning font-medium">Cargando envíos pendientes...</span>
               </div>
             )}
 
@@ -502,9 +512,9 @@ export default function MoveInventory() {
             </div>
 
             {loadingShipments && (
-              <div className="flex items-center gap-2">
-                <span className="loading loading-spinner loading-sm"></span>
-                <span>Cargando envíos realizados...</span>
+              <div className="flex items-center gap-3">
+                <l-pinwheel size="25" stroke="2.5" speed="0.9" color="#d97706"></l-pinwheel>
+                <span className="text-warning font-medium">Cargando envíos realizados...</span>
               </div>
             )}
 
@@ -635,9 +645,9 @@ export default function MoveInventory() {
                   </div>
 
                   {loadingProducts && (
-                    <div className="flex items-center gap-2">
-                      <span className="loading loading-spinner loading-sm"></span>
-                      <span>Cargando productos...</span>
+                    <div className="flex items-center gap-3">
+                      <l-pinwheel size="25" stroke="2.5" speed="0.9" color="#d97706"></l-pinwheel>
+                      <span className="text-warning font-medium">Cargando productos...</span>
                     </div>
                   )}
 

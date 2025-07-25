@@ -1,6 +1,7 @@
 import { Info, Search, Plus, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
+import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import {
@@ -9,6 +10,9 @@ import {
   postData as createSucursal
 } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
+
+// Register the pinwheel loader
+pinwheel.register()
 
 function Sucursales() {
   const [, setLocation] = useLocation()
@@ -21,6 +25,7 @@ function Sucursales() {
   const [showEmployeesModal, setShowEmployeesModal] = useState(false)
   const [employees, setEmployees] = useState([])
   const [loadingEmployees, setLoadingEmployees] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   // Form state for creating new sucursal
   const [formData, setFormData] = useState({
@@ -115,6 +120,7 @@ function Sucursales() {
 
   const fetchData = async () => {
     try {
+      setLoading(true)
       console.log('🔄 Iniciando fetchData...')
       const data = await fetchSucursales()
       console.log('📊 Datos recibidos en fetchData:', data)
@@ -137,6 +143,8 @@ function Sucursales() {
       // Establecer arrays vacíos en caso de error
       setSucursales([])
       setFilteredSucursales([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -162,7 +170,7 @@ function Sucursales() {
               disabled={!sucursalSeleccionada || loadingEmployees}
             >
               {loadingEmployees ? (
-                <span className="loading loading-spinner loading-sm"></span>
+                <l-pinwheel size="20" stroke="2" speed="0.9" color="#d97706"></l-pinwheel>
               ) : (
                 <Users className="h-5 w-5" />
               )}
@@ -206,43 +214,53 @@ function Sucursales() {
 
       {/* Sucursales table */}
       <div className="mr-5 mb-10 ml-20 overflow-x-auto">
-        <table className="table w-full">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-              <th>Dirección</th>
-              <th>Código Postal</th>
-              <th>Teléfono</th>
-              <th>Área</th>
-              <th>Descripción</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {' '}
-            {filteredSucursales.length > 0 &&
-              filteredSucursales.map((row, index) => (
-                <tr
-                  key={row.id}
-                  className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
-                  onClick={() => handleRowClick(row)}
-                  onDoubleClick={() => handleRowDoubleClick(row)}
-                  title="Doble clic para ver información de la sucursal"
-                >
-                  <td>{index + 1}</td>
-                  <td className="font-semibold">{row.name}</td>
-                  <td>{row.address || 'N/A'}</td>
-                  <td>{row.postal_code || 'N/A'}</td>
-                  <td>{row.phone_number || 'N/A'}</td>
-                  <td>{row.area || 'N/A'}</td>
-                  <td>{row.description || 'N/A'}</td>
-                  <td>{row.status || 'N/D'}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-        {filteredSucursales.length === 0 && (
+        {loading ? (
+          <div className="from-warning/5 to-warning/10 flex flex-col items-center justify-center rounded-lg bg-gradient-to-br p-12">
+            <div className="mb-4">
+              <l-pinwheel size="45" stroke="3.5" speed="0.9" color="#d97706"></l-pinwheel>
+            </div>
+            <span className="text-warning text-lg font-medium">Cargando sucursales...</span>
+            <span className="mt-1 text-sm text-gray-500">Por favor espera un momento</span>
+          </div>
+        ) : (
+          <table className="table w-full">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Dirección</th>
+                <th>Código Postal</th>
+                <th>Teléfono</th>
+                <th>Área</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {' '}
+              {filteredSucursales.length > 0 &&
+                filteredSucursales.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
+                    onClick={() => handleRowClick(row)}
+                    onDoubleClick={() => handleRowDoubleClick(row)}
+                    title="Doble clic para ver información de la sucursal"
+                  >
+                    <td>{index + 1}</td>
+                    <td className="font-semibold">{row.name}</td>
+                    <td>{row.address || 'N/A'}</td>
+                    <td>{row.postal_code || 'N/A'}</td>
+                    <td>{row.phone_number || 'N/A'}</td>
+                    <td>{row.area || 'N/A'}</td>
+                    <td>{row.description || 'N/A'}</td>
+                    <td>{row.status || 'N/D'}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        )}
+        {!loading && filteredSucursales.length === 0 && (
           <div className="py-8 text-center text-gray-500">No se encontraron sucursales</div>
         )}
       </div>

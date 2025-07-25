@@ -171,7 +171,9 @@ export const inventoryService = {
             const response = await axios.post(`${API_URL}/movements`, {
                 from_storage_id: fromStorageId,
                 to_storage_id: toStorageId,
-                products: products
+                products: products,
+                notes: '',
+                user_id: 1 // TODO: Obtener del contexto de sesión
             })
             return response.data
         } catch (error) {
@@ -198,13 +200,14 @@ export const inventoryService = {
     /**
      * Actualiza el estado de un envío
      * @param {number} shipmentId - ID del envío
-     * @param {string} status - Nuevo estado ('recibido', 'no_recibido')
+     * @param {string} status - Nuevo estado ('recibido', 'no_recibido', 'en_transito', 'entregado')
      * @returns {Promise} Resultado de la actualización
      */
     async updateShipmentStatus(shipmentId, status) {
         try {
             const response = await axios.put(`${API_URL}/shipments/${shipmentId}/status`, {
-                status: status
+                status: status,
+                user_id: 1 // TODO: Obtener del contexto de sesión
             })
             return response.data
         } catch (error) {

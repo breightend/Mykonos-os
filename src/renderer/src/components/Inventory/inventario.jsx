@@ -1,6 +1,7 @@
 import { PackagePlus, Search, Edit, Info, Boxes, Truck } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState, useEffect, useCallback } from 'react'
+import { pinwheel } from 'ldrs'
 import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import ProductsFamily from '../../modals/modalsInventory/productsFamily'
@@ -9,6 +10,9 @@ import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
 import { useSession } from '../../contexts/SessionContext'
 
+pinwheel.register()
+
+//TODO: Agregar filtro por grupo de productos
 export default function Inventario() {
   const [, setLocation] = useLocation()
   const { getCurrentStorage } = useSession()
@@ -350,9 +354,12 @@ export default function Inventario() {
         {/* Tabla de inventario */}
         <div className="bg-base-200 overflow-x-auto rounded-lg shadow-lg">
           {loading ? (
-            <div className="flex items-center justify-center p-8">
-              <span className="loading loading-spinner loading-lg"></span>
-              <span className="ml-2">Cargando inventario...</span>
+            <div className="from-warning/5 to-warning/10 flex flex-col items-center justify-center rounded-lg bg-gradient-to-br p-12">
+              <div className="mb-4">
+                <l-pinwheel size="45" stroke="3.5" speed="0.9" color="#d97706"></l-pinwheel>
+              </div>
+              <span className="text-warning text-lg font-medium">Cargando inventario...</span>
+              <span className="mt-1 text-sm text-gray-500">Por favor espera un momento</span>
             </div>
           ) : (
             <table className="table w-full">

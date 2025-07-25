@@ -1,9 +1,13 @@
 import { Info, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
+import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { fetchEmployee } from '../services/employee/employeeService'
+
+// Register the pinwheel loader
+pinwheel.register()
 
 function Empleados() {
   const [, setLocation] = useLocation()
@@ -13,6 +17,7 @@ function Empleados() {
   const [searchTerm, setSearchTerm] = useState('')
   const [searchById, setSearchById] = useState(false)
   const [employeeSeleccionado, setEmployeeSeleccionado] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const handleRowClick = (row) => {
     setSelectedRow(row.id)
@@ -42,11 +47,14 @@ function Empleados() {
   useEffect(() => {
     async function fetchData() {
       try {
+        setLoading(true)
         const data = await fetchEmployee()
         setEmployee(data)
         setFilteredEmployee(data)
       } catch (error) {
         console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
       }
     }
     fetchData()
@@ -88,34 +96,44 @@ function Empleados() {
         </div>
       </div>
       <div className="mr-5 mb-10 ml-20 overflow-x-auto">
-        <table className="table w-full">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-              <th>Domicilio</th>
-              <th>Teléfono</th>
-              <th>CUIT</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployee.length > 0 &&
-              filteredEmployee.map((row, index) => (
-                <tr
-                  key={row.id}
-                  className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
-                  onClick={() => handleRowClick(row)}
-                  onDoubleClick={() => handleRowDoubleClick(row)}
-                >
-                  <td>{index + 1}</td>
-                  <td>{row.fullname}</td>
-                  <td>{row.domicilio}</td>
-                  <td>{row.phone}</td>
-                  <td>{row.cuit}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <div className="from-warning/5 to-warning/10 flex flex-col items-center justify-center rounded-lg bg-gradient-to-br p-12">
+            <div className="mb-4">
+              <l-pinwheel size="45" stroke="3.5" speed="0.9" color="#d97706"></l-pinwheel>
+            </div>
+            <span className="text-warning text-lg font-medium">Cargando empleados...</span>
+            <span className="mt-1 text-sm text-gray-500">Por favor espera un momento</span>
+          </div>
+        ) : (
+          <table className="table w-full">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Domicilio</th>
+                <th>Teléfono</th>
+                <th>CUIT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEmployee.length > 0 &&
+                filteredEmployee.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
+                    onClick={() => handleRowClick(row)}
+                    onDoubleClick={() => handleRowDoubleClick(row)}
+                  >
+                    <td>{index + 1}</td>
+                    <td>{row.fullname}</td>
+                    <td>{row.domicilio}</td>
+                    <td>{row.phone}</td>
+                    <td>{row.cuit}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )

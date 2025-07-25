@@ -372,7 +372,15 @@ DATABASE_TABLES = {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada grupo de transferencia.
             "origin_branch_id": "INTEGER NOT NULL",  # ID de la sucursal de origen.
             "destination_branch_id": "INTEGER NOT NULL",  # ID de la sucursal de destino.
+            "status": "TEXT NOT NULL DEFAULT 'empacado'",  # Estado: empacado, en_transito, entregado, recibido, no_recibido
+            "movement_type": "TEXT NOT NULL DEFAULT 'transfer'",  # Tipo: transfer, shipment, delivery
             "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la creación del grupo de transferencia.
+            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la última actualización.
+            "shipped_at": "TEXT",  # Fecha y hora de envío (cuando cambia a en_transito).
+            "delivered_at": "TEXT",  # Fecha y hora de entrega (cuando cambia a entregado).
+            "received_at": "TEXT",  # Fecha y hora de recepción (cuando se confirma llegada).
+            "created_by_user_id": "INTEGER",  # Usuario que creó el movimiento.
+            "updated_by_user_id": "INTEGER",  # Usuario que realizó la última actualización.
             "notes": "TEXT",  # Comentarios adicionales sobre la transferencia.
         },
         "foreign_keys": [
@@ -387,6 +395,18 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.STORAGE,
                 "reference_column": "id",
                 "export_column_name": "name",
+            },
+            {  # Usuario que creó el movimiento.
+                "column": "created_by_user_id",
+                "reference_table": TABLES.USERS,
+                "reference_column": "id",
+                "export_column_name": "username",
+            },
+            {  # Usuario que actualizó el movimiento.
+                "column": "updated_by_user_id",
+                "reference_table": TABLES.USERS,
+                "reference_column": "id",
+                "export_column_name": "username",
             },
         ],
     },

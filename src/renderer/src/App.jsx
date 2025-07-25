@@ -26,6 +26,7 @@ import InfoProducto from './components/inventory/infoInventory'
 import Estadisticas from './components/stadistics/estadisticas'
 import MoveInventory from './components/Inventory/moveInventory'
 import TestColorPage from './test/TestColorPage'
+import ResumenProveedores from './components/stadistics/resumenProveedores'
 
 function App() {
   return (
@@ -150,6 +151,11 @@ function App() {
         <Route path="/moveInventory">
           <ProtectedRoute>
             <MoveInventory />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/resumenProveedores">
+          <ProtectedRoute>
+            <ResumenProveedores />
           </ProtectedRoute>
         </Route>
       </Switch>

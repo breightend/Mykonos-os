@@ -16,8 +16,12 @@ import { fetchFamilyProductsTree } from '../services/products/familyService'
 import GroupTreeSelector from '../components/GroupTreeSelector'
 import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 import ColorSelect from '../components/ColorSelect'
+import { pinwheel } from 'ldrs'
+
 //TODO: colocar la condicion que si un color esta colocado en un producto no se puede eliminar, si no tiene ningun vinculo chau chau.
+//BUG: si no estan cargados los colores y talles no se puede ver los grupos.
 export default function NuevoProducto() {
+  pinwheel.register()
   // Contexto de sesión para obtener el storage actual
   const { getCurrentStorage, getCurrentUser } = useSession()
   const { calculateSalePrice, settings } = useSettings()
@@ -552,7 +556,7 @@ export default function NuevoProducto() {
         <div className="bg-base-100 flex min-h-screen items-center justify-center p-6">
           <div className="flex items-center space-x-4 p-4">
             <div className="">
-              <LoaderCircle className="h-10 w-10 animate-spin" />
+              <l-pinwheel size="35" stroke="3.5" speed="0.9" color="black"></l-pinwheel>
             </div>
             <h1 className="text-4xl font-bold">Cargando...</h1>
           </div>
