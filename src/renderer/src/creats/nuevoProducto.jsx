@@ -20,6 +20,8 @@ import { pinwheel } from 'ldrs'
 
 //TODO: colocar la condicion que si un color esta colocado en un producto no se puede eliminar, si no tiene ningun vinculo chau chau.
 //BUG: si no estan cargados los colores y talles no se puede ver los grupos.
+//BUG: El color ahora tiene bug.
+//BUG: al agregar la cantidad, no me deja poner 0
 export default function NuevoProducto() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual

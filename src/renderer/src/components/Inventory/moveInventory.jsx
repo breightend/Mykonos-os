@@ -37,6 +37,7 @@ export default function MoveInventory() {
   const currentStorage = getCurrentStorage()
   const currentUser = getCurrentUser()
 
+  
   const handleDestinationChange = (event) => {
     setSelectedDestination(event.target.value)
   }

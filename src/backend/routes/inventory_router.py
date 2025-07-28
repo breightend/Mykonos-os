@@ -229,7 +229,7 @@ def get_product_details(product_id):
 
         # Colores del producto
         colors_query = """
-        SELECT c.id, c.color_name
+        SELECT c.id, c.color_name, c.color_hex
         FROM product_colors pc
         JOIN colors c ON pc.color_id = c.id
         WHERE pc.product_id = ?
@@ -242,9 +242,13 @@ def get_product_details(product_id):
             for c in colors_data:
                 try:
                     if isinstance(c, dict):
-                        color_item = {"id": c.get("id"), "nombre": c.get("color_name")}
+                        color_item = {
+                            "id": c.get("id"),
+                            "nombre": c.get("color_name"),
+                            "color_hex": c.get("color_hex"),
+                        }
                     else:
-                        color_item = {"id": c[0], "nombre": c[1]}
+                        color_item = {"id": c[0], "nombre": c[1], "color_hex": c[2]}
                     product_data["colores"].append(color_item)
                 except (IndexError, KeyError) as e:
                     print(f"❌ DEBUG product-details: Error accediendo color item: {e}")
