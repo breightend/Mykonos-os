@@ -1,4 +1,4 @@
-import { PackagePlus, Search, Edit, Info, Boxes, Truck } from 'lucide-react'
+import { PackagePlus, Search, Edit, Boxes, Truck } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState, useEffect, useCallback } from 'react'
 import { pinwheel } from 'ldrs'
@@ -21,8 +21,7 @@ export default function Inventario() {
   const [editedData, setEditedData] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
   const [searchById, setSearchById] = useState(false)
-  const [showData, setShowData] = useState(false)
-  const [modalShowDataOpen, setModalShowDataOpen] = useState(false)
+
 
   // Nuevo estado para el modal de detalles
   const [productDetailModalOpen, setProductDetailModalOpen] = useState(false)
@@ -34,7 +33,6 @@ export default function Inventario() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Obtener información de la sucursal actual
   const currentStorage = getCurrentStorage()
 
   const loadInventoryData = useCallback(async (storageId = null) => {
@@ -142,14 +140,6 @@ export default function Inventario() {
       )
     }
   })
-
-  const handleInfoClick = () => {
-    if (selectedRow) {
-      const selectedProduct = inventoryData.find((item) => item.id === selectedRow)
-      setShowData(selectedProduct)
-      setModalShowDataOpen(true)
-    }
-  }
 
   // Nueva función para manejar doble clic en una fila
   const handleRowDoubleClick = (row) => {
@@ -280,16 +270,7 @@ export default function Inventario() {
                 <PackagePlus className="h-5 w-5" />
               </button>
             </li>
-            <li>
-              <button
-                className="btn btn-ghost tooltip tooltip-bottom"
-                data-tip="Información del producto"
-                onClick={handleInfoClick}
-                disabled={!selectedRow}
-              >
-                <Info className="h-5 w-5" />
-              </button>
-            </li>
+
             <li>
               <button
                 className="btn btn-ghost tooltip tooltip-bottom"
@@ -444,37 +425,6 @@ export default function Inventario() {
             </table>
           )}
         </div>
-
-        {/* Modal de información */}
-        {modalShowDataOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-            <div className="bg-base-100 w-96 rounded-lg p-6 shadow-2xl">
-              <h3 className="text-warning mb-4 text-lg font-bold">Información del Producto</h3>
-              <div className="space-y-2">
-                <p>
-                  <strong>Producto:</strong> {showData.producto}
-                </p>
-                <p>
-                  <strong>Marca:</strong> {showData.marca}
-                </p>
-                <p>
-                  <strong>Cantidad:</strong> {showData.cantidad}
-                </p>
-                <p>
-                  <strong>Colores:</strong> {showData.colores}
-                </p>
-                <p>
-                  <strong>Fecha de edición:</strong> {showData.fecha}
-                </p>
-              </div>
-              <div className="mt-4 flex justify-end">
-                <button className="btn btn-warning" onClick={() => setModalShowDataOpen(false)}>
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal de edición */}
         {isModalOpen && (

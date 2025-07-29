@@ -403,11 +403,10 @@ export default function NuevoProducto() {
     // Preparar imagen para envío (extraer solo el base64 sin el prefijo data URI)
     let imageToSend = null
     if (productImage) {
-      // Si la imagen tiene el prefijo data:image/...;base64, lo extraemos
       if (productImage.startsWith('data:')) {
         imageToSend = productImage.split(',')[1] // Extraer solo la parte base64
       } else {
-        imageToSend = productImage // Ya es solo base64
+        imageToSend = productImage 
       }
     }
 
@@ -433,7 +432,26 @@ export default function NuevoProducto() {
       product_image: imageToSend,
       // Datos para el stock inicial
       storage_id: currentStorage?.id || null,
-      initial_quantity: cantidadTotal // Cantidad total para el stock inicial
+      initial_quantity: cantidadTotal, // Cantidad total para el stock inicial
+      // 🆕 VARIANTES CON CANTIDADES ESPECÍFICAS
+      stock_variants: talles.flatMap((talle) => {
+        const sizeData = tallesBD.find((s) => s.size_name === talle.talle)
+        if (!sizeData) return []
+        
+        return talle.colores
+          .filter((color) => color.color && color.cantidad > 0)
+          .map((color) => {
+            const colorData = colors.find((c) => c.color_name === color.color)
+            return {
+              size_id: sizeData.id,
+              color_id: colorData ? colorData.id : null,
+              quantity: parseInt(color.cantidad) || 0,
+              size_name: talle.talle,
+              color_name: color.color
+            }
+          })
+          .filter((variant) => variant.color_id !== null)
+      })
     }
   }
 
@@ -450,12 +468,10 @@ export default function NuevoProducto() {
       newErrors.salePrice = 'El precio de venta debe ser mayor a 0'
     if (cantidadTotal <= 0) newErrors.cantidad = 'Debe agregar al menos una unidad'
 
-    // Validar que si hay una sucursal seleccionada, debe haber cantidad
     if (currentStorage && cantidadTotal <= 0) {
       newErrors.cantidad = 'Debe especificar la cantidad para la sucursal seleccionada'
     }
 
-    // Validar que todos los talles tengan colores con cantidad
     const hasInvalidTalles = talles.some((talle) => {
       if (!talle.talle) return true
       return talle.colores.some((color) => !color.color || !color.cantidad || color.cantidad <= 0)
@@ -499,6 +515,10 @@ export default function NuevoProducto() {
     setIsSubmitting(true)
     try {
       const productData = prepareProductData()
+      console.log('🔍 DATOS DE PRODUCTO PREPARADOS:', productData)
+      console.log('🔍 STOCK VARIANTS A ENVIAR:', productData.stock_variants)
+      console.log('🔍 CANTIDAD DE VARIANTES:', productData.stock_variants?.length || 0)
+      
       const response = await postData(productData)
 
       console.log('Producto guardado exitosamente:', response)
@@ -529,12 +549,10 @@ export default function NuevoProducto() {
 
       console.log('Producto agregado exitosamente:', response)
 
-      // Mostrar mensaje de éxito si hay imagen
       if (productImage && response.image_id) {
         console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
       }
 
-      // Limpiar formulario pero mantener proveedor y marca
       clearForm()
 
       // Mostrar mensaje de éxito temporal

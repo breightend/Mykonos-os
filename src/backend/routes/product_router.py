@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
+from datetime import datetime
 
 product_router = Blueprint("product_router", __name__)
 
@@ -7,6 +8,13 @@ product_router = Blueprint("product_router", __name__)
 @product_router.route("/", methods=["POST"])
 def recibir_datos():
     data = request.json
+    print("🔍 DATOS RECIBIDOS EN EL BACKEND:")
+    print(f"  - storage_id: {data.get('storage_id')}")
+    print(f"  - initial_quantity: {data.get('initial_quantity')}")
+    print(f"  - stock_variants: {data.get('stock_variants', [])}")
+    print(f"  - size_ids: {data.get('size_ids', [])}")
+    print(f"  - color_ids: {data.get('color_ids', [])}")
+    
     # Obtenemos los datos del producto
     barcode = data.get("barcode")
     provider_code = data.get("provider_code")
@@ -32,6 +40,8 @@ def recibir_datos():
     # Datos para el stock inicial
     storage_id = data.get("storage_id")  # ID de la sucursal para el stock inicial
     initial_quantity = data.get("initial_quantity", 0)  # Cantidad inicial para el stock
+    # 🆕 Variantes específicas con cantidades
+    stock_variants = data.get("stock_variants", [])  # Array de variantes con cantidades específicas
 
     db = Database()
     # if not barcode or not provider_code or not product_name or not group_id or not provider_id or not description or not cost or not sale_price or not tax or not discount or not comments or not user_id or not image_ids or not brand_id:
@@ -107,7 +117,62 @@ def recibir_datos():
                 print(
                     f"⚠️ Advertencia: Error al crear stock inicial: {stock_result.get('message')}"
                 )
-
+                
+            # 🆕 CREAR REGISTROS EN WAREHOUSE_STOCK_VARIANTS CON CANTIDADES REALES
+            if stock_variants and len(stock_variants) > 0:
+                print(f"🔄 Creando {len(stock_variants)} registros de stock por variantes con cantidades específicas")
+                print("🔍 DETALLE DE VARIANTES RECIBIDAS:")
+                for i, variant in enumerate(stock_variants):
+                    print(f"  [{i+1}] size_id: {variant.get('size_id')}, color_id: {variant.get('color_id')}, quantity: {variant.get('quantity')}")
+                    print(f"      size_name: {variant.get('size_name')}, color_name: {variant.get('color_name')}")
+                
+                variants_created = 0
+                total_variant_quantity = 0
+                
+                for variant in stock_variants:
+                    variant_stock_data = {
+                        "product_id": product_id,
+                        "branch_id": storage_id,
+                        "size_id": variant.get("size_id"),
+                        "color_id": variant.get("color_id"),
+                        "quantity": variant.get("quantity", 0),
+                        "last_updated": datetime.now().isoformat(),
+                    }
+                    
+                    result = db.add_record("warehouse_stock_variants", variant_stock_data)
+                    if result.get("success"):
+                        variants_created += 1
+                        total_variant_quantity += variant.get("quantity", 0)
+                        print(f"  ✅ Variante: {variant.get('size_name')} + {variant.get('color_name')} = {variant.get('quantity')} unidades")
+                    else:
+                        print(f"  ❌ Error creando variante: {result.get('message')}")
+                
+                print(f"✅ Creadas {variants_created} variantes con {total_variant_quantity} unidades en total")
+                
+                # Verificar que las cantidades coincidan
+                if total_variant_quantity != initial_quantity:
+                    print(f"⚠️ ADVERTENCIA: La suma de variantes ({total_variant_quantity}) no coincide con el stock inicial ({initial_quantity})")
+                    
+            # Si no hay variantes específicas, crear registros con cantidad 0 para todas las combinaciones
+            elif size_ids and color_ids:
+                variants_result = db.create_initial_variant_stock_records(
+                    product_id, storage_id, size_ids, color_ids
+                )
+                if variants_result.get("success"):
+                    print(f"✅ {variants_result.get('message')}")
+                    if variants_result.get("errors"):
+                        print(
+                            f"⚠️ Algunos errores durante la creación: {variants_result.get('errors')}"
+                        )
+                else:
+                    print(
+                        f"❌ Error creando stock por variantes: {variants_result.get('message')}"
+                    )
+            else:
+                print(
+                    "⚠️ No se crearon registros de stock por variantes: no hay talles o colores definidos"
+                )
+                
         return jsonify(
             {
                 "mensaje": "Producto creado con éxito",

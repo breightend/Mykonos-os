@@ -4,6 +4,7 @@ import io as io
 import sqlite3
 import time
 import threading
+from datetime import datetime
 from enum import Enum
 from commons.tools import print_debug  # noqa: F401
 # TODO: hacer tabla ProveedoresXMarcas para poder relacionar varios proveedores a una misma marca y viceversa.
@@ -26,6 +27,9 @@ class TABLES(Enum):
     IMAGES = "images"
     WAREHOUSE_STOCK = (
         "warehouse_stock"  # Relacion muchos a muchos entre sucursal y productos
+    )
+    WAREHOUSE_STOCK_VARIANTS = (
+        "warehouse_stock_variants"  # Stock detallado por talle y color
     )
     INVENTORY_MOVEMETNS = "inventory_movements"
     INVENTORY_MOVEMETNS_GROUPS = "inventory_movements_groups"
@@ -332,6 +336,43 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.PRODUCTS,
                 "reference_column": "id",
                 "export_column_name": "product_name",
+            },
+            {  # Relación con la tabla de sucursales.
+                "column": "branch_id",
+                "reference_table": TABLES.STORAGE,
+                "reference_column": "id",
+                "export_column_name": "name",
+            },
+        ],
+    },
+    TABLES.WAREHOUSE_STOCK_VARIANTS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada variante de stock.
+            "product_id": "INTEGER NOT NULL",  # Identificador del producto.
+            "size_id": "INTEGER",  # Identificador del talle (puede ser NULL si no aplica).
+            "color_id": "INTEGER",  # Identificador del color (puede ser NULL si no aplica).
+            "branch_id": "INTEGER NOT NULL",  # Identificador de la sucursal.
+            "quantity": "INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0)",  # Cantidad específica de esta variante.
+            "last_updated": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de última actualización.
+        },
+        "foreign_keys": [
+            {  # Relación con la tabla de productos.
+                "column": "product_id",
+                "reference_table": TABLES.PRODUCTS,
+                "reference_column": "id",
+                "export_column_name": "product_name",
+            },
+            {  # Relación con la tabla de talles.
+                "column": "size_id",
+                "reference_table": TABLES.SIZES,
+                "reference_column": "id",
+                "export_column_name": "size_name",
+            },
+            {  # Relación con la tabla de colores.
+                "column": "color_id",
+                "reference_table": TABLES.COLORS,
+                "reference_column": "id",
+                "export_column_name": "color_name",
             },
             {  # Relación con la tabla de sucursales.
                 "column": "branch_id",
@@ -1888,6 +1929,67 @@ class Database:
             return {
                 "success": False,
                 "message": f"Error al establecer stock inicial: {str(e)}",
+            }
+
+    def create_initial_variant_stock_records(
+        self, product_id, branch_id, size_ids, color_ids
+    ):
+        """
+        Crea registros iniciales de stock por variantes para un producto.
+        Inicializa todas las combinaciones de talle+color con cantidad 0.
+
+        Args:
+            product_id (int): ID del producto
+            branch_id (int): ID de la sucursal
+            size_ids (list): Lista de IDs de talles
+            color_ids (list): Lista de IDs de colores
+
+        Returns:
+            dict: {'success': bool, 'message': str, 'variants_created': int}
+        """
+        try:
+            variants_created = 0
+            errors = []
+
+            for size_id in size_ids:
+                for color_id in color_ids:
+                    variant_stock_data = {
+                        "product_id": product_id,
+                        "branch_id": branch_id,
+                        "size_id": size_id,
+                        "color_id": color_id,
+                        "quantity": 0,  # Inicializar con 0
+                        "last_updated": datetime.now().isoformat(),
+                    }
+
+                    result = self.add_record(
+                        TABLES.WAREHOUSE_STOCK_VARIANTS.value, variant_stock_data
+                    )
+                    if result.get("success"):
+                        variants_created += 1
+                    else:
+                        error_msg = f"Size ID {size_id}, Color ID {color_id}: {result.get('message')}"
+                        errors.append(error_msg)
+
+            if variants_created > 0:
+                return {
+                    "success": True,
+                    "message": f"Se crearon {variants_created} registros de stock por variantes",
+                    "variants_created": variants_created,
+                    "errors": errors if errors else None,
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"No se pudo crear ningún registro de stock por variantes. Errores: {'; '.join(errors)}",
+                    "variants_created": 0,
+                }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al crear stock por variantes: {str(e)}",
+                "variants_created": 0,
             }
 
     def get_product_stock_by_branch(self, product_id, branch_id):

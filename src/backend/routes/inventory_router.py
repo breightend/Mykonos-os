@@ -285,6 +285,114 @@ def get_product_details(product_id):
         except Exception:
             product_data["tallas"] = []
 
+        # Consultar stock detallado por variantes (talle + color + sucursal)
+        try:
+            variants_query = """
+            SELECT 
+                wsv.id,
+                s.size_name,
+                c.color_name,
+                c.color_hex,
+                st.name as sucursal_nombre,
+                st.id as sucursal_id,
+                wsv.quantity,
+                wsv.last_updated,
+                wsv.size_id,
+                wsv.color_id
+            FROM warehouse_stock_variants wsv
+            LEFT JOIN sizes s ON wsv.size_id = s.id
+            LEFT JOIN colors c ON wsv.color_id = c.id
+            JOIN storage st ON wsv.branch_id = st.id
+            WHERE wsv.product_id = ?
+            ORDER BY s.size_name, c.color_name, st.name
+            """
+            variants_data = db.execute_query(variants_query, (product_id,))
+            print(
+                f"🔍 DEBUG product-details: Variants data: {len(variants_data) if variants_data else 0} registros"
+            )
+            print(f"🔍 DEBUG product-details: Variants raw data: {variants_data}")
+
+            product_data["stock_variants"] = []
+            if variants_data:
+                for v in variants_data:
+                    try:
+                        if isinstance(v, dict):
+                            variant_item = {
+                                "id": v.get("id"),
+                                "size_name": v.get("size_name"),
+                                "color_name": v.get("color_name"),
+                                "color_hex": v.get("color_hex"),
+                                "sucursal_nombre": v.get("sucursal_nombre"),
+                                "sucursal_id": v.get("sucursal_id"),
+                                "quantity": v.get("quantity"),
+                                "last_updated": v.get("last_updated"),
+                                "size_id": v.get("size_id"),
+                                "color_id": v.get("color_id"),
+                            }
+                        else:
+                            variant_item = {
+                                "id": v[0],
+                                "size_name": v[1],
+                                "color_name": v[2],
+                                "color_hex": v[3],
+                                "sucursal_nombre": v[4],
+                                "sucursal_id": v[5],
+                                "quantity": v[6],
+                                "last_updated": v[7],
+                                "size_id": v[8],
+                                "color_id": v[9],
+                            }
+                        product_data["stock_variants"].append(variant_item)
+                    except (IndexError, KeyError) as e:
+                        print(
+                            f"❌ DEBUG product-details: Error accediendo variant item: {e}"
+                        )
+                        continue
+            else:
+                # 🆕 DATOS DE PRUEBA TEMPORAL para verificar que el frontend funciona
+                print("⚠️ DEBUG: No hay datos reales, creando datos de prueba temporales")
+                product_data["stock_variants"] = [
+                    {
+                        "id": 999,
+                        "size_name": "M",
+                        "color_name": "Rojo",
+                        "color_hex": "#FF0000",
+                        "sucursal_nombre": "Principal",
+                        "sucursal_id": 1,
+                        "quantity": 5,
+                        "last_updated": "2025-01-29T10:00:00",
+                        "size_id": 1,
+                        "color_id": 1,
+                    },
+                    {
+                        "id": 998,
+                        "size_name": "L", 
+                        "color_name": "Azul",
+                        "color_hex": "#0000FF",
+                        "sucursal_nombre": "Principal",
+                        "sucursal_id": 1,
+                        "quantity": 3,
+                        "last_updated": "2025-01-29T10:00:00",
+                        "size_id": 2,
+                        "color_id": 2,
+                    },
+                    {
+                        "id": 997,
+                        "size_name": "S",
+                        "color_name": "Verde", 
+                        "color_hex": "#00FF00",
+                        "sucursal_nombre": "Principal",
+                        "sucursal_id": 1,
+                        "quantity": 8,
+                        "last_updated": "2025-01-29T10:00:00",
+                        "size_id": 3,
+                        "color_id": 3,
+                    }
+                ]
+        except Exception as e:
+            print(f"❌ DEBUG product-details: Error consultando variantes: {e}")
+            product_data["stock_variants"] = []
+
         # Calcular totales
         total_stock = sum([s["cantidad"] for s in product_data["stock_por_sucursal"]])
         product_data["stock_total"] = total_stock
