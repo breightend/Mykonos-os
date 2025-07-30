@@ -6,11 +6,23 @@ import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import toast, { Toaster } from 'react-hot-toast'
 //TODO: Colocar que se redondee para arriba asi no maneja precios raros.
+
 const EditarProducto = () => {
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()
   const productId = searchParams.get('id')
   const [productData, setProductData] = useState(null)
+
+  // Función para manejar el botón volver
+  const handleGoBack = () => {
+    // Verificar si hay historial previo
+    if (window.history.length > 1) {
+      window.history.back()
+    } else {
+      // Si no hay historial, ir al inventario por defecto
+      setLocation('/inventory')
+    }
+  }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -194,13 +206,11 @@ const EditarProducto = () => {
   if (!productId) {
     return (
       <div>
-        <MenuVertical currentPath="/editarProducto" />
-        <Navbar />
         <div className="ml-20 p-8">
           <div className="text-center">
             <h2 className="text-error text-2xl font-bold">Error</h2>
             <p className="mt-4">No se proporcionó un ID de producto válido</p>
-            <button onClick={() => setLocation('/inventory')} className="btn btn-primary mt-4">
+            <button onClick={handleGoBack} className="btn btn-primary mt-4">
               Volver al Inventario
             </button>
           </div>
@@ -211,23 +221,18 @@ const EditarProducto = () => {
 
   return (
     <div>
-      <MenuVertical currentPath="/editarProducto" />
-      <Navbar />
-      <div className="ml-20 p-8">
+      <div className="p-8">
         {/* Header con navegación */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <button onClick={() => setLocation('/inventario')} className="btn btn-ghost btn-sm">
+            <button onClick={handleGoBack} className="btn btn-ghost btn-sm">
               <ArrowLeft className="h-4 w-4" />
               Volver al Inventario
             </button>
           </div>
-          <h2 className="text-warning text-2xl font-bold">
-            Editar Producto: {productData?.product_name || 'Cargando...'}
-          </h2>
         </div>
 
-        <div className="max-w-6xl overflow-hidden rounded-lg bg-white shadow-2xl">
+        <div className="overflow-hidden rounded-lg bg-white shadow-2xl">
           {/* Header */}
           <div className="from-accent to-secondary flex items-center justify-between border-b border-gray-200 bg-gradient-to-r p-6 text-black">
             <div className="flex items-center space-x-3">
@@ -561,7 +566,7 @@ const EditarProducto = () => {
           <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
             <div className="flex items-center justify-between">
               <button
-                onClick={() => setLocation('/inventory')}
+                onClick={handleGoBack}
                 type="button"
                 className="rounded-lg border border-gray-300 bg-white px-6 py-2 text-gray-700 transition-colors hover:bg-gray-50"
                 disabled={saving}

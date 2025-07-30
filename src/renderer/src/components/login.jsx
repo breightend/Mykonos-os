@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { KeyRound, UserRound, AlertCircle, Loader2 } from 'lucide-react'
+import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye } from 'lucide-react'
 import Settings from '../componentes especificos/settings'
 import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
@@ -16,6 +16,7 @@ export default function Login() {
   const [storages, setStorages] = useState([])
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     const loadStorages = async () => {
@@ -33,6 +34,10 @@ export default function Login() {
     }
     loadStorages()
   }, [])
+
+  const handleShowPassword = () => {
+    setShowPassword((prev) => !prev)
+  }
 
   // Efecto para monitorear cambios en el estado storages
   useEffect(() => {
@@ -149,19 +154,26 @@ export default function Login() {
               </label>
 
               {/* Campo Contraseña */}
-              <label className="input validator">
+              <label className="input validator relative">
                 <KeyRound className="opacity-50" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
                   required
                   placeholder="Contraseña"
                   minLength="8"
-                  className="text-base-content"
+                  className="text-base-content w-full"
                   disabled={isSubmitting || loading}
                 />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  onClick={handleShowPassword}
+                >
+                  {showPassword ? (<EyeOff className='h-4 w-4' />) : (<Eye  ye className='h-4 w-4' />)}
+                </button>
               </label>
 
               {/* Selector de Sucursal - Solo mostrar si hay sucursales disponibles */}

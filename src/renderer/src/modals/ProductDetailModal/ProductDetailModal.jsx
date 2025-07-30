@@ -85,7 +85,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
   return (
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md">
-      <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
+      <div className="max-h-[100vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="to-primary/60 from-primary flex items-center justify-between border-b border-gray-200 bg-gradient-to-r p-6 text-black">
           <div className="flex items-center space-x-3">
@@ -126,9 +126,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
               {/* Imagen del Producto - Sección Principal */}
               <div className="mb-8 flex justify-center">
                 <div className="w-full max-w-md">
-                  <h3 className="mb-4 text-center text-lg font-semibold text-gray-800">
-                    {productDetails.product_name}
-                  </h3>
                   <div className="flex justify-center">
                     {productDetails.product_image ? (
                       <div className="group relative">
@@ -423,12 +420,12 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
         </div>
 
         {/* Footer */}
-        <div className="footer bg-base-300 text-base-content space-y-4">
+        <div className="footer bg-base-100 text-base-content p-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setLocation(`/editarProducto?id=${productId}`)}
               type="button"
-              className="btn btn-primary hover:bg-primary/90 flex h-12 items-center gap-2 rounded-lg px-6 py-2 text-white transition-colors"
+              className="btn btn-secondary h-12 items-center gap-2 rounded-lg px-6 py-2 text-black transition-colors"
               disabled={!productDetails}
             >
               <Edit className="h-4 w-4" />
