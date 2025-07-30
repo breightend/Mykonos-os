@@ -22,7 +22,6 @@ export default function Inventario() {
   const [searchTerm, setSearchTerm] = useState('')
   const [searchById, setSearchById] = useState(false)
 
-
   // Nuevo estado para el modal de detalles
   const [productDetailModalOpen, setProductDetailModalOpen] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(null)
@@ -155,7 +154,7 @@ export default function Inventario() {
 
   const handleEditClick = () => {
     if (selectedRow) {
-      setIsModalOpen(true)
+      setLocation(`/editarProducto?id=${selectedRow}`)
     }
   }
 
@@ -180,6 +179,14 @@ export default function Inventario() {
   }
   const handleMoveInventoryClick = () => {
     setLocation('/moveInventory')
+  }
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value)
   }
   return (
     <div className="bg-base-100 min-h-screen">
@@ -352,6 +359,7 @@ export default function Inventario() {
                   <th className="text-warning">
                     {selectedStorage ? 'Cantidad en sucursal' : 'Cantidad total'}
                   </th>
+                  <th className="text-warning">Precio</th>
                   <th className="text-warning">Fecha de edición</th>
                   {!selectedStorage && <th className="text-warning">Sucursales con stock</th>}
                 </tr>
@@ -404,6 +412,7 @@ export default function Inventario() {
                           {row.cantidad_total}
                         </span>
                       </td>
+                      <td>{formatCurrency(row.sale_price)}</td>
                       <td>
                         {new Date(row.fecha_edicion).toLocaleDateString('es-ES', {
                           year: 'numeric',

@@ -406,7 +406,7 @@ export default function NuevoProducto() {
       if (productImage.startsWith('data:')) {
         imageToSend = productImage.split(',')[1] // Extraer solo la parte base64
       } else {
-        imageToSend = productImage 
+        imageToSend = productImage
       }
     }
 
@@ -437,7 +437,7 @@ export default function NuevoProducto() {
       stock_variants: talles.flatMap((talle) => {
         const sizeData = tallesBD.find((s) => s.size_name === talle.talle)
         if (!sizeData) return []
-        
+
         return talle.colores
           .filter((color) => color.color && color.cantidad > 0)
           .map((color) => {
@@ -518,7 +518,7 @@ export default function NuevoProducto() {
       console.log('🔍 DATOS DE PRODUCTO PREPARADOS:', productData)
       console.log('🔍 STOCK VARIANTS A ENVIAR:', productData.stock_variants)
       console.log('🔍 CANTIDAD DE VARIANTES:', productData.stock_variants?.length || 0)
-      
+
       const response = await postData(productData)
 
       console.log('Producto guardado exitosamente:', response)

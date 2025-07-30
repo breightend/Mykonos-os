@@ -2,6 +2,7 @@
 """
 Script para probar la funcionalidad de creación de productos con variantes
 """
+
 import sys
 import os
 
@@ -11,11 +12,12 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from database.database import Database
 from datetime import datetime
 
+
 def test_product_creation_with_variants():
     print("🔍 PRUEBA DE CREACIÓN DE PRODUCTO CON VARIANTES")
-    
+
     db = Database()
-    
+
     # 1. Crear un producto de prueba
     product_data = {
         "barcode": "1234567890123",
@@ -34,31 +36,31 @@ def test_product_creation_with_variants():
         "creation_date": datetime.now().isoformat(),
         "last_modified_date": datetime.now().isoformat(),
     }
-    
+
     print("📝 Creando producto...")
     product_result = db.add_record("products", product_data)
-    
+
     if not product_result.get("success"):
         print(f"❌ Error creando producto: {product_result.get('message')}")
         return
-    
+
     product_id = product_result.get("rowid")
     print(f"✅ Producto creado con ID: {product_id}")
-    
+
     # 2. Crear algunas variantes de prueba
     storage_id = 1  # Asumiendo que existe una sucursal
-    
+
     # Verificar que existan talles y colores
     sizes_result = db.execute_query("SELECT id, size_name FROM sizes LIMIT 3")
     colors_result = db.execute_query("SELECT id, color_name FROM colors LIMIT 3")
-    
+
     if not sizes_result or not colors_result:
         print("❌ No hay talles o colores suficientes en la BD")
         return
-    
+
     print(f"🔍 Talles disponibles: {sizes_result}")
     print(f"🔍 Colores disponibles: {colors_result}")
-    
+
     # Crear variantes específicas
     stock_variants = [
         {
@@ -86,25 +88,27 @@ def test_product_creation_with_variants():
             "last_updated": datetime.now().isoformat(),
         },
     ]
-    
+
     print(f"📝 Creando {len(stock_variants)} variantes...")
-    
+
     variants_created = 0
     for i, variant in enumerate(stock_variants):
-        print(f"  Creando variante {i+1}: Talle {variant['size_id']}, Color {variant['color_id']}, Cantidad {variant['quantity']}")
-        
+        print(
+            f"  Creando variante {i + 1}: Talle {variant['size_id']}, Color {variant['color_id']}, Cantidad {variant['quantity']}"
+        )
+
         result = db.add_record("warehouse_stock_variants", variant)
-        
+
         if result.get("success"):
             variants_created += 1
             print(f"    ✅ Variante creada con ID: {result.get('rowid')}")
         else:
             print(f"    ❌ Error: {result.get('message')}")
-    
+
     print(f"\n📊 RESUMEN:")
     print(f"  - Producto ID: {product_id}")
     print(f"  - Variantes creadas: {variants_created}/{len(stock_variants)}")
-    
+
     # 3. Verificar que las variantes se crearon correctamente
     print(f"\n🔍 VERIFICANDO VARIANTES CREADAS...")
     variants_query = """
@@ -114,15 +118,16 @@ def test_product_creation_with_variants():
     LEFT JOIN colors c ON wsv.color_id = c.id
     WHERE wsv.product_id = ?
     """
-    
+
     created_variants = db.execute_query(variants_query, (product_id,))
-    
+
     if created_variants:
         print(f"✅ {len(created_variants)} variantes encontradas:")
         for v in created_variants:
             print(f"  - ID: {v[0]}, Cantidad: {v[1]}, Talle: {v[2]}, Color: {v[3]}")
     else:
         print("❌ No se encontraron variantes para el producto")
+
 
 if __name__ == "__main__":
     test_product_creation_with_variants()

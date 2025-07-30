@@ -27,6 +27,7 @@ import Estadisticas from './components/stadistics/estadisticas'
 import MoveInventory from './components/Inventory/moveInventory'
 import TestColorPage from './test/TestColorPage'
 import ResumenProveedores from './components/stadistics/resumenProveedores'
+import EditarProducto from './components/Inventory/editarProducto'
 
 function App() {
   return (
@@ -156,6 +157,11 @@ function App() {
         <Route path="/resumenProveedores">
           <ProtectedRoute>
             <ResumenProveedores />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/editarProducto">
+          <ProtectedRoute>
+            <EditarProducto />
           </ProtectedRoute>
         </Route>
       </Switch>

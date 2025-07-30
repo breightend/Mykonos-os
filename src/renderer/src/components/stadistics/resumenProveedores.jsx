@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useLocation } from 'wouter'
 
 export default function ResumenProveedores() {
-  const [location, setLocation] = useLocation()
+  const [, setLocation] = useLocation()
 
   return (
     <div className="flex h-screen flex-col items-center justify-center">

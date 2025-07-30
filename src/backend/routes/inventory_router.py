@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
+from datetime import datetime
 
 inventory_router = Blueprint("inventory_router", __name__)
 
@@ -350,7 +351,9 @@ def get_product_details(product_id):
                         continue
             else:
                 # 🆕 DATOS DE PRUEBA TEMPORAL para verificar que el frontend funciona
-                print("⚠️ DEBUG: No hay datos reales, creando datos de prueba temporales")
+                print(
+                    "⚠️ DEBUG: No hay datos reales, creando datos de prueba temporales"
+                )
                 product_data["stock_variants"] = [
                     {
                         "id": 999,
@@ -366,7 +369,7 @@ def get_product_details(product_id):
                     },
                     {
                         "id": 998,
-                        "size_name": "L", 
+                        "size_name": "L",
                         "color_name": "Azul",
                         "color_hex": "#0000FF",
                         "sucursal_nombre": "Principal",
@@ -379,7 +382,7 @@ def get_product_details(product_id):
                     {
                         "id": 997,
                         "size_name": "S",
-                        "color_name": "Verde", 
+                        "color_name": "Verde",
                         "color_hex": "#00FF00",
                         "sucursal_nombre": "Principal",
                         "sucursal_id": 1,
@@ -387,7 +390,7 @@ def get_product_details(product_id):
                         "last_updated": "2025-01-29T10:00:00",
                         "size_id": 3,
                         "color_id": 3,
-                    }
+                    },
                 ]
         except Exception as e:
             print(f"❌ DEBUG product-details: Error consultando variantes: {e}")
@@ -1351,3 +1354,235 @@ def update_shipment_status(shipment_id):
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/update-product", methods=["PUT"])
+def update_product():
+    """
+    Actualiza los datos de un producto incluyendo precios, descuentos,
+    descripción, comentarios y stock por variantes
+    """
+    try:
+        data = request.json
+        product_id = data.get("product_id")
+
+        if not product_id:
+            return jsonify(
+                {"status": "error", "message": "ID de producto requerido"}
+            ), 400
+
+        print(f"🔄 Actualizando producto ID: {product_id}")
+        print(f"📊 Datos recibidos: {data}")
+
+        db = Database()
+
+        # 1. Actualizar datos básicos del producto
+        update_fields = []
+        params = []
+
+        if "description" in data:
+            update_fields.append("description = ?")
+            params.append(data["description"])
+
+        if "comments" in data:
+            update_fields.append("comments = ?")
+            params.append(data["comments"])
+
+        if "cost" in data:
+            update_fields.append("cost = ?")
+            params.append(float(data["cost"]))
+
+        if "sale_price" in data:
+            update_fields.append("sale_price = ?")
+            params.append(float(data["sale_price"]))
+
+        # Campos de descuento - los agregamos a la tabla products si no existen
+        if "original_price" in data:
+            update_fields.append("original_price = ?")
+            params.append(float(data["original_price"]))
+
+        if "discount_percentage" in data:
+            update_fields.append("discount_percentage = ?")
+            params.append(float(data["discount_percentage"]))
+
+        if "discount_amount" in data:
+            update_fields.append("discount_amount = ?")
+            params.append(float(data["discount_amount"]))
+
+        if "has_discount" in data:
+            update_fields.append("has_discount = ?")
+            params.append(1 if data["has_discount"] else 0)
+
+        # Actualizar fecha de modificación
+        update_fields.append("last_modified_date = CURRENT_TIMESTAMP")
+
+        if update_fields:
+            params.append(product_id)
+            query = f"UPDATE products SET {', '.join(update_fields)} WHERE id = ?"
+
+            print(f"🔍 Query de actualización: {query}")
+            print(f"🔍 Parámetros: {params}")
+
+            result = db.execute_query(query, params)
+
+            if not result:
+                return jsonify(
+                    {"status": "error", "message": "Error actualizando producto"}
+                ), 500
+
+            print(f"✅ Producto actualizado, filas afectadas: {db.cursor.rowcount}")
+
+        # 2. Actualizar stock por variantes si se proporcionan
+        if "stock_variants" in data and data["stock_variants"]:
+            print(f"🔄 Actualizando {len(data['stock_variants'])} variantes de stock")
+
+            for variant in data["stock_variants"]:
+                if all(
+                    key in variant
+                    for key in ["size_id", "color_id", "sucursal_id", "quantity"]
+                ):
+                    update_variant_query = """
+                    UPDATE warehouse_stock_variants 
+                    SET quantity = ?, last_updated = CURRENT_TIMESTAMP
+                    WHERE product_id = ? AND size_id = ? AND color_id = ? AND branch_id = ?
+                    """
+
+                    variant_params = [
+                        int(variant["quantity"]),
+                        product_id,
+                        variant["size_id"],
+                        variant["color_id"],
+                        variant["sucursal_id"],
+                    ]
+
+                    variant_result = db.execute_query(
+                        update_variant_query, variant_params
+                    )
+
+                    if variant_result and db.cursor.rowcount > 0:
+                        print(
+                            f"✅ Variante actualizada: Talle {variant['size_id']}, Color {variant['color_id']}, Cantidad: {variant['quantity']}"
+                        )
+                    else:
+                        print(
+                            f"⚠️ No se pudo actualizar variante: Talle {variant['size_id']}, Color {variant['color_id']}"
+                        )
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Producto actualizado correctamente",
+                "product_id": product_id,
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"❌ Error actualizando producto: {str(e)}")
+        return jsonify({"status": "error", "message": f"Error interno: {str(e)}"}), 500
+
+
+@inventory_router.route("/products/<int:product_id>", methods=["PUT"])
+def update_product_by_id(product_id):
+    """
+    Actualiza un producto específico por ID (formato REST)
+    Incluye información básica, precios, descuentos y stock por variantes
+    """
+    try:
+        data = request.json
+        print(f"🔄 Actualizando producto ID {product_id} con datos: {data}")
+
+        db = Database()
+
+        # Actualizar datos básicos del producto
+        update_fields = []
+        update_values = []
+
+        # Campos que se pueden actualizar
+        updatable_fields = {
+            "product_name": "product_name",
+            "description": "description",
+            "comments": "comments",
+            "cost": "cost",
+            "sale_price": "sale_price",
+            "original_price": "original_price",
+            "discount_percentage": "discount_percentage",
+            "discount_amount": "discount_amount",
+            "has_discount": "has_discount",
+            "tax": "tax",
+            "product_image": "product_image",
+        }
+
+        for field, column in updatable_fields.items():
+            if field in data:
+                update_fields.append(f"{column} = ?")
+                update_values.append(data[field])
+
+        # Agregar fecha de modificación
+        update_fields.append("last_modified_date = ?")
+        update_values.append(datetime.now().isoformat())
+        update_values.append(product_id)
+
+        if update_fields:
+            update_query = f"""
+            UPDATE products 
+            SET {", ".join(update_fields)}
+            WHERE id = ?
+            """
+
+            result = db.execute_query(update_query, update_values)
+            print(f"✅ Producto {product_id} actualizado")
+
+        # Actualizar stock por variantes si se proporciona
+        if "stock_variants" in data and data["stock_variants"]:
+            print(f"🔄 Actualizando {len(data['stock_variants'])} variantes de stock")
+
+            for variant in data["stock_variants"]:
+                # Usar branch_id en lugar de sucursal_id para compatibilidad
+                branch_id = variant.get("sucursal_id") or variant.get("branch_id")
+
+                if (
+                    all(key in variant for key in ["size_id", "color_id"])
+                    and branch_id is not None
+                ):
+                    update_variant_query = """
+                    UPDATE warehouse_stock_variants 
+                    SET quantity = ?, last_updated = ?
+                    WHERE product_id = ? AND size_id = ? AND color_id = ? AND branch_id = ?
+                    """
+
+                    variant_params = [
+                        variant["quantity"],
+                        datetime.now().isoformat(),
+                        product_id,
+                        variant["size_id"],
+                        variant["color_id"],
+                        branch_id,
+                    ]
+
+                    db.execute_query(update_variant_query, variant_params)
+                    print(
+                        f"✅ Variante actualizada: Talle {variant['size_id']}, Color {variant['color_id']}, Cantidad: {variant['quantity']}"
+                    )
+                else:
+                    print(f"⚠️ Variante incompleta: {variant}")
+
+        # Obtener datos actualizados del producto para devolver
+        updated_product_query = """
+        SELECT p.*, b.brand_name 
+        FROM products p 
+        LEFT JOIN brands b ON p.brand_id = b.id 
+        WHERE p.id = ?
+        """
+        updated_product = db.execute_query(updated_product_query, (product_id,))
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Producto actualizado correctamente",
+                "data": updated_product[0] if updated_product else None,
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"❌ Error actualizando producto {product_id}: {str(e)}")
+        return jsonify({"status": "error", "message": f"Error interno: {str(e)}"}), 500

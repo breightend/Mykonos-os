@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { X, Package, Warehouse, DollarSign, Calendar, Info } from 'lucide-react'
+import { X, Package, Warehouse, DollarSign, Calendar, Info, Edit } from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
+import { useLocation } from 'wouter'
 
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [, setLocation] = useLocation()
 
   useEffect(() => {
     const loadProductDetails = async () => {
@@ -421,12 +423,22 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 bg-gray-50 px-6">
-          <div className="flex justify-end">
+        <div className="footer bg-base-300 text-base-content space-y-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setLocation(`/editarProducto?id=${productId}`)}
+              type="button"
+              className="btn btn-primary hover:bg-primary/90 flex h-12 items-center gap-2 rounded-lg px-6 py-2 text-white transition-colors"
+              disabled={!productDetails}
+            >
+              <Edit className="h-4 w-4" />
+              Editar Producto
+            </button>
+
             <button
               onClick={onClose}
               type="button"
-              className="btn btn-neutral h-12 rounded-lg px-4 py-2 text-white"
+              className="btn btn-neutral hover:bg-neutral/90 h-12 rounded-lg px-6 py-2 text-white transition-colors"
             >
               Cerrar
             </button>
