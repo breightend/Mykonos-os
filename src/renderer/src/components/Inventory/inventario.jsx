@@ -8,11 +8,11 @@ import ProductsFamily from '../../modals/modalsInventory/productsFamily'
 import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailModal'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
+import { fetchFamilyProductsTree } from '../../services/products/familyService'
 import { useSession } from '../../contexts/SessionContext'
 
 pinwheel.register()
-
-//TODO: Agregar filtro por grupo de productos
+//TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
 export default function Inventario() {
   const [, setLocation] = useLocation()
   const { getCurrentStorage } = useSession()
@@ -29,6 +29,8 @@ export default function Inventario() {
   const [inventoryData, setInventoryData] = useState([])
   const [storageList, setStorageList] = useState([])
   const [selectedStorage, setSelectedStorage] = useState('')
+  const [selectedGroup, setSelectedGroup] = useState('')
+  const [grupsList, setGrupsList] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -82,6 +84,28 @@ export default function Inventario() {
       setStorageList(storageArray)
       console.log('✅ Sucursales cargadas:', storageArray.length, 'sucursales')
 
+      // Cargar grupos de productos
+      console.log('📦 Cargando grupos de productos...')
+      try {
+        const groupsResponse = await fetchFamilyProductsTree()
+        console.log('✅ Respuesta de grupos:', groupsResponse)
+
+        if (
+          groupsResponse &&
+          groupsResponse.status === 'success' &&
+          Array.isArray(groupsResponse.data)
+        ) {
+          setGrupsList(groupsResponse.data)
+          console.log('✅ Grupos cargados:', groupsResponse.data.length, 'grupos')
+        } else {
+          console.log('⚠️ No se pudieron cargar los grupos o están vacíos')
+          setGrupsList([])
+        }
+      } catch (groupError) {
+        console.error('❌ Error al cargar grupos:', groupError)
+        setGrupsList([])
+      }
+
       // Establecer la sucursal por defecto basada en la sesión del usuario
       if (currentStorage?.id) {
         console.log('🏪 Estableciendo sucursal por defecto:', currentStorage.id)
@@ -128,16 +152,28 @@ export default function Inventario() {
 
   // Función para filtrar los datos
   const filteredData = inventoryData.filter((row) => {
-    if (searchById) {
-      return row.id.toString().includes(searchTerm)
-    } else {
-      return (
-        row.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.fecha_edicion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.id.toString().includes(searchTerm)
-      )
+    // Filtro por término de búsqueda
+    let matchesSearch = true
+    if (searchTerm) {
+      if (searchById) {
+        matchesSearch = row.id.toString().includes(searchTerm)
+      } else {
+        matchesSearch =
+          row.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          row.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          row.fecha_edicion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          row.id.toString().includes(searchTerm) ||
+          (row.grupo && row.grupo.toLowerCase().includes(searchTerm.toLowerCase()))
+      }
     }
+
+    // Filtro por grupo de producto
+    let matchesGroup = true
+    if (selectedGroup && selectedGroup !== '') {
+      matchesGroup = row.group_id?.toString() === selectedGroup
+    }
+
+    return matchesSearch && matchesGroup
   })
 
   // Nueva función para manejar doble clic en una fila
@@ -177,6 +213,27 @@ export default function Inventario() {
   const handleStorageChange = (e) => {
     setSelectedStorage(e.target.value)
   }
+
+  const handleGroupChange = (e) => {
+    setSelectedGroup(e.target.value)
+  }
+
+  // Función para aplanar el árbol de grupos y crear una lista simple
+  const flattenGroups = (groups, level = 0) => {
+    let result = []
+    groups.forEach((group) => {
+      result.push({
+        id: group.id,
+        name: '  '.repeat(level) + group.group_name,
+        level: level
+      })
+      if (group.children && group.children.length > 0) {
+        result = result.concat(flattenGroups(group.children, level + 1))
+      }
+    })
+    return result
+  }
+
   const handleMoveInventoryClick = () => {
     setLocation('/moveInventory')
   }
@@ -204,10 +261,26 @@ export default function Inventario() {
                       storageList.find((s) => s.id.toString() === selectedStorage)?.name ||
                       'Sucursal desconocida'
                     }`}
+                {selectedGroup && (
+                  <span className="ml-2">
+                    📦 Grupo:{' '}
+                    {flattenGroups(grupsList)
+                      .find((g) => g.id.toString() === selectedGroup)
+                      ?.name.trim() || 'Grupo desconocido'}
+                  </span>
+                )}
               </p>
             ) : (
               <p className="mt-1 text-sm text-gray-600">
                 🌍 Mostrando productos de todas las sucursales
+                {selectedGroup && (
+                  <span className="ml-2">
+                    📦 Grupo:{' '}
+                    {flattenGroups(grupsList)
+                      .find((g) => g.id.toString() === selectedGroup)
+                      ?.name.trim() || 'Grupo desconocido'}
+                  </span>
+                )}
               </p>
             )}
           </div>
@@ -316,6 +389,23 @@ export default function Inventario() {
               </select>
             </div>
 
+            {/* Selector de grupo */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Grupo:</span>
+              <select
+                className="select select-bordered select-warning min-w-48"
+                value={selectedGroup}
+                onChange={handleGroupChange}
+              >
+                <option value="">📦 Todos los grupos</option>
+                {flattenGroups(grupsList).map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Barra de búsqueda */}
             <label className="input input-bordered input-warning flex items-center gap-2">
               <input
@@ -353,9 +443,10 @@ export default function Inventario() {
             <table className="table w-full">
               <thead className="bg-warning/10">
                 <tr>
-                  <th className="text-warning">#</th>
+                  <th className="text-warning">Codigo de barras</th>
                   <th className="text-warning">Producto</th>
                   <th className="text-warning">Marca</th>
+                  <th className="text-warning">Grupo</th>
                   <th className="text-warning">
                     {selectedStorage ? 'Cantidad en sucursal' : 'Cantidad total'}
                   </th>
@@ -367,7 +458,7 @@ export default function Inventario() {
               <tbody>
                 {filteredData.length === 0 && !loading ? (
                   <tr>
-                    <td colSpan={selectedStorage ? 5 : 6} className="p-8 text-center">
+                    <td colSpan={selectedStorage ? 6 : 7} className="p-8 text-center">
                       <div className="flex flex-col items-center gap-4">
                         <div className="text-4xl">📦</div>
                         <div>
@@ -405,6 +496,9 @@ export default function Inventario() {
                       <th>{row.barcode}</th>
                       <td>{row.producto}</td>
                       <td>{row.marca}</td>
+                      <td>
+                        <span className="badge badge-outline">{row.grupo || 'Sin grupo'}</span>
+                      </td>
                       <td>
                         <span
                           className={`badge ${row.cantidad_total > 0 ? 'badge-success' : 'badge-error'}`}

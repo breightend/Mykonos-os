@@ -26,11 +26,16 @@ def get_products_summary():
                 COALESCE(b.brand_name, 'Sin marca') as marca,
                 COALESCE(SUM(ws.quantity), 0) as cantidad_total,
                 COALESCE(p.last_modified_date, datetime('now')) as fecha_edicion,
-                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock
+                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
+                COALESCE(g.group_name, 'Sin grupo') as grupo,
+                p.group_id,
+                p.sale_price,
+                p.barcode
             FROM products p
             LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = ?
             LEFT JOIN brands b ON p.brand_id = b.id
-            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date
+            LEFT JOIN groups g ON p.group_id = g.id
+            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.barcode
             HAVING cantidad_total > 0
             ORDER BY p.product_name
             """
@@ -44,11 +49,16 @@ def get_products_summary():
                 COALESCE(b.brand_name, 'Sin marca') as marca,
                 COALESCE(SUM(ws.quantity), 0) as cantidad_total,
                 COALESCE(p.last_modified_date, datetime('now')) as fecha_edicion,
-                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock
+                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
+                COALESCE(g.group_name, 'Sin grupo') as grupo,
+                p.group_id,
+                p.sale_price,
+                p.barcode
             FROM products p
             LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
             LEFT JOIN brands b ON p.brand_id = b.id
-            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date
+            LEFT JOIN groups g ON p.group_id = g.id
+            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.barcode
             ORDER BY p.product_name
             """
             products = db.execute_query(query)
@@ -69,6 +79,10 @@ def get_products_summary():
                             "cantidad_total": p.get("cantidad_total"),
                             "fecha_edicion": p.get("fecha_edicion"),
                             "sucursales_con_stock": p.get("sucursales_con_stock"),
+                            "grupo": p.get("grupo"),
+                            "group_id": p.get("group_id"),
+                            "sale_price": p.get("sale_price"),
+                            "barcode": p.get("barcode"),
                         }
                     else:
                         product_item = {
@@ -78,6 +92,10 @@ def get_products_summary():
                             "cantidad_total": p[3],
                             "fecha_edicion": p[4],
                             "sucursales_con_stock": p[5],
+                            "grupo": p[6],
+                            "group_id": p[7],
+                            "sale_price": p[8],
+                            "barcode": p[9],
                         }
                     processed_products.append(product_item)
                 except (IndexError, KeyError) as e:

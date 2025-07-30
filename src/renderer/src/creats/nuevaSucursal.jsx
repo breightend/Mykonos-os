@@ -5,7 +5,7 @@ import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { postData as createSucursal } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
-
+//BUG: no funciona la fecha de creacion 
 function NuevaSucursal() {
   const [, setLocation] = useLocation()
   const [loading, setLoading] = useState(false)

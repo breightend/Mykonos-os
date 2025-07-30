@@ -211,7 +211,7 @@ const EditarProducto = () => {
             <h2 className="text-error text-2xl font-bold">Error</h2>
             <p className="mt-4">No se proporcionó un ID de producto válido</p>
             <button onClick={handleGoBack} className="btn btn-primary mt-4">
-              Volver al Inventario
+              Volver al producto
             </button>
           </div>
         </div>
@@ -227,7 +227,7 @@ const EditarProducto = () => {
           <div className="flex items-center space-x-3">
             <button onClick={handleGoBack} className="btn btn-ghost btn-sm">
               <ArrowLeft className="h-4 w-4" />
-              Volver al Inventario
+              Volver al Producto
             </button>
           </div>
         </div>
@@ -568,10 +568,10 @@ const EditarProducto = () => {
               <button
                 onClick={handleGoBack}
                 type="button"
-                className="rounded-lg border border-gray-300 bg-white px-6 py-2 text-gray-700 transition-colors hover:bg-gray-50"
+                className="btn btn-ghost rounded-lg border border-gray-300 bg-white px-6 py-2 text-gray-700 transition-colors hover:bg-gray-50"
                 disabled={saving}
               >
-                Cancelar
+                Cancelar e ir al inventario
               </button>
 
               <button
