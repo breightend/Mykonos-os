@@ -19,7 +19,6 @@ import ColorSelect from '../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 
 //TODO: colocar la condicion que si un color esta colocado en un producto no se puede eliminar, si no tiene ningun vinculo chau chau.
-//BUG: si no estan cargados los colores y talles no se puede ver los grupos.
 //BUG: El color ahora tiene bug.
 //BUG: al agregar la cantidad, no me deja poner 0
 export default function NuevoProducto() {
@@ -63,30 +62,74 @@ export default function NuevoProducto() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const sizesResponse = await fetchSize()
-        setTallesBD(sizesResponse)
+        // Hacer todas las llamadas en paralelo para mejor performance y robustez
+        const [sizesResponse, colorsResponse, providerResponse, grupoTreeData] =
+          await Promise.allSettled([
+            fetchSize(),
+            fetchColor(),
+            fetchProvider(),
+            fetchFamilyProductsTree()
+          ])
 
-        const colorsResponse = await fetchColor()
-        console.log('🎨 Colores cargados desde la API:', colorsResponse)
-        setColors(colorsResponse)
+        // Procesar sizes
+        if (sizesResponse.status === 'fulfilled' && sizesResponse.value) {
+          setTallesBD(sizesResponse.value)
+          console.log('✅ Talles cargados exitosamente:', sizesResponse.value.length)
+        } else {
+          console.warn('⚠️ Error al cargar talles:', sizesResponse.reason)
+          setTallesBD([])
+        }
 
-        const providerResponse = await fetchProvider()
-        setProvider(providerResponse)
+        // Procesar colors
+        if (colorsResponse.status === 'fulfilled' && colorsResponse.value) {
+          setColors(colorsResponse.value)
+          console.log('🎨 Colores cargados desde la API:', colorsResponse.value)
+        } else {
+          console.warn('⚠️ Error al cargar colores:', colorsResponse.reason)
+          setColors([])
+        }
 
-        const grupoTreeData = await fetchFamilyProductsTree()
-        setGrupoTree(grupoTreeData)
+        // Procesar providers
+        if (providerResponse.status === 'fulfilled' && providerResponse.value) {
+          setProvider(providerResponse.value)
+          console.log('✅ Proveedores cargados exitosamente:', providerResponse.value.length)
+        } else {
+          console.warn('⚠️ Error al cargar proveedores:', providerResponse.reason)
+          setProvider([])
+        }
 
-        if (colorsResponse && sizesResponse) {
+        // Procesar grupos (INDEPENDIENTE de talles y colores)
+        if (grupoTreeData.status === 'fulfilled' && grupoTreeData.value) {
+          setGrupoTree(grupoTreeData.value)
+          console.log('✅ Grupos de productos cargados exitosamente:', grupoTreeData.value.length)
+        } else {
+          console.warn('⚠️ Error al cargar grupos de productos:', grupoTreeData.reason)
+          setGrupoTree([])
+        }
+
+        // Configurar colores disponibles por talle SOLO si ambos están disponibles
+        if (
+          sizesResponse.status === 'fulfilled' &&
+          sizesResponse.value &&
+          colorsResponse.status === 'fulfilled' &&
+          colorsResponse.value
+        ) {
           const coloresDisponibles = {}
-          sizesResponse.forEach((talle) => {
-            coloresDisponibles[talle.size_name] = colorsResponse.map((color) => color.color_name)
+          sizesResponse.value.forEach((talle) => {
+            coloresDisponibles[talle.size_name] = colorsResponse.value.map(
+              (color) => color.color_name
+            )
           })
           setColoresDisponiblesPorTalle(coloresDisponibles)
           console.log('🎨 Colores disponibles por talle:', coloresDisponibles)
+        } else {
+          console.warn(
+            '⚠️ No se pudieron configurar colores por talle (falta información de talles o colores)'
+          )
+          setColoresDisponiblesPorTalle({})
         }
       } catch (error) {
-        console.error('Error Fetching data: ', error)
-        // setErrorData(error)
+        console.error('❌ Error general al cargar datos:', error)
       } finally {
         setLoadingData(false)
       }
