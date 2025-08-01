@@ -980,23 +980,24 @@ export default function NuevoProducto() {
                   <div className="join w-full">
                     <span className="join-item btn btn-outline btn-disabled">$</span>
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="0.00"
                       value={cost}
                       onChange={(e) => {
                         const newCost = e.target.value
-                        setCost(newCost)
-
-                        // Calcular precio de venta automáticamente solo si está habilitado globalmente Y el usuario lo quiere
-                        if (
-                          settings.autoCalculatePrice &&
-                          useAutoCalculation &&
-                          newCost &&
-                          parseFloat(newCost) > 0
-                        ) {
-                          const calculatedPrice = calculateSalePrice(newCost)
-                          setSalePrice(calculatedPrice)
+                        const regex = /^[0-9]*(\.[0-9]{0,2})?$/
+                        if (regex.test(newCost)) {
+                          setCost(newCost)
+                          if (
+                            settings.autoCalculatePrice &&
+                            useAutoCalculation &&
+                            newCost &&
+                            parseFloat(newCost) > 0
+                          ) {
+                            const calculatedPrice = calculateSalePrice(newCost)
+                            setSalePrice(calculatedPrice)
+                          }
                         }
                       }}
                       className={`input input-bordered join-item focus:border-accent flex-1 ${
@@ -1031,15 +1032,21 @@ export default function NuevoProducto() {
                   <div className="join w-full">
                     <span className="join-item btn btn-outline btn-disabled">$</span>
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       placeholder={
                         settings.autoCalculatePrice && useAutoCalculation
                           ? 'Se calculará automáticamente'
                           : '0.00'
                       }
                       value={salePrice}
-                      onChange={(e) => setSalePrice(e.target.value)}
+                      onChange={(e) => {
+                        const newSalePrice = e.target.value
+                        const regex = /^[0-9]*(\.[0-9]{0,2})?$/
+                        if (regex.test(newSalePrice)) {
+                          setSalePrice(newSalePrice)
+                        }
+                      }}
                       className={`input input-bordered join-item focus:border-accent flex-1 ${
                         errors.salePrice ? 'input-error' : ''
                       } ${
@@ -1249,18 +1256,22 @@ export default function NuevoProducto() {
                               </div>
                               <div className="w-24">
                                 <input
-                                  type="number"
-                                  placeholder="Qty"
-                                  min="1"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="Cant"
                                   value={color.cantidad}
-                                  onChange={(e) =>
-                                    handleColorChange(
-                                      talleIndex,
-                                      colorIndex,
-                                      'cantidad',
-                                      parseInt(e.target.value, 10)
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const newQuantity = e.target.value
+                                    const regex = /^[0-9]*$/
+                                    if (regex.test(newQuantity)) {
+                                      handleColorChange(
+                                        talleIndex,
+                                        colorIndex,
+                                        'cantidad',
+                                        parseInt(newQuantity, 10) || 0
+                                      )
+                                    }
+                                  }}
                                   className="input input-bordered input-sm w-full text-center"
                                   required
                                 />
