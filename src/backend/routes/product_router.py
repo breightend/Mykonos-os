@@ -872,12 +872,14 @@ def get_product_by_barcode(barcode):
             p.sale_price,
             COALESCE(b.brand_name, 'Sin marca') as brand_name,
             p.description,
+            COALESCE(g.group_name, 'Sin grupo') as group_name,
             COALESCE(SUM(ws.quantity), 0) as stock_available
         FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN groups g ON p.group_id = g.id
         LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
         WHERE p.barcode = ?
-        GROUP BY p.id, p.barcode, p.product_name, p.sale_price, b.brand_name, p.description
+        GROUP BY p.id, p.barcode, p.product_name, p.sale_price, b.brand_name, p.description, g.group_name
         """
 
         result = db.execute_query(query, (barcode,))
@@ -909,7 +911,10 @@ def get_product_by_barcode(barcode):
             "description": product[5]
             if isinstance(product, (list, tuple))
             else product.get("description"),
-            "stock_available": product[6]
+            "group_name": product[6]
+            if isinstance(product, (list, tuple))
+            else product.get("group_name"),
+            "stock_available": product[7]
             if isinstance(product, (list, tuple))
             else product.get("stock_available"),
         }

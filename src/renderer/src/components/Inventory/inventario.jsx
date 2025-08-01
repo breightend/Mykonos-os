@@ -12,7 +12,7 @@ import { useSession } from '../../contexts/SessionContext'
 
 pinwheel.register()
 //TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
-
+//TODO agregar codigo de barras.
 export default function Inventario() {
   const [, setLocation] = useLocation()
   const { getCurrentStorage } = useSession()

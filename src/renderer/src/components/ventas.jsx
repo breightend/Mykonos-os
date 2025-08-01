@@ -9,6 +9,7 @@ import { ventasService } from '../services/ventas/ventasService'
 
 //TODO agregar el cliente a la venta
 //TODO agregar el vendedor a la venta
+//TODO agregar logica de regalos
 
 function Ventas() {
   const [, setLocation] = useLocation()
@@ -68,7 +69,7 @@ function Ventas() {
           const nuevoProducto = {
             codigo: productoEncontrado.barcode,
             descripcion: productoEncontrado.product_name,
-            tipo: productoEncontrado.description || 'Sin descripción',
+            tipo: productoEncontrado.group_name || 'Sin grupo',
             precio: productoEncontrado.sale_price,
             marca: productoEncontrado.brand_name,
             cantidad: 1,
@@ -233,7 +234,7 @@ function Ventas() {
                       <th>Código</th>
                       <th>Descripción</th>
                       <th>Cantidad</th>
-                      <th>Tipo</th>
+                      <th>Grupo</th>
                       <th>Precio unitario</th>
                       <th>Marca</th>
                       <th>Stock disponible</th>

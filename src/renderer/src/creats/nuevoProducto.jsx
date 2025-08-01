@@ -7,6 +7,7 @@ import { useSettings } from '../contexts/settingsContext'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
 import BarcodeGenerator from '../componentes especificos/Barcode'
+import BarcodeService from '../services/barcodeService'
 import { fetchSize } from '../services/products/sizeService'
 import { fetchColor } from '../services/products/colorService'
 import { fetchProvider } from '../services/proveedores/proveedorService'
@@ -584,6 +585,29 @@ export default function NuevoProducto() {
 
       console.log('Producto guardado exitosamente:', response)
 
+      // Generar códigos de barras para las variantes después de crear el producto
+      if (response.product_id && productData.stock_variants.length > 0) {
+        try {
+          const barcodeService = new BarcodeService()
+          console.log('🏷️ Generando códigos de barras para variantes...')
+
+          const variants = productData.stock_variants.map((variant) => ({
+            size_id: variant.size_id,
+            color_id: variant.color_id,
+            quantity: variant.quantity
+          }))
+
+          const barcodeResult = await barcodeService.generateVariantBarcodes(
+            response.product_id,
+            variants
+          )
+          console.log('✅ Códigos de barras generados:', barcodeResult)
+        } catch (barcodeError) {
+          console.error('⚠️ Error generando códigos de barras:', barcodeError)
+          // No fallar toda la operación por esto
+        }
+      }
+
       // Mostrar mensaje de éxito si hay imagen
       if (productImage && response.image_id) {
         console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
@@ -609,6 +633,29 @@ export default function NuevoProducto() {
       const response = await postData(productData)
 
       console.log('Producto agregado exitosamente:', response)
+
+      // Generar códigos de barras para las variantes después de crear el producto
+      if (response.product_id && productData.stock_variants.length > 0) {
+        try {
+          const barcodeService = new BarcodeService()
+          console.log('🏷️ Generando códigos de barras para variantes...')
+
+          const variants = productData.stock_variants.map((variant) => ({
+            size_id: variant.size_id,
+            color_id: variant.color_id,
+            quantity: variant.quantity
+          }))
+
+          const barcodeResult = await barcodeService.generateVariantBarcodes(
+            response.product_id,
+            variants
+          )
+          console.log('✅ Códigos de barras generados:', barcodeResult)
+        } catch (barcodeError) {
+          console.error('⚠️ Error generando códigos de barras:', barcodeError)
+          // No fallar toda la operación por esto
+        }
+      }
 
       if (productImage && response.image_id) {
         console.log('✅ Imagen subida exitosamente con ID:', response.image_id)

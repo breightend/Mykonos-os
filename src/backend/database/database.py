@@ -353,6 +353,7 @@ DATABASE_TABLES = {
             "color_id": "INTEGER",  # Identificador del color (puede ser NULL si no aplica).
             "branch_id": "INTEGER NOT NULL",  # Identificador de la sucursal.
             "quantity": "INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0)",  # Cantidad específica de esta variante.
+            "variant_barcode": "TEXT UNIQUE",  # Código de barras único para esta variante específica (talle + color).
             "last_updated": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de última actualización.
         },
         "foreign_keys": [
