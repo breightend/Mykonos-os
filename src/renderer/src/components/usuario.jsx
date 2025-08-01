@@ -4,8 +4,10 @@ import Navbar from '../componentes especificos/navbar'
 import { useSession } from '../contexts/SessionContext'
 import { useState, useEffect } from 'react'
 import { toast, Toaster } from 'react-hot-toast'
+import { pinwheel } from 'ldrs'
 
 export default function Usuario() {
+  pinwheel.register()
   const [, setLocation] = useLocation()
   const { getCurrentUser, getCurrentStorage, logout, changeBranchStorage } = useSession()
 
@@ -153,7 +155,7 @@ export default function Usuario() {
                 </select>
                 {isChangingStorage && (
                   <div className="mt-2 flex items-center justify-center">
-                    <span className="loading loading-spinner loading-sm mr-2"></span>
+                    <l-pinwheel size="35" stroke="3.5" speed="0.9" color="black"></l-pinwheel>
                     <span className="text-sm">Cambiando sucursal...</span>
                   </div>
                 )}

@@ -19,7 +19,6 @@ import ColorSelect from '../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 
 //BUG: El color ahora tiene bug.
-//INVESTIGATING: 🔍 Imagen - agregado logging detallado para debug + fallback en ProductDetailModal
 export default function NuevoProducto() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual

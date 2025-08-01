@@ -8,7 +8,6 @@ import ProductsFamily from '../../modals/modalsInventory/productsFamily'
 import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailModal'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
-import { fetchFamilyProductsTree } from '../../services/products/familyService'
 import { useSession } from '../../contexts/SessionContext'
 
 pinwheel.register()
@@ -30,7 +29,7 @@ export default function Inventario() {
   const [storageList, setStorageList] = useState([])
   const [selectedStorage, setSelectedStorage] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('')
-  const [grupsList, setGrupsList] = useState([])
+  const [selectedGroupData, setSelectedGroupData] = useState(null) // Para almacenar datos del grupo seleccionado
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -84,28 +83,6 @@ export default function Inventario() {
       setStorageList(storageArray)
       console.log('✅ Sucursales cargadas:', storageArray.length, 'sucursales')
 
-      // Cargar grupos de productos
-      console.log('📦 Cargando grupos de productos...')
-      try {
-        const groupsResponse = await fetchFamilyProductsTree()
-        console.log('✅ Respuesta de grupos:', groupsResponse)
-
-        if (
-          groupsResponse &&
-          groupsResponse.status === 'success' &&
-          Array.isArray(groupsResponse.data)
-        ) {
-          setGrupsList(groupsResponse.data)
-          console.log('✅ Grupos cargados:', groupsResponse.data.length, 'grupos')
-        } else {
-          console.log('⚠️ No se pudieron cargar los grupos o están vacíos')
-          setGrupsList([])
-        }
-      } catch (groupError) {
-        console.error('❌ Error al cargar grupos:', groupError)
-        setGrupsList([])
-      }
-
       // Establecer la sucursal por defecto basada en la sesión del usuario
       if (currentStorage?.id) {
         console.log('🏪 Estableciendo sucursal por defecto:', currentStorage.id)
@@ -150,6 +127,32 @@ export default function Inventario() {
     }
   }, [selectedStorage, loadInventoryData])
 
+  // Función para obtener todos los IDs de un grupo y sus hijos recursivamente
+  const getAllGroupIds = (groupData, targetGroupId) => {
+    if (!groupData) return [targetGroupId]
+
+    let allIds = [targetGroupId]
+
+    // Función recursiva para recolectar IDs de hijos
+    const collectChildrenIds = (children) => {
+      if (!children || !Array.isArray(children)) return
+
+      children.forEach((child) => {
+        allIds.push(child.id.toString())
+        if (child.children && child.children.length > 0) {
+          collectChildrenIds(child.children)
+        }
+      })
+    }
+
+    // Si tenemos datos del grupo, recolectar sus hijos
+    if (groupData.children && groupData.children.length > 0) {
+      collectChildrenIds(groupData.children)
+    }
+
+    return [...new Set(allIds)] // Eliminar duplicados
+  }
+
   // Función para filtrar los datos
   const filteredData = inventoryData.filter((row) => {
     // Filtro por término de búsqueda
@@ -167,10 +170,23 @@ export default function Inventario() {
       }
     }
 
-    // Filtro por grupo de producto
+    // Filtro por grupo de producto (incluyendo hijos)
     let matchesGroup = true
     if (selectedGroup && selectedGroup !== '') {
-      matchesGroup = row.group_id?.toString() === selectedGroup
+      if (selectedGroupData) {
+        // Filtro jerárquico: incluir grupo seleccionado y todos sus hijos
+        const allGroupIds = getAllGroupIds(selectedGroupData, selectedGroup)
+        console.log(
+          '🔍 IDs de grupos para filtrar:',
+          allGroupIds,
+          'Producto group_id:',
+          row.group_id
+        )
+        matchesGroup = allGroupIds.includes(row.group_id?.toString())
+      } else {
+        // Filtro simple por group_id directo
+        matchesGroup = row.group_id?.toString() === selectedGroup
+      }
     }
 
     return matchesSearch && matchesGroup
@@ -214,24 +230,11 @@ export default function Inventario() {
     setSelectedStorage(e.target.value)
   }
 
-  const handleGroupChange = (e) => {
-    setSelectedGroup(e.target.value)
-  }
-
-  // Función para aplanar el árbol de grupos y crear una lista simple
-  const flattenGroups = (groups, level = 0) => {
-    let result = []
-    groups.forEach((group) => {
-      result.push({
-        id: group.id,
-        name: '  '.repeat(level) + group.group_name,
-        level: level
-      })
-      if (group.children && group.children.length > 0) {
-        result = result.concat(flattenGroups(group.children, level + 1))
-      }
-    })
-    return result
+  // Nueva función para manejar la selección de grupos desde el modal ProductsFamily
+  const handleGroupSelect = (groupId, groupName, groupData = null) => {
+    setSelectedGroup(groupId ? groupId.toString() : '')
+    setSelectedGroupData(groupData) // Almacenar información completa del grupo
+    console.log('📦 Grupo seleccionado desde modal:', { groupId, groupName, groupData })
   }
 
   const handleMoveInventoryClick = () => {
@@ -261,26 +264,10 @@ export default function Inventario() {
                       storageList.find((s) => s.id.toString() === selectedStorage)?.name ||
                       'Sucursal desconocida'
                     }`}
-                {selectedGroup && (
-                  <span className="ml-2">
-                    📦 Grupo:{' '}
-                    {flattenGroups(grupsList)
-                      .find((g) => g.id.toString() === selectedGroup)
-                      ?.name.trim() || 'Grupo desconocido'}
-                  </span>
-                )}
               </p>
             ) : (
               <p className="mt-1 text-sm text-gray-600">
                 🌍 Mostrando productos de todas las sucursales
-                {selectedGroup && (
-                  <span className="ml-2">
-                    📦 Grupo:{' '}
-                    {flattenGroups(grupsList)
-                      .find((g) => g.id.toString() === selectedGroup)
-                      ?.name.trim() || 'Grupo desconocido'}
-                  </span>
-                )}
               </p>
             )}
           </div>
@@ -363,19 +350,19 @@ export default function Inventario() {
           </ul>
 
           {/* Filtros y búsqueda */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* Selector de sucursal */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Sucursal:</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium text-gray-600">Sucursal:</span>
               <select
-                className="select select-bordered select-warning min-w-48"
+                className="select select-bordered select-warning select-sm w-44"
                 value={selectedStorage}
                 onChange={handleStorageChange}
               >
-                <option value="">🌍 Todas las sucursales</option>
+                <option value="">🌍 Todas</option>
                 {currentStorage && (
                   <option value={currentStorage.id} className="font-semibold">
-                    🏢 {currentStorage.name} (Mi sucursal)
+                    🏢 {currentStorage.name}
                   </option>
                 )}
                 {storageList &&
@@ -389,43 +376,67 @@ export default function Inventario() {
               </select>
             </div>
 
-            {/* Selector de grupo */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Grupo:</span>
-              <select
-                className="select select-bordered select-warning min-w-48"
-                value={selectedGroup}
-                onChange={handleGroupChange}
-              >
-                <option value="">📦 Todos los grupos</option>
-                {flattenGroups(grupsList).map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Filtro de grupo mejorado y compacto */}
+            {selectedGroup ? (
+              <div className="flex items-center gap-1">
+                <div className="badge badge-warning gap-1 px-2 py-3 text-sm font-medium">
+                  <span className="text-xs">📦</span>
+                  <span className="max-w-32 truncate">
+                    {selectedGroupData?.group_name || `Grupo ${selectedGroup}`}
+                  </span>
+                  {selectedGroupData?.children && selectedGroupData.children.length > 0 && (
+                    <span className="badge badge-xs badge-outline ml-1">
+                      +
+                      {(() => {
+                        const allIds = getAllGroupIds(selectedGroupData, selectedGroup)
+                        return allIds.length - 1 // -1 porque no contamos el grupo padre
+                      })()}
+                    </span>
+                  )}
+                  <button
+                    className="ml-1 rounded-full p-0.5 transition-colors hover:bg-red-200 hover:text-red-700"
+                    onClick={() => {
+                      setSelectedGroup('')
+                      setSelectedGroupData(null)
+                    }}
+                    title="Quitar filtro de grupo"
+                  >
+                    <span className="text-xs leading-none">✕</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="tooltip" data-tip="Usa el botón 'Grupos' para filtrar por categoría">
+                <div className="badge badge-ghost gap-1 px-2 py-3 text-xs">
+                  <span className="opacity-50">📦</span>
+                  <span className="italic opacity-50">Sin filtro</span>
+                </div>
+              </div>
+            )}
 
-            {/* Barra de búsqueda */}
-            <label className="input input-bordered input-warning flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Buscar..."
-                className="grow"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="h-4 w-4" />
-            </label>
-            <label className="label cursor-pointer gap-2">
-              <span className="label-text">Buscar solo por ID</span>
-              <input
-                type="checkbox"
-                checked={searchById}
-                onChange={(e) => setSearchById(e.target.checked)}
-                className="checkbox checkbox-warning"
-              />
-            </label>
+            {/* Barra de búsqueda más compacta */}
+            <div className="flex items-center gap-1">
+              <label className="input input-bordered input-warning input-sm flex w-48 items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  className="grow text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Search className="h-3 w-3" />
+              </label>
+              <label className="label cursor-pointer gap-1 p-0">
+                <input
+                  type="checkbox"
+                  checked={searchById}
+                  onChange={(e) => setSearchById(e.target.checked)}
+                  className="checkbox checkbox-warning checkbox-xs"
+                  title="Buscar solo por ID"
+                />
+                <span className="label-text text-xs">ID</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -604,7 +615,7 @@ export default function Inventario() {
           productId={selectedProductId}
         />
 
-        <ProductsFamily />
+        <ProductsFamily onGroupSelect={handleGroupSelect} selectedGroupId={selectedGroup} />
       </div>
     </div>
   )

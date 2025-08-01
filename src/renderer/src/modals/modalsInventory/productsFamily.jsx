@@ -3,7 +3,7 @@ import { postFamilyData, fetchFamilyProducts } from '../../services/products/fam
 import { Plus, Minus } from 'lucide-react'
 import buildHierarchy from '../../componentes especificos/FamilyGroupList'
 
-export default function ProductsFamily() {
+export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
   const [formData, setFormData] = useState({
     group_name: '',
     parent_group_id: '',
@@ -19,7 +19,6 @@ export default function ProductsFamily() {
         setFamilyGroup(familyGroupResponse)
         const hierarchy = buildHierarchy(familyGroupResponse)
         setHierarchicalFamilyGroup(hierarchy)
-
       } catch (error) {
         console.error('Error fetching family products:', error)
       }
@@ -31,6 +30,72 @@ export default function ProductsFamily() {
 
   const handleAgregarALaFamilia = () => {
     setMostrarAgregarFamilia(!mostrarAgregarFamilia)
+  }
+
+  // Nueva función para manejar la selección de grupos para filtrado
+  const handleGroupClick = (groupId, groupName) => {
+    if (onGroupSelect) {
+      // Encontrar los datos completos del grupo incluyendo sus hijos
+      const findGroupData = (groups, targetId) => {
+        for (const group of groups) {
+          if (group.id === targetId) {
+            return group
+          }
+          if (group.children && group.children.length > 0) {
+            const found = findGroupData(group.children, targetId)
+            if (found) return found
+          }
+        }
+        return null
+      }
+
+      const groupData = findGroupData(hierarchicalFamilyGroup, groupId)
+      console.log('🔍 Datos del grupo encontrado:', groupData)
+      console.log('🌳 Jerarquía completa disponible:', hierarchicalFamilyGroup)
+      onGroupSelect(groupId, groupName, groupData)
+    }
+  }
+
+  // Función para obtener información del grupo activo
+  const getActiveGroupInfo = () => {
+    if (!selectedGroupId) return ''
+
+    const findGroup = (groups, id) => {
+      for (const group of groups) {
+        if (group.id.toString() === id) return group
+        if (group.children) {
+          const found = findGroup(group.children, id)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    const getAllChildrenCount = (group) => {
+      if (!group || !group.children) return 0
+      let count = group.children.length
+      group.children.forEach((child) => {
+        count += getAllChildrenCount(child)
+      })
+      return count
+    }
+
+    const activeGroup = findGroup(hierarchicalFamilyGroup, selectedGroupId)
+    const totalChildCount = getAllChildrenCount(activeGroup)
+    const directChildCount = activeGroup?.children?.length || 0
+
+    return `${activeGroup?.group_name || `ID ${selectedGroupId}`}${
+      totalChildCount > 0
+        ? ` (${directChildCount} subgrupos directos, ${totalChildCount} total)`
+        : ' (sin subgrupos)'
+    }`
+  }
+
+  // Función para limpiar el filtro
+  const handleClearFilter = () => {
+    if (onGroupSelect) {
+      onGroupSelect('', '', null)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -55,17 +120,34 @@ export default function ProductsFamily() {
     }
   }
 
-  const FamilyGroupList = ({ groups }) => {
+  const FamilyGroupList = ({ groups, onGroupClick, selectedId }) => {
     return (
       <ul className="tree">
-        {groups && groups.map((group) => (
-          <li key={group.id}>
-            {group.group_name}
-            {group.children && group.children.length > 0 && (
-              <FamilyGroupList groups={group.children} />
-            )}
-          </li>
-        ))}
+        {groups &&
+          groups.map((group) => (
+            <li key={group.id} className="relative">
+              <div
+                className={`hover:bg-base-200 cursor-pointer rounded p-2 transition-colors ${
+                  selectedId === group.id ? 'bg-warning/20 border-warning border-l-4' : ''
+                }`}
+                onClick={() => onGroupClick(group.id, group.group_name)}
+              >
+                <span className="flex items-center gap-2">
+                  <span>{group.group_name}</span>
+                  {selectedId === group.id && (
+                    <span className="badge badge-warning badge-xs">ACTIVO</span>
+                  )}
+                </span>
+              </div>
+              {group.children && group.children.length > 0 && (
+                <FamilyGroupList
+                  groups={group.children}
+                  onGroupClick={onGroupClick}
+                  selectedId={selectedId}
+                />
+              )}
+            </li>
+          ))}
       </ul>
     )
   }
@@ -78,25 +160,54 @@ export default function ProductsFamily() {
 
           <div className="mb-4 flex items-center justify-between border-b pb-2">
             <h4 className="text-lg">Listado de Familias</h4>
-            <button
-              className={`btn btn-sm ${!mostrarAgregarFamilia ? 'btn-primary' : 'btn-outline'}`}
-              onClick={handleAgregarALaFamilia}
-            >
-              {!mostrarAgregarFamilia ? (
-                <>
-                  <Plus className="mr-2" size={16} /> Agregar Familia
-                </>
-              ) : (
-                <>
-                  <Minus className="mr-2" size={16} /> Ocultar Formulario
-                </>
+            <div className="flex items-center gap-2">
+              {selectedGroupId && (
+                <button
+                  className="btn btn-sm btn-warning"
+                  onClick={handleClearFilter}
+                  title="Quitar filtro de inventario"
+                >
+                  ✕ Quitar Filtro
+                </button>
               )}
-            </button>
+              <button
+                className={`btn btn-sm ${!mostrarAgregarFamilia ? 'btn-primary' : 'btn-outline'}`}
+                onClick={handleAgregarALaFamilia}
+              >
+                {!mostrarAgregarFamilia ? (
+                  <>
+                    <Plus className="mr-2" size={16} /> Agregar Familia
+                  </>
+                ) : (
+                  <>
+                    <Minus className="mr-2" size={16} /> Ocultar Formulario
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Instrucciones para el filtro */}
+          <div className="mb-4 rounded bg-blue-50 p-3">
+            <p className="text-sm text-blue-800">
+              💡 <strong>Filtrar inventario:</strong> Haz clic en cualquier grupo para filtrar los
+              productos. El filtro incluirá automáticamente todos los productos de ese grupo y sus
+              subgrupos.
+              {selectedGroupId && (
+                <span className="text-warning ml-2 font-semibold">
+                  🔍 Filtro activo: {getActiveGroupInfo()}
+                </span>
+              )}
+            </p>
           </div>
 
           {hierarchicalFamilyGroup.length > 0 ? (
             <div className="py-2">
-              <FamilyGroupList groups={hierarchicalFamilyGroup} />
+              <FamilyGroupList
+                groups={hierarchicalFamilyGroup}
+                onGroupClick={handleGroupClick}
+                selectedId={selectedGroupId ? parseInt(selectedGroupId) : null}
+              />
             </div>
           ) : (
             <p className="text-gray-500 italic">No hay familias de productos creadas.</p>
