@@ -130,12 +130,21 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                     {productDetails.product_image ? (
                       <div className="group relative">
                         <img
-                          src={`data:image/jpeg;base64,${productDetails.product_image}`}
+                          src={`data:image/png;base64,${productDetails.product_image}`}
                           alt={productDetails.product_name}
                           className="h-80 w-80 rounded-xl border-2 border-gray-200 object-cover shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl"
                           onError={(e) => {
-                            e.target.style.display = 'none'
-                            e.target.nextSibling.style.display = 'flex'
+                            // Si falla con PNG, intentar con JPEG
+                            if (e.target.src.includes('data:image/png')) {
+                              e.target.src = `data:image/jpeg;base64,${productDetails.product_image}`
+                            } else if (e.target.src.includes('data:image/jpeg')) {
+                              // Si también falla con JPEG, intentar con WEBP
+                              e.target.src = `data:image/webp;base64,${productDetails.product_image}`
+                            } else {
+                              // Si fallan todos los tipos, mostrar el placeholder
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }
                           }}
                         />
                         <div className="hidden h-80 w-80 flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-gray-100">

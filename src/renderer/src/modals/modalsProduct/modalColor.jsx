@@ -7,7 +7,6 @@ import {
 } from '../../services/products/colorService'
 import { useEffect, useState } from 'react'
 
-//FIXED: ✅ Eliminación inteligente de colores implementada - verifica uso en productos
 
 export default function ModalColor() {
   const [formData, setFormData] = useState({

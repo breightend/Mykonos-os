@@ -18,9 +18,8 @@ import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 import ColorSelect from '../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 
-//TODO: colocar la condicion que si un color esta colocado en un producto no se puede eliminar, si no tiene ningun vinculo chau chau.
 //BUG: El color ahora tiene bug.
-//BUG: al agregar la cantidad, no me deja poner 0
+//INVESTIGATING: 🔍 Imagen - agregado logging detallado para debug + fallback en ProductDetailModal
 export default function NuevoProducto() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual
@@ -351,9 +350,18 @@ export default function NuevoProducto() {
           setIsUploadingImage(true)
           const base64 = await convertToBase64(file)
           setProductImage(base64)
+
+          // Extraer información del tipo MIME para debugging
+          const mimeType = file.type
+          const dataUriPrefix = base64.split(',')[0]
+
           console.log(
             '✅ Imagen cargada exitosamente:',
             file.name,
+            'Tipo MIME:',
+            mimeType,
+            'Data URI prefix:',
+            dataUriPrefix,
             'Tamaño:',
             (file.size / 1024 / 1024).toFixed(2),
             'MB'
@@ -448,9 +456,19 @@ export default function NuevoProducto() {
     if (productImage) {
       if (productImage.startsWith('data:')) {
         imageToSend = productImage.split(',')[1] // Extraer solo la parte base64
+        console.log('🖼️ Preparando imagen para envío:')
+        console.log('  - Imagen original:', productImage.substring(0, 100) + '...')
+        console.log('  - Tipo MIME detectado:', productImage.split(',')[0])
+        console.log(
+          '  - Base64 enviado (primeros 100 chars):',
+          imageToSend.substring(0, 100) + '...'
+        )
       } else {
         imageToSend = productImage
+        console.log('🖼️ Imagen ya está en formato base64 puro')
       }
+    } else {
+      console.log('🖼️ No hay imagen para enviar')
     }
 
     return {
