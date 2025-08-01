@@ -1,10 +1,13 @@
 import { Palette, Trash2 } from 'lucide-react'
-import { fetchColor, postData, deleteColor } from '../../services/products/colorService'
+import {
+  fetchColor,
+  postData,
+  deleteColor,
+  checkColorInUse
+} from '../../services/products/colorService'
 import { useEffect, useState } from 'react'
 
-//TODO: arreglar funcion del backend GET
-//TODO: Ver el tema del post
-//TODO: poder eliminar colores
+//FIXED: ✅ Eliminación inteligente de colores implementada - verifica uso en productos
 
 export default function ModalColor() {
   const [formData, setFormData] = useState({
@@ -12,6 +15,14 @@ export default function ModalColor() {
     color_hex: '#000000'
   })
   const [colors, setColors] = useState([])
+  const [toast, setToast] = useState({ show: false, message: '', type: '' })
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type })
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: '' })
+    }, 3000)
+  }
 
   const onChange = (e) => {
     const { name, value } = e.target
@@ -31,17 +42,33 @@ export default function ModalColor() {
       })
       const updatedColors = await fetchColor()
       setColors(updatedColors)
+      showToast('Color agregado exitosamente', 'success')
     } catch (error) {
       console.error('Error:', error)
+      showToast('Error al agregar el color. Intente nuevamente.', 'error')
     }
   }
-  const handleDeleteColor = (colorId) => async () => {
+  const handleDeleteColor = (colorId, colorName) => async () => {
     try {
+      // Verificar si el color está siendo usado por algún producto
+      const usageResponse = await checkColorInUse(colorId)
+
+      if (usageResponse.isInUse && usageResponse.productCount > 0) {
+        showToast(
+          `No se puede eliminar el color "${colorName}" porque está siendo usado por ${usageResponse.productCount} producto(s)`,
+          'error'
+        )
+        return
+      }
+
+      // Si no está en uso, proceder con la eliminación
       await deleteColor(colorId)
       const response = await fetchColor()
       setColors(response)
+      showToast(`Color "${colorName}" eliminado exitosamente`, 'success')
     } catch (error) {
       console.error('Error deleting color:', error)
+      showToast('Error al eliminar el color. Intente nuevamente.', 'error')
     }
   }
 
@@ -93,8 +120,8 @@ export default function ModalColor() {
                       </td>
                       <td>
                         <button
-                          className="btn btn-sm btn-warning"
-                          onClick={handleDeleteColor(color.id)}
+                          className="btn btn-sm btn-error text-white"
+                          onClick={handleDeleteColor(color.id, color.color_name)}
                         >
                           <Trash2 className="" size={18} />
                         </button>
@@ -148,6 +175,15 @@ export default function ModalColor() {
           </form>
         </div>
       </dialog>
+
+      {/* Toast de notificaciones */}
+      {toast.show && (
+        <div className="toast toast-top toast-end z-50">
+          <div className={`alert ${toast.type === 'success' ? 'alert-success' : 'alert-error'}`}>
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

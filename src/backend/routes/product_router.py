@@ -387,6 +387,39 @@ def eliminar_color(color_id):
         ), 500
 
 
+@product_router.route("/colors/<color_id>/usage", methods=["GET"])
+def verificar_uso_color(color_id):
+    """
+    Verifica si un color está siendo usado por algún producto.
+    Retorna información sobre cuántos productos lo usan.
+    """
+    try:
+        db = Database()
+
+        # Verificar en la tabla de relaciones product_colors
+        products_using_color = db.get_products_by_color(color_id)
+
+        product_count = len(products_using_color) if products_using_color else 0
+        is_in_use = product_count > 0
+
+        return jsonify(
+            {
+                "isInUse": is_in_use,
+                "productCount": product_count,
+                "message": f"Color {'en uso' if is_in_use else 'no está en uso'} por {product_count} producto(s)",
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify(
+            {
+                "error": f"Error al verificar uso del color: {str(e)}",
+                "isInUse": True,  # Por seguridad, asumir que está en uso si hay error
+                "productCount": 0,
+            }
+        ), 500
+
+
 @product_router.route("/familyProducts", methods=["POST"])
 def recibir_datos_familia_producto():
     data = request.json

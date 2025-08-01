@@ -30,3 +30,13 @@ export const deleteColor = async (colorId) => {
         throw error
     }
 }
+
+export const checkColorInUse = async (colorId) => {
+    try {
+        const response = await axios.get(`http://localhost:5000/api/product/colors/${colorId}/usage`)
+        return response.data
+    } catch (error) {
+        console.error("Error checking color usage:", error)
+        throw error
+    }
+}
