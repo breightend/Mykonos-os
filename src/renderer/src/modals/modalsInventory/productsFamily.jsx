@@ -31,7 +31,6 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
   const handleAgregarALaFamilia = () => {
     setMostrarAgregarFamilia(!mostrarAgregarFamilia)
   }
-
   // Nueva función para manejar la selección de grupos para filtrado
   const handleGroupClick = (groupId, groupName) => {
     if (onGroupSelect) {
@@ -54,6 +53,13 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
       console.log('🌳 Jerarquía completa disponible:', hierarchicalFamilyGroup)
       onGroupSelect(groupId, groupName, groupData)
     }
+  }
+
+  // Nueva función para manejar doble clic: seleccionar grupo y cerrar modal
+  const handleGroupDoubleClick = (groupId, groupName) => {
+    handleGroupClick(groupId, groupName)
+    // Cerrar el modal
+    document.getElementById('productsFamily').close()
   }
 
   // Función para obtener información del grupo activo
@@ -120,117 +126,132 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
     }
   }
 
-  const FamilyGroupList = ({ groups, onGroupClick, selectedId }) => {
+  const FamilyGroupList = ({ groups, onGroupClick, onGroupDoubleClick, selectedId, level = 0 }) => {
     return (
-      <ul className="tree">
+      <>
         {groups &&
           groups.map((group) => (
-            <li key={group.id} className="relative">
+            <div key={group.id}>
               <div
-                className={`hover:bg-base-200 cursor-pointer rounded p-2 transition-colors ${
-                  selectedId === group.id ? 'bg-warning/20 border-warning border-l-4' : ''
+                className={`hover:bg-base-200 cursor-pointer rounded-md px-2 py-1 transition-all duration-200 ${
+                  selectedId === group.id
+                    ? 'bg-warning/20 border-warning border-l-2 shadow-sm'
+                    : 'hover:shadow-sm'
                 }`}
+                style={{ marginLeft: `${level * 12}px` }}
                 onClick={() => onGroupClick(group.id, group.group_name)}
+                onDoubleClick={() => onGroupDoubleClick(group.id, group.group_name)}
+                title="Clic para seleccionar, doble clic para filtrar y cerrar"
               >
-                <span className="flex items-center gap-2">
-                  <span>{group.group_name}</span>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    {/* Icono simple para jerarquía */}
+                    {level > 0 && <span className="text-xs text-gray-400">→</span>}
+                    <span className="text-sm">{group.group_name}</span>
+                    {group.children && group.children.length > 0 && (
+                      <span className="badge badge-ghost badge-xs">{group.children.length}</span>
+                    )}
+                  </span>
                   {selectedId === group.id && (
                     <span className="badge badge-warning badge-xs">ACTIVO</span>
                   )}
-                </span>
+                </div>
               </div>
               {group.children && group.children.length > 0 && (
                 <FamilyGroupList
                   groups={group.children}
                   onGroupClick={onGroupClick}
+                  onGroupDoubleClick={onGroupDoubleClick}
                   selectedId={selectedId}
+                  level={level + 1}
                 />
               )}
-            </li>
+            </div>
           ))}
-      </ul>
+      </>
     )
   }
 
   return (
     <div>
       <dialog id="productsFamily" className="modal">
-        <div className="modal-box max-w-5xl p-6">
-          <h3 className="mb-4 text-xl font-semibold">Administrar Familias de Productos</h3>
+        <div className="modal-box max-w-3xl p-3">
+          <h3 className="mb-2 text-base font-semibold">🗂️ Familias de Productos</h3>
 
-          <div className="mb-4 flex items-center justify-between border-b pb-2">
-            <h4 className="text-lg">Listado de Familias</h4>
-            <div className="flex items-center gap-2">
+          <div className="mb-2 flex items-center justify-between border-b pb-1">
+            <h4 className="text-sm font-medium">Listado de Familias</h4>
+            <div className="flex items-center gap-1">
               {selectedGroupId && (
                 <button
-                  className="btn btn-sm btn-warning"
+                  className="btn btn-xs btn-warning"
                   onClick={handleClearFilter}
                   title="Quitar filtro de inventario"
                 >
-                  ✕ Quitar Filtro
+                  ✕ Quitar
                 </button>
               )}
               <button
-                className={`btn btn-sm ${!mostrarAgregarFamilia ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn btn-xs ${!mostrarAgregarFamilia ? 'btn-primary' : 'btn-outline'}`}
                 onClick={handleAgregarALaFamilia}
               >
                 {!mostrarAgregarFamilia ? (
                   <>
-                    <Plus className="mr-2" size={16} /> Agregar Familia
+                    <Plus className="mr-1" size={10} /> Nueva
                   </>
                 ) : (
                   <>
-                    <Minus className="mr-2" size={16} /> Ocultar Formulario
+                    <Minus className="mr-1" size={10} /> Cerrar
                   </>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Instrucciones para el filtro */}
-          <div className="mb-4 rounded bg-blue-50 p-3">
-            <p className="text-sm text-blue-800">
-              💡 <strong>Filtrar inventario:</strong> Haz clic en cualquier grupo para filtrar los
-              productos. El filtro incluirá automáticamente todos los productos de ese grupo y sus
-              subgrupos.
+          {/* Instrucciones super compactas */}
+          <div className="mb-2 rounded bg-blue-50 p-1.5">
+            <p className="text-xs text-blue-800">
+              💡 <strong>Clic:</strong> seleccionar - <strong>Doble clic:</strong> filtrar y cerrar
               {selectedGroupId && (
-                <span className="text-warning ml-2 font-semibold">
-                  🔍 Filtro activo: {getActiveGroupInfo()}
+                <span className="text-warning ml-1 text-xs font-semibold">
+                  🔍 {getActiveGroupInfo()}
                 </span>
               )}
             </p>
           </div>
 
           {hierarchicalFamilyGroup.length > 0 ? (
-            <div className="py-2">
+            <div className="max-h-72 space-y-0 overflow-y-auto">
               <FamilyGroupList
                 groups={hierarchicalFamilyGroup}
                 onGroupClick={handleGroupClick}
+                onGroupDoubleClick={handleGroupDoubleClick}
                 selectedId={selectedGroupId ? parseInt(selectedGroupId) : null}
               />
             </div>
           ) : (
-            <p className="text-gray-500 italic">No hay familias de productos creadas.</p>
+            <p className="py-3 text-center text-xs text-gray-500 italic">
+              No hay familias de productos creadas.
+            </p>
           )}
 
           {mostrarAgregarFamilia && (
-            <div className="mt-6 border-t pt-4">
-              <h4 className="mb-2 text-lg font-semibold">Agregar Nueva Familia</h4>
-              <div className="flex flex-col gap-3">
+            <div className="mt-2 border-t pt-2">
+              <h4 className="mb-1 text-xs font-semibold">➕ Nueva Familia</h4>
+              <div className="grid grid-cols-1 gap-1 md:grid-cols-2">
                 {familyGroup && (
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">Selecciona la familia padre (opcional):</span>
+                    <label className="label py-0.5">
+                      <span className="label-text text-xs">Familia padre:</span>
                     </label>
                     <select
-                      className="select select-bordered w-full max-w-md"
+                      className="select select-bordered select-xs w-full"
                       name="parent_group_id"
                       onChange={(e) => {
                         setFormData({ ...formData, parent_group_id: e.target.value })
                       }}
                       value={formData.parent_group_id || ''}
                     >
-                      <option value="">Ninguna (es raíz)</option>
+                      <option value="">Ninguna</option>
                       {familyGroup.map((group) => (
                         <option key={group.id} value={group.id}>
                           {group.group_name}
@@ -240,40 +261,40 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
                   </div>
                 )}
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Nombre de la familia:</span>
+                  <label className="label py-0.5">
+                    <span className="label-text text-xs">Nombre:</span>
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered w-full max-w-md"
+                    className="input input-bordered input-xs w-full"
                     name="group_name"
-                    placeholder="Nombre de la familia"
+                    placeholder="Ej: Pantalones..."
                     onChange={(e) => {
                       setFormData({ ...formData, group_name: e.target.value })
                     }}
                     value={formData.group_name}
                   />
                 </div>
-                <div className="form-control">
-                  <label className="label cursor-pointer">
-                    <span className="label-text">Marcar como raíz principal:</span>
+                <div className="form-control col-span-full">
+                  <label className="label cursor-pointer justify-start gap-1 py-0.5">
                     <input
                       type="checkbox"
-                      className="checkbox checkbox-primary ml-2"
+                      className="checkbox checkbox-primary checkbox-xs"
                       name="marked_as_root"
                       onChange={(e) => {
                         setFormData({ ...formData, marked_as_root: e.target.checked ? 1 : 0 })
                       }}
                       checked={formData.marked_as_root === 1 || formData.marked_as_root === true}
                     />
+                    <span className="label-text text-xs">Categoría principal</span>
                   </label>
                 </div>
               </div>
-              <div className="modal-action mt-4 justify-start">
-                <button className="btn btn-primary" onClick={handleSubmit}>
-                  <Plus className="mr-2" size={16} /> Agregar
+              <div className="modal-action mt-2 justify-start">
+                <button className="btn btn-primary btn-xs" onClick={handleSubmit}>
+                  <Plus className="mr-1" size={10} /> Crear
                 </button>
-                <button className="btn btn-outline" onClick={handleAgregarALaFamilia}>
+                <button className="btn btn-outline btn-xs" onClick={handleAgregarALaFamilia}>
                   Cancelar
                 </button>
               </div>
@@ -281,8 +302,8 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
           )}
 
           <form method="dialog">
-            <div className="modal-action justify-end">
-              <button className="btn btn-neutral">Cerrar</button>
+            <div className="modal-action mt-1 justify-end">
+              <button className="btn btn-neutral btn-xs">✕ Cerrar</button>
             </div>
           </form>
         </div>
