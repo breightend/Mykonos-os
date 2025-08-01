@@ -429,25 +429,24 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
         </div>
 
         {/* Footer */}
-        <div className="footer bg-base-100 text-base-content p-4">
-          <div className="flex items-center justify-between">
+        <div className="footer border-base-300 bg-base-100 border-t p-4">
+          {/* Contenedor que empuja los botones a la derecha */}
+          <div className="flex w-full justify-end gap-3">
+            {/* Acción secundaria (menos llamativa) */}
             <button
               onClick={() => setLocation(`/editarProducto?id=${productId}`)}
               type="button"
-              className="btn btn-secondary h-12 items-center gap-2 rounded-lg px-6 py-2 text-black transition-colors"
+              className="btn btn-primary h-12 gap-2 rounded-lg" // Usamos btn-primary para destacar
               disabled={!productDetails}
             >
               <Edit className="h-4 w-4" />
               Editar Producto
             </button>
-
-            <button
-              onClick={onClose}
-              type="button"
-              className="btn btn-neutral hover:bg-neutral/90 h-12 rounded-lg px-6 py-2 text-white transition-colors"
-            >
+            <button onClick={onClose} type="button" className="btn btn-neutral h-12 rounded-lg">
               Cerrar
             </button>
+
+            {/* Acción principal (más llamativa) */}
           </div>
         </div>
       </div>
