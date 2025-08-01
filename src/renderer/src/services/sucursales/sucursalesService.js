@@ -6,26 +6,46 @@ export async function fetchSucursales() {
         console.log('🌐 Intentando fetch a: http://localhost:5000/api/storage/')
         const response = await axios.get('http://localhost:5000/api/storage/')
         console.log('✅ Respuesta recibida:', response)
+        console.log('📊 Status de respuesta:', response.status)
         console.log('📊 Datos de sucursales:', response.data)
 
-        // Ahora el backend devuelve directamente el array
-        const data = response.data || []
-        console.log('📋 Sucursales procesadas:', data)
-        console.log('📋 Cantidad de sucursales:', data.length)
+        // Verificar si la respuesta es exitosa
+        if (response.status === 200) {
+            // El backend devuelve directamente el array
+            const data = response.data || []
+            console.log('📋 Sucursales procesadas:', data)
+            console.log('📋 Cantidad de sucursales:', data.length)
 
-        return Array.isArray(data) ? data : []
+            // Devolver en formato estándar para compatibilidad
+            return {
+                status: 'success',
+                data: Array.isArray(data) ? data : []
+            }
+        } else {
+            console.warn('⚠️ Respuesta no exitosa:', response.status)
+            return {
+                status: 'error',
+                data: [],
+                message: `HTTP ${response.status}`
+            }
+        }
     } catch (error) {
         console.error('❌ Error fetching sucursales:', error)
         console.error('❌ Error response:', error.response?.data)
         console.error('❌ Error status:', error.response?.status)
+        console.error('❌ Error message:', error.message)
 
         // Si es un error de red o el servidor no responde
         if (!error.response) {
             console.error('❌ Error de conexión - servidor no responde')
         }
 
-        // Devolver array vacío en caso de error para evitar crashes
-        return []
+        // Devolver formato estándar con error
+        return {
+            status: 'error',
+            data: [],
+            message: error.message || 'Error desconocido'
+        }
     }
 }
 

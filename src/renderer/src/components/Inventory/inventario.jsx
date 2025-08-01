@@ -12,6 +12,7 @@ import { useSession } from '../../contexts/SessionContext'
 
 pinwheel.register()
 //TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
+
 export default function Inventario() {
   const [, setLocation] = useLocation()
   const { getCurrentStorage } = useSession()
@@ -19,7 +20,6 @@ export default function Inventario() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editedData, setEditedData] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
-  const [searchById, setSearchById] = useState(false)
 
   // Nuevo estado para el modal de detalles
   const [productDetailModalOpen, setProductDetailModalOpen] = useState(false)
@@ -73,15 +73,40 @@ export default function Inventario() {
 
       // Primero cargar las sucursales
       console.log('🏪 Cargando sucursales...')
-      const storagesResponse = await fetchSucursales()
-      console.log('✅ Respuesta de sucursales:', storagesResponse)
+      try {
+        const storagesResponse = await fetchSucursales()
+        console.log('✅ Respuesta de sucursales:', storagesResponse)
 
-      if (!storagesResponse || storagesResponse.status !== 'success') {
-        throw new Error('No se pudieron cargar las sucursales - respuesta no exitosa')
+        // Verificar si la respuesta es un array directamente o un objeto con status
+        let storageArray = []
+        if (Array.isArray(storagesResponse)) {
+          // Si es un array directamente
+          storageArray = storagesResponse
+          console.log('✅ Sucursales recibidas como array:', storageArray.length, 'sucursales')
+        } else if (
+          storagesResponse &&
+          storagesResponse.status === 'success' &&
+          Array.isArray(storagesResponse.data)
+        ) {
+          // Si es un objeto con status y data
+          storageArray = storagesResponse.data
+          console.log('✅ Sucursales recibidas con status:', storageArray.length, 'sucursales')
+        } else {
+          // Si no es ninguno de los formatos esperados
+          console.warn('⚠️ Formato de respuesta inesperado:', storagesResponse)
+          storageArray = []
+        }
+
+        setStorageList(storageArray)
+
+        if (storageArray.length === 0) {
+          console.warn('⚠️ No se encontraron sucursales o hubo un problema en la carga')
+        }
+      } catch (storageError) {
+        console.error('❌ Error específico al cargar sucursales:', storageError)
+        setStorageList([])
+        // No lanzar el error aquí, continuar con la carga del inventario
       }
-      const storageArray = Array.isArray(storagesResponse.data) ? storagesResponse.data : []
-      setStorageList(storageArray)
-      console.log('✅ Sucursales cargadas:', storageArray.length, 'sucursales')
 
       // Establecer la sucursal por defecto basada en la sesión del usuario
       if (currentStorage?.id) {
@@ -100,16 +125,6 @@ export default function Inventario() {
       const errorMessage = err.message || 'Error desconocido al cargar datos iniciales'
       setError(errorMessage)
       console.error('💥 Error en loadInitialData:', err)
-
-      // Si fallan las sucursales, al menos intentamos cargar productos
-      if (err.message?.includes('sucursales')) {
-        console.log('🔄 Intentando cargar inventario sin sucursales...')
-        try {
-          await loadInventoryData()
-        } catch (inventoryErr) {
-          console.error('💥 También falló la carga de inventario:', inventoryErr)
-        }
-      }
     } finally {
       setLoading(false)
     }
@@ -158,16 +173,12 @@ export default function Inventario() {
     // Filtro por término de búsqueda
     let matchesSearch = true
     if (searchTerm) {
-      if (searchById) {
-        matchesSearch = row.id.toString().includes(searchTerm)
-      } else {
-        matchesSearch =
-          row.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          row.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          row.fecha_edicion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          row.id.toString().includes(searchTerm) ||
-          (row.grupo && row.grupo.toLowerCase().includes(searchTerm.toLowerCase()))
-      }
+      matchesSearch =
+        row.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.fecha_edicion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (row.barcode && row.barcode.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (row.grupo && row.grupo.toLowerCase().includes(searchTerm.toLowerCase()))
     }
 
     // Filtro por grupo de producto (incluyendo hijos)
@@ -293,14 +304,11 @@ export default function Inventario() {
 
         {/* Info sobre la carga de sucursales */}
         {storageList.length === 0 && !loading && !error && (
-          <div className="alert alert-warning mb-4">
+          <div className="alert alert-info mb-4">
             <div className="flex items-center justify-between">
-              <span>⚠️ No se pudieron cargar las sucursales. Mostrando todos los productos.</span>
-              <button
-                className="btn btn-sm btn-outline btn-warning"
-                onClick={() => loadInitialData()}
-              >
-                Recargar sucursales
+              <span>ℹ️ No se pudieron cargar las sucursales. Mostrando todos los productos.</span>
+              <button className="btn btn-sm btn-outline btn-info" onClick={() => loadInitialData()}>
+                Reintentar cargar sucursales
               </button>
             </div>
           </div>
@@ -353,7 +361,7 @@ export default function Inventario() {
           <div className="flex items-center gap-2">
             {/* Selector de sucursal */}
             <div className="flex items-center gap-1">
-              <span className="text-xs font-medium text-gray-600">Sucursal:</span>
+              <span className="text-sm font-medium text-gray-600">Sucursal:</span>
               <select
                 className="select select-bordered select-warning select-sm w-44"
                 value={selectedStorage}
@@ -419,23 +427,14 @@ export default function Inventario() {
               <label className="input input-bordered input-warning input-sm flex w-48 items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Buscar..."
+                  placeholder="Buscar por producto, marca, grupo o código de barras..."
                   className="grow text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <Search className="h-3 w-3" />
               </label>
-              <label className="label cursor-pointer gap-1 p-0">
-                <input
-                  type="checkbox"
-                  checked={searchById}
-                  onChange={(e) => setSearchById(e.target.checked)}
-                  className="checkbox checkbox-warning checkbox-xs"
-                  title="Buscar solo por ID"
-                />
-                <span className="label-text text-xs">ID</span>
-              </label>
+              {/* Ahora busca por código de barras además de todos los demás campos */}
             </div>
           </div>
         </div>

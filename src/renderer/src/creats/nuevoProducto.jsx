@@ -19,6 +19,7 @@ import ColorSelect from '../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 
 //BUG: El color ahora tiene bug.
+//TODO: agregar cargar por grupo y por marca
 export default function NuevoProducto() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual
