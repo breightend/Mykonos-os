@@ -855,6 +855,79 @@ def get_all_stock_by_branch(branch_id):
         ), 500
 
 
+@product_router.route("/barcode/<barcode>", methods=["GET"])
+def get_product_by_barcode(barcode):
+    """
+    Busca un producto por su código de barras y retorna la información necesaria para ventas
+    """
+    try:
+        db = Database()
+
+        # Buscar el producto por código de barras
+        query = """
+        SELECT 
+            p.id,
+            p.barcode,
+            p.product_name,
+            p.sale_price,
+            COALESCE(b.brand_name, 'Sin marca') as brand_name,
+            p.description,
+            COALESCE(SUM(ws.quantity), 0) as stock_available
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
+        WHERE p.barcode = ?
+        GROUP BY p.id, p.barcode, p.product_name, p.sale_price, b.brand_name, p.description
+        """
+
+        result = db.execute_query(query, (barcode,))
+
+        if not result or len(result) == 0:
+            return jsonify(
+                {"status": "error", "message": "Producto no encontrado"}
+            ), 404
+
+        product = result[0]
+
+        # Formatear respuesta
+        product_data = {
+            "id": product[0]
+            if isinstance(product, (list, tuple))
+            else product.get("id"),
+            "barcode": product[1]
+            if isinstance(product, (list, tuple))
+            else product.get("barcode"),
+            "product_name": product[2]
+            if isinstance(product, (list, tuple))
+            else product.get("product_name"),
+            "sale_price": product[3]
+            if isinstance(product, (list, tuple))
+            else product.get("sale_price"),
+            "brand_name": product[4]
+            if isinstance(product, (list, tuple))
+            else product.get("brand_name"),
+            "description": product[5]
+            if isinstance(product, (list, tuple))
+            else product.get("description"),
+            "stock_available": product[6]
+            if isinstance(product, (list, tuple))
+            else product.get("stock_available"),
+        }
+
+        return jsonify(
+            {
+                "status": "success",
+                "data": product_data,
+                "message": "Producto encontrado",
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify(
+            {"status": "error", "message": f"Error al buscar producto: {str(e)}"}
+        ), 500
+
+
 # Global OPTIONS handler for all routes
 @product_router.route("/<path:path>", methods=["OPTIONS"])
 @product_router.route("/", methods=["OPTIONS"])

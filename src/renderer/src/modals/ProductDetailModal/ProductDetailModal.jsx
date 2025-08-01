@@ -430,9 +430,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
         {/* Footer */}
         <div className="footer border-base-300 bg-base-100 border-t p-4">
-          {/* Contenedor que empuja los botones a la derecha */}
           <div className="flex w-full justify-end gap-3">
-            {/* Acción secundaria (menos llamativa) */}
             <button
               onClick={() => setLocation(`/editarProducto?id=${productId}`)}
               type="button"
@@ -446,7 +444,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
               Cerrar
             </button>
 
-            {/* Acción principal (más llamativa) */}
           </div>
         </div>
       </div>
