@@ -122,20 +122,27 @@ function Sucursales() {
     try {
       setLoading(true)
       console.log('🔄 Iniciando fetchData...')
-      const data = await fetchSucursales()
-      console.log('📊 Datos recibidos en fetchData:', data)
-      console.log('📊 Tipo de datos:', typeof data)
-      console.log('📊 Es array:', Array.isArray(data))
+      const response = await fetchSucursales()
+      console.log('📊 Respuesta completa recibida en fetchData:', response)
+      console.log('📊 Tipo de respuesta:', typeof response)
+      console.log('📊 Status de respuesta:', response?.status)
+      console.log('📊 Datos en respuesta:', response?.data)
 
-      if (Array.isArray(data)) {
-        setSucursales(data)
-        setFilteredSucursales(data)
-        console.log('✅ Sucursales establecidas exitosamente:', data.length, 'elementos')
-      } else {
-        console.warn('⚠️ Los datos no son un array:', data)
+      // El servicio devuelve un objeto con {status, data, message}
+      if (response && response.status === 'success' && Array.isArray(response.data)) {
+        setSucursales(response.data)
+        setFilteredSucursales(response.data)
+        console.log('✅ Sucursales establecidas exitosamente:', response.data.length, 'elementos')
+      } else if (response && response.status === 'error') {
+        console.warn('⚠️ Error en la respuesta del servicio:', response.message)
         setSucursales([])
         setFilteredSucursales([])
-        toast.error('Los datos de sucursales tienen formato incorrecto')
+        toast.error(`Error del servidor: ${response.message}`)
+      } else {
+        console.warn('⚠️ Formato de respuesta inesperado:', response)
+        setSucursales([])
+        setFilteredSucursales([])
+        toast.error('Formato de respuesta inesperado del servidor')
       }
     } catch (error) {
       console.error('❌ Error fetching data:', error)

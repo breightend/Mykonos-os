@@ -183,7 +183,7 @@ function Ventas() {
         <button className="btn btn-circle" onClick={() => setLocation('/home')}>
           <ArrowLeft />
         </button>
-
+        
         <div className="mr-3 ml-20 flex-1">
           <h2 className="text-warning mb-6 text-2xl font-bold">Venta</h2>
 
