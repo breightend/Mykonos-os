@@ -29,13 +29,12 @@ def get_products_summary():
                 COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
-                p.sale_price,
-                p.barcode
+                p.sale_price
             FROM products p
             LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = ?
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.barcode
+            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price
             HAVING cantidad_total > 0
             ORDER BY p.product_name
             """
@@ -52,13 +51,12 @@ def get_products_summary():
                 COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
-                p.sale_price,
-                p.barcode
+                p.sale_price
             FROM products p
             LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.barcode
+            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price
             ORDER BY p.product_name
             """
             products = db.execute_query(query)
@@ -82,7 +80,6 @@ def get_products_summary():
                             "grupo": p.get("grupo"),
                             "group_id": p.get("group_id"),
                             "sale_price": p.get("sale_price"),
-                            "barcode": p.get("barcode"),
                         }
                     else:
                         product_item = {
@@ -95,7 +92,6 @@ def get_products_summary():
                             "grupo": p[6],
                             "group_id": p[7],
                             "sale_price": p[8],
-                            "barcode": p[9],
                         }
                     processed_products.append(product_item)
                 except (IndexError, KeyError) as e:
@@ -127,7 +123,6 @@ def get_product_details(product_id):
         product_query = """
         SELECT 
             p.id,
-            p.barcode,
             p.provider_code,
             p.product_name,
             p.description,
@@ -164,7 +159,6 @@ def get_product_details(product_id):
             if isinstance(row, dict):
                 product_data = {
                     "id": row.get("id"),
-                    "barcode": row.get("barcode"),
                     "provider_code": row.get("provider_code"),
                     "product_name": row.get("product_name"),
                     "description": row.get("description"),
@@ -182,19 +176,18 @@ def get_product_details(product_id):
                 # Si es una tupla/lista, acceso por índice
                 product_data = {
                     "id": row[0],
-                    "barcode": row[1],
-                    "provider_code": row[2],
-                    "product_name": row[3],
-                    "description": row[4],
-                    "cost": row[5],
-                    "sale_price": row[6],
-                    "tax": row[7],
-                    "discount": row[8],
-                    "comments": row[9],
-                    "last_modified_date": row[10],
-                    "images_ids": row[11],
-                    "brand_name": row[12],
-                    "brand_description": row[13],
+                    "provider_code": row[1],
+                    "product_name": row[2],
+                    "description": row[3],
+                    "cost": row[4],
+                    "sale_price": row[5],
+                    "tax": row[6],
+                    "discount": row[7],
+                    "comments": row[8],
+                    "last_modified_date": row[9],
+                    "images_ids": row[10],
+                    "brand_name": row[11],
+                    "brand_description": row[12],
                 }
         except (IndexError, KeyError) as access_error:
             print(f"❌ DEBUG product-details: Error de acceso: {access_error}")
@@ -317,7 +310,8 @@ def get_product_details(product_id):
                 wsv.quantity,
                 wsv.last_updated,
                 wsv.size_id,
-                wsv.color_id
+                wsv.color_id,
+                wsv.variant_barcode
             FROM warehouse_stock_variants wsv
             LEFT JOIN sizes s ON wsv.size_id = s.id
             LEFT JOIN colors c ON wsv.color_id = c.id
@@ -333,6 +327,7 @@ def get_product_details(product_id):
 
             product_data["stock_variants"] = []
             if variants_data:
+                print(f"🔧 DEBUG: Procesando {len(variants_data)} variantes encontradas...")
                 for v in variants_data:
                     try:
                         if isinstance(v, dict):
@@ -347,6 +342,7 @@ def get_product_details(product_id):
                                 "last_updated": v.get("last_updated"),
                                 "size_id": v.get("size_id"),
                                 "color_id": v.get("color_id"),
+                                "variant_barcode": v.get("variant_barcode"),
                             }
                         else:
                             variant_item = {
@@ -360,56 +356,33 @@ def get_product_details(product_id):
                                 "last_updated": v[7],
                                 "size_id": v[8],
                                 "color_id": v[9],
+                                "variant_barcode": v[10],
                             }
+                        
+                        # 🔧 DEBUGGING ESPECÍFICO DE VARIANT_BARCODE
+                        barcode_value = variant_item["variant_barcode"]
+                        print(f"🔧 DEBUG: Variante ID {variant_item['id']} - variant_barcode: '{barcode_value}' (tipo: {type(barcode_value)})")
+                        
+                        if barcode_value is None:
+                            print(f"❌ BACKEND: Variante {variant_item['id']} tiene variant_barcode NULL")
+                        elif barcode_value == '':
+                            print(f"❌ BACKEND: Variante {variant_item['id']} tiene variant_barcode vacío")
+                        else:
+                            print(f"✅ BACKEND: Variante {variant_item['id']} tiene variant_barcode válido: '{barcode_value}'")
+                        
                         product_data["stock_variants"].append(variant_item)
                     except (IndexError, KeyError) as e:
                         print(
                             f"❌ DEBUG product-details: Error accediendo variant item: {e}"
                         )
                         continue
+                
+                print(f"🎯 DEBUG: Total variantes procesadas: {len(product_data['stock_variants'])}")
+                valid_barcodes = sum(1 for v in product_data['stock_variants'] if v['variant_barcode'] and v['variant_barcode'] != '')
+                print(f"🎯 DEBUG: Variantes con códigos válidos: {valid_barcodes}/{len(product_data['stock_variants'])}")
             else:
-                # 🆕 DATOS DE PRUEBA TEMPORAL para verificar que el frontend funciona
-                print(
-                    "⚠️ DEBUG: No hay datos reales, creando datos de prueba temporales"
-                )
-                product_data["stock_variants"] = [
-                    {
-                        "id": 999,
-                        "size_name": "M",
-                        "color_name": "Rojo",
-                        "color_hex": "#FF0000",
-                        "sucursal_nombre": "Principal",
-                        "sucursal_id": 1,
-                        "quantity": 5,
-                        "last_updated": "2025-01-29T10:00:00",
-                        "size_id": 1,
-                        "color_id": 1,
-                    },
-                    {
-                        "id": 998,
-                        "size_name": "L",
-                        "color_name": "Azul",
-                        "color_hex": "#0000FF",
-                        "sucursal_nombre": "Principal",
-                        "sucursal_id": 1,
-                        "quantity": 3,
-                        "last_updated": "2025-01-29T10:00:00",
-                        "size_id": 2,
-                        "color_id": 2,
-                    },
-                    {
-                        "id": 997,
-                        "size_name": "S",
-                        "color_name": "Verde",
-                        "color_hex": "#00FF00",
-                        "sucursal_nombre": "Principal",
-                        "sucursal_id": 1,
-                        "quantity": 8,
-                        "last_updated": "2025-01-29T10:00:00",
-                        "size_id": 3,
-                        "color_id": 3,
-                    },
-                ]
+                print("⚠️ DEBUG: No hay datos de variantes en warehouse_stock_variants para este producto")
+                product_data["stock_variants"] = []
         except Exception as e:
             print(f"❌ DEBUG product-details: Error consultando variantes: {e}")
             product_data["stock_variants"] = []

@@ -66,18 +66,6 @@ class BarcodeService:
         except Exception as e:
             raise Exception(f"Error generando código de barras imagen: {str(e)}")
 
-    def generate_product_barcode(self, product_id, prefix="PROD"):
-        """
-        Genera un código único para un producto (código general)
-        Args:
-            product_id (int): ID del producto
-            prefix (str): Prefijo para el código
-        Returns:
-            str: Código único
-        """
-        # Formato: PREFIX + ID con padding
-        return f"{prefix}{str(product_id).zfill(8)}"
-
     def generate_variant_barcode(
         self, product_id, size_id=None, color_id=None, prefix="VAR"
     ):

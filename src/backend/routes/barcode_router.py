@@ -45,31 +45,6 @@ def generate_barcode():
         return jsonify({"error": str(e)}), 500
 
 
-@barcode_router.route("/generate-product/<int:product_id>", methods=["GET"])
-def generate_product_barcode(product_id):
-    """
-    Genera código de barras específico para un producto (código general)
-    """
-    try:
-        # Generar código único para el producto
-        product_code = barcode_service.generate_product_barcode(product_id)
-
-        # Generar SVG
-        svg_content = barcode_service.generate_barcode_svg(product_code)
-
-        return jsonify(
-            {
-                "success": True,
-                "product_id": product_id,
-                "barcode_code": product_code,
-                "barcode_svg": svg_content,
-            }
-        )
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 @barcode_router.route("/generate-variants", methods=["POST"])
 def generate_variant_barcodes():
     """

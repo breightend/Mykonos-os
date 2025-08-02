@@ -115,12 +115,12 @@ class BarcodeService {
             const data = await response.json()
 
             if (!response.ok) {
-                throw new Error(data.error || 'Error generando código de barras')
+                throw new Error(data.error || 'Error generando código personalizado')
             }
 
             return data
         } catch (error) {
-            console.error('Error generando código de barras personalizado:', error)
+            console.error('Error generando código personalizado:', error)
             throw error
         }
     }
@@ -140,7 +140,7 @@ class BarcodeService {
 
             return data
         } catch (error) {
-            console.error('Error en test del servicio:', error)
+            console.error('Error probando el servicio:', error)
             throw error
         }
     }
@@ -198,7 +198,7 @@ class BarcodeService {
         if (element) {
             element.innerHTML = svgContent
         } else {
-            console.error(`Elemento con ID '${elementId}' no encontrado`)
+            console.warn(`Elemento con ID "${elementId}" no encontrado`)
         }
     }
 
@@ -210,14 +210,12 @@ class BarcodeService {
     downloadBarcode(svgContent, filename = 'barcode.svg') {
         const blob = new Blob([svgContent], { type: 'image/svg+xml' })
         const url = URL.createObjectURL(blob)
-
-        const link = document.createElement('a')
-        link.href = url
-        link.download = filename
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
         URL.revokeObjectURL(url)
     }
 }

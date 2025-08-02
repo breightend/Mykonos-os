@@ -11,6 +11,7 @@ from routes.storage_router import storage_router
 from routes.inventory_router import inventory_router
 from routes.purchase_router import purchase_bp
 from routes.barcode_router import barcode_router
+from routes.debug_router import debug_router
 
 app = Flask(__name__)
 # Comprehensive CORS configuration to handle all preflight requests
@@ -31,6 +32,7 @@ app.register_blueprint(storage_router, url_prefix="/api/storage")
 app.register_blueprint(inventory_router, url_prefix="/api/inventory")
 app.register_blueprint(purchase_bp, url_prefix="/api/purchases")
 app.register_blueprint(barcode_router, url_prefix="/api/barcode")
+app.register_blueprint(debug_router, url_prefix="/api/debug")
 
 
 @app.route("/")

@@ -12,7 +12,6 @@ import { useSession } from '../../contexts/SessionContext'
 
 pinwheel.register()
 //TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
-//TODO agregar codigo de barras.
 export default function Inventario() {
   const [, setLocation] = useLocation()
   const { getCurrentStorage } = useSession()
@@ -38,25 +37,17 @@ export default function Inventario() {
   const loadInventoryData = useCallback(async (storageId = null) => {
     try {
       setLoading(true)
-      console.log('📦 Cargando resumen de productos...')
 
       const response = await inventoryService.getProductsSummary(storageId)
 
       if (response.status === 'success') {
-        console.log('✅ Resumen de productos cargado:', response.data)
         setInventoryData(response.data)
       } else {
-        console.error('❌ Respuesta del servidor no exitosa:', response)
         setError('La respuesta del servidor no fue exitosa')
       }
     } catch (err) {
       setError('Error al cargar el inventario')
-      console.error('💥 Error completo:', err)
-      console.error('📄 Mensaje del error:', err.message)
-      if (err.response) {
-        console.error('🌐 Respuesta del error:', err.response.data)
-        console.error('🔢 Status del error:', err.response.status)
-      }
+      console.error('Error al cargar inventario:', err)
     } finally {
       setLoading(false)
     }
@@ -69,20 +60,16 @@ export default function Inventario() {
 
       // Obtener información de la sucursal actual del usuario
       const currentStorage = getCurrentStorage()
-      console.log('🏪 Sucursal actual del usuario:', currentStorage)
 
       // Primero cargar las sucursales
-      console.log('🏪 Cargando sucursales...')
       try {
         const storagesResponse = await fetchSucursales()
-        console.log('✅ Respuesta de sucursales:', storagesResponse)
 
         // Verificar si la respuesta es un array directamente o un objeto con status
         let storageArray = []
         if (Array.isArray(storagesResponse)) {
           // Si es un array directamente
           storageArray = storagesResponse
-          console.log('✅ Sucursales recibidas como array:', storageArray.length, 'sucursales')
         } else if (
           storagesResponse &&
           storagesResponse.status === 'success' &&
@@ -90,10 +77,8 @@ export default function Inventario() {
         ) {
           // Si es un objeto con status y data
           storageArray = storagesResponse.data
-          console.log('✅ Sucursales recibidas con status:', storageArray.length, 'sucursales')
         } else {
           // Si no es ninguno de los formatos esperados
-          console.warn('⚠️ Formato de respuesta inesperado:', storagesResponse)
           storageArray = []
         }
 
@@ -110,21 +95,18 @@ export default function Inventario() {
 
       // Establecer la sucursal por defecto basada en la sesión del usuario
       if (currentStorage?.id) {
-        console.log('🏪 Estableciendo sucursal por defecto:', currentStorage.id)
         setSelectedStorage(currentStorage.id.toString())
       } else {
-        console.log('🏪 No hay sucursal asignada, mostrando todas')
         setSelectedStorage('')
       }
 
       // Luego cargar el inventario
-      console.log('📦 Cargando inventario inicial...')
       const initialStorageId = currentStorage?.id || null
       await loadInventoryData(initialStorageId)
     } catch (err) {
       const errorMessage = err.message || 'Error desconocido al cargar datos iniciales'
       setError(errorMessage)
-      console.error('💥 Error en loadInitialData:', err)
+      console.error('Error en loadInitialData:', err)
     } finally {
       setLoading(false)
     }
@@ -177,7 +159,6 @@ export default function Inventario() {
         row.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.fecha_edicion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (row.barcode && row.barcode.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
         (row.grupo && row.grupo.toLowerCase().includes(searchTerm.toLowerCase()))
     }
 
@@ -187,12 +168,6 @@ export default function Inventario() {
       if (selectedGroupData) {
         // Filtro jerárquico: incluir grupo seleccionado y todos sus hijos
         const allGroupIds = getAllGroupIds(selectedGroupData, selectedGroup)
-        console.log(
-          '🔍 IDs de grupos para filtrar:',
-          allGroupIds,
-          'Producto group_id:',
-          row.group_id
-        )
         matchesGroup = allGroupIds.includes(row.group_id?.toString())
       } else {
         // Filtro simple por group_id directo
@@ -205,7 +180,6 @@ export default function Inventario() {
 
   // Nueva función para manejar doble clic en una fila
   const handleRowDoubleClick = (row) => {
-    console.log('🔍 Doble clic en producto:', row.id)
     setSelectedProductId(row.id)
     setProductDetailModalOpen(true)
   }
@@ -224,7 +198,6 @@ export default function Inventario() {
   const handleSaveChanges = async () => {
     try {
       // Aquí puedes implementar la lógica para guardar cambios
-      console.log('Datos guardados:', editedData)
       setIsModalOpen(false)
       // Recargar datos después de guardar
       await loadInventoryData(selectedStorage)
@@ -245,7 +218,6 @@ export default function Inventario() {
   const handleGroupSelect = (groupId, groupName, groupData = null) => {
     setSelectedGroup(groupId ? groupId.toString() : '')
     setSelectedGroupData(groupData) // Almacenar información completa del grupo
-    console.log('📦 Grupo seleccionado desde modal:', { groupId, groupName, groupData })
   }
 
   const handleMoveInventoryClick = () => {
@@ -427,14 +399,14 @@ export default function Inventario() {
               <label className="input input-bordered input-warning input-sm flex w-48 items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Buscar por producto, marca, grupo o código de barras..."
+                  placeholder="Buscar por producto, marca o grupo..."
                   className="grow text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <Search className="h-3 w-3" />
               </label>
-              {/* Ahora busca por código de barras además de todos los demás campos */}
+              {/* Ahora busca por producto, marca y grupo (sin código de barras general) */}
             </div>
           </div>
         </div>
@@ -453,7 +425,6 @@ export default function Inventario() {
             <table className="table w-full">
               <thead className="bg-warning/10">
                 <tr>
-                  <th className="text-warning">Codigo de barras</th>
                   <th className="text-warning">Producto</th>
                   <th className="text-warning">Marca</th>
                   <th className="text-warning">Grupo</th>
@@ -503,7 +474,6 @@ export default function Inventario() {
                       onDoubleClick={() => handleRowDoubleClick(row)}
                       title="Doble clic para ver detalles completos"
                     >
-                      <th>{row.barcode}</th>
                       <td>{row.producto}</td>
                       <td>{row.marca}</td>
                       <td>

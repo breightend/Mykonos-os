@@ -6,7 +6,6 @@ import { useSession } from '../contexts/SessionContext'
 import { useSettings } from '../contexts/settingsContext'
 import ModalSize from '../modals/modalsProduct/modalSize'
 import ModalColor from '../modals/modalsProduct/modalColor'
-import BarcodeGenerator from '../componentes especificos/Barcode'
 import BarcodeService from '../services/barcodeService'
 import { fetchSize } from '../services/products/sizeService'
 import { fetchColor } from '../services/products/colorService'
@@ -449,9 +448,6 @@ export default function NuevoProducto() {
     const selectedBrand = brandByProvider.find((brand) => brand.brand_name === marca)
     const brandId = selectedBrand ? selectedBrand.id : null
 
-    // Generar código de barras temporal si no existe
-    const generatedBarcode = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
     // Preparar imagen para envío (extraer solo el base64 sin el prefijo data URI)
     let imageToSend = null
     if (productImage) {
@@ -473,7 +469,6 @@ export default function NuevoProducto() {
     }
 
     return {
-      barcode: generatedBarcode,
       provider_code: providerCode,
       product_name: productName, // Changed from empty string to use productName state
       group_id: parseInt(tipo), // Usar el grupo seleccionado
@@ -717,11 +712,11 @@ export default function NuevoProducto() {
                   Agregar Artículo
                 </h1>
                 <p className="text-base-content/70 text-sm">
-                  Complete los datos del nuevo producto
+                  Complete los datos del nuevo producto. Los códigos de barras se generarán
+                  automáticamente para cada variante.
                 </p>
               </div>
             </div>
-            <BarcodeGenerator />
           </div>
         </div>
       </div>

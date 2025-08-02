@@ -29,6 +29,41 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
           console.log('✅ Detalles del producto cargados:', response.data)
           console.log('🔍 Stock variants recibidas:', response.data.stock_variants)
           console.log('🔍 Cantidad de stock variants:', response.data.stock_variants?.length || 0)
+          
+          // 🔧 DEBUGGING ESPECÍFICO DE VARIANT_BARCODE
+          if (response.data.stock_variants && response.data.stock_variants.length > 0) {
+            console.log('🔧 DEBUGGING CÓDIGOS DE BARRAS:')
+            response.data.stock_variants.forEach((variant, index) => {
+              console.log(`   Variante ${index + 1}:`)
+              console.log(`     ID: ${variant.id}`)
+              console.log(`     Talle: ${variant.size_name}`)
+              console.log(`     Color: ${variant.color_name}`)
+              console.log(`     Sucursal: ${variant.sucursal_nombre}`)
+              console.log(
+                `     variant_barcode: "${variant.variant_barcode}" (tipo: ${typeof variant.variant_barcode})`
+              )
+              
+              if (variant.variant_barcode === null) {
+                console.log('     ❌ PROBLEMA: variant_barcode es NULL')
+              } else if (variant.variant_barcode === '') {
+                console.log('     ❌ PROBLEMA: variant_barcode es cadena vacía')
+              } else if (variant.variant_barcode === undefined) {
+                console.log('     ❌ PROBLEMA: variant_barcode es undefined')
+              } else {
+                console.log('     ✅ OK: variant_barcode tiene valor válido')
+              }
+            })
+            
+            // Verificar si todos tienen códigos válidos
+            const variantsWithValidBarcodes = response.data.stock_variants.filter(
+              (v) => v.variant_barcode && v.variant_barcode !== '' && v.variant_barcode !== null
+            )
+            console.log(
+              `🎯 RESUMEN: ${variantsWithValidBarcodes.length}/${response.data.stock_variants.length} variantes tienen códigos válidos`
+            )
+          } else {
+            console.log('⚠️ No hay stock_variants en la respuesta')
+          }
         } else {
           setError('Error al cargar los detalles del producto')
         }

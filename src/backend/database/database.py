@@ -19,7 +19,7 @@ class TABLES(Enum):
     SIZE_CATEGORIES = "size_categories"
     SIZES = "sizes"
     COLORS = "colors"
-    BARCODES = "barcodes"
+
     STORAGE = "storage"
     PRODUCTS = "products"
     PRODUCT_SIZES = "product_sizes"
@@ -194,21 +194,6 @@ DATABASE_TABLES = {
             "color_hex": "TEXT NOT NULL",  # Código hexadecimal del color, requerido.
         }
     },
-    TABLES.BARCODES: {
-        "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada código de barras, se incrementa automáticamente.
-            "barcode": "TEXT UNIQUE NOT NULL",  # Código de barras único para cada producto, requerido.
-            "product_id": "INTEGER",  # ID del producto al que corresponde el código de barras.
-        },
-        "foreign_keys": [
-            {
-                "column": "product_id",
-                "reference_table": TABLES.PRODUCTS,
-                "reference_column": "barcode",
-                "export_column_name": "product_name",
-            }  # Relación con la tabla de productos.
-        ],
-    },
     TABLES.STORAGE: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada almacenamiento, se incrementa automáticamente.
@@ -225,7 +210,6 @@ DATABASE_TABLES = {
     TABLES.PRODUCTS: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada producto, se incrementa automáticamente.
-            "barcode": "TEXT NOT NULL",  # Código de barras del producto, requerido.
             "provider_code": "TEXT",  # Código del proveedor
             "product_name": "TEXT NOT NULL",  # Nombre del producto, requerido.
             "group_id": "INTEGER",  # ID del grupo al que pertenece el producto.
@@ -972,6 +956,30 @@ class Database:
         :param data: Un diccionario con los datos a insertar, donde las claves son los nombres de las columnas.
         :return: Un diccionario con 'success' (bool), 'message' (str) y 'rowid' (int o None).
         """
+        # Auto-generar código de barras para variantes si no se proporciona
+        if table_name == "warehouse_stock_variants" and (
+            "variant_barcode" not in data or not data.get("variant_barcode")
+        ):
+            try:
+                from services.barcode_service import BarcodeService
+
+                barcode_service = BarcodeService()
+
+                product_id = data.get("product_id")
+                size_id = data.get("size_id")
+                color_id = data.get("color_id")
+
+                if product_id:
+                    variant_barcode = barcode_service.generate_variant_barcode(
+                        product_id, size_id, color_id
+                    )
+                    data["variant_barcode"] = variant_barcode
+                    print(
+                        f"🔗 Auto-generando código de barras para variante: {variant_barcode}"
+                    )
+            except Exception as e:
+                print(f"⚠️ No se pudo auto-generar código de barras: {e}")
+
         placeholders = ", ".join([f":{key}" for key in data.keys()])
         columns = ", ".join(data.keys())
         sql = f"""INSERT INTO {table_name} ({columns})

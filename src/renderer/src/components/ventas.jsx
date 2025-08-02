@@ -5,11 +5,11 @@ import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useSellContext } from '../contexts/sellContext'
-import { ventasService } from '../services/ventas/ventasService'
 
 //TODO agregar el cliente a la venta
 //TODO agregar el vendedor a la venta
 //TODO agregar logica de regalos
+//TODO: hacer las conexiones necesarias para el talle y el color 
 
 function Ventas() {
   const [, setLocation] = useLocation()
@@ -29,63 +29,18 @@ function Ventas() {
     }
 
     try {
-      // Buscar el producto en la base de datos
-      const response = await ventasService.getProductByBarcode(codigo)
-
-      if (response.status === 'success' && response.data) {
-        const productoEncontrado = response.data
-
-        // Verificar que hay stock disponible
-        if (productoEncontrado.stock_available <= 0) {
-          toast.error('Producto sin stock disponible', {
-            duration: 2000
-          })
-          return
+      // NOTA: Esta funcionalidad se deshabilitó porque ahora solo tenemos códigos de barras por variante
+      // Se necesita implementar búsqueda por códigos de variante en lugar de códigos generales
+      toast.error(
+        'La búsqueda por código de barras general está deshabilitada. Ahora cada variante tiene su propio código único.',
+        {
+          duration: 4000
         }
-
-        // Buscar si el producto ya está en la lista
-        const index = productos.findIndex((p) => p.codigo === productoEncontrado.barcode)
-
-        if (index >= 0) {
-          // Si ya existe, incrementar cantidad
-          const nuevosProductos = [...productos]
-          const cantidadActual = nuevosProductos[index].cantidad
-
-          // Verificar que no exceda el stock disponible
-          if (cantidadActual >= productoEncontrado.stock_available) {
-            toast.error(
-              `No hay suficiente stock. Disponible: ${productoEncontrado.stock_available}`,
-              {
-                duration: 2000
-              }
-            )
-            return
-          }
-
-          nuevosProductos[index].cantidad += 1
-          setProductos(nuevosProductos)
-        } else {
-          // Si no existe, agregarlo
-          const nuevoProducto = {
-            codigo: productoEncontrado.barcode,
-            descripcion: productoEncontrado.product_name,
-            tipo: productoEncontrado.group_name || 'Sin grupo',
-            precio: productoEncontrado.sale_price,
-            marca: productoEncontrado.brand_name,
-            cantidad: 1,
-            stock_disponible: productoEncontrado.stock_available
-          }
-          setProductos([...productos, nuevoProducto])
-        }
-
-        setCodigoInput('')
-        toast.success('Producto agregado correctamente', {
-          duration: 1500
-        })
-      }
+      )
+      return
     } catch (error) {
-      console.error('Error al buscar producto:', error)
-      toast.error(error.message || 'Error al buscar el producto', {
+      console.error('Error:', error)
+      toast.error('Error en la búsqueda de productos', {
         duration: 2000
       })
     }
@@ -233,11 +188,12 @@ function Ventas() {
                     <tr>
                       <th>Código</th>
                       <th>Descripción</th>
+                      <th>Talle</th>
+                      <th>Color</th>
                       <th>Cantidad</th>
                       <th>Grupo</th>
                       <th>Precio unitario</th>
                       <th>Marca</th>
-                      <th>Stock disponible</th>
                     </tr>
                   </thead>
                   <tbody>

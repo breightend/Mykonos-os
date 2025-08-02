@@ -17,19 +17,10 @@ export const inventoryService = {
                 ? `${API_URL}/products-by-storage?storage_id=${storageId}`
                 : `${API_URL}/products-by-storage`
 
-            console.log('🌐 Llamando a URL:', url)
             const response = await axios.get(url)
-            console.log('📡 Respuesta del axios:', response)
-            console.log('📊 Datos de la respuesta:', response.data)
             return response.data
         } catch (error) {
-            console.error('❌ Error al obtener productos por sucursal:', error)
-            console.error('🔍 Error detallado: ', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status,
-                config: error.config
-            })
+            console.error('Error al obtener productos por sucursal:', error)
             throw error
         }
     },
@@ -40,18 +31,10 @@ export const inventoryService = {
      */
     async getStorageList() {
         try {
-            console.log('🏪 Llamando a storage-list...')
             const response = await axios.get(`${API_URL}/storage-list`)
-            console.log('🏪 Respuesta storage-list:', response)
-            console.log('🏪 Datos storage-list:', response.data)
             return response.data
         } catch (error) {
-            console.error('❌ Error al obtener lista de sucursales:', error)
-            console.error('🔍 Error detallado storage-list:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            })
+            console.error('Error al obtener lista de sucursales:', error)
             throw error
         }
     },
@@ -118,18 +101,11 @@ export const inventoryService = {
                 ? `${API_URL}/products-summary?storage_id=${storageId}`
                 : `${API_URL}/products-summary`
 
-            console.log('🔍 Llamando a resumen de productos:', url)
             const response = await axios.get(url)
-            console.log('✅ Respuesta resumen productos:', response.data)
 
             return response.data
         } catch (error) {
-            console.error('❌ Error al obtener resumen de productos:', error)
-            console.error('🔍 Error detallado resumen:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            })
+            console.error('Error al obtener resumen de productos:', error)
             throw error
         }
     },
@@ -143,18 +119,11 @@ export const inventoryService = {
         try {
             const url = `${API_URL}/product-details/${productId}`
 
-            console.log('🔍 Llamando a detalles del producto:', url)
             const response = await axios.get(url)
-            console.log('✅ Respuesta detalles producto:', response.data)
 
             return response.data
         } catch (error) {
-            console.error('❌ Error al obtener detalles del producto:', error)
-            console.error('🔍 Error detallado detalles:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            })
+            console.error('Error al obtener detalles del producto:', error)
             throw error
         }
     },
