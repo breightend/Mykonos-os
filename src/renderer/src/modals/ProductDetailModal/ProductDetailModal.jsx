@@ -29,7 +29,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
           console.log('✅ Detalles del producto cargados:', response.data)
           console.log('🔍 Stock variants recibidas:', response.data.stock_variants)
           console.log('🔍 Cantidad de stock variants:', response.data.stock_variants?.length || 0)
-          
+
           // 🔧 DEBUGGING ESPECÍFICO DE VARIANT_BARCODE
           if (response.data.stock_variants && response.data.stock_variants.length > 0) {
             console.log('🔧 DEBUGGING CÓDIGOS DE BARRAS:')
@@ -42,7 +42,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
               console.log(
                 `     variant_barcode: "${variant.variant_barcode}" (tipo: ${typeof variant.variant_barcode})`
               )
-              
+
               if (variant.variant_barcode === null) {
                 console.log('     ❌ PROBLEMA: variant_barcode es NULL')
               } else if (variant.variant_barcode === '') {
@@ -53,7 +53,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                 console.log('     ✅ OK: variant_barcode tiene valor válido')
               }
             })
-            
+
             // Verificar si todos tienen códigos válidos
             const variantsWithValidBarcodes = response.data.stock_variants.filter(
               (v) => v.variant_barcode && v.variant_barcode !== '' && v.variant_barcode !== null

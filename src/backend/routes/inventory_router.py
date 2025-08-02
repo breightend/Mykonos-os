@@ -327,7 +327,9 @@ def get_product_details(product_id):
 
             product_data["stock_variants"] = []
             if variants_data:
-                print(f"🔧 DEBUG: Procesando {len(variants_data)} variantes encontradas...")
+                print(
+                    f"🔧 DEBUG: Procesando {len(variants_data)} variantes encontradas..."
+                )
                 for v in variants_data:
                     try:
                         if isinstance(v, dict):
@@ -358,30 +360,48 @@ def get_product_details(product_id):
                                 "color_id": v[9],
                                 "variant_barcode": v[10],
                             }
-                        
+
                         # 🔧 DEBUGGING ESPECÍFICO DE VARIANT_BARCODE
                         barcode_value = variant_item["variant_barcode"]
-                        print(f"🔧 DEBUG: Variante ID {variant_item['id']} - variant_barcode: '{barcode_value}' (tipo: {type(barcode_value)})")
-                        
+                        print(
+                            f"🔧 DEBUG: Variante ID {variant_item['id']} - variant_barcode: '{barcode_value}' (tipo: {type(barcode_value)})"
+                        )
+
                         if barcode_value is None:
-                            print(f"❌ BACKEND: Variante {variant_item['id']} tiene variant_barcode NULL")
-                        elif barcode_value == '':
-                            print(f"❌ BACKEND: Variante {variant_item['id']} tiene variant_barcode vacío")
+                            print(
+                                f"❌ BACKEND: Variante {variant_item['id']} tiene variant_barcode NULL"
+                            )
+                        elif barcode_value == "":
+                            print(
+                                f"❌ BACKEND: Variante {variant_item['id']} tiene variant_barcode vacío"
+                            )
                         else:
-                            print(f"✅ BACKEND: Variante {variant_item['id']} tiene variant_barcode válido: '{barcode_value}'")
-                        
+                            print(
+                                f"✅ BACKEND: Variante {variant_item['id']} tiene variant_barcode válido: '{barcode_value}'"
+                            )
+
                         product_data["stock_variants"].append(variant_item)
                     except (IndexError, KeyError) as e:
                         print(
                             f"❌ DEBUG product-details: Error accediendo variant item: {e}"
                         )
                         continue
-                
-                print(f"🎯 DEBUG: Total variantes procesadas: {len(product_data['stock_variants'])}")
-                valid_barcodes = sum(1 for v in product_data['stock_variants'] if v['variant_barcode'] and v['variant_barcode'] != '')
-                print(f"🎯 DEBUG: Variantes con códigos válidos: {valid_barcodes}/{len(product_data['stock_variants'])}")
+
+                print(
+                    f"🎯 DEBUG: Total variantes procesadas: {len(product_data['stock_variants'])}"
+                )
+                valid_barcodes = sum(
+                    1
+                    for v in product_data["stock_variants"]
+                    if v["variant_barcode"] and v["variant_barcode"] != ""
+                )
+                print(
+                    f"🎯 DEBUG: Variantes con códigos válidos: {valid_barcodes}/{len(product_data['stock_variants'])}"
+                )
             else:
-                print("⚠️ DEBUG: No hay datos de variantes en warehouse_stock_variants para este producto")
+                print(
+                    "⚠️ DEBUG: No hay datos de variantes en warehouse_stock_variants para este producto"
+                )
                 product_data["stock_variants"] = []
         except Exception as e:
             print(f"❌ DEBUG product-details: Error consultando variantes: {e}")

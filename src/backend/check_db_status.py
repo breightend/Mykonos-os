@@ -2,7 +2,7 @@ import sqlite3
 import os
 
 # Conectar a la base de datos
-db_path = os.path.join('database', 'mykonos.db')
+db_path = os.path.join("database", "mykonos.db")
 print(f"Conectando a: {db_path}")
 
 if not os.path.exists(db_path):
@@ -13,10 +13,14 @@ conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # Verificar códigos de barras
-cursor.execute("SELECT COUNT(*) FROM warehouse_stock_variants WHERE variant_barcode IS NULL OR variant_barcode = ''")
+cursor.execute(
+    "SELECT COUNT(*) FROM warehouse_stock_variants WHERE variant_barcode IS NULL OR variant_barcode = ''"
+)
 null_empty_count = cursor.fetchone()[0]
 
-cursor.execute("SELECT COUNT(*) FROM warehouse_stock_variants WHERE variant_barcode IS NOT NULL AND variant_barcode != ''")
+cursor.execute(
+    "SELECT COUNT(*) FROM warehouse_stock_variants WHERE variant_barcode IS NOT NULL AND variant_barcode != ''"
+)
 valid_count = cursor.fetchone()[0]
 
 cursor.execute("SELECT COUNT(*) FROM warehouse_stock_variants")
