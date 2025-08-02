@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Gift } from 'lucide-react'
 import { useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { useLocation } from 'wouter'
@@ -18,7 +18,8 @@ function Ventas() {
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
   const [cantidadAEliminar, setCantidadAEliminar] = useState(0)
   const [loading, setLoading] = useState(false)
-  const { setSaleData } = useSellContext()
+  const { setSaleData, saleData, addProductToGifts, removeGiftProduct, updateGiftQuantity } =
+    useSellContext()
 
   const agregarProducto = async () => {
     const codigo = codigoInput.trim()
@@ -143,6 +144,27 @@ function Ventas() {
     setCantidadAEliminar(0) // Resetea el input de cantidad
   }
 
+  const addToGifts = () => {
+    if (!productoSeleccionado) {
+      toast.error('Por favor seleccione un producto', { duration: 2000 })
+      return
+    }
+
+    // Add product to gifts context with validation
+    const result = addProductToGifts(productoSeleccionado, productos)
+
+    if (result.success) {
+      toast.success(`${productoSeleccionado.descripcion} agregado a regalos`, { duration: 2000 })
+    } else {
+      toast.error(result.message, { duration: 3000 })
+    }
+  }
+
+  const removeFromGifts = (variantBarcode) => {
+    removeGiftProduct(variantBarcode)
+    toast.success('Producto removido de regalos', { duration: 2000 })
+  }
+
   const handleSubmit = () => {
     const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0)
 
@@ -183,7 +205,7 @@ function Ventas() {
         <button className="btn btn-circle" onClick={() => setLocation('/home')}>
           <ArrowLeft />
         </button>
-        
+
         <div className="mr-3 ml-20 flex-1">
           <h2 className="text-warning mb-6 text-2xl font-bold">Venta</h2>
 
@@ -212,6 +234,13 @@ function Ventas() {
                   onClick={() => document.getElementById('eliminarProducto').showModal()}
                 >
                   <Trash2 />
+                </button>
+                <button
+                  className={`btn btn-warning ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
+                  onClick={addToGifts}
+                  title="Agregar a regalos"
+                >
+                  <Gift />
                 </button>
                 {/* Modal eliminar producto seleccionado */}
                 <dialog id="eliminarProducto" className="modal">
@@ -334,6 +363,114 @@ function Ventas() {
               </div>
             </div>
           </div>
+
+          {/* Gifts Table */}
+          {saleData.gifts && saleData.gifts.length > 0 && (
+            <div className="card bg-base-300 mt-6 p-5 shadow-xl">
+              <div className="card-body pt-0.5">
+                <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-orange-500">
+                  <Gift className="h-5 w-5" />
+                  Productos de Regalo
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="table-compact table">
+                    <thead>
+                      <tr>
+                        <th>Código Variante</th>
+                        <th>Producto</th>
+                        <th>Talle</th>
+                        <th>Color</th>
+                        <th>Cantidad</th>
+                        <th>Marca</th>
+                        <th>Disponible</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {saleData.gifts.map((gift) => {
+                        // Find the corresponding product in the main products list
+                        const mainProduct = productos.find(
+                          (p) => p.variant_barcode === gift.variant_barcode
+                        )
+                        const availableForGifts = mainProduct ? mainProduct.cantidad : 0
+
+                        return (
+                          <tr key={gift.variant_barcode}>
+                            <td className="font-mono text-xs">{gift.variant_barcode}</td>
+                            <td>{gift.product_name}</td>
+                            <td>
+                              <span className="badge badge-ghost">{gift.size_name}</span>
+                            </td>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-4 w-4 rounded-full border border-gray-300"
+                                  style={{ backgroundColor: gift.color_hex }}
+                                  title={gift.color_name}
+                                ></div>
+                                <span>{gift.color_name}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  className="btn btn-xs btn-circle btn-ghost"
+                                  onClick={() => {
+                                    const result = updateGiftQuantity(
+                                      gift.variant_barcode,
+                                      gift.quantity - 1,
+                                      productos
+                                    )
+                                    if (!result.success) {
+                                      toast.error(result.message, { duration: 2000 })
+                                    }
+                                  }}
+                                >
+                                  -
+                                </button>
+                                <span className="badge badge-warning">{gift.quantity}</span>
+                                <button
+                                  className="btn btn-xs btn-circle btn-ghost"
+                                  onClick={() => {
+                                    const result = updateGiftQuantity(
+                                      gift.variant_barcode,
+                                      gift.quantity + 1,
+                                      productos
+                                    )
+                                    if (!result.success) {
+                                      toast.error(result.message, { duration: 2000 })
+                                    }
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </td>
+                            <td>{gift.brand}</td>
+                            <td>
+                              <span
+                                className={`badge ${gift.quantity >= availableForGifts ? 'badge-warning' : 'badge-success'}`}
+                              >
+                                {availableForGifts}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                className="btn btn-xs btn-error"
+                                onClick={() => removeFromGifts(gift.variant_barcode)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4">
             <p className="text-xl font-bold">Total: ${total.toLocaleString()}</p>
