@@ -403,6 +403,31 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                                 </div>
                               </div>
 
+                              {/* Código de barras de la variante */}
+                              <div className="mt-3 border-t border-gray-100 pt-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-gray-600">Código:</span>
+                                  {variant.variant_barcode ? (
+                                    <div className="flex items-center space-x-2">
+                                      <code className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700">
+                                        {variant.variant_barcode}
+                                      </code>
+                                      <button
+                                        onClick={() =>
+                                          generateBarcodePreview(variant.variant_barcode)
+                                        }
+                                        className="flex items-center text-xs text-blue-600 hover:text-blue-800"
+                                        title="Ver código de barras"
+                                      >
+                                        <QrCode className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">Sin código</span>
+                                  )}
+                                </div>
+                              </div>
+
                               {variant.last_updated && (
                                 <div className="mt-2 text-xs text-gray-400">
                                   Actualizado: {formatDate(variant.last_updated)}
@@ -474,121 +499,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Sección de Códigos de Barras */}
-              <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
-                <h3 className="mb-6 flex items-center text-xl font-semibold text-gray-800">
-                  <QrCode className="mr-3 h-6 w-6 text-blue-600" />
-                  Códigos de Barras por Variante
-                </h3>
-
-                {productDetails.stock_variants?.length > 0 ? (
-                  <div className="space-y-4">
-                    {/* Resumen de códigos */}
-                    <div className="rounded-lg bg-white p-4">
-                      <div className="grid grid-cols-2 gap-4 text-center md:grid-cols-4">
-                        <div className="rounded-lg bg-blue-50 p-3">
-                          <div className="text-2xl font-bold text-blue-600">
-                            {productDetails.stock_variants.filter((v) => v.variant_barcode).length}
-                          </div>
-                          <div className="text-sm text-blue-700">Códigos generados</div>
-                        </div>
-                        <div className="rounded-lg bg-green-50 p-3">
-                          <div className="text-2xl font-bold text-green-600">
-                            {new Set(productDetails.stock_variants.map((v) => v.size_name)).size}
-                          </div>
-                          <div className="text-sm text-green-700">Talles únicos</div>
-                        </div>
-                        <div className="rounded-lg bg-pink-50 p-3">
-                          <div className="text-2xl font-bold text-pink-600">
-                            {new Set(productDetails.stock_variants.map((v) => v.color_name)).size}
-                          </div>
-                          <div className="text-sm text-pink-700">Colores únicos</div>
-                        </div>
-                        <div className="rounded-lg bg-purple-50 p-3">
-                          <div className="text-2xl font-bold text-purple-600">
-                            {productDetails.stock_variants.length}
-                          </div>
-                          <div className="text-sm text-purple-700">Total variantes</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lista de códigos por variante */}
-                    <div className="max-h-96 overflow-y-auto">
-                      <div className="grid gap-3">
-                        {Object.entries(
-                          productDetails.stock_variants.reduce((acc, variant) => {
-                            const key = variant.size_name || 'Sin talle'
-                            if (!acc[key]) acc[key] = []
-                            acc[key].push(variant)
-                            return acc
-                          }, {})
-                        ).map(([sizeName, variants]) => (
-                          <div
-                            key={sizeName}
-                            className="rounded-lg border border-gray-200 bg-white p-4"
-                          >
-                            <h5 className="mb-3 font-semibold text-gray-800">Talle: {sizeName}</h5>
-                            <div className="grid gap-2 md:grid-cols-2">
-                              {variants.map((variant) => (
-                                <div
-                                  key={`${variant.size_id}-${variant.color_id}-${variant.sucursal_id}`}
-                                  className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
-                                >
-                                  <div className="flex items-center space-x-3">
-                                    <div
-                                      className="h-6 w-6 rounded-full border-2 border-gray-300"
-                                      style={{
-                                        backgroundColor: getValidHexColor(variant.color_hex)
-                                      }}
-                                      title={variant.color_name || 'Sin color'}
-                                    ></div>
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-700">
-                                        {variant.color_name || 'Sin color'}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        {variant.sucursal_nombre} • {variant.quantity} unidades
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    {variant.variant_barcode ? (
-                                      <div>
-                                        <p className="font-mono text-xs text-gray-600">
-                                          {variant.variant_barcode}
-                                        </p>
-                                        <button
-                                          onClick={() =>
-                                            generateBarcodePreview(variant.variant_barcode)
-                                          }
-                                          className="mt-1 text-xs text-blue-600 hover:text-blue-800"
-                                        >
-                                          Ver código
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-gray-400">Sin código</span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-8 text-center">
-                    <QrCode className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                    <p className="text-gray-500">
-                      No hay variantes con códigos de barras disponibles
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           )}
