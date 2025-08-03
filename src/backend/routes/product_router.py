@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from database.database import Database
 from datetime import datetime
 
@@ -214,18 +214,15 @@ def get_product_image(product_id):
         image_result = db.get_product_image(product_id)
 
         if image_result.get("success") and image_result.get("image_data"):
-            import base64
-
-            # Convertir bytes a base64
-            image_base64 = base64.b64encode(image_result["image_data"]).decode("utf-8")
-
-            return jsonify(
-                {
-                    "status": "success",
-                    "message": "Imagen encontrada",
-                    "image_data": image_base64,
-                }
-            ), 200
+            # Retornar la imagen directamente como respuesta binaria
+            return Response(
+                image_result["image_data"],
+                mimetype="image/jpeg",  # Asumimos JPEG, podrías detectar el tipo real
+                headers={
+                    "Content-Type": "image/jpeg",
+                    "Cache-Control": "public, max-age=3600",  # Cache por 1 hora
+                },
+            )
         else:
             return jsonify(
                 {

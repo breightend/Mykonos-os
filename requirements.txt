@@ -2,3 +2,4 @@ flask
 flask-jwt-extended
 flask-cors
 flask-sqlalchemy
+Pillow

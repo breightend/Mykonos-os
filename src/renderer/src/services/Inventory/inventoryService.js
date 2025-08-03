@@ -201,28 +201,6 @@ export const inventoryService = {
     },
 
     /**
-     * Actualiza los datos de un producto
-     * @param {Object} updateData - Datos de actualización del producto
-     * @returns {Promise} Resultado de la actualización
-     */
-    async updateProduct(updateData) {
-        try {
-            console.log('🔄 Actualizando producto:', updateData)
-            const response = await axios.put(`${API_URL}/update-product`, updateData)
-            console.log('✅ Producto actualizado:', response.data)
-            return response.data
-        } catch (error) {
-            console.error('❌ Error al actualizar producto:', error)
-            console.error('🔍 Error detallado:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            })
-            throw error
-        }
-    },
-
-    /**
      * Actualiza un producto con nueva información
      * @param {number} productId - ID del producto a actualizar
      * @param {Object} updateData - Datos a actualizar

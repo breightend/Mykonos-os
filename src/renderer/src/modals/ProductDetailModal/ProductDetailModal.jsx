@@ -15,6 +15,9 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [showBarcodeModal, setShowBarcodeModal] = useState(false)
   const barcodeService = new BarcodeService()
 
+  // Estado para la URL de la imagen del producto
+  const [productImageUrl, setProductImageUrl] = useState(null)
+
   useEffect(() => {
     const loadProductDetails = async () => {
       try {
@@ -29,6 +32,13 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
           console.log('✅ Detalles del producto cargados:', response.data)
           console.log('🔍 Stock variants recibidas:', response.data.stock_variants)
           console.log('🔍 Cantidad de stock variants:', response.data.stock_variants?.length || 0)
+
+          // Configurar URL de imagen si el producto tiene imagen
+          if (response.data.has_image) {
+            setProductImageUrl(`http://localhost:5000/api/product/${productId}/image`)
+          } else {
+            setProductImageUrl(null)
+          }
 
           // 🔧 DEBUGGING ESPECÍFICO DE VARIANT_BARCODE
           if (response.data.stock_variants && response.data.stock_variants.length > 0) {
@@ -77,6 +87,11 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
     if (isOpen && productId) {
       loadProductDetails()
+    } else if (!isOpen) {
+      // Limpiar estados cuando se cierra el modal
+      setProductDetails(null)
+      setProductImageUrl(null)
+      setError(null)
     }
   }, [isOpen, productId])
 
@@ -178,30 +193,18 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
               <div className="mb-8 flex justify-center">
                 <div className="w-full max-w-md">
                   <div className="flex justify-center">
-                    {productDetails.product_image ? (
+                    {productImageUrl ? (
                       <div className="group relative">
                         <img
-                          src={`data:image/png;base64,${productDetails.product_image}`}
+                          src={productImageUrl}
                           alt={productDetails.product_name}
                           className="h-80 w-80 rounded-xl border-2 border-gray-200 object-cover shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl"
                           onError={(e) => {
-                            // Si falla con PNG, intentar con JPEG
-                            if (e.target.src.includes('data:image/png')) {
-                              e.target.src = `data:image/jpeg;base64,${productDetails.product_image}`
-                            } else if (e.target.src.includes('data:image/jpeg')) {
-                              // Si también falla con JPEG, intentar con WEBP
-                              e.target.src = `data:image/webp;base64,${productDetails.product_image}`
-                            } else {
-                              // Si fallan todos los tipos, mostrar el placeholder
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
-                            }
+                            console.log('Error cargando imagen del producto:', e)
+                            // Si hay error cargando la imagen, mostrar placeholder
+                            setProductImageUrl(null)
                           }}
                         />
-                        <div className="hidden h-80 w-80 flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-gray-100">
-                          <Package className="mb-4 h-20 w-20 text-gray-400" />
-                          <span className="text-lg text-gray-500">Imagen no disponible</span>
-                        </div>
                       </div>
                     ) : (
                       <div className="flex h-80 w-80 flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-gray-100">
