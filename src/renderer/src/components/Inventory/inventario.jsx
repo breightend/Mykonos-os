@@ -1,4 +1,4 @@
-import { PackagePlus, Search, Edit, Boxes, Truck } from 'lucide-react'
+import { PackagePlus, Search, Edit, Boxes, Truck, ListPlus } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState, useEffect, useCallback } from 'react'
 import { pinwheel } from 'ldrs'
@@ -9,7 +9,6 @@ import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailMod
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
 import { useSession } from '../../contexts/SessionContext'
-
 pinwheel.register()
 //TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
 export default function Inventario() {
@@ -325,6 +324,14 @@ export default function Inventario() {
                 onClick={handleMoveInventoryClick}
               >
                 <Truck className="h-5 w-5" />
+              </button>
+            </li>
+            <li>
+              <button
+                className="btn btn-ghost tooltip tooltip-bottom"
+                data-tip="Agregar colores y talles"                
+              >
+                <ListPlus className='h-5 w-5' />
               </button>
             </li>
           </ul>

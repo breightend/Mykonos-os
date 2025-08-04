@@ -1480,7 +1480,7 @@ def update_product():
 def update_product_by_id(product_id):
     """
     Actualiza un producto específico por ID (formato REST)
-    Incluye información básica, precios, descuentos y stock por variantes
+    Incluye información básica, precios, descuentos, stock por variantes, imágenes, colores y talles
     """
     try:
         data = request.json
@@ -1488,203 +1488,274 @@ def update_product_by_id(product_id):
 
         db = Database()
 
-        # Actualizar datos básicos del producto
-        update_fields = []
-        update_values = []
-
-        # Campos que se pueden actualizar
-        updatable_fields = {
-            "product_name": "product_name",
-            "description": "description",
-            "comments": "comments",
-            "cost": "cost",
-            "sale_price": "sale_price",
-            "original_price": "original_price",
-            "discount_percentage": "discount_percentage",
-            "discount_amount": "discount_amount",
-            "has_discount": "has_discount",
-            "tax": "tax",
-        }
-
-        for field, column in updatable_fields.items():
-            if field in data:
-                update_fields.append(f"{column} = ?")
-                update_values.append(data[field])
-
-        # Agregar fecha de modificación
-        update_fields.append("last_modified_date = ?")
-        update_values.append(datetime.now().isoformat())
-        update_values.append(product_id)
-
-        if update_fields:
-            update_query = f"""
-            UPDATE products 
-            SET {", ".join(update_fields)}
-            WHERE id = ?
-            """
-
-            result = db.execute_query(update_query, update_values)
-            print(f"✅ Producto {product_id} actualizado")
-
-        # Procesar imagen si se proporciona
-        if "product_image" in data and data["product_image"]:
-            print(f"🖼️ Procesando imagen para producto {product_id}")
+        # Iniciar transacción manual
+        with db.create_connection() as conn:
             try:
-                import base64
-                from PIL import Image
-                import io
+                # Crear cursor para toda la transacción
+                cursor = conn.cursor()
 
-                product_image = data["product_image"]
+                # 1. Actualizar datos básicos del producto
+                update_fields = []
+                update_values = []
 
-                # Remover el prefijo data:image si existe
-                if product_image.startswith("data:"):
-                    product_image = product_image.split(",")[1]
+                # Campos que se pueden actualizar
+                updatable_fields = {
+                    "product_name": "product_name",
+                    "description": "description",
+                    "comments": "comments",
+                    "cost": "cost",
+                    "sale_price": "sale_price",
+                    "original_price": "original_price",
+                    "discount_percentage": "discount_percentage",
+                    "discount_amount": "discount_amount",
+                    "has_discount": "has_discount",
+                    "tax": "tax",
+                }
 
-                # Decodificar base64
-                image_bytes = base64.b64decode(product_image)
+                for field, column in updatable_fields.items():
+                    if field in data:
+                        update_fields.append(f"{column} = ?")
+                        # Convertir booleanos a enteros para has_discount
+                        if field == "has_discount":
+                            update_values.append(1 if data[field] else 0)
+                        else:
+                            update_values.append(data[field])
 
-                # Redimensionar imagen para evitar archivos muy grandes
-                image = Image.open(io.BytesIO(image_bytes))
+                # Agregar fecha de modificación
+                if update_fields:
+                    update_fields.append("last_modified_date = ?")
+                    update_values.append(datetime.now().isoformat())
+                    update_values.append(product_id)
 
-                # Redimensionar si es muy grande (máximo 800x800)
-                max_size = (800, 800)
-                if image.size[0] > max_size[0] or image.size[1] > max_size[1]:
-                    image.thumbnail(max_size, Image.Resampling.LANCZOS)
-                    print(f"🖼️ Imagen redimensionada de tamaño original a {image.size}")
+                    update_query = f"""
+                    UPDATE products 
+                    SET {", ".join(update_fields)}
+                    WHERE id = ?
+                    """
 
-                # Convertir a RGB si es necesario
-                if image.mode in ("RGBA", "P"):
-                    image = image.convert("RGB")
-
-                # Guardar como JPEG con calidad optimizada
-                output = io.BytesIO()
-                image.save(output, format="JPEG", quality=85, optimize=True)
-                optimized_image_bytes = output.getvalue()
-
-                print(
-                    f"🖼️ Imagen optimizada: {len(image_bytes)} -> {len(optimized_image_bytes)} bytes"
-                )
-
-                # Eliminar imagen anterior si existe
-                delete_image_query = "DELETE FROM images WHERE product_id = ?"
-                db.execute_query(delete_image_query, (product_id,))
-
-                # Insertar nueva imagen
-                image_result = db.add_product_image(product_id, optimized_image_bytes)
-
-                if image_result.get("success"):
-                    print(f"✅ Imagen actualizada para producto {product_id}")
-                else:
+                    cursor.execute(update_query, update_values)
                     print(
-                        f"❌ Error al actualizar imagen: {image_result.get('message')}"
+                        f"✅ Producto {product_id} actualizado, filas afectadas: {cursor.rowcount}"
                     )
 
-            except Exception as img_error:
-                print(f"❌ Error procesando imagen: {img_error}")
-                import traceback
+                # 2. Procesar imagen si se proporciona
+                if "product_image" in data and data["product_image"]:
+                    print(f"🖼️ Procesando imagen para producto {product_id}")
+                    try:
+                        import base64
+                        from PIL import Image
+                        import io
 
-                traceback.print_exc()
+                        product_image = data["product_image"]
 
-        # Actualizar stock por variantes si se proporciona
-        if "stock_variants" in data and data["stock_variants"]:
-            print(f"🔄 Procesando {len(data['stock_variants'])} variantes de stock")
+                        # Remover el prefijo data:image si existe
+                        if product_image.startswith("data:"):
+                            product_image = product_image.split(",")[1]
 
-            for variant in data["stock_variants"]:
-                # Usar branch_id en lugar de sucursal_id para compatibilidad
-                branch_id = variant.get("sucursal_id") or variant.get("branch_id")
+                        # Decodificar base64
+                        image_bytes = base64.b64decode(product_image)
 
-                if (
-                    all(key in variant for key in ["size_id", "color_id"])
-                    and branch_id is not None
-                ):
-                    # Verificar si es una variante nueva
-                    if variant.get("is_new", False):
+                        # Redimensionar imagen para evitar archivos muy grandes
+                        image = Image.open(io.BytesIO(image_bytes))
+
+                        # Redimensionar si es muy grande (máximo 800x800)
+                        max_size = (800, 800)
+                        if image.size[0] > max_size[0] or image.size[1] > max_size[1]:
+                            image.thumbnail(max_size, Image.Resampling.LANCZOS)
+                            print(
+                                f"🖼️ Imagen redimensionada de tamaño original a {image.size}"
+                            )
+
+                        # Convertir a RGB si es necesario
+                        if image.mode in ("RGBA", "P"):
+                            image = image.convert("RGB")
+
+                        # Guardar como JPEG con calidad optimizada
+                        output = io.BytesIO()
+                        image.save(output, format="JPEG", quality=85, optimize=True)
+                        optimized_image_bytes = output.getvalue()
+
                         print(
-                            f"📦 Creando nueva variante: Talle {variant['size_id']}, Color {variant['color_id']}"
+                            f"🖼️ Imagen optimizada: {len(image_bytes)} -> {len(optimized_image_bytes)} bytes"
                         )
 
-                        # Generar código de barras único si no se proporcionó
-                        variant_barcode = variant.get("barcode")
-                        if not variant_barcode:
-                            # Generar código de barras automáticamente
-                            import time
+                        # Eliminar imagen anterior si existe
+                        cursor.execute(
+                            "DELETE FROM images WHERE product_id = ?", (product_id,)
+                        )
 
-                            timestamp = str(int(time.time()))[-6:]
-                            product_prefix = str(product_id).zfill(4)
-                            size_code = str(variant["size_id"]).zfill(2)
-                            color_code = str(variant["color_id"]).zfill(2)
-                            variant_barcode = (
-                                f"{product_prefix}{size_code}{color_code}{timestamp}"
+                        # Insertar nueva imagen
+                        cursor.execute(
+                            "INSERT INTO images (product_id, image_data) VALUES (?, ?)",
+                            (product_id, optimized_image_bytes),
+                        )
+
+                        print(f"✅ Imagen actualizada para producto {product_id}")
+
+                    except Exception as img_error:
+                        print(f"❌ Error procesando imagen: {img_error}")
+                        import traceback
+
+                        traceback.print_exc()
+
+                # 3. Actualizar relaciones de colores del producto
+                if "colors" in data and isinstance(data["colors"], list):
+                    print(f"🎨 Actualizando colores del producto {product_id}")
+
+                    # Eliminar colores existentes
+                    cursor.execute(
+                        "DELETE FROM product_colors WHERE product_id = ?", (product_id,)
+                    )
+
+                    # Agregar nuevos colores
+                    for color_id in data["colors"]:
+                        if color_id:
+                            cursor.execute(
+                                "INSERT INTO product_colors (product_id, color_id) VALUES (?, ?)",
+                                (product_id, color_id),
                             )
+                    print(f"✅ Colores actualizados para producto {product_id}")
 
-                        # Insertar nueva variante
-                        insert_variant_query = """
-                        INSERT INTO warehouse_stock_variants 
-                        (product_id, size_id, color_id, branch_id, quantity, variant_barcode, last_updated)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """
+                # 4. Actualizar relaciones de tallas del producto
+                if "sizes" in data and isinstance(data["sizes"], list):
+                    print(f"📏 Actualizando tallas del producto {product_id}")
 
-                        variant_params = [
-                            product_id,
-                            variant["size_id"],
-                            variant["color_id"],
-                            branch_id,
-                            variant["quantity"],
-                            variant_barcode,
-                            datetime.now().isoformat(),
-                        ]
+                    # Eliminar tallas existentes
+                    cursor.execute(
+                        "DELETE FROM product_sizes WHERE product_id = ?", (product_id,)
+                    )
 
-                        try:
-                            db.execute_query(insert_variant_query, variant_params)
-                            print(
-                                f"✅ Nueva variante creada: Talle {variant['size_id']}, Color {variant['color_id']}, Barcode: {variant_barcode}"
+                    # Agregar nuevas tallas
+                    for size_id in data["sizes"]:
+                        if size_id:
+                            cursor.execute(
+                                "INSERT INTO product_sizes (product_id, size_id) VALUES (?, ?)",
+                                (product_id, size_id),
                             )
-                        except Exception as e:
-                            print(f"❌ Error creando nueva variante: {e}")
-                    else:
-                        # Actualizar variante existente
-                        update_variant_query = """
-                        UPDATE warehouse_stock_variants 
-                        SET quantity = ?, last_updated = ?
-                        WHERE product_id = ? AND size_id = ? AND color_id = ? AND branch_id = ?
-                        """
+                    print(f"✅ Tallas actualizadas para producto {product_id}")
 
-                        variant_params = [
-                            variant["quantity"],
-                            datetime.now().isoformat(),
-                            product_id,
-                            variant["size_id"],
-                            variant["color_id"],
-                            branch_id,
-                        ]
+                # 5. Actualizar stock por variantes si se proporciona
+                if "stock_variants" in data and data["stock_variants"]:
+                    print(
+                        f"🔄 Procesando {len(data['stock_variants'])} variantes de stock"
+                    )
 
-                        try:
-                            db.execute_query(update_variant_query, variant_params)
-                            print(
-                                f"✅ Variante actualizada: Talle {variant['size_id']}, Color {variant['color_id']}, Cantidad: {variant['quantity']}"
-                            )
-                        except Exception as e:
-                            print(f"❌ Error actualizando variante: {e}")
+                    for variant in data["stock_variants"]:
+                        # Usar branch_id en lugar de sucursal_id para compatibilidad
+                        branch_id = variant.get("sucursal_id") or variant.get(
+                            "branch_id"
+                        )
+
+                        if (
+                            all(key in variant for key in ["size_id", "color_id"])
+                            and branch_id is not None
+                        ):
+                            # Verificar si es una variante nueva
+                            if variant.get("is_new", False):
+                                print(
+                                    f"📦 Creando nueva variante: Talle {variant['size_id']}, Color {variant['color_id']}"
+                                )
+
+                                # Generar código de barras único si no se proporcionó
+                                variant_barcode = variant.get("barcode")
+                                if not variant_barcode:
+                                    import time
+
+                                    timestamp = str(int(time.time()))[-6:]
+                                    product_prefix = str(product_id).zfill(4)
+                                    size_code = str(variant["size_id"]).zfill(2)
+                                    color_code = str(variant["color_id"]).zfill(2)
+                                    variant_barcode = f"{product_prefix}{size_code}{color_code}{timestamp}"
+
+                                # Insertar nueva variante
+                                cursor.execute(
+                                    """
+                                    INSERT INTO warehouse_stock_variants 
+                                    (product_id, size_id, color_id, branch_id, quantity, variant_barcode, last_updated)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                    (
+                                        product_id,
+                                        variant["size_id"],
+                                        variant["color_id"],
+                                        branch_id,
+                                        variant.get("quantity", 0),
+                                        variant_barcode,
+                                        datetime.now().isoformat(),
+                                    ),
+                                )
+
+                                print(
+                                    f"✅ Nueva variante creada: Talle {variant['size_id']}, Color {variant['color_id']}, Barcode: {variant_barcode}"
+                                )
+                            else:
+                                # Actualizar variante existente
+                                cursor.execute(
+                                    """
+                                    UPDATE warehouse_stock_variants 
+                                    SET quantity = ?, last_updated = ?
+                                    WHERE product_id = ? AND size_id = ? AND color_id = ? AND branch_id = ?
+                                """,
+                                    (
+                                        variant.get("quantity", 0),
+                                        datetime.now().isoformat(),
+                                        product_id,
+                                        variant["size_id"],
+                                        variant["color_id"],
+                                        branch_id,
+                                    ),
+                                )
+
+                                if cursor.rowcount > 0:
+                                    print(
+                                        f"✅ Variante actualizada: Talle {variant['size_id']}, Color {variant['color_id']}, Cantidad: {variant.get('quantity', 0)}"
+                                    )
+                                else:
+                                    print(
+                                        f"⚠️ No se encontró variante para actualizar: Talle {variant['size_id']}, Color {variant['color_id']}"
+                                    )
+                        else:
+                            print(f"⚠️ Variante incompleta: {variant}")
+
+                # Confirmar transacción
+                conn.commit()
+
+                # 6. Obtener datos actualizados del producto para devolver
+                cursor.execute(
+                    """
+                    SELECT p.*, b.brand_name 
+                    FROM products p 
+                    LEFT JOIN brands b ON p.brand_id = b.id 
+                    WHERE p.id = ?
+                """,
+                    (product_id,),
+                )
+
+                updated_product = cursor.fetchone()
+
+                # Convertir a diccionario
+                if updated_product:
+                    columns = [desc[0] for desc in cursor.description]
+                    updated_product_dict = dict(zip(columns, updated_product))
                 else:
-                    print(f"⚠️ Variante incompleta: {variant}")
+                    updated_product_dict = None
 
-        # Obtener datos actualizados del producto para devolver
-        updated_product_query = """
-        SELECT p.*, b.brand_name 
-        FROM products p 
-        LEFT JOIN brands b ON p.brand_id = b.id 
-        WHERE p.id = ?
-        """
-        updated_product = db.execute_query(updated_product_query, (product_id,))
+                return jsonify(
+                    {
+                        "status": "success",
+                        "message": "Producto actualizado correctamente",
+                        "data": updated_product_dict,
+                    }
+                ), 200
 
-        return jsonify(
-            {
-                "status": "success",
-                "message": "Producto actualizado correctamente",
-                "data": updated_product[0] if updated_product else None,
-            }
-        ), 200
+            except Exception as e:
+                conn.rollback()
+                print(f"❌ Error en transacción: {e}")
+                raise e
 
     except Exception as e:
         print(f"❌ Error actualizando producto {product_id}: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
         return jsonify({"status": "error", "message": f"Error interno: {str(e)}"}), 500

@@ -13,6 +13,7 @@ from routes.purchase_router import purchase_bp
 from routes.barcode_router import barcode_router
 from routes.debug_router import debug_router
 from routes.sales_router import sales_router
+from routes.fix_data_router import fix_data_bp
 
 app = Flask(__name__)
 # Comprehensive CORS configuration to handle all preflight requests
@@ -35,6 +36,7 @@ app.register_blueprint(purchase_bp, url_prefix="/api/purchases")
 app.register_blueprint(barcode_router, url_prefix="/api/barcode")
 app.register_blueprint(debug_router, url_prefix="/api/debug")
 app.register_blueprint(sales_router, url_prefix="/api/sales")
+app.register_blueprint(fix_data_bp, url_prefix="/api/fix")
 
 
 @app.route("/")

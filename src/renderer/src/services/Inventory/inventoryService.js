@@ -209,7 +209,50 @@ export const inventoryService = {
     async updateProduct(productId, updateData) {
         try {
             console.log('🔄 Actualizando producto:', productId, updateData)
-            const response = await axios.put(`${API_URL}/products/${productId}`, updateData)
+
+            // Preparar datos para envío
+            const dataToSend = { ...updateData }
+
+            // Asegurar que los valores numéricos estén en el formato correcto
+            if (dataToSend.cost !== undefined) {
+                dataToSend.cost = parseFloat(dataToSend.cost) || 0
+            }
+            if (dataToSend.sale_price !== undefined) {
+                dataToSend.sale_price = parseFloat(dataToSend.sale_price) || 0
+            }
+            if (dataToSend.original_price !== undefined) {
+                dataToSend.original_price = parseFloat(dataToSend.original_price) || 0
+            }
+            if (dataToSend.discount_percentage !== undefined) {
+                dataToSend.discount_percentage = parseFloat(dataToSend.discount_percentage) || 0
+            }
+            if (dataToSend.discount_amount !== undefined) {
+                dataToSend.discount_amount = parseFloat(dataToSend.discount_amount) || 0
+            }
+            if (dataToSend.tax !== undefined) {
+                dataToSend.tax = parseFloat(dataToSend.tax) || 0
+            }
+
+            // Convertir has_discount a booleano
+            if (dataToSend.has_discount !== undefined) {
+                dataToSend.has_discount = Boolean(dataToSend.has_discount)
+            }
+
+            // Validar y procesar stock_variants si existen
+            if (dataToSend.stock_variants && Array.isArray(dataToSend.stock_variants)) {
+                dataToSend.stock_variants = dataToSend.stock_variants.map(variant => ({
+                    ...variant,
+                    quantity: parseInt(variant.quantity) || 0,
+                    size_id: parseInt(variant.size_id) || variant.size_id,
+                    color_id: parseInt(variant.color_id) || variant.color_id,
+                    sucursal_id: parseInt(variant.sucursal_id) || variant.sucursal_id || variant.branch_id,
+                    is_new: Boolean(variant.is_new)
+                }))
+            }
+
+            console.log('📤 Datos procesados para envío:', dataToSend)
+
+            const response = await axios.put(`${API_URL}/products/${productId}`, dataToSend)
             console.log('✅ Producto actualizado:', response.data)
             return response.data
         } catch (error) {

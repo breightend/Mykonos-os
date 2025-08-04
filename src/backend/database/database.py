@@ -16,15 +16,15 @@ class TABLES(Enum):
     ACCOUNT_MOVEMENTS = "account_movements"
     GROUP = "groups"
     USERS = "users"
-    SIZE_CATEGORIES = "size_categories"
-    SIZES = "sizes"
-    COLORS = "colors"
+    SIZE_CATEGORIES = "size_categories"  # Categorias de los talles
+    SIZES = "sizes"  # talles de los productos
+    COLORS = "colors"  # colores que pueden ser los productos
 
     STORAGE = "storage"
     PRODUCTS = "products"
-    PRODUCT_SIZES = "product_sizes"
+    PRODUCT_SIZES = "product_sizes"  # Relacion muchos a muchos entre productos y talles
     PRODUCT_COLORS = "product_colors"
-    IMAGES = "images"
+    IMAGES = "images"  # guarda las imagenes de los productos
     WAREHOUSE_STOCK = (
         "warehouse_stock"  # Relacion muchos a muchos entre sucursal y productos
     )
@@ -36,7 +36,7 @@ class TABLES(Enum):
     RESPONSABILIDADES_AFIP = "responsabilidades_afip"
     BRANDS = "brands"
     PURCHASES = "purchases"  # compra de mercaderia
-    PURCHASES_DETAIL = "purchases_detail"
+    PURCHASES_DETAIL = "purchases_detail"  # detalle de la compra de mercaderia
     PROVEEDORXMARCA = "proveedorxmarca"
     USERSXSTORAGE = "usersxstorage"
     SESSIONS = "sessions"
@@ -219,6 +219,10 @@ DATABASE_TABLES = {
             "sale_price": "REAL",  # Precio de venta del producto.
             "tax": "REAL",  # Impuesto aplicable al producto.
             "discount": "REAL",  # Descuento aplicado al producto.
+            "original_price": "REAL DEFAULT 0",  # Precio original antes del descuento.
+            "discount_percentage": "REAL DEFAULT 0",  # Porcentaje de descuento.
+            "discount_amount": "REAL DEFAULT 0",  # Monto del descuento.
+            "has_discount": "INTEGER DEFAULT 0",  # Indica si el producto tiene descuento aplicado.
             "comments": "TEXT",  # Comentarios adicionales sobre el producto.
             "user_id": "INTEGER",  # ID del usuario que creó o modificó el producto.
             "images_ids": "TEXT",  # IDs de las imágenes asociadas al producto.
@@ -928,7 +932,8 @@ class Database:
             params (tuple, optional): Parameters for the query. Defaults to None.
 
         Returns:
-            list: A list of dictionaries with the query results.
+            list: A list of dictionaries with the query results for SELECT queries.
+                  Empty list for non-SELECT queries (INSERT, UPDATE, DELETE).
         """
         try:
             with self.create_connection() as conn:
@@ -937,15 +942,39 @@ class Database:
                     cur.execute(query, params)
                 else:
                     cur.execute(query)
-                rows = cur.fetchall()
-                records = []
-                columns = [desc[0] for desc in cur.description]
-                for row in rows:
-                    records.append(dict(zip(columns, row)))
-                return records
+
+                # Store cursor for accessing rowcount and lastrowid
+                self.cursor = cur
+
+                # Check if this is a SELECT query by looking at query type
+                query_upper = query.strip().upper()
+                if query_upper.startswith("SELECT") or query_upper.startswith("PRAGMA"):
+                    rows = cur.fetchall()
+                    records = []
+                    columns = (
+                        [desc[0] for desc in cur.description] if cur.description else []
+                    )
+                    for row in rows:
+                        records.append(dict(zip(columns, row)))
+                    return records
+                else:
+                    # For INSERT, UPDATE, DELETE queries, commit and return empty list
+                    conn.commit()
+                    return []
+
         except Exception as e:
             print(f"Error executing query: {e}")
             return []
+
+    def get_last_insert_id(self):
+        """
+        Returns the last inserted row ID from the most recent INSERT operation.
+        """
+        return (
+            getattr(self, "cursor", None).lastrowid
+            if hasattr(self, "cursor") and self.cursor
+            else None
+        )
 
     # CRUD methods
     def add_record(self, table_name, data):

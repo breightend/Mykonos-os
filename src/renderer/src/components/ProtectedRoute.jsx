@@ -8,8 +8,13 @@ const ProtectedRoute = ({ children }) => {
   const [, setLocation] = useLocation()
 
   useEffect(() => {
+    // Only redirect if we're not loading and user is not authenticated
     if (!loading && !isAuthenticated()) {
-      setLocation('/')
+      // Add a small delay to prevent redirect loops
+      const timer = setTimeout(() => {
+        setLocation('/')
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [loading, isAuthenticated, setLocation])
 

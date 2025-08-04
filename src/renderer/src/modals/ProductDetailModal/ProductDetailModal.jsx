@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react'
-import { X, Package, Warehouse, DollarSign, Calendar, Info, Edit, QrCode } from 'lucide-react'
+import {
+  X,
+  Package,
+  Warehouse,
+  DollarSign,
+  Calendar,
+  Info,
+  Edit,
+  QrCode,
+  Wrench
+} from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import BarcodeService from '../../services/barcodeService'
 import { useLocation } from 'wouter'
+import toast from 'react-hot-toast'
 
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
@@ -53,6 +64,11 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                 `     variant_barcode: "${variant.variant_barcode}" (tipo: ${typeof variant.variant_barcode})`
               )
 
+              // 🆕 DEBUGGING ADICIONAL PARA IDENTIFICAR PROBLEMAS DE IDs
+              console.log(`     size_id en DB: ${variant.size_id}`)
+              console.log(`     color_id en DB: ${variant.color_id}`)
+              console.log(`     sucursal_id en DB: ${variant.sucursal_id}`)
+
               if (variant.variant_barcode === null) {
                 console.log('     ❌ PROBLEMA: variant_barcode es NULL')
               } else if (variant.variant_barcode === '') {
@@ -71,6 +87,13 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
             console.log(
               `🎯 RESUMEN: ${variantsWithValidBarcodes.length}/${response.data.stock_variants.length} variantes tienen códigos válidos`
             )
+
+            // 🔥 DEBUGGING CRÍTICO: Verificar inconsistencias de IDs
+            console.log('🔥 VERIFICACIÓN DE CONSISTENCIA DE IDs:')
+            console.log(
+              '   Si ves size_id=1 o size_id=2, hay un problema de inconsistencia en la base de datos'
+            )
+            console.log('   Los size_id correctos deberían ser números más altos (8, 9, etc.)')
           } else {
             console.log('⚠️ No hay stock_variants en la respuesta')
           }
@@ -144,6 +167,47 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
       setShowBarcodeModal(true)
     } catch (error) {
       console.error('Error generando preview del código de barras:', error)
+    }
+  }
+
+  // Función para arreglar automáticamente los IDs inconsistentes
+  const fixVariantIds = async () => {
+    try {
+      console.log('🔧 Iniciando reparación automática de variant IDs...')
+      toast.loading('Reparando inconsistencias de datos...', { id: 'fix-variants' })
+
+      const response = await fetch('http://localhost:5000/api/fix/variant-ids', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+
+      if (result.status === 'success') {
+        console.log('✅ Reparación completada:', result)
+        toast.success(`¡Reparación exitosa! Se corrigieron ${result.fixed_count} variantes.`, {
+          id: 'fix-variants',
+          duration: 4000
+        })
+
+        // Recargar los datos del producto después de la reparación
+        if (productId) {
+          console.log('🔄 Recargando datos del producto después de la reparación...')
+          const updatedResponse = await inventoryService.getProductDetails(productId)
+          if (updatedResponse.status === 'success') {
+            setProductDetails(updatedResponse.data)
+            console.log('✅ Datos del producto actualizados después de la reparación')
+          }
+        }
+      } else {
+        console.error('❌ Error en la reparación:', result)
+        toast.error(`Error: ${result.message}`, { id: 'fix-variants' })
+      }
+    } catch (error) {
+      console.error('❌ Error llamando endpoint de reparación:', error)
+      toast.error('Error al ejecutar la reparación automática', { id: 'fix-variants' })
     }
   }
 
@@ -509,19 +573,34 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
         {/* Footer */}
         <div className="footer border-base-300 bg-base-100 border-t p-4">
-          <div className="flex w-full justify-end gap-3">
-            <button
-              onClick={() => setLocation(`/editarProducto?id=${productId}`)}
-              type="button"
-              className="btn btn-primary h-12 gap-2 rounded-lg" // Usamos btn-primary para destacar
-              disabled={!productDetails}
-            >
-              <Edit className="h-4 w-4" />
-              Editar Producto
-            </button>
-            <button onClick={onClose} type="button" className="btn btn-neutral h-12 rounded-lg">
-              Cerrar
-            </button>
+          <div className="flex w-full justify-between gap-3">
+            {/* Botón de reparación automática - solo mostrar si hay inconsistencias */}
+            {productDetails?.stock_variants?.some((v) => v.size_id === 1 || v.size_id === 2) && (
+              <button
+                onClick={fixVariantIds}
+                type="button"
+                className="btn btn-warning h-12 gap-2 rounded-lg"
+                title="Reparar inconsistencias de datos detectadas automáticamente"
+              >
+                <Wrench className="h-4 w-4" />
+                🔧 Reparar Datos
+              </button>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLocation(`/editarProducto?id=${productId}`)}
+                type="button"
+                className="btn btn-primary h-12 gap-2 rounded-lg"
+                disabled={!productDetails}
+              >
+                <Edit className="h-4 w-4" />
+                Editar Producto
+              </button>
+              <button onClick={onClose} type="button" className="btn btn-neutral h-12 rounded-lg">
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       </div>

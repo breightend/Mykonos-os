@@ -18,7 +18,7 @@ export const SessionProvider = ({ children }) => {
   // Verificar sesión al inicializar
   useEffect(() => {
     checkExistingSession()
-  }, [])
+  }, []) // Empty dependency array to run only once
 
   const checkExistingSession = async () => {
     try {
@@ -30,20 +30,24 @@ export const SessionProvider = ({ children }) => {
         return
       }
 
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
       const response = await fetch('http://localhost:5000/api/auth/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ session_token: sessionToken })
+        body: JSON.stringify({ session_token: sessionToken }),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       const data = await response.json()
 
       if (data.success) {
-        console.log('🔐 Validación de token exitosa:', data.session_data)
-        console.log('🔐 Storage ID en validación:', data.session_data.storage_id)
-        console.log('🔐 Storage Name en validación:', data.session_data.storage_name)
         setSession(data.session_data)
         setError(null)
       } else {
@@ -53,9 +57,20 @@ export const SessionProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Error verificando sesión:', err)
-      setError('Error de conexión')
-      localStorage.removeItem('session_token')
-      setSession(null)
+
+      // Don't show error for aborted requests (timeout)
+      if (err.name !== 'AbortError') {
+        setError('Error de conexión')
+      }
+
+      // If there's a connection error, don't immediately clear the token
+      // This prevents logout loops due to temporary network issues
+      if (err.name === 'AbortError' || err.message.includes('fetch')) {
+        console.warn('Session validation failed due to network issue, keeping session')
+      } else {
+        localStorage.removeItem('session_token')
+        setSession(null)
+      }
     } finally {
       setLoading(false)
     }
@@ -85,9 +100,6 @@ export const SessionProvider = ({ children }) => {
         localStorage.setItem('session_token', data.session_data.session_token)
 
         // Actualizar estado de sesión
-        console.log('🔐 Datos de sesión recibidos:', data.session_data)
-        console.log('🔐 Storage ID recibido:', data.session_data.storage_id)
-        console.log('🔐 Storage Name recibido:', data.session_data.storage_name)
         setSession(data.session_data)
         setError(null)
 
@@ -137,23 +149,13 @@ export const SessionProvider = ({ children }) => {
   }
 
   const getCurrentStorage = () => {
-    console.log('🏪 Sesión actual completa:', session)
-    console.log(
-      '🏪 Todas las propiedades de session:',
-      session ? Object.keys(session) : 'No session'
-    )
-    console.log('🏪 Storage ID en sesión:', session?.storage_id)
-    console.log('🏪 Storage Name en sesión:', session?.storage_name)
-
     // Si no hay sesión, devolver null
     if (!session) {
-      console.log('🏪 No hay sesión activa')
       return null
     }
 
     // Si no hay storage_id, significa que probablemente es un admin sin sucursal
     if (!session.storage_id) {
-      console.log('🏪 No hay storage_id en la sesión - probablemente admin')
       return {
         id: null,
         name: 'Sin sucursal'
@@ -165,7 +167,6 @@ export const SessionProvider = ({ children }) => {
       name: session.storage_name || 'Sucursal desconocida'
     }
 
-    console.log('🏪 Datos de storage devueltos:', storageData)
     return storageData
   }
 
@@ -184,8 +185,6 @@ export const SessionProvider = ({ children }) => {
     try {
       setLoading(true)
       setError(null)
-
-      console.log('🔄 Cambiando sucursal a ID:', newStorageId)
 
       const sessionToken = localStorage.getItem('session_token')
       if (!sessionToken) {
@@ -206,7 +205,6 @@ export const SessionProvider = ({ children }) => {
       const data = await response.json()
 
       if (data.success) {
-        console.log('✅ Sucursal cambiada exitosamente:', data.session_data)
         setSession(data.session_data)
         setError(null)
         return { success: true, message: data.message }
@@ -215,7 +213,7 @@ export const SessionProvider = ({ children }) => {
         return { success: false, message: data.message }
       }
     } catch (err) {
-      console.error('❌ Error cambiando sucursal:', err)
+      console.error('Error cambiando sucursal:', err)
       setError('Error de conexión')
       return { success: false, message: 'Error de conexión' }
     } finally {

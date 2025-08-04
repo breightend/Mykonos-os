@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Save, Calculator, Package, Upload, Camera, ArrowLeft, Plus, X } from 'lucide-react'
 import { useLocation, useSearchParams } from 'wouter'
 import { inventoryService } from '../../services/inventory/inventoryService'
+import { useSession } from '../../contexts/SessionContext'
 import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import toast, { Toaster } from 'react-hot-toast'
@@ -13,9 +14,11 @@ const EditarProducto = () => {
   const productId = searchParams.get('id')
   const [productData, setProductData] = useState(null)
 
-  // Función para manejar el botón volver
+  // Obtener información de la sesión actual
+  const { session } = useSession()
+  const currentSucursalId = session?.storage_id
+
   const handleGoBack = () => {
-    // Verificar si hay historial previo
     if (window.history.length > 1) {
       window.history.back()
     } else {
@@ -53,12 +56,10 @@ const EditarProducto = () => {
   const [showAddVariantForm, setShowAddVariantForm] = useState(false)
   const [availableSizes, setAvailableSizes] = useState([])
   const [availableColors, setAvailableColors] = useState([])
-  const [availableStorages, setAvailableStorages] = useState([])
   const [newVariant, setNewVariant] = useState({
     size_id: '',
     color_id: '',
-    sucursal_id: '',
-    quantity: 0
+    quantity: 1
   })
 
   // Cargar datos del producto
@@ -91,6 +92,11 @@ const EditarProducto = () => {
             new_image: null
           })
 
+          // Log de las variantes cargadas
+          if (data.stock_variants && data.stock_variants.length > 0) {
+            // Process variants
+          }
+
           // Si el producto tiene imagen, configurar la URL para mostrarla
           if (data.has_image) {
             setCurrentImageUrl(`http://localhost:5000/api/product/${productId}/image`)
@@ -111,7 +117,7 @@ const EditarProducto = () => {
     }
   }, [productId])
 
-  // Cargar datos para agregar variantes (sizes, colors, storages)
+  // Cargar datos para agregar variantes (sizes, colors)
   useEffect(() => {
     const loadVariantData = async () => {
       try {
@@ -127,12 +133,6 @@ const EditarProducto = () => {
         if (colorsResponse.ok) {
           const colorsData = await colorsResponse.json()
           setAvailableColors(colorsData || [])
-        }
-
-        // Cargar sucursales
-        const storagesResponse = await inventoryService.getStorageList()
-        if (storagesResponse.status === 'success') {
-          setAvailableStorages(storagesResponse.data || [])
         }
       } catch (error) {
         console.error('Error cargando datos para variantes:', error)
@@ -154,8 +154,21 @@ const EditarProducto = () => {
 
   // Función para agregar nueva variante de stock
   const addNewVariant = () => {
-    if (!newVariant.size_id || !newVariant.color_id || !newVariant.sucursal_id) {
-      toast.error('Todos los campos son requeridos para agregar una variante')
+    // Verificar que tengamos la sucursal del usuario logueado
+    if (!currentSucursalId) {
+      toast.error(
+        'No se pudo obtener la información de la sucursal del usuario. Verifica que estés logueado correctamente.'
+      )
+      return
+    }
+
+    if (!newVariant.size_id || !newVariant.color_id) {
+      toast.error('Tamaño y color son requeridos para agregar una variante')
+      return
+    }
+
+    if (!newVariant.quantity || parseInt(newVariant.quantity) <= 0) {
+      toast.error('La cantidad debe ser mayor a 0')
       return
     }
 
@@ -164,20 +177,25 @@ const EditarProducto = () => {
       (variant) =>
         variant.size_id === parseInt(newVariant.size_id) &&
         variant.color_id === parseInt(newVariant.color_id) &&
-        variant.sucursal_id === parseInt(newVariant.sucursal_id)
+        variant.sucursal_id === parseInt(currentSucursalId)
     )
 
     if (existingVariant) {
-      toast.error('Esta combinación de talla, color y sucursal ya existe')
+      toast.error('Esta combinación de talla y color ya existe en tu sucursal')
       return
     }
 
     // Encontrar nombres para mostrar
     const selectedSize = availableSizes.find((s) => s.id === parseInt(newVariant.size_id))
     const selectedColor = availableColors.find((c) => c.id === parseInt(newVariant.color_id))
-    const selectedStorage = availableStorages.find(
-      (st) => st.id === parseInt(newVariant.sucursal_id)
-    )
+
+    if (!selectedSize || !selectedColor) {
+      toast.error('Error: no se pudieron encontrar los datos de talla o color seleccionados')
+      return
+    }
+
+    // Obtener nombre de la sucursal del contexto de sesión
+    const sucursalNombre = session?.storage_name || 'Sucursal Actual'
 
     // Generar código de barras único para la variante
     const generateVariantBarcode = () => {
@@ -192,16 +210,17 @@ const EditarProducto = () => {
       product_id: parseInt(productId),
       size_id: parseInt(newVariant.size_id),
       color_id: parseInt(newVariant.color_id),
-      sucursal_id: parseInt(newVariant.sucursal_id),
-      quantity: parseInt(newVariant.quantity) || 0,
-      size_name: selectedSize?.size_name || 'Sin nombre',
-      color_name: selectedColor?.color_name || 'Sin nombre',
-      color_hex: selectedColor?.color_hex || '#ccc',
-      sucursal_nombre: selectedStorage?.name || 'Sin nombre',
-      barcode: generateVariantBarcode(), // Generar código de barras único
-      is_new: true // Marcar como nueva para el backend
+      sucursal_id: parseInt(currentSucursalId),
+      quantity: parseInt(newVariant.quantity),
+      size_name: selectedSize.size_name,
+      color_name: selectedColor.color_name,
+      color_hex: selectedColor.color_hex || '#ccc',
+      sucursal_nombre: sucursalNombre,
+      barcode: generateVariantBarcode(),
+      is_new: true
     }
 
+    // Actualizar el estado del formulario
     setFormData((prev) => ({
       ...prev,
       stock_variants: [...prev.stock_variants, newVariantObject]
@@ -211,11 +230,13 @@ const EditarProducto = () => {
     setNewVariant({
       size_id: '',
       color_id: '',
-      sucursal_id: '',
-      quantity: 0
+      quantity: 1
     })
 
-    toast.success('Nueva variante agregada correctamente')
+    toast.success(
+      `Nueva variante agregada: ${selectedSize.size_name} - ${selectedColor.color_name}. ¡Ahora haz clic en GUARDAR para confirmar!`,
+      { duration: 4000 }
+    )
     setShowAddVariantForm(false)
   }
 
@@ -316,7 +337,6 @@ const EditarProducto = () => {
       try {
         // Verificar tamaño del archivo
         const fileSizeMB = file.size / (1024 * 1024)
-        console.log(`Tamaño original del archivo: ${fileSizeMB.toFixed(2)} MB`)
 
         if (fileSizeMB > 10) {
           toast.error('La imagen es demasiado grande. Máximo 10MB.')
@@ -325,7 +345,6 @@ const EditarProducto = () => {
 
         // Comprimir imagen
         const compressedImage = await compressImage(file, 800, 0.85)
-        console.log(`Imagen comprimida: ${(compressedImage.length / 1024 / 1024).toFixed(2)} MB`)
 
         setFormData((prev) => ({
           ...prev,
@@ -388,8 +407,6 @@ const EditarProducto = () => {
         tax: parseFloat(formData.tax) || 0
       }
 
-      console.log('💾 Datos básicos a guardar:', basicProductData)
-
       // 🔄 Paso 3: Actualizar información básica del producto
       toast.loading('Guardando información del producto...', { id: 'save-progress' })
 
@@ -399,8 +416,6 @@ const EditarProducto = () => {
         throw new Error(`Error al actualizar producto: ${basicUpdateResponse.message}`)
       }
 
-      console.log('✅ Información básica guardada correctamente')
-
       // 🖼️ Paso 4: Procesar imagen si hay una nueva
       if (formData.new_image) {
         toast.loading('Procesando y guardando imagen...', { id: 'save-progress' })
@@ -408,7 +423,6 @@ const EditarProducto = () => {
         try {
           // Verificar tamaño de la imagen antes de enviar
           const imageSizeMB = (formData.new_image.length * 0.75) / (1024 * 1024) // Aproximación del tamaño en MB
-          console.log(`📸 Tamaño estimado de imagen: ${imageSizeMB.toFixed(2)} MB`)
 
           if (imageSizeMB > 5) {
             throw new Error('La imagen es demasiado grande. Máximo 5MB permitido.')
@@ -421,7 +435,6 @@ const EditarProducto = () => {
           const imageUpdateResponse = await inventoryService.updateProduct(productId, imageData)
 
           if (imageUpdateResponse.status === 'success') {
-            console.log('✅ Imagen actualizada correctamente')
             // Actualizar la URL de la imagen actual
             setCurrentImageUrl(
               `http://localhost:5000/api/product/${productId}/image?t=${Date.now()}`
@@ -453,7 +466,7 @@ const EditarProducto = () => {
           const stockUpdateResponse = await inventoryService.updateProduct(productId, stockData)
 
           if (stockUpdateResponse.status === 'success') {
-            console.log('✅ Stock de variantes actualizado correctamente')
+            // Stock updated successfully
           } else {
             console.warn(
               '⚠️ Stock de variantes no se pudo actualizar:',
@@ -465,8 +478,9 @@ const EditarProducto = () => {
           toast.error(`Error actualizando inventario: ${stockError.message}`, {
             id: 'save-progress'
           })
-          // No fallar todo el guardado por un error de stock
         }
+      } else {
+        // No variants to update
       }
 
       // ✅ Paso 6: Finalización exitosa
@@ -822,12 +836,32 @@ const EditarProducto = () => {
                     <button
                       type="button"
                       onClick={() => setShowAddVariantForm(!showAddVariantForm)}
-                      className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                      className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-white ${
+                        !currentSucursalId
+                          ? 'cursor-not-allowed bg-gray-400'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                      disabled={!currentSucursalId}
                     >
                       <Plus size={16} />
                       {showAddVariantForm ? 'Cancelar' : 'Agregar Variante'}
                     </button>
                   </div>
+
+                  {/* Mensaje de advertencia si no hay sucursal */}
+                  {!currentSucursalId && (
+                    <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 p-4">
+                      <div className="flex items-center gap-2 text-orange-700">
+                        <span className="text-sm font-medium">⚠️ Advertencia:</span>
+                      </div>
+                      <p className="mt-1 text-sm text-orange-600">
+                        No se puede agregar variantes sin una sucursal asignada.
+                        {session?.role === 'administrator'
+                          ? ' Como administrador, necesitas seleccionar una sucursal específica.'
+                          : ' Contacta al administrador para que te asigne una sucursal.'}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Formulario para agregar nueva variante */}
                   {showAddVariantForm && (
@@ -835,6 +869,7 @@ const EditarProducto = () => {
                       <h4 className="text-md mb-3 font-medium text-gray-700">
                         Nueva Variante de Stock
                       </h4>
+
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -876,24 +911,15 @@ const EditarProducto = () => {
                           </select>
                         </div>
 
+                        {/* Mostrar información de la sucursal actual (no editable) */}
                         <div>
                           <label className="mb-2 block text-sm font-medium text-gray-700">
                             Sucursal
                           </label>
-                          <select
-                            value={newVariant.sucursal_id}
-                            onChange={(e) =>
-                              setNewVariant((prev) => ({ ...prev, sucursal_id: e.target.value }))
-                            }
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                          >
-                            <option value="">Seleccionar sucursal</option>
-                            {availableStorages.map((storage) => (
-                              <option key={storage.id} value={storage.id}>
-                                {storage.name}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                            {session?.storage_name || 'Sucursal Actual'}
+                            <span className="ml-2 text-xs text-gray-500">(automático)</span>
+                          </div>
                         </div>
 
                         <div>
@@ -1102,7 +1128,7 @@ const EditarProducto = () => {
           </div>
         </div>
       </div>
-      <Toaster position="bottom-right" />
+      <Toaster position="bottom-center" />
     </div>
   )
 }
