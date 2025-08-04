@@ -299,12 +299,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                       <p className="text-gray-800">{productDetails.brand_name || 'Sin marca'}</p>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-600">Código de barras:</span>
-                      <p className="font-mono text-gray-800">
-                        {productDetails.barcode || 'No disponible'}
-                      </p>
-                    </div>
-                    <div>
                       <span className="font-medium text-gray-600">Código proveedor:</span>
                       <p className="font-mono text-gray-800">
                         {productDetails.provider_code || 'No disponible'}
@@ -322,35 +316,152 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                 <div className="rounded-lg bg-gray-50 p-4">
                   <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-800">
                     <DollarSign className="mr-2 h-5 w-5 text-green-600" />
-                    Información Comercial
+                    Información Comercial y Descuentos
                   </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="font-medium text-gray-600">Precio de costo:</span>
-                      <p className="font-semibold text-gray-800">
-                        {formatCurrency(productDetails.cost)}
-                      </p>
+                  <div className="space-y-4">
+                    {/* Precios Base */}
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div>
+                        <span className="font-medium text-gray-600">Precio de costo:</span>
+                        <p className="font-semibold text-gray-800">
+                          {formatCurrency(productDetails.cost)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Precio original:</span>
+                        <p className="font-semibold text-gray-800">
+                          {formatCurrency(
+                            productDetails.original_price || productDetails.sale_price
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Precio de venta:</span>
-                      <p className="font-semibold text-gray-800">
-                        {formatCurrency(productDetails.sale_price)}
-                      </p>
+
+                    {/* Descuentos */}
+                    {productDetails.has_discount && (
+                      <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                        <h4 className="text-md mb-3 flex items-center font-semibold text-orange-800">
+                          🏷️ Descuentos Aplicados
+                        </h4>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                          <div>
+                            <span className="font-medium text-orange-700">Descuento (%):</span>
+                            <p className="text-orange-800">
+                              {productDetails.discount_percentage || 0}%
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-orange-700">Descuento ($):</span>
+                            <p className="text-orange-800">
+                              {formatCurrency(productDetails.discount_amount)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-orange-700">Descuento general:</span>
+                            <p className="text-orange-800">
+                              {formatCurrency(productDetails.discount)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Precio Final y Otros */}
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                        <span className="font-medium text-green-700">Precio de venta:</span>
+                        <p className="text-lg font-bold text-green-800">
+                          {formatCurrency(productDetails.sale_price)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Impuesto (%):</span>
+                        <p className="text-gray-800">{productDetails.tax || 0}%</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Stock total:</span>
+                        <p className="text-lg font-semibold text-gray-800">
+                          {productDetails.stock_total || 0} unidades
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Impuesto:</span>
-                      <p className="text-gray-800">{productDetails.tax || 0}%</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Descuento:</span>
-                      <p className="text-gray-800">{productDetails.discount || 0}%</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Stock total:</span>
-                      <p className="text-lg font-semibold text-gray-800">
-                        {productDetails.stock_total || 0} unidades
-                      </p>
-                    </div>
+
+                    {/* Resumen de Descuentos */}
+                    {(productDetails.has_discount || productDetails.discount > 0) && (
+                      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                        <h5 className="mb-3 text-sm font-semibold text-blue-800">
+                          💰 Desglose de Precios y Descuentos
+                        </h5>
+                        <div className="space-y-2 text-sm text-blue-700">
+                          {/* Precio Original */}
+                          <div className="flex items-center justify-between py-1">
+                            <span className="font-medium">Precio Original:</span>
+                            <span className="text-lg font-bold">
+                              {formatCurrency(
+                                productDetails.original_price || productDetails.sale_price
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Descuentos aplicados */}
+                          {productDetails.has_discount && (
+                            <>
+                              {productDetails.discount_percentage > 0 && (
+                                <div className="flex items-center justify-between py-1 text-orange-600">
+                                  <span>- Descuento ({productDetails.discount_percentage}%):</span>
+                                  <span className="font-medium">
+                                    -{formatCurrency(productDetails.discount_amount)}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          {productDetails.discount > 0 && (
+                            <div className="flex items-center justify-between py-1 text-orange-600">
+                              <span>- Descuento General:</span>
+                              <span className="font-medium">
+                                -{formatCurrency(productDetails.discount)}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Precio Final */}
+                          <div className="mt-2 flex items-center justify-between border-t border-blue-300 pt-2">
+                            <span className="text-base font-bold">Precio Final de Venta:</span>
+                            <span className="text-xl font-bold text-green-600">
+                              {formatCurrency(productDetails.sale_price)}
+                            </span>
+                          </div>
+
+                          {/* Mostrar ahorro total */}
+                          {(productDetails.discount_amount > 0 || productDetails.discount > 0) && (
+                            <div className="mt-3 text-center">
+                              <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
+                                💵 Ahorro total:{' '}
+                                {formatCurrency(
+                                  (productDetails.discount_amount || 0) +
+                                    (productDetails.discount || 0)
+                                )}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Información adicional de impuestos */}
+                          {productDetails.tax > 0 && (
+                            <div className="mt-2 flex items-center justify-between border-t border-purple-200 pt-2 text-purple-600">
+                              <span>+ Impuesto ({productDetails.tax}%):</span>
+                              <span className="font-medium">
+                                +
+                                {formatCurrency(
+                                  (productDetails.sale_price * productDetails.tax) / 100
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

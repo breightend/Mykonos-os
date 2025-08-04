@@ -43,6 +43,7 @@ const EditarProducto = () => {
     discount_percentage: '',
     discount_amount: '',
     has_discount: false,
+    discount: '', // General discount field from database
     tax: '',
     stock_variants: [],
     product_image: null,
@@ -86,6 +87,7 @@ const EditarProducto = () => {
             discount_percentage: data.discount_percentage || '',
             discount_amount: data.discount_amount || '',
             has_discount: data.has_discount || false,
+            discount: data.discount || '', // General discount field
             tax: data.tax || '',
             stock_variants: data.stock_variants || [],
             product_image: null, // No cargar la imagen base64 aquí
@@ -254,6 +256,12 @@ const EditarProducto = () => {
     const originalPrice = parseFloat(formData.original_price) || 0
     let newFormData = { ...formData }
 
+    // Si no hay precio original, no se pueden calcular descuentos
+    if (originalPrice <= 0) {
+      toast.error('Debe establecer un precio original antes de aplicar descuentos')
+      return
+    }
+
     if (type === 'percentage') {
       const percentage = parseFloat(value) || 0
       const discountAmount = (originalPrice * percentage) / 100
@@ -263,7 +271,7 @@ const EditarProducto = () => {
         ...newFormData,
         discount_percentage: value,
         discount_amount: discountAmount.toFixed(2),
-        sale_price: salePrice.toFixed(2)
+        sale_price: Math.max(0, salePrice).toFixed(2) // Evitar precios negativos
       }
     } else if (type === 'amount') {
       const amount = parseFloat(value) || 0
@@ -274,7 +282,7 @@ const EditarProducto = () => {
         ...newFormData,
         discount_amount: value,
         discount_percentage: percentage.toFixed(2),
-        sale_price: salePrice.toFixed(2)
+        sale_price: Math.max(0, salePrice).toFixed(2) // Evitar precios negativos
       }
     } else if (type === 'sale_price') {
       const salePrice = parseFloat(value) || 0
@@ -284,8 +292,8 @@ const EditarProducto = () => {
       newFormData = {
         ...newFormData,
         sale_price: value,
-        discount_amount: discountAmount.toFixed(2),
-        discount_percentage: percentage.toFixed(2)
+        discount_amount: Math.max(0, discountAmount).toFixed(2), // Evitar descuentos negativos
+        discount_percentage: Math.max(0, percentage).toFixed(2)
       }
     }
 
@@ -404,6 +412,7 @@ const EditarProducto = () => {
         discount_percentage: parseFloat(formData.discount_percentage) || 0,
         discount_amount: parseFloat(formData.discount_amount) || 0,
         has_discount: Boolean(formData.has_discount),
+        discount: parseFloat(formData.discount) || 0,
         tax: parseFloat(formData.tax) || 0
       }
 
@@ -714,13 +723,15 @@ const EditarProducto = () => {
                         step="0.01"
                         value={formData.original_price}
                         onChange={(e) => {
+                          // Solo actualizar el precio original, NO recalcular descuentos automáticamente
                           setFormData((prev) => ({ ...prev, original_price: e.target.value }))
-                          if (formData.has_discount) {
-                            calculateDiscount('percentage', formData.discount_percentage)
-                          }
                         }}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                        placeholder="Precio base sin descuentos"
                       />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Este es el precio original antes de aplicar descuentos
+                      </p>
                     </div>
 
                     <div>
@@ -775,7 +786,27 @@ const EditarProducto = () => {
 
                     {formData.has_discount && (
                       <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="mb-4 flex items-center justify-between">
+                          <h4 className="text-md font-semibold text-orange-800">
+                            🏷️ Configuración de Descuentos
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (formData.discount_percentage > 0) {
+                                calculateDiscount('percentage', formData.discount_percentage)
+                              } else if (formData.discount_amount > 0) {
+                                calculateDiscount('amount', formData.discount_amount)
+                              }
+                            }}
+                            className="rounded bg-orange-600 px-3 py-1 text-xs text-white hover:bg-orange-700"
+                            title="Recalcular descuentos basado en el precio original actual"
+                          >
+                            🔄 Recalcular
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                           <div>
                             <label className="mb-2 block text-sm font-medium text-orange-700">
                               Descuento (%)
@@ -783,9 +814,11 @@ const EditarProducto = () => {
                             <input
                               type="number"
                               step="0.01"
+                              max="100"
                               value={formData.discount_percentage}
                               onChange={(e) => calculateDiscount('percentage', e.target.value)}
                               className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
+                              placeholder="0.00"
                             />
                           </div>
 
@@ -799,29 +832,81 @@ const EditarProducto = () => {
                               value={formData.discount_amount}
                               onChange={(e) => calculateDiscount('amount', e.target.value)}
                               className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
+                              placeholder="0.00"
                             />
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-orange-700">
+                              Descuento General
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={formData.discount || ''}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, discount: e.target.value }))
+                              }
+                              className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
+                              placeholder="Descuento adicional"
+                            />
+                            <p className="mt-1 text-xs text-orange-600">
+                              Descuento extra (no afecta cálculos automáticos)
+                            </p>
                           </div>
                         </div>
 
-                        {/* Información de precios */}
-                        <div className="mt-4 rounded-lg border border-orange-200 bg-white p-3">
-                          <div className="text-sm text-gray-600">
-                            <div className="flex justify-between">
-                              <span>Precio Original:</span>
-                              <span className="font-medium">
-                                ${formData.original_price || '0.00'}
+                        {/* Resumen de Precios con Descuentos */}
+                        <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                          <h5 className="mb-3 text-sm font-semibold text-blue-800">
+                            💰 Resumen de Precios
+                          </h5>
+                          <div className="text-sm text-blue-700">
+                            <div className="flex items-center justify-between py-1">
+                              <span className="font-medium">Precio Original:</span>
+                              <span className="text-lg font-bold">
+                                ${parseFloat(formData.original_price || 0).toFixed(2)}
                               </span>
                             </div>
-                            <div className="flex justify-between text-orange-600">
-                              <span>Descuento:</span>
-                              <span className="font-medium">
-                                -${formData.discount_amount || '0.00'}
+
+                            {parseFloat(formData.discount_percentage || 0) > 0 && (
+                              <div className="flex items-center justify-between py-1 text-orange-600">
+                                <span>- Descuento ({formData.discount_percentage}%):</span>
+                                <span className="font-medium">
+                                  -${parseFloat(formData.discount_amount || 0).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            {parseFloat(formData.discount || 0) > 0 && (
+                              <div className="flex items-center justify-between py-1 text-orange-600">
+                                <span>- Descuento General:</span>
+                                <span className="font-medium">
+                                  -${parseFloat(formData.discount || 0).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="mt-2 flex items-center justify-between border-t border-blue-300 pt-2">
+                              <span className="text-base font-bold">Precio Final de Venta:</span>
+                              <span className="text-xl font-bold text-green-600">
+                                ${parseFloat(formData.sale_price || 0).toFixed(2)}
                               </span>
                             </div>
-                            <div className="flex justify-between border-t pt-2 font-semibold text-green-600">
-                              <span>Precio Final:</span>
-                              <span>${formData.sale_price || '0.00'}</span>
-                            </div>
+
+                            {/* Mostrar ahorro total */}
+                            {(parseFloat(formData.discount_amount || 0) > 0 ||
+                              parseFloat(formData.discount || 0) > 0) && (
+                              <div className="mt-2 text-center">
+                                <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
+                                  💵 Ahorro total: $
+                                  {(
+                                    parseFloat(formData.discount_amount || 0) +
+                                    parseFloat(formData.discount || 0)
+                                  ).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
