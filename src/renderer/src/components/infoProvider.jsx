@@ -1,4 +1,15 @@
-import { ArrowLeft, Pencil, Trash2, Plus, Edit2, X, Users, Package, HandCoins, ShoppingBasket } from 'lucide-react'
+import {
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  Plus,
+  Edit2,
+  X,
+  Users,
+  Package,
+  HandCoins,
+  ShoppingBasket
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
 import { fetchProviderById } from '../services/proveedores/proveedorService'
@@ -24,7 +35,6 @@ export default function InfoProvider() {
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
   const [provider, setProvider] = useState(null)
-  const [operacionSeleccionada, setOperacionSeleccionada] = useState(null)
 
   // Brand management state
   const [providerBrands, setProviderBrands] = useState([])
@@ -34,6 +44,9 @@ export default function InfoProvider() {
   // Purchase management state
   const [purchases, setPurchases] = useState([])
   const [loadingPurchases, setLoadingPurchases] = useState(false)
+  const [showPurchases, setShowPurchases] = useState(true)
+  const [providerBalance, setProviderBalance] = useState(0)
+  const [showBrands, setShowBrands] = useState(true)
 
   // Purchase details modal
   const [selectedPurchaseId, setSelectedPurchaseId] = useState(null)
@@ -75,6 +88,14 @@ export default function InfoProvider() {
         const purchasesData = await fetchPurchasesByProvider(providerId)
         console.log('Fetched provider purchases:', purchasesData)
         setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
+        
+        // Calculate provider balance (total pending payments)
+        if (Array.isArray(purchasesData)) {
+          const pendingAmount = purchasesData
+            .filter(purchase => purchase.status === 'Pendiente de pago' || purchase.status === 'Pendiente')
+            .reduce((total, purchase) => total + (purchase.total || 0), 0)
+          setProviderBalance(pendingAmount)
+        }
       } catch (error) {
         console.error('Error fetching data:', error)
         toast.error('Error al cargar la información')
@@ -255,6 +276,14 @@ export default function InfoProvider() {
       setLoadingPurchases(true)
       const purchasesData = await fetchPurchasesByProvider(providerId)
       setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
+      
+      // Recalculate provider balance
+      if (Array.isArray(purchasesData)) {
+        const pendingAmount = purchasesData
+          .filter((purchase) => purchase.status === 'Pendiente de pago' || purchase.status === 'Pendiente')
+          .reduce((total, purchase) => total + (purchase.total || 0), 0)
+        setProviderBalance(pendingAmount)
+      }
     } catch (error) {
       console.error('Error reloading purchases:', error)
     } finally {
@@ -282,299 +311,383 @@ export default function InfoProvider() {
     )
   }
 
-  const handleRowClick = (row) => {
-    setOperacionSeleccionada(row.id)
-    console.log('Proveedor seleccionado:', row)
-  }
-
   return (
-    <div>
-      <div className="w-full rounded-2xl p-2">
-        <div className="mb-4 flex items-center gap-4 rounded-2xl bg-gray-800 p-4 text-white dark:bg-gray-400 dark:text-black">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="container mx-auto max-w-7xl p-6">
+        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
           <button
-            className="btn btn-circle btn-ghost tooltip tooltip-bottom ml-5"
+            className="btn btn-circle btn-ghost tooltip tooltip-bottom hover:bg-white/20"
             data-tip="Volver"
             onClick={() => setLocation('/proveedores')}
           >
-            <ArrowLeft />
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <h3 className="text-2xl font-bold">{provider?.entity_name}</h3>
-        </div>
-        <div className="w-full">
-          <div className="items-center justify-between gap-8 space-x-4">
-            <button
-              className="btn btn-dash mb-4 justify-end"
-              onClick={() => document.getElementById('editandoProvider').showModal()}
-            >
-              <Pencil />
-              Editar Proveedor
-            </button>
-            <button
-              className="btn btn-error mb-4 justify-end"
-              onClick={() => document.getElementById('eliminandoProvider').showModal()}
-            >
-              <Trash2 />
-              Eliminar Proveedor
-            </button>
+          <div className="flex-1">
+            <h3 className="text-3xl font-bold">{provider?.entity_name}</h3>
+            <p className="mt-1 text-blue-100">Información del proveedor</p>
           </div>
         </div>
-        <div className="bg-base-200 overflow-x-auto rounded-lg border p-4 shadow-md">
-          <table className="table-zebra table w-full">
-            <thead>
-              <tr>
-                <th>Emrpesa</th>
-                <th>CUIT</th>
-                <th>Teléfono</th>
-                <th>Nombre de Contacto</th>
-                <th>Email</th>
-                <th>Razon social</th>
-                <th>Dirección</th>
-                <th>Responsabilidad iva</th>
-                <th>Fecha Inicio Actividades</th>
-                <th>Observaciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr key={provider?.id} onClick={() => handleRowClick(provider)}>
-                <td>{provider?.entity_name}</td>
-                <td>{provider?.cuit}</td>
-                <td>{provider?.phone_number}</td>
-                <td>{provider?.contact_name}</td>
-                <td>{provider?.email}</td>
-                <td>{provider?.razon_social}</td>
-                <td>{provider?.domicilio_comercial}</td>
-                <td>{provider?.responsabilidad_iva}</td>
-                <td>{provider?.inicio_actividades}</td>
-                <td>{provider?.observations}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h1 className="flex items-center gap-2 text-3xl font-bold">
-              <Package className="h-8 w-8" />
-              Marcas del Proveedor
-            </h1>
-            <div className="flex gap-2">
+        <div className="card bg-base-100 mb-6 shadow-xl">
+          <div className="card-body">
+            <div className="mb-4 flex flex-wrap gap-3">
               <button
-                className="btn btn-success btn-sm"
-                onClick={() => setShowCreateBrandModal(true)}
-                disabled={loading}
+                className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
+                onClick={() => document.getElementById('editandoProvider').showModal()}
               >
-                <Plus className="mr-1 h-4 w-4" />
-                Nueva Marca
+                <Pencil className="h-4 w-4" />
+                Editar Proveedor
               </button>
               <button
-                className="btn btn-primary btn-sm"
-                onClick={() => setShowAssignBrandModal(true)}
-                disabled={loading}
+                className="btn btn-error gap-2 shadow-md transition-all hover:shadow-lg"
+                onClick={() => document.getElementById('eliminandoProvider').showModal()}
               >
-                <Users className="mr-1 h-4 w-4" />
-                Asignar Marca
+                <Trash2 className="h-4 w-4" />
+                Eliminar Proveedor
               </button>
             </div>
-          </div>
 
-          {/* Provider Brands Table */}
-          <div className="mb-6 overflow-x-auto rounded-lg bg-white p-4 shadow-md">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="loading loading-spinner loading-lg"></div>
-                <span className="ml-2">Cargando marcas...</span>
-              </div>
-            ) : (
-              <table className="table w-full">
-                <thead className="rounded-2xl bg-gray-800 text-white">
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                    <th>Fecha Creación</th>
-                    <th>Última Modificación</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.isArray(providerBrands) && providerBrands.length > 0 ? (
-                    providerBrands.map((brand) => (
-                      <tr key={brand.id} className="hover:bg-gray-50">
-                        <td>{brand.id}</td>
-                        <td className="font-semibold">{brand.brand_name}</td>
-                        <td>{brand.description || 'N/A'}</td>
-                        <td>
-                          {brand.creation_date
-                            ? new Date(brand.creation_date).toLocaleDateString()
-                            : 'N/A'}
-                        </td>
-                        <td>
-                          {brand.last_modified_date
-                            ? new Date(brand.last_modified_date).toLocaleDateString()
-                            : 'N/A'}
-                        </td>
-                        <td>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => openEditBrandModal(brand)}
-                              className="btn btn-ghost btn-sm tooltip tooltip-bottom text-blue-600 hover:bg-blue-50"
-                              data-tip="Editar Marca"
-                              disabled={loading}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRemoveBrand(brand.id)}
-                              className="btn btn-ghost btn-sm tooltip tooltip-bottom text-orange-600 hover:bg-orange-50"
-                              data-tip="Eliminar Marca"
-                              disabled={loading}
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBrand(brand.id)}
-                              className="btn btn-ghost btn-sm tooltip tooltip-bottom text-red-600 hover:bg-red-50"
-                              data-tip="Eliminar Marca"
-                              disabled={loading}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="py-4 text-center text-gray-500">
-                        No hay marcas asignadas a este proveedor
-                      </td>
+            {provider && (
+              <div className="overflow-x-auto rounded-lg">
+                <table className="table w-full">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                      <th className="text-slate-700 dark:text-slate-200">Empresa</th>
+                      <th className="text-slate-700 dark:text-slate-200">CUIT</th>
+                      <th className="text-slate-700 dark:text-slate-200">Teléfono</th>
+                      <th className="text-slate-700 dark:text-slate-200">Contacto</th>
+                      <th className="text-slate-700 dark:text-slate-200">Email</th>
+                      <th className="text-slate-700 dark:text-slate-200">Razón Social</th>
+                      <th className="text-slate-700 dark:text-slate-200">Dirección</th>
+                      <th className="text-slate-700 dark:text-slate-200">Resp. IVA</th>
+                      <th className="text-slate-700 dark:text-slate-200">Inicio Act.</th>
+                      <th className="text-slate-700 dark:text-slate-200">Observaciones</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    <tr className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700">
+                      <td className="font-medium">{provider?.entity_name}</td>
+                      <td>{provider?.cuit}</td>
+                      <td>{provider?.phone_number}</td>
+                      <td>{provider?.contact_name}</td>
+                      <td>{provider?.email}</td>
+                      <td>{provider?.razon_social}</td>
+                      <td>{provider?.domicilio_comercial}</td>
+                      <td>{provider?.responsabilidad_iva}</td>
+                      <td>{provider?.inicio_actividades}</td>
+                      <td>{provider?.observations}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
-          <h1 className="text-3xl font-bold"> Compras y Operaciones </h1>
         </div>
-        <div className="w-full">
-          <div className="flex justify-end gap-4">
-            <button
-              className="btn btn-accent"
-              onClick={() => document.getElementById('agregandoCompra').showModal()}
+        <div>
+          <hr className="my-6 border-slate-200 dark:border-slate-600" />
+          
+          {/* Brands Section - Slideable */}
+          <div className="card bg-base-100 mb-6 shadow-xl">
+            <div className="card-body">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-700 dark:text-slate-200">
+                    <Package className="h-6 w-6" />
+                    Marcas del Proveedor
+                  </h2>
+                  <button
+                    className="btn btn-circle btn-sm btn-ghost"
+                    onClick={() => setShowBrands(!showBrands)}
+                  >
+                    {showBrands ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="btn btn-success btn-sm gap-2 shadow-md transition-all hover:shadow-lg"
+                    onClick={() => setShowCreateBrandModal(true)}
+                    disabled={loading}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Nueva Marca
+                  </button>
+                  <button
+                    className="btn btn-primary btn-sm gap-2 shadow-md transition-all hover:shadow-lg"
+                    onClick={() => setShowAssignBrandModal(true)}
+                    disabled={loading}
+                  >
+                    <Users className="h-4 w-4" />
+                    Asignar Marca
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${showBrands ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+              >
+                <div className="overflow-x-auto rounded-lg">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="flex items-center gap-3">
+                        <div className="loading loading-spinner loading-md"></div>
+                        <span className="text-slate-600 dark:text-slate-300">Cargando marcas...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <table className="table table-zebra w-full">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                          <th className="text-slate-700 dark:text-slate-200">ID</th>
+                          <th className="text-slate-700 dark:text-slate-200">Nombre</th>
+                          <th className="text-slate-700 dark:text-slate-200">Descripción</th>
+                          <th className="text-slate-700 dark:text-slate-200">Fecha Creación</th>
+                          <th className="text-slate-700 dark:text-slate-200">Última Modificación</th>
+                          <th className="text-slate-700 dark:text-slate-200">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.isArray(providerBrands) && providerBrands.length > 0 ? (
+                          providerBrands.map((brand) => (
+                            <tr key={brand.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700">
+                              <td className="font-medium">{brand.id}</td>
+                              <td className="font-semibold">{brand.brand_name}</td>
+                              <td>{brand.description || 'N/A'}</td>
+                              <td>
+                                {brand.creation_date
+                                  ? new Date(brand.creation_date).toLocaleDateString()
+                                  : 'N/A'}
+                              </td>
+                              <td>
+                                {brand.last_modified_date
+                                  ? new Date(brand.last_modified_date).toLocaleDateString()
+                                  : 'N/A'}
+                              </td>
+                              <td>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => openEditBrandModal(brand)}
+                                    className="btn btn-ghost btn-sm tooltip tooltip-bottom text-blue-600 hover:bg-blue-50"
+                                    data-tip="Editar Marca"
+                                    disabled={loading}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemoveBrand(brand.id)}
+                                    className="btn btn-ghost btn-sm tooltip tooltip-bottom text-orange-600 hover:bg-orange-50"
+                                    data-tip="Remover Marca"
+                                    disabled={loading}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteBrand(brand.id)}
+                                    className="btn btn-ghost btn-sm tooltip tooltip-bottom text-red-600 hover:bg-red-50"
+                                    data-tip="Eliminar Marca"
+                                    disabled={loading}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="6" className="py-8 text-center">
+                              <div className="text-slate-500 dark:text-slate-400">
+                                <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                No hay marcas asignadas a este proveedor
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Purchases and Operations Section - Slideable */}
+        <div className="card bg-base-100 mb-6 shadow-xl">
+          <div className="card-body">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-700 dark:text-slate-200">
+                  <ShoppingBasket className="h-6 w-6" />
+                  Compras y Operaciones
+                </h2>
+                <button
+                  className="btn btn-circle btn-sm btn-ghost"
+                  onClick={() => setShowPurchases(!showPurchases)}
+                >
+                  {showPurchases ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
+                <div
+                  className={`text-2xl font-bold ${providerBalance > 0 ? 'text-red-600' : providerBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                >
+                  ${Number(providerBalance || 0).toFixed(2)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {providerBalance > 0 ? 'Debemos' : providerBalance < 0 ? 'A nuestro favor' : 'Sin deuda'}
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${showPurchases ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
             >
-              <ShoppingBasket className="mr-2 h-5 w-5" />
-              Agregar compra
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => document.getElementById('agregandoPago').showModal()}
-            >
-              <HandCoins className="mr-2 h-5 w-5" />
-              Agregar pago
-            </button>
+              <div className="mb-4 flex justify-end gap-4">
+                <button
+                  className="btn btn-accent gap-2 shadow-md transition-all hover:shadow-lg"
+                  onClick={() => document.getElementById('agregandoCompra').showModal()}
+                >
+                  <ShoppingBasket className="h-4 w-4" />
+                  Agregar compra
+                </button>
+                <button
+                  className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
+                  onClick={() => document.getElementById('agregandoPago').showModal()}
+                >
+                  <HandCoins className="h-4 w-4" />
+                  Agregar pago
+                </button>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg">
+                <h3 className="mb-4 text-lg font-semibold text-slate-700 dark:text-slate-200">Historial de Compras</h3>
+                {loadingPurchases ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-3">
+                      <div className="loading loading-spinner loading-md"></div>
+                      <span className="text-slate-600 dark:text-slate-300">Cargando compras...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <table className="table-zebra table w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                        <th className="text-slate-700 dark:text-slate-200">ID</th>
+                        <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                        <th className="text-slate-700 dark:text-slate-200">Estado</th>
+                        <th className="text-slate-700 dark:text-slate-200">Subtotal</th>
+                        <th className="text-slate-700 dark:text-slate-200">Descuento</th>
+                        <th className="text-slate-700 dark:text-slate-200">Total</th>
+                        <th className="text-slate-700 dark:text-slate-200">Método de Pago</th>
+                        <th className="text-slate-700 dark:text-slate-200">N° Factura</th>
+                        <th className="text-slate-700 dark:text-slate-200">Fecha Entrega</th>
+                        <th className="text-slate-700 dark:text-slate-200">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.isArray(purchases) && purchases.length > 0 ? (
+                        purchases.map((purchase) => (
+                          <tr key={purchase.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700">
+                            <td className="font-medium">{purchase.id}</td>
+                            <td className="font-medium">
+                              {purchase.purchase_date
+                                ? new Date(purchase.purchase_date).toLocaleDateString()
+                                : 'N/A'}
+                            </td>
+                            <td>
+                              <span
+                                className={`badge shadow-sm ${
+                                  purchase.status === 'Recibido'
+                                    ? 'badge-success'
+                                    : purchase.status === 'Pendiente de entrega'
+                                      ? 'badge-warning'
+                                      : 'badge-error'
+                                }`}
+                              >
+                                {purchase.status || 'Pendiente'}
+                              </span>
+                            </td>
+                            <td className="font-mono">${purchase.subtotal?.toFixed(2) || '0.00'}</td>
+                            <td className="font-mono">${purchase.discount?.toFixed(2) || '0.00'}</td>
+                            <td className="font-mono font-bold">${purchase.total?.toFixed(2) || '0.00'}</td>
+                            <td>{purchase.payment_method || 'N/A'}</td>
+                            <td>{purchase.invoice_number || 'N/A'}</td>
+                            <td>
+                              {purchase.delivery_date
+                                ? new Date(purchase.delivery_date).toLocaleDateString()
+                                : 'Pendiente'}
+                            </td>
+                            <td>
+                              <div className="flex gap-1">
+                                <button
+                                  className="btn btn-ghost btn-xs text-blue-600"
+                                  onClick={() => handleViewPurchaseDetails(purchase.id)}
+                                >
+                                  Ver
+                                </button>
+                                {purchase.status === 'Pendiente de entrega' && (
+                                  <button
+                                    className="btn btn-ghost btn-xs text-green-600"
+                                    onClick={() => handleViewPurchaseDetails(purchase.id)}
+                                  >
+                                    Recibir
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="10" className="py-8 text-center">
+                            <div className="text-slate-500 dark:text-slate-400">
+                              <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                              No hay compras registradas
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Tabla de Compras */}
-        <div className="bg-base-200 mt-4 overflow-x-auto rounded-lg border p-4 shadow-md">
-          <h3 className="mb-4 text-lg font-semibold">Historial de Compras</h3>
-          {loadingPurchases ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="loading loading-spinner loading-lg"></div>
-              <span className="ml-2">Cargando compras...</span>
-            </div>
-          ) : (
-            <table className="table-zebra table w-full">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Fecha</th>
-                  <th>Estado</th>
-                  <th>Subtotal</th>
-                  <th>Descuento</th>
-                  <th>Total</th>
-                  <th>Método de Pago</th>
-                  <th>N° Factura</th>
-                  <th>Fecha Entrega</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(purchases) && purchases.length > 0 ? (
-                  purchases.map((purchase) => (
-                    <tr key={purchase.id} className="hover:bg-gray-50">
-                      <td>{purchase.id}</td>
-                      <td>
-                        {purchase.purchase_date
-                          ? new Date(purchase.purchase_date).toLocaleDateString()
-                          : 'N/A'}
-                      </td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            purchase.status === 'Recibido'
-                              ? 'badge-success'
-                              : purchase.status === 'Pendiente de entrega'
-                                ? 'badge-warning'
-                                : 'badge-error'
-                          }`}
-                        >
-                          {purchase.status || 'Pendiente'}
-                        </span>
-                      </td>
-                      <td>${purchase.subtotal?.toFixed(2) || '0.00'}</td>
-                      <td>${purchase.discount?.toFixed(2) || '0.00'}</td>
-                      <td className="font-semibold">${purchase.total?.toFixed(2) || '0.00'}</td>
-                      <td>{purchase.payment_method || 'N/A'}</td>
-                      <td>{purchase.invoice_number || 'N/A'}</td>
-                      <td>
-                        {purchase.delivery_date
-                          ? new Date(purchase.delivery_date).toLocaleDateString()
-                          : 'Pendiente'}
-                      </td>
-                      <td>
-                        <div className="flex gap-1">
-                          <button
-                            className="btn btn-ghost btn-xs text-blue-600"
-                            onClick={() => handleViewPurchaseDetails(purchase.id)}
-                          >
-                            Ver
-                          </button>
-                          {purchase.status === 'Pendiente de entrega' && (
-                            <button
-                              className="btn btn-ghost btn-xs text-green-600"
-                              onClick={() => handleViewPurchaseDetails(purchase.id)}
-                            >
-                              Recibir
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="10" className="py-4 text-center text-gray-500">
-                      No hay compras registradas
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+        <div className="flex justify-center mb-6">
+          <button 
+            className="btn btn-primary btn-wide gap-2 shadow-lg transition-all hover:shadow-xl" 
+            onClick={() => setLocation('/proveedores')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver a Proveedores
+          </button>
         </div>
-      </div>
-      <div className="mt-4 mr-4 flex justify-end">
-        <button className="btn btn-primary" onClick={() => setLocation('/proveedores')}>
-          Cerrar
-        </button>
-      </div>
-      <EditarProveedorModal provider={provider} />
-      <AgregarPagoModal provider={provider} />
-      <EliminarProveedorModal provider={provider} />
-      <AgregarCompraModal provider={provider} />
 
-      {/* Create Brand Modal */}
-      {showCreateBrandModal && (
+        {/* Modals */}
+        <EditarProveedorModal provider={provider} />
+        <AgregarPagoModal provider={provider} />
+        <EliminarProveedorModal provider={provider} />
+        <AgregarCompraModal provider={provider} />
+
+        {/* Create Brand Modal */}
+        {showCreateBrandModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-bold text-gray-800">Nueva Marca</h3>
@@ -757,6 +870,7 @@ export default function InfoProvider() {
       />
 
       <Toaster position="bottom-right" />
+      </div>
     </div>
   )
 }
