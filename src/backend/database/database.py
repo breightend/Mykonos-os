@@ -37,6 +37,8 @@ class TABLES(Enum):
     BRANDS = "brands"
     PURCHASES = "purchases"  # compra de mercaderia
     PURCHASES_DETAIL = "purchases_detail"  # detalle de la compra de mercaderia
+    SALES = "sales"  # venta de productos
+    SALES_DETAIL = "sales_detail"  # detalle de la venta de productos
     PROVEEDORXMARCA = "proveedorxmarca"
     USERSXSTORAGE = "usersxstorage"
     SESSIONS = "sessions"
@@ -510,6 +512,100 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.PRODUCTS,
                 "reference_column": "id",
                 "export_column_name": "product_name",
+            },
+        ],
+    },
+    TABLES.SALES: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único de la venta
+            "customer_id": "INTEGER",  # Id del cliente (puede ser NULL para ventas sin cliente registrado)
+            "employee_id": "INTEGER NOT NULL",  # Id del empleado que realizó la venta
+            "cashier_user_id": "INTEGER NOT NULL",  # Id del usuario/cajero que procesó la venta
+            "storage_id": "INTEGER NOT NULL",  # Id de la sucursal donde se realizó la venta
+            "sale_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la venta
+            "subtotal": "REAL NOT NULL",  # Suma total antes de descuentos e impuestos
+            "tax_amount": "REAL DEFAULT 0.0",  # Monto total de impuestos
+            "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
+            "total": "REAL NOT NULL",  # Total final después de aplicar descuentos e impuestos
+            "payment_method": "TEXT NOT NULL",  # Medio de pago (efectivo, tarjeta_credito, tarjeta_debito, transferencia, etc.)
+            "payment_reference": "TEXT",  # Referencia del pago (número de transacción, comprobante, etc.)
+            "invoice_number": "TEXT",  # Número de factura si se emitió
+            "receipt_number": "TEXT",  # Número de ticket/recibo
+            "notes": "TEXT",  # Notas adicionales sobre la venta
+            "status": "TEXT DEFAULT 'Completada'",  # Estado de la venta: 'Completada', 'Cancelada', 'Pendiente', 'Reembolsada'
+            "refund_reason": "TEXT",  # Razón del reembolso si aplica
+            "refunded_at": "TEXT",  # Fecha y hora del reembolso
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de creación del registro
+            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de última actualización
+        },
+        "foreign_keys": [
+            {  # Relación con tabla de clientes (entidades)
+                "column": "customer_id",
+                "reference_table": TABLES.ENTITIES,
+                "reference_column": "id",
+                "export_column_name": "entity_name",
+            },
+            {  # Relación con tabla de empleados (entidades)
+                "column": "employee_id",
+                "reference_table": TABLES.ENTITIES,
+                "reference_column": "id",
+                "export_column_name": "entity_name",
+            },
+            {  # Relación con tabla de usuarios (cajero)
+                "column": "cashier_user_id",
+                "reference_table": TABLES.USERS,
+                "reference_column": "id",
+                "export_column_name": "username",
+            },
+            {  # Relación con tabla de sucursales
+                "column": "storage_id",
+                "reference_table": TABLES.STORAGE,
+                "reference_column": "id",
+                "export_column_name": "name",
+            },
+        ],
+    },
+    TABLES.SALES_DETAIL: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único del detalle de la venta
+            "sale_id": "INTEGER NOT NULL",  # ID de la venta relacionada
+            "product_id": "INTEGER NOT NULL",  # ID del producto vendido
+            "variant_id": "INTEGER",  # ID de la variante específica (talle/color) si aplica
+            "product_name": "TEXT NOT NULL",  # Nombre del producto al momento de la venta (histórico)
+            "product_code": "TEXT",  # Código del producto al momento de la venta
+            "size_name": "TEXT",  # Nombre del talle vendido (histórico)
+            "color_name": "TEXT",  # Nombre del color vendido (histórico)
+            "cost_price": "REAL NOT NULL",  # Precio de costo del producto al momento de la venta
+            "sale_price": "REAL NOT NULL",  # Precio de venta unitario del producto
+            "quantity": "INTEGER NOT NULL CHECK (quantity > 0)",  # Cantidad de productos vendidos
+            "discount_percentage": "REAL DEFAULT 0.0",  # Porcentaje de descuento aplicado
+            "discount_amount": "REAL DEFAULT 0.0",  # Monto del descuento aplicado
+            "tax_percentage": "REAL DEFAULT 0.0",  # Porcentaje de impuesto aplicado
+            "tax_amount": "REAL DEFAULT 0.0",  # Monto del impuesto aplicado
+            "subtotal": "REAL NOT NULL",  # Subtotal para el producto (precio * cantidad)
+            "total": "REAL NOT NULL",  # Total final después de aplicar descuentos e impuestos
+            "profit_margin": "REAL",  # Margen de ganancia (sale_price - cost_price)
+            "barcode_scanned": "TEXT",  # Código de barras escaneado si se usó
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de creación del registro
+        },
+        "foreign_keys": [
+            {  # Relación con la tabla de ventas
+                "column": "sale_id",
+                "reference_table": TABLES.SALES,
+                "reference_column": "id",
+                "export_column_name": "id",
+            },
+            {  # Relación con la tabla de productos
+                "column": "product_id",
+                "reference_table": TABLES.PRODUCTS,
+                "reference_column": "id",
+                "export_column_name": "product_name",
+            },
+            {  # Relación con la tabla de variantes de stock
+                "column": "variant_id",
+                "reference_table": TABLES.WAREHOUSE_STOCK_VARIANTS,
+                "reference_column": "id",
+                "export_column_name": "id",
             },
         ],
     },
