@@ -8,12 +8,16 @@ import {
   Info,
   Edit,
   QrCode,
-  Wrench
+  HandCoins,
+  PackageOpen
 } from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import BarcodeService from '../../services/barcodeService'
 import { useLocation } from 'wouter'
 import toast from 'react-hot-toast'
+//BUG: stock_total muestra un valor erroneo
+//Promp: the conections with the var stock_total are wrong made because they doesnt update when a variant is added or removed but I also Need to make the conection in order to show the name of the privider and the name of the group, for that i need 
+
 
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
@@ -295,6 +299,16 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                       </p>
                     </div>
                     <div>
+                      <span className="font-medium text-gray-600">Grupo:</span>
+                      <p className="text-gray-800">
+                        {productDetails.product_name || 'No disponible'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-600">Proveedor:</span>
+                      <p className="text-gray-800">{productDetails.provider_name || 'Sin proveedor'}</p>
+                    </div>
+                    <div>
                       <span className="font-medium text-gray-600">Marca:</span>
                       <p className="text-gray-800">{productDetails.brand_name || 'Sin marca'}</p>
                     </div>
@@ -310,156 +324,115 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                         {productDetails.description || 'No disponible'}
                       </p>
                     </div>
+                    <div>
+                      <span className="font-medium text-gray-600">Fecha de creación:</span>
+                      <p className="text-gray-800">
+                        {productDetails.creation_date || 'No disponible'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-800">
-                    <DollarSign className="mr-2 h-5 w-5 text-green-600" />
-                    Información Comercial y Descuentos
+                <div className="rounded-lg bg-gradient-to-br from-emerald-50 to-green-50 p-6 shadow-sm">
+                  <h3 className="mb-6 flex items-center text-xl font-bold text-gray-800">
+                    <DollarSign className="mr-3 h-6 w-6 text-emerald-600" />
+                    💰 Información Comercial y Precios
                   </h3>
-                  <div className="space-y-4">
-                    {/* Precios Base */}
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div>
-                        <span className="font-medium text-gray-600">Precio de costo:</span>
-                        <p className="font-semibold text-gray-800">
-                          {formatCurrency(productDetails.cost)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-600">Precio original:</span>
-                        <p className="font-semibold text-gray-800">
-                          {formatCurrency(
-                            productDetails.original_price || productDetails.sale_price
-                          )}
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Descuentos */}
-                    {productDetails.has_discount && (
-                      <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-                        <h4 className="text-md mb-3 flex items-center font-semibold text-orange-800">
-                          🏷️ Descuentos Aplicados
-                        </h4>
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="space-y-6">
+                    {/* Precios Base - Grid mejorado */}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="rounded-xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4">
+                        <div className="flex items-center justify-between">
                           <div>
-                            <span className="font-medium text-orange-700">Descuento (%):</span>
-                            <p className="text-orange-800">
-                              {productDetails.discount_percentage || 0}%
+                            <span className="text-sm font-medium text-blue-700">
+                              Precio de Costo
+                            </span>
+                            <p className="text-2xl font-bold text-blue-900">
+                              {formatCurrency(productDetails.cost)}
                             </p>
                           </div>
-                          <div>
-                            <span className="font-medium text-orange-700">Descuento ($):</span>
-                            <p className="text-orange-800">
-                              {formatCurrency(productDetails.discount_amount)}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-orange-700">Descuento general:</span>
-                            <p className="text-orange-800">
-                              {formatCurrency(productDetails.discount)}
-                            </p>
+                          <div className="rounded-full bg-blue-200 p-2">
+                            <HandCoins className="h-5 w-5 text-blue-700" />
                           </div>
                         </div>
                       </div>
-                    )}
 
-                    {/* Precio Final y Otros */}
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                      <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                        <span className="font-medium text-green-700">Precio de venta:</span>
-                        <p className="text-lg font-bold text-green-800">
-                          {formatCurrency(productDetails.sale_price)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-600">Impuesto (%):</span>
-                        <p className="text-gray-800">{productDetails.tax || 0}%</p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-600">Stock total:</span>
-                        <p className="text-lg font-semibold text-gray-800">
-                          {productDetails.stock_total || 0} unidades
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Resumen de Descuentos */}
-                    {(productDetails.has_discount || productDetails.discount > 0) && (
-                      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                        <h5 className="mb-3 text-sm font-semibold text-blue-800">
-                          💰 Desglose de Precios y Descuentos
-                        </h5>
-                        <div className="space-y-2 text-sm text-blue-700">
-                          {/* Precio Original */}
-                          <div className="flex items-center justify-between py-1">
-                            <span className="font-medium">Precio Original:</span>
-                            <span className="text-lg font-bold">
+                      <div className="rounded-xl border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium text-purple-700">
+                              Precio Original
+                            </span>
+                            <p className="text-2xl font-bold text-purple-900">
                               {formatCurrency(
                                 productDetails.original_price || productDetails.sale_price
                               )}
-                            </span>
+                            </p>
                           </div>
-
-                          {/* Descuentos aplicados */}
-                          {productDetails.has_discount && (
-                            <>
-                              {productDetails.discount_percentage > 0 && (
-                                <div className="flex items-center justify-between py-1 text-orange-600">
-                                  <span>- Descuento ({productDetails.discount_percentage}%):</span>
-                                  <span className="font-medium">
-                                    -{formatCurrency(productDetails.discount_amount)}
-                                  </span>
-                                </div>
-                              )}
-                            </>
-                          )}
-
-                          {productDetails.discount > 0 && (
-                            <div className="flex items-center justify-between py-1 text-orange-600">
-                              <span>- Descuento General:</span>
-                              <span className="font-medium">
-                                -{formatCurrency(productDetails.discount)}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Precio Final */}
-                          <div className="mt-2 flex items-center justify-between border-t border-blue-300 pt-2">
-                            <span className="text-base font-bold">Precio Final de Venta:</span>
-                            <span className="text-xl font-bold text-green-600">
-                              {formatCurrency(productDetails.sale_price)}
-                            </span>
+                          <div className="rounded-full bg-purple-200 p-2">
+                            <PackageOpen className="h-5 w-5 text-purple-700" />
                           </div>
+                        </div>
+                      </div>
+                    </div>
 
-                          {/* Mostrar ahorro total */}
-                          {(productDetails.discount_amount > 0 || productDetails.discount > 0) && (
-                            <div className="mt-3 text-center">
-                              <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-                                💵 Ahorro total:{' '}
-                                {formatCurrency(
-                                  (productDetails.discount_amount || 0) +
-                                    (productDetails.discount || 0)
-                                )}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Información adicional de impuestos */}
+                    {/* Precio Final destacado */}
+                    <div className="rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-100 to-green-100 p-6 shadow-lg">
+                      <div className="text-center">
+                        <span className="text-lg font-medium text-emerald-700">
+                          Precio Final de Venta
+                        </span>
+                        <p className="text-4xl font-bold text-emerald-900">
+                          {formatCurrency(productDetails.sale_price)}
+                        </p>
+                        <div className="mt-2 flex items-center justify-center space-x-4 text-sm text-emerald-600">
+                          <span>📈 Stock: {productDetails.stock_total || 0} unidades</span>
                           {productDetails.tax > 0 && (
-                            <div className="mt-2 flex items-center justify-between border-t border-purple-200 pt-2 text-purple-600">
-                              <span>+ Impuesto ({productDetails.tax}%):</span>
-                              <span className="font-medium">
-                                +
-                                {formatCurrency(
-                                  (productDetails.sale_price * productDetails.tax) / 100
-                                )}
-                              </span>
-                            </div>
+                            <span>🏛️ Impuesto: {productDetails.tax}%</span>
                           )}
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Sección de Descuentos mejorada */}
+                    {(productDetails.has_discount || productDetails.discount > 0) && (
+                      <div className="rounded-xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-red-50 p-6 shadow-lg">
+                        <h4 className="mb-4 flex items-center text-lg font-bold text-orange-800">
+                          Descuentos aplicados
+                        </h4>
+
+                        {/* Descuentos en grid */}
+                        {productDetails.has_discount && (
+                          <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                            {productDetails.discount_percentage > 0 && (
+                              <div className="rounded-lg bg-orange-100 p-3 text-center">
+                                <div className="text-2xl font-bold text-orange-700">
+                                  {productDetails.discount_percentage}%
+                                </div>
+                                <div className="text-xs text-orange-600">Descuento Porcentual</div>
+                              </div>
+                            )}
+
+                            {productDetails.discount_amount > 0 && (
+                              <div className="col-span-2 rounded-lg bg-red-100 p-3 text-center">
+                                <div className="text-lg font-bold text-red-700">
+                                  -{formatCurrency(productDetails.discount_amount)}
+                                </div>
+                                <div className="text-xs text-red-600">Descuento en Pesos</div>
+                              </div>
+                            )}
+
+                            {productDetails.discount > 0 && (
+                              <div className="rounded-lg bg-pink-100 p-3 text-center">
+                                <div className="text-lg font-bold text-pink-700">
+                                  -{formatCurrency(productDetails.discount)}
+                                </div>
+                                <div className="text-xs text-pink-600">Descuento General</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -685,19 +658,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
         {/* Footer */}
         <div className="footer border-base-300 bg-base-100 border-t p-4">
           <div className="flex w-full justify-between gap-3">
-            {/* Botón de reparación automática - solo mostrar si hay inconsistencias */}
-            {productDetails?.stock_variants?.some((v) => v.size_id === 1 || v.size_id === 2) && (
-              <button
-                onClick={fixVariantIds}
-                type="button"
-                className="btn btn-warning h-12 gap-2 rounded-lg"
-                title="Reparar inconsistencias de datos detectadas automáticamente"
-              >
-                <Wrench className="h-4 w-4" />
-                🔧 Reparar Datos
-              </button>
-            )}
-
             <div className="flex gap-3">
               <button
                 onClick={() => setLocation(`/editarProducto?id=${productId}`)}
