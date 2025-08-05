@@ -22,6 +22,7 @@ export default function InfoClientes() {
   const [loadingMovements, setLoadingMovements] = useState(false)
   const [salesHistory, setSalesHistory] = useState([])
   const [loadingSales, setLoadingSales] = useState(false)
+  const [showOperations, setShowOperations] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
@@ -194,215 +195,264 @@ export default function InfoClientes() {
   }
 
   return (
-    <div>
-      <div className="w-full rounded-2xl p-2">
-        <div className="mb-4 flex items-center gap-4 rounded-2xl bg-gray-800 p-4 text-white dark:bg-gray-400 dark:text-black">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="container mx-auto max-w-7xl p-6">
+        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
           <button
-            className="btn btn-circle btn-ghost tooltip tooltip-bottom ml-5"
+            className="btn btn-circle btn-ghost tooltip tooltip-bottom hover:bg-white/20"
             data-tip="Volver"
             onClick={() => setLocation('/clientes')}
           >
-            <ArrowLeft />
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <h3 className="text-2xl font-bold">{cliente?.entity_name}</h3>
-        </div>
-        <div className="w-full">
-          <div className="items-center justify-between gap-8 space-x-4">
-            <button
-              className="btn btn-dash mb-4 justify-end"
-              onClick={() => document.getElementById('editandoCliente').showModal()}
-            >
-              <Pencil />
-              Editar cliente
-            </button>
-            <button
-              className="btn btn-error mb-4 justify-end"
-              onClick={() => document.getElementById('eliminandoCliente').showModal()}
-            >
-              <Trash2 className="" />
-              Eliminar cliente
-            </button>
+          <div className="flex-1">
+            <h3 className="text-3xl font-bold">{cliente?.entity_name}</h3>
+            <p className="mt-1 text-blue-100">Información del cliente</p>
           </div>
         </div>
-        <div className="text-base-content items-center">
-          <div className="overflow-x-auto">
-            {/* head */}
-            {cliente && (
-              <table className="table w-full text-sm">
-                <thead className="rounded-2xl bg-gray-800 text-white">
-                  <tr>
-                    <th>#</th>
-                    <th>Nombre y apellido</th>
-                    <th>DNI o CUIT</th>
-                    <th>Celular</th>
-                    <th>Domicilio</th>
-                    <th>Mail</th>
-                    <th>Razon Social</th>
-                    <th>Observaciones</th>
-                  </tr>
-                </thead>
-                <tbody className="">
-                  <tr onClick={() => handleRowClick(cliente)}>
-                    <th>1</th>
-                    <td>{cliente?.entity_name}</td>
-                    <td>{cliente?.cuit}</td>
-                    <td>{cliente?.phone_number}</td>
-                    <td>{cliente?.domicilio_comercial}</td>
-                    <td>{cliente?.email}</td>
-                    <td>{cliente?.razon_social}</td>
-                    <td>{cliente?.observations}</td>
-                  </tr>
-                </tbody>
-              </table>
-            )}
-          </div>
-          <div>
-            <hr className="mt-4 border-2" />
-            <div className="mb-4 flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Registro de operaciones</h1>
-              <div className="text-right">
-                <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
-                <div
-                  className={`text-2xl font-bold ${clientBalance > 0 ? 'text-red-600' : clientBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
-                >
-                  {formatCurrency(clientBalance)}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {clientBalance > 0 ? 'Debe' : clientBalance < 0 ? 'A favor' : 'Sin deuda'}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="w-full">
-            <div className="flex justify-end gap-4">
+        <div className="card bg-base-100 mb-6 shadow-xl">
+          <div className="card-body">
+            <div className="mb-4 flex flex-wrap gap-3">
               <button
-                className="btn btn-primary"
-                onClick={() => document.getElementById('agregandoPago').showModal()}
+                className="btn btn-primary gap-2 shadow-md hover:shadow-lg transition-all"
+                onClick={() => document.getElementById('editandoCliente').showModal()}
               >
-                Agregar pago
+                <Pencil className="h-4 w-4" />
+                Editar cliente
+              </button>
+              <button
+                className="btn btn-error gap-2 shadow-md hover:shadow-lg transition-all"
+                onClick={() => document.getElementById('eliminandoCliente').showModal()}
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar cliente
               </button>
             </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="table-xs table-zebra w-full">
-              {/* head */}
-              <thead className="bg-gray-800 text-white">
-                <tr>
-                  <th>#</th>
-                  <th>Fecha</th>
-                  <th>Operación</th>
-                  <th>Método de Pago</th>
-                  <th>Debe</th>
-                  <th>Haber</th>
-                  <th>Saldo</th>
-                  <th>Descripción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingMovements ? (
-                  <tr>
-                    <td colSpan="8" className="py-4 text-center">
-                      <div className="flex items-center justify-center">
-                        <div className="loading loading-spinner loading-md mr-2"></div>
-                        Cargando movimientos...
-                      </div>
-                    </td>
-                  </tr>
-                ) : movements.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="py-4 text-center text-gray-500">
-                      No hay movimientos registrados
-                    </td>
-                  </tr>
-                ) : (
-                  movements.map((movement, index) => (
-                    <tr
-                      key={movement.id || index}
-                      className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => handleRowClick(movement)}
-                      onDoubleClick={() => handleRowDoubleClick(movement)}
-                    >
-                      <th>{index + 1}</th>
-                      <td>{formatDate(movement.created_at)}</td>
-                      <td>
-                        <span
-                          className={`badge ${movement.debe > 0 ? 'badge-error' : 'badge-success'}`}
-                        >
-                          {getOperationType(movement)}
-                        </span>
-                      </td>
-                      <td>{movement.medio_pago || 'N/A'}</td>
-                      <td className={movement.debe > 0 ? 'font-bold text-red-600' : ''}>
-                        {movement.debe > 0 ? formatCurrency(movement.debe) : '-'}
-                      </td>
-                      <td className={movement.haber > 0 ? 'font-bold text-green-600' : ''}>
-                        {movement.haber > 0 ? formatCurrency(movement.haber) : '-'}
-                      </td>
-                      <td
-                        className={`font-bold ${movement.saldo > 0 ? 'text-red-600' : movement.saldo < 0 ? 'text-green-600' : 'text-gray-600'}`}
-                      >
-                        {formatCurrency(movement.saldo)}
-                      </td>
-                      <td className="max-w-xs truncate" title={movement.descripcion}>
-                        {movement.descripcion || 'Sin descripción'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
 
-            {movements.length > 0 && (
-              <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                💡 Haz doble clic en una operación para ver los detalles completos
+            {cliente && (
+              <div className="overflow-x-auto rounded-lg">
+                <table className="table w-full">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                      <th className="text-slate-700 dark:text-slate-200">#</th>
+                      <th className="text-slate-700 dark:text-slate-200">Nombre y apellido</th>
+                      <th className="text-slate-700 dark:text-slate-200">DNI o CUIT</th>
+                      <th className="text-slate-700 dark:text-slate-200">Celular</th>
+                      <th className="text-slate-700 dark:text-slate-200">Domicilio</th>
+                      <th className="text-slate-700 dark:text-slate-200">Mail</th>
+                      <th className="text-slate-700 dark:text-slate-200">Razón Social</th>
+                      <th className="text-slate-700 dark:text-slate-200">Observaciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" onClick={() => handleRowClick(cliente)}>
+                      <th>1</th>
+                      <td className="font-medium">{cliente?.entity_name}</td>
+                      <td>{cliente?.cuit}</td>
+                      <td>{cliente?.phone_number}</td>
+                      <td>{cliente?.domicilio_comercial}</td>
+                      <td>{cliente?.email}</td>
+                      <td>{cliente?.razon_social}</td>
+                      <td>{cliente?.observations}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
         </div>
-        <div className="mt-4 mr-4 flex justify-end">
-          <button className="btn btn-primary" onClick={() => setLocation('/clientes')}>
-            Cerrar
+          <div>
+            <hr className="my-6 border-slate-200 dark:border-slate-600" />
+            
+            {/* Operations Section - Slideable */}
+            <div className="card bg-base-100 mb-6 shadow-xl">
+              <div className="card-body">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-200">
+                      Registro de operaciones
+                    </h2>
+                    <button
+                      className="btn btn-circle btn-sm btn-ghost"
+                      onClick={() => setShowOperations(!showOperations)}
+                    >
+                      {showOperations ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
+                    <div
+                      className={`text-2xl font-bold ${clientBalance > 0 ? 'text-red-600' : clientBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                    >
+                      {formatCurrency(clientBalance)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {clientBalance > 0 ? 'Debe' : clientBalance < 0 ? 'A favor' : 'Sin deuda'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showOperations ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="mb-4 flex justify-end">
+                    <button
+                      className="btn btn-primary gap-2 shadow-md hover:shadow-lg transition-all"
+                      onClick={() => document.getElementById('agregandoPago').showModal()}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Agregar pago
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg">
+                    <table className="table table-zebra w-full">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                          <th className="text-slate-700 dark:text-slate-200">#</th>
+                          <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                          <th className="text-slate-700 dark:text-slate-200">Operación</th>
+                          <th className="text-slate-700 dark:text-slate-200">Método de Pago</th>
+                          <th className="text-slate-700 dark:text-slate-200">Debe</th>
+                          <th className="text-slate-700 dark:text-slate-200">Haber</th>
+                          <th className="text-slate-700 dark:text-slate-200">Saldo</th>
+                          <th className="text-slate-700 dark:text-slate-200">Descripción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loadingMovements ? (
+                          <tr>
+                            <td colSpan="8" className="py-8 text-center">
+                              <div className="flex items-center justify-center">
+                                <div className="loading loading-spinner loading-md mr-2"></div>
+                                <span className="text-slate-600 dark:text-slate-300">Cargando movimientos...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : movements.length === 0 ? (
+                          <tr>
+                            <td colSpan="8" className="py-8 text-center">
+                              <div className="text-slate-500 dark:text-slate-400">
+                                <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                No hay movimientos registrados
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          movements.map((movement, index) => (
+                            <tr
+                              key={movement.id || index}
+                              className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                              onClick={() => handleRowClick(movement)}
+                              onDoubleClick={() => handleRowDoubleClick(movement)}
+                            >
+                              <th className="font-medium">{index + 1}</th>
+                              <td className="font-medium">{formatDate(movement.created_at)}</td>
+                              <td>
+                                <span
+                                  className={`badge ${movement.debe > 0 ? 'badge-error' : 'badge-success'} shadow-sm`}
+                                >
+                                  {getOperationType(movement)}
+                                </span>
+                              </td>
+                              <td>{movement.medio_pago || 'N/A'}</td>
+                              <td className={movement.debe > 0 ? 'font-bold text-red-600' : ''}>
+                                {movement.debe > 0 ? formatCurrency(movement.debe) : '-'}
+                              </td>
+                              <td className={movement.haber > 0 ? 'font-bold text-green-600' : ''}>
+                                {movement.haber > 0 ? formatCurrency(movement.haber) : '-'}
+                              </td>
+                              <td
+                                className={`font-bold ${movement.saldo > 0 ? 'text-red-600' : movement.saldo < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                              >
+                                {formatCurrency(movement.saldo)}
+                              </td>
+                              <td className="max-w-xs truncate" title={movement.descripcion}>
+                                {movement.descripcion || 'Sin descripción'}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+
+                    {movements.length > 0 && (
+                      <div className="mt-4 text-center text-sm text-slate-600 dark:text-slate-400">
+                        💡 Haz doble clic en una operación para ver los detalles completos
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-center mb-6">
+          <button 
+            className="btn btn-primary btn-wide gap-2 shadow-lg hover:shadow-xl transition-all" 
+            onClick={() => setLocation('/clientes')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver a Clientes
           </button>
         </div>
 
         {/* Sales History Section */}
-        <div className="card bg-base-100 mt-4 shadow-xl">
+        <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <h3 className="card-title text-lg">Historial de Ventas</h3>
+            <h3 className="card-title text-xl flex items-center gap-2 text-slate-700 dark:text-slate-200">
+              <Package className="h-5 w-5" />
+              Historial de Ventas
+            </h3>
 
             {loadingSales ? (
-              <div className="flex justify-center py-4">
-                <span className="loading loading-spinner loading-md"></span>
+              <div className="flex justify-center py-8">
+                <div className="flex items-center gap-3">
+                  <span className="loading loading-spinner loading-md"></span>
+                  <span className="text-slate-600 dark:text-slate-300">Cargando historial...</span>
+                </div>
               </div>
             ) : salesHistory.length === 0 ? (
-              <div className="py-4 text-center text-gray-500">
-                No hay ventas registradas para este cliente
+              <div className="py-8 text-center">
+                <Package className="w-16 h-16 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+                <div className="text-slate-500 dark:text-slate-400">
+                  No hay ventas registradas para este cliente
+                </div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="table-zebra table w-full">
+              <div className="overflow-x-auto rounded-lg">
+                <table className="table table-zebra w-full">
                   <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Producto</th>
-                      <th>Cantidad</th>
-                      <th>Precio Unit.</th>
-                      <th>Total</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
+                    <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                      <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                      <th className="text-slate-700 dark:text-slate-200">Producto</th>
+                      <th className="text-slate-700 dark:text-slate-200">Cantidad</th>
+                      <th className="text-slate-700 dark:text-slate-200">Precio Unit.</th>
+                      <th className="text-slate-700 dark:text-slate-200">Total</th>
+                      <th className="text-slate-700 dark:text-slate-200">Estado</th>
+                      <th className="text-slate-700 dark:text-slate-200">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {salesHistory.map((sale) => (
-                      <tr key={sale.id}>
-                        <td>{new Date(sale.sale_date).toLocaleDateString()}</td>
-                        <td>{sale.product_name || 'Producto N/A'}</td>
+                      <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                        <td className="font-medium">{new Date(sale.sale_date).toLocaleDateString()}</td>
+                        <td className="font-medium">{sale.product_name || 'Producto N/A'}</td>
                         <td>{sale.quantity}</td>
-                        <td>${Number(sale.unit_price || 0).toFixed(2)}</td>
-                        <td>${Number(sale.total_amount || 0).toFixed(2)}</td>
+                        <td className="font-mono">${Number(sale.unit_price || 0).toFixed(2)}</td>
+                        <td className="font-mono font-bold">${Number(sale.total_amount || 0).toFixed(2)}</td>
                         <td>
                           <span
-                            className={`badge ${
+                            className={`badge shadow-sm ${
                               sale.status === 'vendido'
                                 ? 'badge-success'
                                 : sale.status === 'devuelto'
@@ -419,15 +469,17 @@ export default function InfoClientes() {
                           {sale.status === 'vendido' && (
                             <div className="flex gap-2">
                               <button
-                                className="btn btn-xs btn-warning"
+                                className="btn btn-xs btn-warning gap-1 shadow-sm hover:shadow-md transition-all"
                                 onClick={() => handleReturn(sale)}
                               >
+                                <RotateCcw className="h-3 w-3" />
                                 Devolución
                               </button>
                               <button
-                                className="btn btn-xs btn-info"
+                                className="btn btn-xs btn-info gap-1 shadow-sm hover:shadow-md transition-all"
                                 onClick={() => handleExchange(sale)}
                               >
+                                <RefreshCw className="h-3 w-3" />
                                 Cambio
                               </button>
                             </div>
@@ -441,13 +493,15 @@ export default function InfoClientes() {
             )}
           </div>
         </div>
-      </div>{' '}
-      {/* A partir de acá para editar cliente! */}
-      <EditarClienteModal cliente={cliente} />
-      <AgregarCompraModal cliente={cliente} />
-      <AgregarPagoModal cliente={cliente} onPaymentAdded={refreshMovements} />
-      <VerOprecionModal cliente={cliente} operacion={operacionSeleccionada} />
-      <EliminarClienteModal cliente={cliente} />
-    </div>
+        {/* Modals */}
+        <EditarClienteModal cliente={cliente} />
+        <AgregarCompraModal cliente={cliente} />
+        <AgregarPagoModal cliente={cliente} onPaymentAdded={refreshMovements} />
+        <VerOprecionModal cliente={cliente} operacion={operacionSeleccionada} />
+        <EliminarClienteModal cliente={cliente} />
+        
+
+      </div>
+    
   )
 }
