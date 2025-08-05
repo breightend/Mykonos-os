@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
 from datetime import datetime
-import sqlite3
 
 purchase_bp = Blueprint("purchase", __name__)
 
@@ -40,12 +39,14 @@ def create_purchase():
             "status": data.get("status", "Pendiente de entrega"),
         }
 
-        purchase_id = db.insert_data("purchases", purchase_data)
+        purchase_result = db.add_record("purchases", purchase_data)
 
-        if not purchase_id:
+        if not purchase_result.get("success"):
             return jsonify(
                 {"status": "error", "message": "Error al crear la compra"}
             ), 500
+
+        purchase_id = purchase_result.get("rowid")
 
         # Agregar los productos de la compra
         for product in data["products"]:
@@ -58,10 +59,10 @@ def create_purchase():
                 "subtotal": product["subtotal"],
             }
 
-            detail_id = db.insert_data("purchases_detail", product_detail)
-            if not detail_id:
+            detail_result = db.add_record("purchases_detail", product_detail)
+            if not detail_result.get("success"):
                 # Si falla algún detalle, eliminar la compra
-                db.delete_data("purchases", purchase_id)
+                db.delete_record("purchases", "id = ?", (purchase_id,))
                 return jsonify(
                     {
                         "status": "error",
@@ -258,14 +259,15 @@ def receive_purchase(purchase_id):
                     "branch_id": storage_id,
                     "quantity": quantity,
                 }
-                db.insert_data("warehouse_stock", stock_data)
+                db.add_record("warehouse_stock", stock_data)
 
         # Actualizar estado de la compra
-        db.update_data(
-            "purchases",
-            purchase_id,
-            {"status": "Recibido", "delivery_date": datetime.now().isoformat()},
-        )
+        update_data = {
+            "id": purchase_id,
+            "status": "Recibido",
+            "delivery_date": datetime.now().isoformat(),
+        }
+        db.update_record("purchases", update_data)
 
         return jsonify(
             {
@@ -357,9 +359,9 @@ def delete_purchase(purchase_id):
         db.execute_query(delete_details_query, (purchase_id,))
 
         # Eliminar la compra
-        success = db.delete_data("purchases", purchase_id)
+        result = db.delete_record("purchases", "id = ?", (purchase_id,))
 
-        if success:
+        if result.get("success"):
             return jsonify(
                 {"status": "éxito", "message": "Compra eliminada exitosamente"}
             ), 200

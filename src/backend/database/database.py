@@ -687,6 +687,11 @@ class Database:
 
         self.use_postgres = use_postgres
         self.db_lock = threading.Lock()
+        
+        # Set up db_config for compatibility with methods that check database type
+        self.db_config = {
+            'use_postgresql': self.use_postgres
+        }
 
         if self.use_postgres:
             self._init_postgres()
@@ -1038,32 +1043,57 @@ class Database:
                 - 'table_names' (list): Lista con los nombres de las columnas de la tabla.
         """
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                # Verificar si la tabla existe antes de consultar
+            conn = self.create_connection()
+            cursor = conn.cursor()
+            
+            # Check if table exists - different approaches for SQLite vs PostgreSQL
+            if self.db_config.get('use_postgresql', False):
+                # PostgreSQL approach
+                cursor.execute(
+                    "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)",
+                    (table_name,),
+                )
+                if not cursor.fetchone()[0]:
+                    conn.close()
+                    return {
+                        "success": False,
+                        "message": f"La tabla '{table_name}' no existe en la base de datos.",
+                        "table_names": [],
+                    }
+                
+                # Get column names for PostgreSQL
+                cursor.execute(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = %s ORDER BY ordinal_position",
+                    (table_name,),
+                )
+                column_names = [row[0] for row in cursor.fetchall()]
+            else:
+                # SQLite approach
                 cursor.execute(
                     "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
                     (table_name,),
                 )
                 if not cursor.fetchone():
+                    conn.close()
                     return {
                         "success": False,
                         "message": f"La tabla '{table_name}' no existe en la base de datos.",
                         "table_names": [],
                     }
 
-                # Obtener los nombres de las columnas
+                # Get column names for SQLite
                 cursor.execute(f"PRAGMA table_info({table_name})")
                 columns_info = cursor.fetchall()
                 column_names = [column[1] for column in columns_info]
 
-                return {
-                    "success": True,
-                    "message": f"Se obtuvieron {len(column_names)} columnas de la tabla '{table_name}'.",
-                    "table_names": column_names,
-                }
+            conn.close()
+            return {
+                "success": True,
+                "message": f"Se obtuvieron {len(column_names)} columnas de la tabla '{table_name}'.",
+                "table_names": column_names,
+            }
 
-        except sqlite3.Error as e:
+        except Exception as e:
             return {
                 "success": False,
                 "message": f"Error al obtener las columnas de la tabla '{table_name}': {e}",
@@ -1083,6 +1113,10 @@ class Database:
                   Empty list for non-SELECT queries (INSERT, UPDATE, DELETE).
         """
         try:
+            # Convert placeholders for PostgreSQL
+            if self.use_postgres and query and "?" in query:
+                query = query.replace("?", "%s")
+                
             with self.create_connection() as conn:
                 cur = conn.cursor()
                 if params:
@@ -1156,52 +1190,43 @@ class Database:
             except Exception as e:
                 print(f"⚠️ No se pudo auto-generar código de barras: {e}")
 
-        placeholders = ", ".join([f":{key}" for key in data.keys()])
-        columns = ", ".join(data.keys())
-        sql = f"""INSERT INTO {table_name} ({columns})
-                VALUES ({placeholders})"""
+        if self.use_postgres:
+            # PostgreSQL placeholders use %s instead of :key
+            placeholders = ", ".join(["%s" for _ in data.keys()])
+            columns = ", ".join(data.keys())
+            values = list(data.values())
+            sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) RETURNING id"
+        else:
+            # SQLite placeholders use :key
+            placeholders = ", ".join([f":{key}" for key in data.keys()])
+            columns = ", ".join(data.keys())
+            sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
 
-        retries = 5
-        while retries:
-            try:
-                with self.db_lock:
-                    with sqlite3.connect(self.db_path) as conn:
-                        cur = conn.cursor()
-                        cur.execute(sql, data)
+        try:
+            with self.db_lock:
+                with self.create_connection() as conn:
+                    cur = conn.cursor()
+                    if self.use_postgres:
+                        cur.execute(sql, values)
+                        result = cur.fetchone()
+                        rowid = result[0] if result else None
                         conn.commit()
-                        return {
-                            "success": True,
-                            "message": f"Registro agregado correctamente en la tabla '{table_name}'",
-                            "rowid": cur.lastrowid,
-                        }
-            except sqlite3.OperationalError as e:
-                if "locked" in str(e):
-                    retries -= 1
-                    time.sleep(1)
-                else:
+                    else:
+                        cur.execute(sql, data)
+                        rowid = cur.lastrowid
+                        conn.commit()
+                    
                     return {
-                        "success": False,
-                        "message": f"Error al agregar registro en la tabla '{table_name}': {e}",
-                        "rowid": None,
+                        "success": True,
+                        "message": f"Registro agregado correctamente en la tabla '{table_name}'",
+                        "rowid": rowid,
                     }
-            except sqlite3.IntegrityError as e:
-                return {
-                    "success": False,
-                    "message": f"Error de integridad al agregar registro en la tabla '{table_name}': {e}",
-                    "rowid": None,
-                }
-            except Exception as e:
-                return {
-                    "success": False,
-                    "message": f"Error al agregar registro en la tabla '{table_name}': {e}",
-                    "rowid": None,
-                }
-
-        return {
-            "success": False,
-            "message": f"Error al agregar registro en la tabla '{table_name}': la base de datos está bloqueada después de varios intentos",
-            "rowid": None,
-        }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al agregar registro en la tabla '{table_name}': {e}",
+                "rowid": None,
+            }
 
     def update_record(self, table_name, data):
         """
@@ -1223,17 +1248,25 @@ class Database:
                 "message": f"Error: El diccionario de datos debe contener una clave 'id' valido, actual:{data.get('id', None)}",
             }
 
-        # Construir la cláusula SET de la consulta SQL, excluyendo 'id'
-        set_clause = ", ".join(
-            [f"{key} = :{key}" for key in data.keys() if key != "id"]
-        )
-        sql = f"UPDATE {table_name} SET {set_clause} WHERE id = :id"
+        if self.use_postgres:
+            # PostgreSQL uses %s placeholders
+            set_clause = ", ".join([f"{key} = %s" for key in data.keys() if key != "id"])
+            sql = f"UPDATE {table_name} SET {set_clause} WHERE id = %s"
+            # Create values list for PostgreSQL (excluding 'id' first, then adding it at the end)
+            values = [data[key] for key in data.keys() if key != "id"] + [data["id"]]
+        else:
+            # SQLite uses :key placeholders
+            set_clause = ", ".join([f"{key} = :{key}" for key in data.keys() if key != "id"])
+            sql = f"UPDATE {table_name} SET {set_clause} WHERE id = :id"
 
         try:
             with self.db_lock:
-                with sqlite3.connect(self.db_path) as conn:
+                with self.create_connection() as conn:
                     cur = conn.cursor()
-                    cur.execute(sql, data)
+                    if self.use_postgres:
+                        cur.execute(sql, values)
+                    else:
+                        cur.execute(sql, data)
                     conn.commit()
             return {
                 "success": True,
@@ -1256,19 +1289,24 @@ class Database:
         """
         sql = f"DELETE FROM {table_name} WHERE {where_clause}"
 
+        # Convert SQLite placeholders to PostgreSQL format if needed
+        if self.db_config.get('use_postgresql', False):
+            sql = sql.replace('?', '%s')
+
         try:
             with self.db_lock:
-                with sqlite3.connect(self.db_path) as conn:
-                    cur = conn.cursor()
-                    cur.execute(sql, params)
+                conn = self.create_connection()
+                cur = conn.cursor()
+                cur.execute(sql, params)
 
-                    if cur.rowcount == 0:
-                        return {
-                            "success": False,
-                            "message": "Error: No se encontró un registro que cumpla con los criterios especificados.",
-                        }
+                if cur.rowcount == 0:
+                    return {
+                        "success": False,
+                        "message": "Error: No se encontró un registro que cumpla con los criterios especificados.",
+                    }
 
-                    conn.commit()
+                conn.commit()
+                conn.close()
 
             return {"success": True, "message": "Registro eliminado correctamente"}
 
@@ -1287,25 +1325,32 @@ class Database:
             dict: Un diccionario con la información del estado de la operación y los datos del registro.
         """
         sql = f"SELECT * FROM {table_name} WHERE id = ?"
+        
+        # Convert SQLite placeholders to PostgreSQL format if needed
+        if self.db_config.get('use_postgresql', False):
+            sql = sql.replace('?', '%s')
+            
         try:
-            with self.create_connection() as conn:
-                cur = conn.cursor()
-                cur.execute(sql, (record_id,))
-                row = cur.fetchone()
-                if row:
-                    columns = [desc[0] for desc in cur.description]
-                    record = dict(zip(columns, row))
-                    return {
-                        "success": True,
-                        "message": f"Registro en la tabla '{table_name}' encontrado",
-                        "record": record,
-                    }
-                else:
-                    return {
-                        "success": False,
-                        "message": f"No se encontró el registro en la tabla '{table_name}'",
-                        "record": None,
-                    }
+            conn = self.create_connection()
+            cur = conn.cursor()
+            cur.execute(sql, (record_id,))
+            row = cur.fetchone()
+            if row:
+                columns = [desc[0] for desc in cur.description]
+                record = dict(zip(columns, row))
+                conn.close()
+                return {
+                    "success": True,
+                    "message": f"Registro en la tabla '{table_name}' encontrado",
+                    "record": record,
+                }
+            else:
+                conn.close()
+                return {
+                    "success": False,
+                    "message": f"No se encontró el registro en la tabla '{table_name}'",
+                    "record": None,
+                }
         except Exception as e:
             return {
                 "success": False,
@@ -1325,14 +1370,19 @@ class Database:
         Returns:
             dict: {'success': bool, 'message': str, 'record': dict or None}
         """
-        sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
+        # Convert ? placeholders to %s for PostgreSQL
+        if self.use_postgres:
+            sql = f"SELECT * FROM {table_name} WHERE {search_clause.replace('?', '%s')}"
+        else:
+            sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
+            
         result = {"success": False, "message": "", "record": None}
 
         try:
             with self.create_connection() as conn:
-                conn.row_factory = (
-                    sqlite3.Row
-                )  # Permite acceder a los valores por nombre de columna
+                if not self.use_postgres:
+                    # Only set row_factory for SQLite
+                    conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
 
                 # Convertir value a tupla si no lo es
@@ -1345,9 +1395,13 @@ class Database:
                 if row:
                     result["success"] = True
                     result["message"] = "Registro encontrado."
-                    result["record"] = {
-                        key: row[key] for key in row.keys()
-                    }  # Diccionario con nombres de columnas
+                    if self.use_postgres:
+                        # For PostgreSQL, manually create dictionary
+                        columns = [desc[0] for desc in cur.description]
+                        result["record"] = dict(zip(columns, row))
+                    else:
+                        # For SQLite, use row_factory
+                        result["record"] = {key: row[key] for key in row.keys()}
                 else:
                     result["message"] = "No se encontró ningún registro."
 
@@ -1368,19 +1422,32 @@ class Database:
         Returns:
             list[dict]: Una lista de diccionarios con los datos de cada registro, o una lista vacía si no se encontraron registros.
         """
-        sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
+        if self.use_postgres:
+            # PostgreSQL uses %s placeholders
+            sql = f"SELECT * FROM {table_name} WHERE {search_clause.replace('?', '%s')}"
+            params = (value,)
+        else:
+            # SQLite uses ? placeholders
+            sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
+            params = (value,)
+            
         try:
             with self.create_connection() as conn:
-                conn.row_factory = (
-                    sqlite3.Row
-                )  # Devuelve los resultados como un diccionario
+                if not self.use_postgres:
+                    # Only set row_factory for SQLite
+                    conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
-                cur.execute(sql, (value,))
+                cur.execute(sql, params)
                 rows = cur.fetchall()
+                
                 if rows:
-                    return [
-                        dict(row) for row in rows
-                    ]  # Convierte cada fila en un diccionario y devuelve la lista
+                    if self.use_postgres:
+                        # For PostgreSQL, manually create dictionaries
+                        columns = [desc[0] for desc in cur.description]
+                        return [dict(zip(columns, row)) for row in rows]
+                    else:
+                        # For SQLite, use row_factory
+                        return [dict(row) for row in rows]
                 return []
         except Exception as e:
             print(f"Error al obtener registros de la tabla '{table_name}': {e}")

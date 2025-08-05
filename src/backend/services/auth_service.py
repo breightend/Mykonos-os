@@ -381,8 +381,8 @@ def get_user_allowed_storages(user_id):
             # Usando la tabla de relaciones usuario-sucursal
             query = """
                 SELECT s.* FROM storage s
-                INNER JOIN user_storage us ON s.id = us.storage_id
-                WHERE us.user_id = ? AND s.status = 'Active'
+                INNER JOIN usersxstorage us ON s.id = us.id_storage
+                WHERE us.id_user = ? AND s.status = 'Active'
             """
             storages = db.execute_query(query, (user_id,))
             return storages if storages else []
