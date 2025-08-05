@@ -2,11 +2,14 @@
 import os
 import io as io
 import sqlite3
+import psycopg2
+import psycopg2.extras
 import time
 import threading
 from datetime import datetime
 from enum import Enum
 from commons.tools import print_debug  # noqa: F401
+from config.config import Config
 # TODO: hacer tabla ProveedoresXMarcas para poder relacionar varios proveedores a una misma marca y viceversa.
 
 
@@ -662,40 +665,80 @@ DATABASE_TABLES = {
     },
 }
 
+# PostgreSQL Database Configuration from Config
+config = Config()
+DATABASE_CONFIG = config.postgres_config
+
+# Legacy SQLite path (kept for compatibility)
 DATABASE_PATH = "./database/mykonos.db"
 
 
 class Database:
-    def __init__(self, db_path=DATABASE_PATH):
+    def __init__(self, use_postgres=None):
+        """
+        Initialize database connection.
+
+        Args:
+            use_postgres (bool): If True, use PostgreSQL. If False, use SQLite.
+                               If None, use Config.USE_POSTGRES setting.
+        """
+        if use_postgres is None:
+            use_postgres = Config.USE_POSTGRES
+
+        self.use_postgres = use_postgres
+        self.db_lock = threading.Lock()
+
+        if self.use_postgres:
+            self._init_postgres()
+        else:
+            self._init_sqlite()
+
+        self.create_tables()
+
+    def _init_postgres(self):
+        """Initialize PostgreSQL connection"""
+        try:
+            # Test connection
+            conn = psycopg2.connect(**DATABASE_CONFIG)
+            conn.close()
+            print("✅ Conexión a PostgreSQL exitosa")
+        except psycopg2.Error as e:
+            print(f"❌ Error al conectar con PostgreSQL: {e}")
+            print("💡 Asegúrate de que el contenedor Docker esté ejecutándose")
+            raise
+
+    def _init_sqlite(self):
+        """Initialize SQLite connection (legacy)"""
+        db_path = DATABASE_PATH
         if not os.path.exists(db_path):
             print(
-                f"Base de datos no encontrada en: {db_path}. Creando una nueva base de datos."
+                f"Base de datos SQLite no encontrada en: {db_path}. Creando una nueva."
             )
             try:
-                # Create the directory if it doesn't exist
                 os.makedirs(os.path.dirname(db_path), exist_ok=True)
-                # Crear el archivo de la base de datos si no existe
                 conn = sqlite3.connect(db_path)
-                conn.close()  # Cerramos la conexión tras crear el archivo
-
+                conn.close()
             except sqlite3.Error as e:
-                print(f"Error al crear la base de datos: {e}")
-                return None
-
+                print(f"Error al crear la base de datos SQLite: {e}")
+                raise
         self.db_path = db_path
-        self.db_lock = threading.Lock()
-        self.create_tables()
 
     # Commons
     def create_connection(self):
         """
-        Crea y devuelve una conexión a la base de datos SQLite.
+        Crea y devuelve una conexión a la base de datos (PostgreSQL o SQLite).
         """
         try:
-            return sqlite3.connect(self.db_path)
-        except sqlite3.Error as e:
-            print(e)
-        return None
+            if self.use_postgres:
+                conn = psycopg2.connect(**DATABASE_CONFIG)
+                # Set autocommit for better compatibility
+                conn.autocommit = False
+                return conn
+            else:
+                return sqlite3.connect(self.db_path)
+        except (psycopg2.Error, sqlite3.Error) as e:
+            print(f"Error al crear conexión: {e}")
+            return None
 
     def get_db_lock(self):
         return self.db_lock
@@ -705,10 +748,18 @@ class Database:
         """
         Crea todas las tablas necesarias en la base de datos.
         """
+        if self.use_postgres:
+            print("🐘 Usando esquema PostgreSQL del archivo dump_postgres.sql")
+            print(
+                "Las tablas ya fueron creadas automáticamente al inicializar el contenedor."
+            )
+            return
+
+        # SQLite legacy code
         conn = self.create_connection()
         if conn is not None:
             try:
-                # Habilitar claves foráneas
+                # Habilitar claves foráneas (solo SQLite)
                 conn.execute("PRAGMA foreign_keys = ON;")
 
                 for table, definition in DATABASE_TABLES.items():

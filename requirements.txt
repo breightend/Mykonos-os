@@ -3,3 +3,5 @@ flask-jwt-extended
 flask-cors
 flask-sqlalchemy
 Pillow
+psycopg2-binary
+python-dotenv
