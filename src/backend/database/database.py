@@ -687,11 +687,9 @@ class Database:
 
         self.use_postgres = use_postgres
         self.db_lock = threading.Lock()
-        
+
         # Set up db_config for compatibility with methods that check database type
-        self.db_config = {
-            'use_postgresql': self.use_postgres
-        }
+        self.db_config = {"use_postgresql": self.use_postgres}
 
         if self.use_postgres:
             self._init_postgres()
@@ -1045,9 +1043,9 @@ class Database:
         try:
             conn = self.create_connection()
             cursor = conn.cursor()
-            
+
             # Check if table exists - different approaches for SQLite vs PostgreSQL
-            if self.db_config.get('use_postgresql', False):
+            if self.db_config.get("use_postgresql", False):
                 # PostgreSQL approach
                 cursor.execute(
                     "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)",
@@ -1060,7 +1058,7 @@ class Database:
                         "message": f"La tabla '{table_name}' no existe en la base de datos.",
                         "table_names": [],
                     }
-                
+
                 # Get column names for PostgreSQL
                 cursor.execute(
                     "SELECT column_name FROM information_schema.columns WHERE table_name = %s ORDER BY ordinal_position",
@@ -1116,7 +1114,7 @@ class Database:
             # Convert placeholders for PostgreSQL
             if self.use_postgres and query and "?" in query:
                 query = query.replace("?", "%s")
-                
+
             with self.create_connection() as conn:
                 cur = conn.cursor()
                 if params:
@@ -1215,7 +1213,7 @@ class Database:
                         cur.execute(sql, data)
                         rowid = cur.lastrowid
                         conn.commit()
-                    
+
                     return {
                         "success": True,
                         "message": f"Registro agregado correctamente en la tabla '{table_name}'",
@@ -1250,13 +1248,17 @@ class Database:
 
         if self.use_postgres:
             # PostgreSQL uses %s placeholders
-            set_clause = ", ".join([f"{key} = %s" for key in data.keys() if key != "id"])
+            set_clause = ", ".join(
+                [f"{key} = %s" for key in data.keys() if key != "id"]
+            )
             sql = f"UPDATE {table_name} SET {set_clause} WHERE id = %s"
             # Create values list for PostgreSQL (excluding 'id' first, then adding it at the end)
             values = [data[key] for key in data.keys() if key != "id"] + [data["id"]]
         else:
             # SQLite uses :key placeholders
-            set_clause = ", ".join([f"{key} = :{key}" for key in data.keys() if key != "id"])
+            set_clause = ", ".join(
+                [f"{key} = :{key}" for key in data.keys() if key != "id"]
+            )
             sql = f"UPDATE {table_name} SET {set_clause} WHERE id = :id"
 
         try:
@@ -1290,8 +1292,8 @@ class Database:
         sql = f"DELETE FROM {table_name} WHERE {where_clause}"
 
         # Convert SQLite placeholders to PostgreSQL format if needed
-        if self.db_config.get('use_postgresql', False):
-            sql = sql.replace('?', '%s')
+        if self.db_config.get("use_postgresql", False):
+            sql = sql.replace("?", "%s")
 
         try:
             with self.db_lock:
@@ -1325,11 +1327,11 @@ class Database:
             dict: Un diccionario con la información del estado de la operación y los datos del registro.
         """
         sql = f"SELECT * FROM {table_name} WHERE id = ?"
-        
+
         # Convert SQLite placeholders to PostgreSQL format if needed
-        if self.db_config.get('use_postgresql', False):
-            sql = sql.replace('?', '%s')
-            
+        if self.db_config.get("use_postgresql", False):
+            sql = sql.replace("?", "%s")
+
         try:
             conn = self.create_connection()
             cur = conn.cursor()
@@ -1375,7 +1377,7 @@ class Database:
             sql = f"SELECT * FROM {table_name} WHERE {search_clause.replace('?', '%s')}"
         else:
             sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
-            
+
         result = {"success": False, "message": "", "record": None}
 
         try:
@@ -1430,7 +1432,7 @@ class Database:
             # SQLite uses ? placeholders
             sql = f"SELECT * FROM {table_name} WHERE {search_clause}"
             params = (value,)
-            
+
         try:
             with self.create_connection() as conn:
                 if not self.use_postgres:
@@ -1439,7 +1441,7 @@ class Database:
                 cur = conn.cursor()
                 cur.execute(sql, params)
                 rows = cur.fetchall()
-                
+
                 if rows:
                     if self.use_postgres:
                         # For PostgreSQL, manually create dictionaries
