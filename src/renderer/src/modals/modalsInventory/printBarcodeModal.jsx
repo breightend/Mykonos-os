@@ -32,29 +32,29 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
   // Función para generar texto de vista previa
   const generatePreviewText = (variant) => {
     if (!variant || !product) return ''
-    
+
     const textParts = []
-    
+
     if (printOptions.includeProductName) {
       textParts.push(product.name)
     }
-    
+
     if (printOptions.includeSize && variant.size_name) {
       textParts.push(`Talle: ${variant.size_name}`)
     }
-    
+
     if (printOptions.includeColor && variant.color_name) {
       textParts.push(`Color: ${variant.color_name}`)
     }
-    
+
     if (printOptions.includePrice && product.sale_price) {
       textParts.push(`$${parseFloat(product.sale_price).toFixed(2)}`)
     }
-    
+
     if (printOptions.includeCode && variant.variant_barcode) {
       textParts.push(variant.variant_barcode)
     }
-    
+
     return textParts.join(' | ')
   }
 
@@ -66,11 +66,11 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
       setLoadingPreview(true)
       console.log('🔍 Cargando vista previa para variante:', variant.id)
       console.log('⚙️ Opciones actuales:', printOptions)
-      
+
       const response = await inventoryService.generateBarcodePreview(variant.id, printOptions)
-      
+
       console.log('📡 Respuesta completa del servidor:', response)
-      
+
       if (response.status === 'success') {
         setBarcodePreview(response.data)
         console.log('✅ Vista previa cargada exitosamente!')
@@ -121,7 +121,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
           initialQuantities[variant.id] = 0
         })
         setQuantities(initialQuantities)
-        
+
         // Establecer primera variante como vista previa por defecto
         if (variantsList.length > 0) {
           const firstVariant = variantsList[0]
@@ -238,7 +238,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
         </body>
       </html>
     `
-    
+
     printWindow.document.write(printContent)
     printWindow.document.close()
   }
@@ -437,24 +437,27 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                   <Tag className="h-4 w-4" />
                   Vista Previa del Código de Barras
                 </h4>
-                
-                <div className="grid md:grid-cols-2 gap-4">
+
+                <div className="grid gap-4 md:grid-cols-2">
                   {/* Selector de variante para vista previa */}
                   <div>
                     <label className="label">
                       <span className="label-text font-medium">Variante a previsualizar:</span>
                     </label>
-                    <select 
+                    <select
                       className="select select-bordered w-full"
                       onChange={(e) => {
                         const variantId = parseInt(e.target.value)
-                        const selectedVariant = variants.find((v) => v.id === variantId) || variants[0]
+                        const selectedVariant =
+                          variants.find((v) => v.id === variantId) || variants[0]
                         setPreviewVariant(selectedVariant)
                         loadBarcodePreview(selectedVariant)
                       }}
                       defaultValue=""
                     >
-                      <option value="" disabled>Selecciona una variante</option>
+                      <option value="" disabled>
+                        Selecciona una variante
+                      </option>
                       {variants.map((variant) => (
                         <option key={variant.id} value={variant.id}>
                           {variant.size_name || 'Sin talle'} - {variant.color_name || 'Sin color'}
@@ -462,74 +465,71 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                       ))}
                     </select>
                   </div>
-                  
+
                   {/* Vista previa */}
                   <div>
                     <label className="label">
                       <span className="label-text font-medium">Texto que aparecerá:</span>
                     </label>
-                    <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[60px] flex items-center justify-center">
+                    <div className="flex min-h-[60px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white p-4">
                       {loadingPreview ? (
                         <div className="flex flex-col items-center">
                           <l-pinwheel size="20" stroke="2" speed="0.9" color="#570df8"></l-pinwheel>
-                          <p className="text-xs text-gray-500 mt-2">Generando código...</p>
+                          <p className="mt-2 text-xs text-gray-500">Generando código...</p>
                         </div>
                       ) : barcodePreview ? (
-                        <div className="text-center w-full">
+                        <div className="w-full text-center">
                           {/* Información de debug */}
-                          <div className="text-xs text-gray-400 mb-2">
+                          <div className="mb-2 text-xs text-gray-400">
                             Debug: Código {barcodePreview.barcode_code}
                           </div>
-                          
+
                           {/* SVG del código de barras real */}
-                          <div 
-                            className="mx-auto mb-2 border-2 border-dashed border-gray-200 p-2 bg-white rounded"
-                            style={{ 
+                          <div
+                            className="mx-auto mb-2 rounded border-2 border-dashed border-gray-200 bg-white p-2"
+                            style={{
                               maxWidth: '300px',
                               overflow: 'hidden'
                             }}
                           >
                             {barcodePreview.svg_content ? (
-                              <div 
+                              <div
                                 dangerouslySetInnerHTML={{ __html: barcodePreview.svg_content }}
                                 style={{ width: '100%' }}
                               />
                             ) : (
-                              <div className="text-red-500 text-xs">No se pudo cargar el SVG</div>
+                              <div className="text-xs text-red-500">No se pudo cargar el SVG</div>
                             )}
                           </div>
-                          
+
                           {/* Texto personalizado con mejor formato */}
-                          <div className="text-xs space-y-1">
+                          <div className="space-y-1 text-xs">
                             {barcodePreview.text_lines && barcodePreview.text_lines.length > 0 ? (
                               barcodePreview.text_lines.map((line, index) => (
-                                <div 
-                                  key={index} 
-                                  className={`
-                                    ${line.includes('$') ? 'text-blue-600 font-semibold' : ''}
-                                    ${index === 0 ? 'font-bold text-gray-800' : 'text-gray-600'}
-                                    ${line.includes('Talle:') || line.includes('Color:') ? 'text-gray-500' : ''}
-                                    ${line.includes('Código:') ? 'font-mono text-xs text-gray-600' : ''}
-                                  `.trim()}
+                                <div
+                                  key={index}
+                                  className={` ${line.includes('$') ? 'font-semibold text-blue-600' : ''} ${index === 0 ? 'font-bold text-gray-800' : 'text-gray-600'} ${line.includes('Talle:') || line.includes('Color:') ? 'text-gray-500' : ''} ${line.includes('Código:') ? 'font-mono text-xs text-gray-600' : ''} `.trim()}
                                 >
                                   {line}
                                 </div>
                               ))
                             ) : (
-                              <div className="text-gray-500">No hay líneas de texto disponibles</div>
+                              <div className="text-gray-500">
+                                No hay líneas de texto disponibles
+                              </div>
                             )}
                           </div>
-                          
+
                           {/* Información de debug adicional */}
                           <div className="mt-2 text-xs text-gray-400">
                             <details>
                               <summary className="cursor-pointer">Ver datos debug</summary>
-                              <pre className="text-left mt-1 bg-gray-100 p-2 rounded text-xs overflow-x-auto">
+                              <pre className="mt-1 overflow-x-auto rounded bg-gray-100 p-2 text-left text-xs">
                                 {JSON.stringify(barcodePreview, null, 2)}
                               </pre>
                             </details>
                           </div>
-                          
+
                           {/* Botón para imprimir solo esta vista previa */}
                           <button
                             onClick={handlePrintPreview}
@@ -541,15 +541,17 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                         </div>
                       ) : previewVariant ? (
                         <div className="text-center">
-                          <div className="font-mono text-lg font-bold mb-1">
+                          <div className="mb-1 font-mono text-lg font-bold">
                             ||||||||||||||||||||||||
                           </div>
-                          <div className="text-xs text-gray-700 break-all">
+                          <div className="text-xs break-all text-gray-700">
                             {generatePreviewText(previewVariant)}
                           </div>
                         </div>
                       ) : (
-                        <p className="text-gray-500 text-sm">Selecciona una variante para ver la vista previa</p>
+                        <p className="text-sm text-gray-500">
+                          Selecciona una variante para ver la vista previa
+                        </p>
                       )}
                     </div>
                   </div>

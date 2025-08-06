@@ -2710,6 +2710,21 @@ def print_barcodes():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@inventory_router.route("/test-barcode-endpoint", methods=["GET", "POST"])
+def test_barcode_endpoint():
+    """
+    Endpoint de prueba para verificar que las rutas funcionan
+    """
+    return jsonify(
+        {
+            "status": "success",
+            "message": "Endpoint de prueba funcionando correctamente",
+            "timestamp": "2025-08-06",
+            "method": request.method,
+        }
+    ), 200
+
+
 @inventory_router.route("/generate-barcode-svg/<int:variant_id>", methods=["POST"])
 def generate_barcode_svg(variant_id):
     """
@@ -2783,39 +2798,40 @@ def generate_barcode_svg(variant_id):
 
             # Crear instancia del código de barras
             code128 = Code128(barcode_code, writer=SVGWriter())
-            
+
             # Configurar opciones del SVG
             svg_options = {
-                'module_width': 0.4,  # Ancho de las barras
-                'module_height': 15,  # Alto de las barras
-                'font_size': 10,      # Tamaño de texto
-                'text_distance': 2,   # Distancia del texto
-                'background': 'white',
-                'foreground': 'black',
+                "module_width": 0.4,  # Ancho de las barras
+                "module_height": 15,  # Alto de las barras
+                "font_size": 10,  # Tamaño de texto
+                "text_distance": 2,  # Distancia del texto
+                "background": "white",
+                "foreground": "black",
             }
 
             # Generar SVG en memoria
             svg_buffer = io.BytesIO()
             code128.write(svg_buffer, options=svg_options)
-            svg_content = svg_buffer.getvalue().decode('utf-8')
+            svg_content = svg_buffer.getvalue().decode("utf-8")
 
             # Agregar texto personalizado al SVG
             if text_lines:
                 # Calcular altura necesaria para el SVG
                 base_height = 30  # Altura base del código de barras
-                text_height = len(text_lines) * 14 + 20  # Espacio para cada línea de texto
+                text_height = (
+                    len(text_lines) * 14 + 20
+                )  # Espacio para cada línea de texto
                 total_height = base_height + text_height
-                
+
                 # Ajustar altura del SVG
                 svg_content = svg_content.replace(
-                    'height="30"', 
-                    f'height="{total_height}"'
+                    'height="30"', f'height="{total_height}"'
                 )
-                
+
                 # Insertar texto adicional con mejor distribución
                 text_y_start = base_height + 15  # Posición inicial del texto
                 additional_text = ""
-                
+
                 for i, line in enumerate(text_lines):
                     y_pos = text_y_start + (i * 14)
                     # Diferentes estilos según el tipo de información
@@ -2834,44 +2850,51 @@ def generate_barcode_svg(variant_id):
                     else:
                         # Otra información
                         additional_text += f'<text x="50%" y="{y_pos}" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#666666">{line}</text>\n'
-                
+
                 # Insertar el texto antes del cierre del SVG
-                svg_content = svg_content.replace('</svg>', f'{additional_text}</svg>')
+                svg_content = svg_content.replace("</svg>", f"{additional_text}</svg>")
 
             print(f"✅ Código de barras SVG generado para variante {variant_id}")
 
-            return jsonify({
-                "status": "success",
-                "data": {
-                    "variant_id": variant_id,
-                    "barcode_code": barcode_code,
-                    "svg_content": svg_content,
-                    "text_lines": text_lines,
-                    "variant_info": {
-                        "product_name": variant["product_name"],
-                        "size_name": variant["size_name"],
-                        "color_name": variant["color_name"],
-                        "sale_price": variant["sale_price"],
-                        "current_stock": variant["current_stock"]
-                    }
+            return jsonify(
+                {
+                    "status": "success",
+                    "data": {
+                        "variant_id": variant_id,
+                        "barcode_code": barcode_code,
+                        "svg_content": svg_content,
+                        "text_lines": text_lines,
+                        "variant_info": {
+                            "product_name": variant["product_name"],
+                            "size_name": variant["size_name"],
+                            "color_name": variant["color_name"],
+                            "sale_price": variant["sale_price"],
+                            "current_stock": variant["current_stock"],
+                        },
+                    },
                 }
-            }), 200
+            ), 200
 
         except ImportError:
-            return jsonify({
-                "status": "error",
-                "message": "Librería python-barcode no disponible. Instalar con: pip install python-barcode[images]"
-            }), 500
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Librería python-barcode no disponible. Instalar con: pip install python-barcode[images]",
+                }
+            ), 500
 
         except Exception as barcode_error:
             print(f"❌ Error generando código de barras: {barcode_error}")
-            return jsonify({
-                "status": "error",
-                "message": f"Error generando código de barras: {str(barcode_error)}"
-            }), 500
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": f"Error generando código de barras: {str(barcode_error)}",
+                }
+            ), 500
 
     except Exception as e:
         print(f"❌ Error en generate_barcode_svg: {e}")
         import traceback
+
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
