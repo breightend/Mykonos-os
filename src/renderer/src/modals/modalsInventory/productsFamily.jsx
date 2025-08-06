@@ -125,7 +125,7 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
     try {
       const response = await postFamilyData(dataToSend)
       console.log('✅ Familia de productos guardada:', response)
-      
+
       // Limpiar formulario
       setFormData({
         group_name: '',
@@ -154,7 +154,7 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
     } catch (error) {
       console.error('❌ Error saving family product:', error)
       console.error('❌ Error details:', error.response?.data)
-      
+
       // Mostrar error específico si está disponible
       const errorMessage =
         error.response?.data?.mensaje || error.message || 'Error desconocido al crear la familia'

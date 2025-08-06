@@ -571,17 +571,19 @@ def verificar_uso_color(color_id):
 def recibir_datos_familia_producto():
     data = request.json
     print(f"🔄 Recibiendo datos de familia: {data}")
-    
+
     # Obtenemos los datos del producto
     group_name = data.get("group_name")
     parent_group_id = data.get("parent_group_id")
     marked_as_root = data.get("marked_as_root")
 
     if not group_name:
-        return jsonify({"mensaje": "El nombre del grupo es requerido", "status": "error"}), 400
+        return jsonify(
+            {"mensaje": "El nombre del grupo es requerido", "status": "error"}
+        ), 400
 
     db = Database()
-    
+
     try:
         # Usar la nueva funcionalidad de add_record que es compatible con PostgreSQL
         result = db.add_record(
@@ -592,32 +594,42 @@ def recibir_datos_familia_producto():
                 "marked_as_root": marked_as_root,
             },
         )
-        
+
         print(f"🔍 Resultado add_record: {result}")
-        
+
         if result and result.get("success"):
             return (
                 jsonify(
-                    {"mensaje": "Familia de productos creada con éxito", "status": "éxito", "id": result.get("rowid")}
+                    {
+                        "mensaje": "Familia de productos creada con éxito",
+                        "status": "éxito",
+                        "id": result.get("rowid"),
+                    }
                 ),
                 200,
             )
         else:
-            error_msg = result.get("message", "Error desconocido") if result else "Error al crear la familia"
+            error_msg = (
+                result.get("message", "Error desconocido")
+                if result
+                else "Error al crear la familia"
+            )
             return (
                 jsonify(
-                    {"mensaje": f"Error al crear la familia de productos: {error_msg}", "status": "error"}
+                    {
+                        "mensaje": f"Error al crear la familia de productos: {error_msg}",
+                        "status": "error",
+                    }
                 ),
                 500,
             )
     except Exception as e:
         print(f"❌ Error en recibir_datos_familia_producto: {e}")
         import traceback
+
         traceback.print_exc()
         return (
-            jsonify(
-                {"mensaje": f"Error interno: {str(e)}", "status": "error"}
-            ),
+            jsonify({"mensaje": f"Error interno: {str(e)}", "status": "error"}),
             500,
         )
 
@@ -628,10 +640,12 @@ def obtener_familia_producto():
         print("🔍 Obteniendo familias de productos...")
         db = Database()
         family_products = db.get_all_records("groups")
-        
-        print(f"🔍 Familias encontradas: {len(family_products) if family_products else 0}")
+
+        print(
+            f"🔍 Familias encontradas: {len(family_products) if family_products else 0}"
+        )
         print(f"🔍 Datos: {family_products}")
-        
+
         if not family_products:
             # Retornar lista vacía en lugar de error, para que el frontend funcione
             return jsonify([]), 200
@@ -639,6 +653,7 @@ def obtener_familia_producto():
     except Exception as e:
         print(f"❌ Error obteniendo familias: {e}")
         import traceback
+
         traceback.print_exc()
         return jsonify({"mensaje": f"Error interno: {str(e)}", "status": "error"}), 500
 
