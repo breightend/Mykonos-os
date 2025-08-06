@@ -57,6 +57,12 @@ export default function NuevoProducto() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [errors, setErrors] = useState({})
   const [showGroupTreeModal, setShowGroupTreeModal] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  // Función para refrescar los datos después de crear nuevos talles/colores
+  const refreshData = () => {
+    setRefreshTrigger((prev) => prev + 1)
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -134,7 +140,7 @@ export default function NuevoProducto() {
       }
     }
     fetchData()
-  }, [])
+  }, [refreshTrigger])
 
   // Sincronizar el estado local con la configuración global
   useEffect(() => {
@@ -1254,7 +1260,7 @@ export default function NuevoProducto() {
                                 </option>
                               ))}
                             </select>
-                            <ModalSize />
+                            <ModalSize onRefresh={refreshData} />
                           </div>
                         </div>
                       </div>
@@ -1264,7 +1270,7 @@ export default function NuevoProducto() {
                         <div className="mb-4 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold">Colores y cantidades</span>
-                            <ModalColor />
+                            <ModalColor onRefresh={refreshData} />
                           </div>
                           <button
                             type="button"

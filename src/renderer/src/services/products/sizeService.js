@@ -41,12 +41,32 @@ export async function postDataCategory(data) {
     }
 }
 
-export async function getCategoryXsize(){
+export async function getCategoryXsize() {
     try {
         const response = await axios.get("http://localhost:5000/api/product/sizeXcategory");
         return response.data;
     } catch (error) {
         console.error("Error fetching category size:", error);
+        throw error;
+    }
+}
+
+export async function deleteCategory(categoryId) {
+    try {
+        const response = await axios.delete(`http://localhost:5000/api/product/category/${categoryId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        throw error;
+    }
+}
+
+export async function deleteSize(sizeId) {
+    try {
+        const response = await axios.delete(`http://localhost:5000/api/product/sizes/${sizeId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting size:", error);
         throw error;
     }
 }

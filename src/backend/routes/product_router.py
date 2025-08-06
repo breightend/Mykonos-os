@@ -252,15 +252,15 @@ def obtener_productos():
 @product_router.route("/sizes", methods=["POST"])
 def recibir_datos_talle():
     data = request.json
-    # Obtenemos los datos del producto
-    size_name = data.get("size_name")
+    # Obtenemos los datos del producto - acepta tanto 'name' como 'size_name'
+    size_name = data.get("name") or data.get("size_name")
     category_id = data.get("category_id")
     description = data.get("description")
 
     db = Database()
     # if not size_name or not category_id or not description:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    success = db.add_record(
+    result = db.add_record(
         "sizes",
         {
             "size_name": size_name,
@@ -268,10 +268,18 @@ def recibir_datos_talle():
             "description": description,
         },
     )
-    if success:
+
+    if result.get("success"):
+        print(f"✅ Talle creado exitosamente: {size_name} con ID {result.get('rowid')}")
         return jsonify({"mensaje": "Talle creado con éxito", "status": "éxito"}), 200
     else:
-        return jsonify({"mensaje": "Error al crear el talle", "status": "error"}), 500
+        print(f"❌ Error al crear talle: {result.get('message')}")
+        return jsonify(
+            {
+                "mensaje": f"Error al crear el talle: {result.get('message')}",
+                "status": "error",
+            }
+        ), 500
 
 
 @product_router.route("/sizes", methods=["GET"])
@@ -306,24 +314,42 @@ def obtenerSizeXCategory():
 @product_router.route("/category", methods=["POST"])
 def recibir_datos_categoria():
     data = request.json
-    # Obtenemos los datos del producto
-    category_name = data.get("category_name")
-    permanent = data.get("permanent")
+    # Obtenemos los datos del producto - acepta tanto 'name' como 'category_name'
+    category_name = data.get("name") or data.get("category_name")
+    permanent_raw = data.get("permanent")
+
+    # Convertir valores enteros/string a booleano para PostgreSQL
+    if permanent_raw in [1, "1", "true", "True", True]:
+        permanent = True
+    elif permanent_raw in [0, "0", "false", "False", False]:
+        permanent = False
+    else:
+        permanent = bool(permanent_raw)  # fallback para otros valores
 
     db = Database()
     # if not category_name or not description:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    success = db.add_record(
+    result = db.add_record(
         "size_categories", {"category_name": category_name, "permanent": permanent}
     )
-    if success:
+
+    if result.get("success"):
+        print(
+            f"✅ Categoría creada exitosamente: {category_name} con ID {result.get('rowid')}"
+        )
         return (
             jsonify({"mensaje": "Categoria creada con éxito", "status": "éxito"}),
             200,
         )
     else:
+        print(f"❌ Error al crear categoría: {result.get('message')}")
         return (
-            jsonify({"mensaje": "Error al crear la categoria", "status": "error"}),
+            jsonify(
+                {
+                    "mensaje": f"Error al crear la categoria: {result.get('message')}",
+                    "status": "error",
+                }
+            ),
             500,
         )
 
@@ -341,6 +367,122 @@ def obtener_categorias():
     return jsonify(categories), 200
 
 
+@product_router.route("/category/<int:category_id>", methods=["DELETE"])
+def eliminar_categoria(category_id):
+    """
+    Elimina una categoría si no está siendo utilizada por ningún talle o producto
+    """
+    try:
+        db = Database()
+
+        # Verificar si hay talles que usan esta categoría
+        sizes_using_category = db.execute_query(
+            "SELECT COUNT(*) as count FROM sizes WHERE category_id = %s", (category_id,)
+        )
+
+        if sizes_using_category and sizes_using_category[0].get("count", 0) > 0:
+            return jsonify(
+                {
+                    "mensaje": "No se puede eliminar la categoría porque tiene talles asociados",
+                    "status": "error",
+                }
+            ), 400
+
+        # Verificar si hay productos que usan talles de esta categoría
+        products_using_category = db.execute_query(
+            """
+            SELECT COUNT(DISTINCT p.id) as count 
+            FROM products p 
+            JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id 
+            JOIN sizes s ON wsv.size_id = s.id 
+            WHERE s.category_id = %s
+        """,
+            (category_id,),
+        )
+
+        if products_using_category and products_using_category[0].get("count", 0) > 0:
+            return jsonify(
+                {
+                    "mensaje": "No se puede eliminar la categoría porque hay productos que usan talles de esta categoría",
+                    "status": "error",
+                }
+            ), 400
+
+        # Si no hay dependencias, eliminar la categoría
+        result = db.delete_record("size_categories", "id = %s", (category_id,))
+
+        if result.get("success"):
+            print(f"✅ Categoría eliminada exitosamente: ID {category_id}")
+            return jsonify(
+                {"mensaje": "Categoría eliminada con éxito", "status": "éxito"}
+            ), 200
+        else:
+            print(f"❌ Error al eliminar categoría: {result.get('message')}")
+            return jsonify(
+                {
+                    "mensaje": f"Error al eliminar la categoría: {result.get('message')}",
+                    "status": "error",
+                }
+            ), 500
+
+    except Exception as e:
+        print(f"❌ Error inesperado al eliminar categoría: {str(e)}")
+        return jsonify(
+            {"mensaje": f"Error inesperado: {str(e)}", "status": "error"}
+        ), 500
+
+
+@product_router.route("/sizes/<int:size_id>", methods=["DELETE"])
+def eliminar_talle(size_id):
+    """
+    Elimina un talle si no está siendo utilizado por ningún producto
+    """
+    try:
+        db = Database()
+
+        # Verificar si hay productos que usan este talle
+        products_using_size = db.execute_query(
+            """
+            SELECT COUNT(DISTINCT p.id) as count 
+            FROM products p 
+            JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id 
+            WHERE wsv.size_id = %s
+        """,
+            (size_id,),
+        )
+
+        if products_using_size and products_using_size[0].get("count", 0) > 0:
+            return jsonify(
+                {
+                    "mensaje": "No se puede eliminar el talle porque hay productos que lo utilizan",
+                    "status": "error",
+                }
+            ), 400
+
+        # Si no hay dependencias, eliminar el talle
+        result = db.delete_record("sizes", "id = %s", (size_id,))
+
+        if result.get("success"):
+            print(f"✅ Talle eliminado exitosamente: ID {size_id}")
+            return jsonify(
+                {"mensaje": "Talle eliminado con éxito", "status": "éxito"}
+            ), 200
+        else:
+            print(f"❌ Error al eliminar talle: {result.get('message')}")
+            return jsonify(
+                {
+                    "mensaje": f"Error al eliminar el talle: {result.get('message')}",
+                    "status": "error",
+                }
+            ), 500
+
+    except Exception as e:
+        print(f"❌ Error inesperado al eliminar talle: {str(e)}")
+        return jsonify(
+            {"mensaje": f"Error inesperado: {str(e)}", "status": "error"}
+        ), 500
+
+
 @product_router.route("/colors", methods=["POST"])
 def recibir_datos_color():
     data = request.json
@@ -351,13 +493,21 @@ def recibir_datos_color():
     db = Database()
     # if not color_name or not color_hex:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    success = db.add_record(
-        "colors", {"color_name": color_name, "color_hex": color_hex}
-    )
-    if success:
+    result = db.add_record("colors", {"color_name": color_name, "color_hex": color_hex})
+
+    if result.get("success"):
+        print(
+            f"✅ Color creado exitosamente: {color_name} con ID {result.get('rowid')}"
+        )
         return jsonify({"mensaje": "Color creado con éxito", "status": "éxito"}), 200
     else:
-        return jsonify({"mensaje": "Error al crear el color", "status": "error"}), 500
+        print(f"❌ Error al crear color: {result.get('message')}")
+        return jsonify(
+            {
+                "mensaje": f"Error al crear el color: {result.get('message')}",
+                "status": "error",
+            }
+        ), 500
 
 
 @product_router.route("/colors", methods=["GET"])

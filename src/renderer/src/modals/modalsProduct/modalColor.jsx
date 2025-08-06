@@ -7,8 +7,7 @@ import {
 } from '../../services/products/colorService'
 import { useEffect, useState } from 'react'
 
-
-export default function ModalColor() {
+export default function ModalColor({ onRefresh }) {
   const [formData, setFormData] = useState({
     color_name: '',
     color_hex: '#000000'
@@ -42,6 +41,11 @@ export default function ModalColor() {
       const updatedColors = await fetchColor()
       setColors(updatedColors)
       showToast('Color agregado exitosamente', 'success')
+
+      // Llamar a onRefresh si está disponible para actualizar el componente padre
+      if (onRefresh) {
+        onRefresh()
+      }
     } catch (error) {
       console.error('Error:', error)
       showToast('Error al agregar el color. Intente nuevamente.', 'error')
@@ -65,6 +69,11 @@ export default function ModalColor() {
       const response = await fetchColor()
       setColors(response)
       showToast(`Color "${colorName}" eliminado exitosamente`, 'success')
+
+      // Llamar a onRefresh si está disponible para actualizar el componente padre
+      if (onRefresh) {
+        onRefresh()
+      }
     } catch (error) {
       console.error('Error deleting color:', error)
       showToast('Error al eliminar el color. Intente nuevamente.', 'error')

@@ -1,20 +1,22 @@
-import { ChevronsUp, Plus, Ruler } from 'lucide-react'
+import { ChevronsUp, Plus, Ruler, Trash2 } from 'lucide-react'
 import {
   fetchCategorySize,
   postDataSize,
   getCategoryXsize,
-  postDataCategory
+  postDataCategory,
+  deleteCategory,
+  deleteSize
 } from '../../services/products/sizeService'
 import { fetchSize } from '../../services/products/sizeService'
 import { useEffect, useState } from 'react'
 
-export default function ModalSize() {
+export default function ModalSize({ onRefresh }) {
   const [formData, setFormData] = useState({
     size_name: '',
     category_id: '',
     description: '',
     category_name: '',
-    permanent: ''
+    permanent: 1
   })
   const [category, setCategory] = useState([])
   const [sizes, setSizes] = useState([])
@@ -22,6 +24,13 @@ export default function ModalSize() {
   const [, setLoading] = useState(false)
   const [mostrarAgregarCategoria, setMostrarAgregarCategoria] = useState(false)
   const [error, setError] = useState('')
+
+  // Auto-mostrar la sección de agregar categoría si no hay categorías
+  useEffect(() => {
+    if (category.length === 0) {
+      setMostrarAgregarCategoria(true)
+    }
+  }, [category])
 
   const handleMostrarAgregarCategoria = () => {
     setMostrarAgregarCategoria(!mostrarAgregarCategoria)
@@ -69,6 +78,11 @@ export default function ModalSize() {
       const updatedSizes = await fetchSize()
       setSizes(updatedSizes)
       console.log('Talles actualizados:', updatedSizes)
+
+      // Llamar a onRefresh si está disponible para actualizar el componente padre
+      if (onRefresh) {
+        onRefresh()
+      }
     } catch (error) {
       console.error('Error:', error)
       setError('Ocurrió un error al agregar el talle.')
@@ -107,9 +121,80 @@ export default function ModalSize() {
       console.log('Categorías actualizadas:', updatedCategories)
 
       setMostrarAgregarCategoria(false)
+
+      // Llamar a onRefresh si está disponible para actualizar el componente padre
+      if (onRefresh) {
+        onRefresh()
+      }
     } catch (error) {
       console.error('Error:', error)
       setError('Ocurrió un error al agregar la categoría.')
+    }
+  }
+
+  const handleDeleteCategory = async (categoryId, categoryName) => {
+    if (
+      window.confirm(
+        `¿Estás seguro de que quieres eliminar la categoría "${categoryName}"?\n\nEsto solo será posible si no hay talles o productos asociados.`
+      )
+    ) {
+      try {
+        const response = await deleteCategory(categoryId)
+        console.log('Categoría eliminada:', response)
+
+        // Refrescar la lista de categorías
+        const updatedCategories = await fetchCategorySize()
+        setCategory(updatedCategories)
+
+        // También refrescar talles por si se eliminó una categoría
+        const updatedSizes = await fetchSize()
+        setSizes(updatedSizes)
+
+        // Llamar a onRefresh si está disponible
+        if (onRefresh) {
+          onRefresh()
+        }
+
+        setError('') // Clear any previous errors
+      } catch (error) {
+        console.error('Error:', error)
+        if (error.response?.data?.mensaje) {
+          setError(error.response.data.mensaje)
+        } else {
+          setError('Ocurrió un error al eliminar la categoría.')
+        }
+      }
+    }
+  }
+
+  const handleDeleteSize = async (sizeId, sizeName) => {
+    if (
+      window.confirm(
+        `¿Estás seguro de que quieres eliminar el talle "${sizeName}"?\n\nEsto solo será posible si no hay productos que lo utilicen.`
+      )
+    ) {
+      try {
+        const response = await deleteSize(sizeId)
+        console.log('Talle eliminado:', response)
+
+        // Refrescar la lista de talles
+        const updatedSizes = await fetchSize()
+        setSizes(updatedSizes)
+
+        // Llamar a onRefresh si está disponible
+        if (onRefresh) {
+          onRefresh()
+        }
+
+        setError('') // Clear any previous errors
+      } catch (error) {
+        console.error('Error:', error)
+        if (error.response?.data?.mensaje) {
+          setError(error.response.data.mensaje)
+        } else {
+          setError('Ocurrió un error al eliminar el talle.')
+        }
+      }
     }
   }
 
@@ -143,7 +228,7 @@ export default function ModalSize() {
         data-tip="Agregar nuevo talle"
         onClick={() => document.getElementById('sizeModal').showModal()}
       >
-        <Ruler className="h-6 w-6 text-secondary" />
+        <Ruler className="text-secondary h-6 w-6" />
       </button>
       <dialog id="sizeModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
@@ -152,34 +237,71 @@ export default function ModalSize() {
           </form>
           <h3 className="mb-4 text-lg font-bold">Talles Existentes</h3>
           <div className="border-base-300 mb-4 max-h-96 overflow-y-auto rounded-lg border-2 p-2">
-            <table className="table w-full">
-              {category &&
-                category.map((cat) => (
+            {category && category.length > 0 ? (
+              <table className="table w-full">
+                {category.map((cat) => (
                   <div
                     key={cat.id}
-                    className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border"
+                    className="rounded-box border-base-300 bg-base-100 relative mb-2 border"
+                    style={{
+                      background: 'var(--fallback-b1,oklch(var(--b1)/var(--tw-bg-opacity)))',
+                      borderColor: 'var(--fallback-bc,oklch(var(--bc)/0.2))'
+                    }}
                   >
-                    <input type="checkbox" className="peer" />
-                    <div className="collapse-title font-medium">{cat.category_name}</div>
-                    <div className="collapse-content">
-                      <ul>
-                        {sizes
-                          .filter((size) => size.category_id === cat.id)
-                          .map((size) => (
-                            <li key={size.id} className="py-1">
-                              {size.size_name}
+                    <details className="collapse">
+                      <summary className="collapse-title cursor-pointer pr-16 font-medium">
+                        <div className="flex w-full items-center justify-between">
+                          <span className="flex-1">{cat.category_name}</span>
+                          <button
+                            className="btn btn-ghost btn-xs ml-2 flex-shrink-0 text-red-500 hover:bg-red-100"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleDeleteCategory(cat.id, cat.category_name)
+                            }}
+                            title="Eliminar categoría"
+                            type="button"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </summary>
+                      <div className="collapse-content">
+                        <ul className="space-y-1">
+                          {sizes
+                            .filter((size) => size.category_id === cat.id)
+                            .map((size) => (
+                              <li
+                                key={size.id}
+                                className="flex items-center justify-between rounded bg-gray-50 px-2 py-2"
+                              >
+                                <span className="flex-1">{size.size_name}</span>
+                                <button
+                                  className="btn btn-ghost btn-xs ml-2 flex-shrink-0 text-red-500 hover:bg-red-100"
+                                  onClick={() => handleDeleteSize(size.id, size.size_name)}
+                                  title="Eliminar talle"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </li>
+                            ))}
+                          {sizes.filter((size) => size.category_id === cat.id).length === 0 && (
+                            <li className="px-2 py-2 text-sm text-gray-500 italic">
+                              No hay talles para esta categoría
                             </li>
-                          ))}
-                        {sizes.filter((size) => size.category_id === cat.id).length === 0 && (
-                          <li className="py-1 text-sm text-gray-500">
-                            No hay talles para esta categoría
-                          </li>
-                        )}
-                      </ul>
-                    </div>
+                          )}
+                        </ul>
+                      </div>
+                    </details>
                   </div>
                 ))}
-            </table>
+              </table>
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                <p className="mb-2">📂 No hay categorías creadas</p>
+                <p className="text-sm">Crea una categoría primero para poder agregar talles</p>
+              </div>
+            )}
           </div>
 
           <h3 className="mt-6 mb-2 text-lg font-bold">Agregar Nuevo Talle</h3>
@@ -224,9 +346,12 @@ export default function ModalSize() {
                 className="select select-bordered w-full max-w-xs"
                 value={formData.category_id}
                 onChange={handleChange}
+                disabled={category.length === 0}
               >
                 <option value="" disabled>
-                  Seleccionar categoría
+                  {category.length === 0
+                    ? 'No hay categorías - Crea una primero'
+                    : 'Seleccionar categoría'}
                 </option>
                 {category.map((cat) => (
                   <option key={cat.id} value={cat.id}>
@@ -288,9 +413,19 @@ export default function ModalSize() {
           </div>
 
           <div className="modal-action mt-6 justify-end">
-            <button type="submit" onClick={handleSubmitSize} className="btn btn-primary">
+            <button
+              type="submit"
+              onClick={handleSubmitSize}
+              className="btn btn-primary"
+              disabled={category.length === 0}
+            >
               Agregar Talle
             </button>
+            {category.length === 0 && (
+              <p className="mr-4 text-sm text-gray-500">
+                Crea una categoría primero para poder agregar talles
+              </p>
+            )}
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
