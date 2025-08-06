@@ -301,6 +301,69 @@ export const inventoryService = {
             console.error('❌ Error al crear envíos de prueba:', error)
             throw error
         }
+    },
+
+    /**
+     * Obtiene los detalles de un producto específico
+     * @param {number} productId - ID del producto
+     * @returns {Promise} Detalles del producto
+     */
+    async getProductDetail(productId) {
+        try {
+            const response = await axios.get(`${API_URL}/product-detail/${productId}`)
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al obtener detalles del producto:', error)
+            throw error
+        }
+    },
+
+    /**
+     * Obtiene las variantes de un producto (talles y colores)
+     * @param {number} productId - ID del producto
+     * @returns {Promise} Lista de variantes del producto
+     */
+    async getProductVariants(productId) {
+        try {
+            const response = await axios.get(`${API_URL}/product-variants/${productId}`)
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al obtener variantes del producto:', error)
+            throw error
+        }
+    },
+
+    /**
+     * Envía códigos de barras a imprimir
+     * @param {Object} printData - Datos de impresión (producto, variantes, opciones)
+     * @returns {Promise} Resultado de la impresión
+     */
+    async printBarcodes(printData) {
+        try {
+            const response = await axios.post(`${API_URL}/print-barcodes`, printData)
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al imprimir códigos de barras:', error)
+            throw error
+        }
+    },
+
+    /**
+     * Genera un código de barras SVG para una variante específica
+     * @param {number} variantId - ID de la variante
+     * @param {Object} options - Opciones de texto {includeProductName, includeSize, includeColor, includePrice, includeCode}
+     * @returns {Promise} Respuesta con el SVG del código de barras
+     */
+    async generateBarcodePreview(variantId, options = {}) {
+        try {
+            const response = await axios.post(`${API_URL}/generate-barcode-svg/${variantId}`, {
+                options: options
+            })
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al generar vista previa del código de barras:', error)
+            throw error
+        }
     }
 }
 

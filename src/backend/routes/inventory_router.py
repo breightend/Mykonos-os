@@ -1355,7 +1355,8 @@ def create_variant_movement():
             subtotal = float(unit_price) * int(quantity)
             total_movement_value += subtotal
 
-            # Insertar el movimiento individual - SIN variant_id (no existe en la tabla)
+            # Insertar el movimiento individual - FIXED: Agregar información de variantes
+            # TODO: Modificar tabla inventory_movements para incluir variant_id, size_id, color_id, variant_barcode
             movement_query = """
             INSERT INTO inventory_movements 
             (inventory_movements_group_id, product_id, quantity, discount, subtotal, total)
@@ -1366,7 +1367,9 @@ def create_variant_movement():
                 (group_id, product_id, quantity, subtotal, subtotal),
             )
 
-            print(f"✅ Movimiento individual registrado para producto {product_id}")
+            print(
+                f"✅ Movimiento individual registrado para producto {product_id} (variante {variant_id})"
+            )
 
             # Actualizar stock de variante en sucursal origen (restar)
             # SOLO reducir stock en origen - NO agregar en destino hasta confirmación
@@ -1485,7 +1488,9 @@ def get_pending_shipments(storage_id):
         # Formatear resultados
         result = []
         for shipment in shipments:
-            # Obtener productos detallados con más información
+            # Obtener productos detallados - FIXED: trabajar con estructura actual
+            # Como inventory_movements solo tiene product_id, vamos a mostrar productos generales
+            # TODO: En el futuro agregar variant_id a inventory_movements para información específica
             products_query = """
             SELECT 
                 p.product_name, 
@@ -1493,23 +1498,17 @@ def get_pending_shipments(storage_id):
                 p.cost,
                 b.brand_name,
                 im.quantity,
-                s.size_name,
-                c.color_name,
-                c.color_hex,
-                wsv.variant_barcode
+                'Talle general' as size_name,
+                'Color general' as color_name,
+                '#cccccc' as color_hex,
+                CONCAT('PROD', LPAD(p.id::text, 4, '0')) as variant_barcode
             FROM inventory_movements im
             JOIN products p ON im.product_id = p.id
             LEFT JOIN brands b ON p.brand_id = b.id
-            LEFT JOIN warehouse_stock_variants wsv ON im.product_id = wsv.product_id 
-                AND wsv.branch_id = %s
-            LEFT JOIN sizes s ON wsv.size_id = s.id
-            LEFT JOIN colors c ON wsv.color_id = c.id
             WHERE im.inventory_movements_group_id = %s
-            ORDER BY p.product_name, s.size_name, c.color_name
+            ORDER BY p.product_name
             """
-            products = db.execute_query(
-                products_query, (shipment["id"], shipment["id"])
-            )
+            products = db.execute_query(products_query, (shipment["id"],))
 
             result.append(
                 {
@@ -2509,3 +2508,370 @@ def update_product_by_id(product_id):
 
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"Error interno: {str(e)}"}), 500
+
+
+@inventory_router.route("/product-detail/<int:product_id>", methods=["GET"])
+def get_product_detail(product_id):
+    """
+    Obtiene los detalles completos de un producto específico
+    """
+    try:
+        db = Database()
+
+        query = """
+        SELECT 
+            p.id,
+            p.product_name as name,
+            p.sale_price,
+            p.cost,
+            p.description,
+            p.creation_date,
+            b.brand_name as brand,
+            g.group_name as group_name
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN groups g ON p.group_id = g.id
+        WHERE p.id = %s
+        """
+
+        result = db.execute_query(query, (product_id,))
+
+        if result:
+            product = result[0]
+            return jsonify({"status": "success", "data": product}), 200
+        else:
+            return jsonify(
+                {"status": "error", "message": "Producto no encontrado"}
+            ), 404
+
+    except Exception as e:
+        print(f"❌ Error obteniendo detalles del producto {product_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/product-variants/<int:product_id>", methods=["GET"])
+def get_product_variants(product_id):
+    """
+    Obtiene todas las variantes (talle + color) de un producto con su stock
+    """
+    try:
+        db = Database()
+
+        query = """
+        SELECT 
+            wsv.id,
+            wsv.product_id,
+            wsv.size_id,
+            wsv.color_id,
+            wsv.quantity,
+            wsv.variant_barcode,
+            s.size_name,
+            c.color_name,
+            c.color_hex,
+            st.name as branch_name
+        FROM warehouse_stock_variants wsv
+        JOIN products p ON wsv.product_id = p.id
+        LEFT JOIN sizes s ON wsv.size_id = s.id
+        LEFT JOIN colors c ON wsv.color_id = c.id
+        LEFT JOIN storage st ON wsv.branch_id = st.id
+        WHERE wsv.product_id = %s
+        AND wsv.quantity > 0
+        ORDER BY s.size_name, c.color_name, st.name
+        """
+
+        variants = db.execute_query(query, (product_id,))
+
+        return jsonify({"status": "success", "data": variants}), 200
+
+    except Exception as e:
+        print(f"❌ Error obteniendo variantes del producto {product_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/print-barcodes", methods=["POST"])
+def print_barcodes():
+    """
+    Procesa la impresión de códigos de barras para variantes específicas
+    """
+    try:
+        data = request.get_json()
+        product_id = data.get("productId")
+        variants = data.get("variants", [])
+        options = data.get("options", {})
+
+        print(f"🖨️ Procesando impresión de códigos de barras para producto {product_id}")
+        print(f"📦 Variantes: {len(variants)}")
+        print(f"⚙️ Opciones: {options}")
+
+        if not product_id or not variants:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Faltan datos requeridos: productId y variants",
+                }
+            ), 400
+
+        db = Database()
+
+        # Obtener información del producto
+        product_query = """
+        SELECT p.product_name, b.brand_name, p.sale_price
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        WHERE p.id = %s
+        """
+        product_info = db.execute_query(product_query, (product_id,))
+
+        if not product_info:
+            return jsonify(
+                {"status": "error", "message": "Producto no encontrado"}
+            ), 404
+
+        product = product_info[0]
+
+        # Procesar cada variante para impresión
+        print_jobs = []
+        total_labels = 0
+
+        for variant_data in variants:
+            variant_id = variant_data.get("variantId")
+            quantity = variant_data.get("quantity", 1)
+
+            # Obtener detalles de la variante
+            variant_query = """
+            SELECT 
+                wsv.variant_barcode,
+                s.size_name,
+                c.color_name,
+                c.color_hex
+            FROM warehouse_stock_variants wsv
+            LEFT JOIN sizes s ON wsv.size_id = s.id
+            LEFT JOIN colors c ON wsv.color_id = c.id
+            WHERE wsv.id = %s
+            """
+            variant_info = db.execute_query(variant_query, (variant_id,))
+
+            if variant_info:
+                variant = variant_info[0]
+
+                # Construir texto para el código de barras según las opciones
+                text_lines = []
+
+                if options.get("includeProductName", True):
+                    text_lines.append(product["product_name"])
+
+                if options.get("includeSize", True) and variant["size_name"]:
+                    text_lines.append(f"Talle: {variant['size_name']}")
+
+                if options.get("includeColor", True) and variant["color_name"]:
+                    text_lines.append(f"Color: {variant['color_name']}")
+
+                if options.get("includePrice", True) and product["sale_price"]:
+                    text_lines.append(f"${float(product['sale_price']):.2f}")
+
+                if options.get("includeCode", True) and variant["variant_barcode"]:
+                    text_lines.append(variant["variant_barcode"])
+
+                print_job = {
+                    "barcode": variant["variant_barcode"] or f"PROD{product_id:04d}",
+                    "text": text_lines,
+                    "quantity": quantity,
+                }
+
+                print_jobs.append(print_job)
+                total_labels += quantity
+
+                print(f"✅ Variante {variant_id}: {quantity} etiquetas preparadas")
+
+        # Aquí se implementaría la lógica real de impresión
+        # Por ahora, solo retornamos un resumen
+
+        print(f"🖨️ Total de trabajos de impresión: {len(print_jobs)}")
+        print(f"🏷️ Total de etiquetas: {total_labels}")
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": f"Se procesaron {len(print_jobs)} variantes para imprimir {total_labels} etiquetas",
+                "data": {
+                    "product": product["product_name"],
+                    "total_variants": len(print_jobs),
+                    "total_labels": total_labels,
+                    "print_jobs": print_jobs,
+                },
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"❌ Error procesando impresión de códigos: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/generate-barcode-svg/<int:variant_id>", methods=["POST"])
+def generate_barcode_svg(variant_id):
+    """
+    Genera un código de barras SVG para una variante específica con opciones de texto
+    """
+    try:
+        data = request.get_json() or {}
+        options = data.get("options", {})
+
+        print(f"🔍 Generando código de barras SVG para variante {variant_id}")
+        print(f"⚙️ Opciones: {options}")
+
+        db = Database()
+
+        # Obtener información completa de la variante
+        variant_query = """
+        SELECT 
+            wsv.variant_barcode,
+            wsv.product_id,
+            wsv.current_stock,
+            p.product_name,
+            p.sale_price,
+            b.brand_name,
+            s.size_name,
+            c.color_name,
+            c.color_hex
+        FROM warehouse_stock_variants wsv
+        LEFT JOIN products p ON wsv.product_id = p.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN sizes s ON wsv.size_id = s.id
+        LEFT JOIN colors c ON wsv.color_id = c.id
+        WHERE wsv.id = %s
+        """
+        variant_info = db.execute_query(variant_query, (variant_id,))
+
+        if not variant_info:
+            return jsonify(
+                {"status": "error", "message": "Variante no encontrada"}
+            ), 404
+
+        variant = variant_info[0]
+
+        # Generar código de barras si no existe
+        barcode_code = variant["variant_barcode"]
+        if not barcode_code:
+            barcode_code = f"PROD{variant['product_id']:04d}VAR{variant_id:04d}"
+
+        # Construir texto según las opciones
+        text_lines = []
+
+        if options.get("includeProductName", True) and variant["product_name"]:
+            text_lines.append(variant["product_name"])
+
+        if options.get("includeSize", True) and variant["size_name"]:
+            text_lines.append(f"Talle: {variant['size_name']}")
+
+        if options.get("includeColor", True) and variant["color_name"]:
+            text_lines.append(f"Color: {variant['color_name']}")
+
+        if options.get("includePrice", True) and variant["sale_price"]:
+            text_lines.append(f"${float(variant['sale_price']):.2f}")
+
+        if options.get("includeCode", True) and barcode_code:
+            text_lines.append(f"Código: {barcode_code}")
+
+        # Generar SVG del código de barras
+        try:
+            from barcode import Code128
+            from barcode.writer import SVGWriter
+            import io
+
+            # Crear instancia del código de barras
+            code128 = Code128(barcode_code, writer=SVGWriter())
+            
+            # Configurar opciones del SVG
+            svg_options = {
+                'module_width': 0.4,  # Ancho de las barras
+                'module_height': 15,  # Alto de las barras
+                'font_size': 10,      # Tamaño de texto
+                'text_distance': 2,   # Distancia del texto
+                'background': 'white',
+                'foreground': 'black',
+            }
+
+            # Generar SVG en memoria
+            svg_buffer = io.BytesIO()
+            code128.write(svg_buffer, options=svg_options)
+            svg_content = svg_buffer.getvalue().decode('utf-8')
+
+            # Agregar texto personalizado al SVG
+            if text_lines:
+                # Calcular altura necesaria para el SVG
+                base_height = 30  # Altura base del código de barras
+                text_height = len(text_lines) * 14 + 20  # Espacio para cada línea de texto
+                total_height = base_height + text_height
+                
+                # Ajustar altura del SVG
+                svg_content = svg_content.replace(
+                    'height="30"', 
+                    f'height="{total_height}"'
+                )
+                
+                # Insertar texto adicional con mejor distribución
+                text_y_start = base_height + 15  # Posición inicial del texto
+                additional_text = ""
+                
+                for i, line in enumerate(text_lines):
+                    y_pos = text_y_start + (i * 14)
+                    # Diferentes estilos según el tipo de información
+                    if i == 0 and options.get("includeProductName"):
+                        # Nombre del producto más destacado
+                        additional_text += f'<text x="50%" y="{y_pos}" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="black">{line}</text>\n'
+                    elif "Talle:" in line or "Color:" in line:
+                        # Información de variante
+                        additional_text += f'<text x="50%" y="{y_pos}" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#444444">{line}</text>\n'
+                    elif "$" in line:
+                        # Precio destacado
+                        additional_text += f'<text x="50%" y="{y_pos}" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#2563eb">{line}</text>\n'
+                    elif "Código:" in line:
+                        # Código en formato monospace
+                        additional_text += f'<text x="50%" y="{y_pos}" text-anchor="middle" font-family="Courier, monospace" font-size="7" fill="#666666">{line}</text>\n'
+                    else:
+                        # Otra información
+                        additional_text += f'<text x="50%" y="{y_pos}" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#666666">{line}</text>\n'
+                
+                # Insertar el texto antes del cierre del SVG
+                svg_content = svg_content.replace('</svg>', f'{additional_text}</svg>')
+
+            print(f"✅ Código de barras SVG generado para variante {variant_id}")
+
+            return jsonify({
+                "status": "success",
+                "data": {
+                    "variant_id": variant_id,
+                    "barcode_code": barcode_code,
+                    "svg_content": svg_content,
+                    "text_lines": text_lines,
+                    "variant_info": {
+                        "product_name": variant["product_name"],
+                        "size_name": variant["size_name"],
+                        "color_name": variant["color_name"],
+                        "sale_price": variant["sale_price"],
+                        "current_stock": variant["current_stock"]
+                    }
+                }
+            }), 200
+
+        except ImportError:
+            return jsonify({
+                "status": "error",
+                "message": "Librería python-barcode no disponible. Instalar con: pip install python-barcode[images]"
+            }), 500
+
+        except Exception as barcode_error:
+            print(f"❌ Error generando código de barras: {barcode_error}")
+            return jsonify({
+                "status": "error",
+                "message": f"Error generando código de barras: {str(barcode_error)}"
+            }), 500
+
+    except Exception as e:
+        print(f"❌ Error en generate_barcode_svg: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500

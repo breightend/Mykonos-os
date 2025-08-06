@@ -1,4 +1,4 @@
-import { PackagePlus, Search, Edit, Boxes, Truck, ListPlus } from 'lucide-react'
+import { PackagePlus, Search, Edit, Boxes, Truck, ListPlus, Printer } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState, useEffect, useCallback } from 'react'
 import { pinwheel } from 'ldrs'
@@ -6,6 +6,7 @@ import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import ProductsFamily from '../../modals/modalsInventory/productsFamily'
 import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailModal'
+import PrintBarcodeModal from '../../modals/modalsInventory/PrintBarcodeModal'
 import ModalColoresYTalles from '../../modals/modalsProduct/modalColoresYTallesInventario'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
@@ -23,6 +24,10 @@ export default function Inventario() {
   // Nuevo estado para el modal de detalles
   const [productDetailModalOpen, setProductDetailModalOpen] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(null)
+
+  // Nuevo estado para el modal de impresión de códigos de barras
+  const [printBarcodeModalOpen, setPrintBarcodeModalOpen] = useState(false)
+  const [selectedProductForPrint, setSelectedProductForPrint] = useState(null)
 
   const [inventoryData, setInventoryData] = useState([])
   const [storageList, setStorageList] = useState([])
@@ -222,6 +227,14 @@ export default function Inventario() {
   const handleMoveInventoryClick = () => {
     setLocation('/moveInventory')
   }
+
+  // Nueva función para manejar la impresión de códigos de barras
+  const handlePrintBarcodeClick = () => {
+    if (selectedRow) {
+      setSelectedProductForPrint(selectedRow)
+      setPrintBarcodeModalOpen(true)
+    }
+  }
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
@@ -305,6 +318,16 @@ export default function Inventario() {
                 disabled={!selectedRow}
               >
                 <Edit className="h-5 w-5" />
+              </button>
+            </li>
+            <li>
+              <button
+                className="btn btn-ghost tooltip tooltip-bottom"
+                data-tip="Imprimir código de barras"
+                onClick={handlePrintBarcodeClick}
+                disabled={!selectedRow}
+              >
+                <Printer className="h-5 w-5" />
               </button>
             </li>
             <li>
@@ -590,6 +613,13 @@ export default function Inventario() {
           isOpen={productDetailModalOpen}
           onClose={() => setProductDetailModalOpen(false)}
           productId={selectedProductId}
+        />
+
+        {/* Modal de impresión de códigos de barras */}
+        <PrintBarcodeModal
+          isOpen={printBarcodeModalOpen}
+          onClose={() => setPrintBarcodeModalOpen(false)}
+          productId={selectedProductForPrint}
         />
 
         <ProductsFamily onGroupSelect={handleGroupSelect} selectedGroupId={selectedGroup} />

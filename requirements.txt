@@ -5,3 +5,4 @@ flask-sqlalchemy
 Pillow
 psycopg2-binary
 python-dotenv
+python-barcode[images]
