@@ -41,6 +41,11 @@ export default function MoveInventory() {
   const [searchingBarcode, setSearchingBarcode] = useState(false)
   const [availableVariants, setAvailableVariants] = useState([]) // Variantes disponibles del producto actual
 
+  // Estados para el modal de productos
+  const [showProductModal, setShowProductModal] = useState(false)
+  const [selectedShipmentProducts, setSelectedShipmentProducts] = useState([])
+  const [selectedShipmentInfo, setSelectedShipmentInfo] = useState(null)
+
   const { getCurrentStorage } = useSession()
   const currentStorage = getCurrentStorage()
 
@@ -323,48 +328,81 @@ export default function MoveInventory() {
     try {
       setLoadingShipments(true)
       if (currentStorage?.id) {
+        console.log(`🔍 Cargando envíos pendientes para sucursal ${currentStorage.id}...`)
         const response = await inventoryService.getPendingShipments(currentStorage.id)
+        console.log('📦 Respuesta de envíos pendientes:', response)
+
         if (response.status === 'success' && response.data) {
           setPendingShipments(response.data)
+          console.log(`✅ ${response.data.length} envíos pendientes cargados`)
         } else {
-          // Datos de ejemplo si no hay envíos todavía
+          console.log('⚠️ No se encontraron envíos pendientes o respuesta inválida')
           setPendingShipments([])
         }
       }
     } catch (error) {
       console.error('❌ Error cargando envíos pendientes:', error)
       setError(error.message || 'Error al cargar envíos pendientes')
-      // Mostrar datos de ejemplo en caso de error (para desarrollo)
-      const mockShipments = [
-        {
-          id: 1,
-          fromStorage: 'Sucursal Centro',
-          toStorage: currentStorage?.name || 'Mi Sucursal',
-          products: [
-            { name: 'Producto A', quantity: 5 },
-            { name: 'Producto B', quantity: 3 }
-          ],
-          status: 'en_transito',
-          createdAt: '2024-01-15'
-        },
-        {
-          id: 2,
-          fromStorage: 'Sucursal Norte',
-          toStorage: currentStorage?.name || 'Mi Sucursal',
-          products: [{ name: 'Producto C', quantity: 2 }],
-          status: 'empacado',
-          createdAt: '2024-01-14'
-        }
-      ]
-      setPendingShipments(mockShipments)
+
+      // Solo mostrar datos mock en caso de error de conexión
+      if (error.message?.includes('Network Error') || error.code === 'NETWORK_ERROR') {
+        console.log('🧪 Mostrando datos mock debido a error de red')
+        const mockShipments = [
+          {
+            id: 1,
+            fromStorage: 'Sucursal Centro',
+            toStorage: currentStorage?.name || 'Mi Sucursal',
+            products: [
+              { name: 'Producto A', quantity: 5 },
+              { name: 'Producto B', quantity: 3 }
+            ],
+            status: 'en_transito',
+            createdAt: '2024-01-15'
+          },
+          {
+            id: 2,
+            fromStorage: 'Sucursal Norte',
+            toStorage: currentStorage?.name || 'Mi Sucursal',
+            products: [{ name: 'Producto C', quantity: 2 }],
+            status: 'empacado',
+            createdAt: '2024-01-14'
+          }
+        ]
+        setPendingShipments(mockShipments)
+      } else {
+        setPendingShipments([])
+      }
     } finally {
       setLoadingShipments(false)
+    }
+  }
+
+  // Función para crear envíos de prueba (temporal)
+  const createTestShipments = async () => {
+    try {
+      console.log('🧪 Creando envíos de prueba...')
+      const response = await inventoryService.createTestShipments()
+
+      if (response.status === 'success') {
+        toast.success('✅ Envíos de prueba creados exitosamente')
+        // Recargar envíos pendientes
+        await loadPendingShipments()
+      } else {
+        toast.error(
+          '❌ Error al crear envíos de prueba: ' + (response.message || 'Error desconocido')
+        )
+      }
+    } catch (error) {
+      console.error('❌ Error creando envíos de prueba:', error)
+      toast.error('❌ Error al crear envíos de prueba: ' + error.message)
     }
   }
 
   const markShipmentReceived = async (shipmentId, received) => {
     try {
       const status = received ? 'recibido' : 'no_recibido'
+      console.log(`🔄 Actualizando envío ${shipmentId} a estado: ${status}`)
+
       const response = await inventoryService.updateShipmentStatus(shipmentId, status)
 
       if (response.status === 'success') {
@@ -373,20 +411,63 @@ export default function MoveInventory() {
             shipment.id === shipmentId ? { ...shipment, status: status } : shipment
           )
         )
+        toast.success(`✅ Envío ${received ? 'recibido' : 'marcado como no recibido'} exitosamente`)
         console.log(`✅ Envío ${shipmentId} marcado como ${status}`)
+      } else {
+        toast.error('❌ Error al actualizar estado: ' + (response.message || 'Error desconocido'))
       }
     } catch (error) {
       console.error('❌ Error actualizando estado del envío:', error)
-      // Actualizar localmente mientras tanto
-      setPendingShipments((prev) =>
-        prev.map((shipment) =>
-          shipment.id === shipmentId
-            ? { ...shipment, status: received ? 'recibido' : 'no_recibido' }
-            : shipment
+      toast.error('❌ Error al actualizar estado: ' + error.message)
+
+      // Actualizar localmente solo si es un error temporal
+      if (error.message?.includes('Network Error')) {
+        setPendingShipments((prev) =>
+          prev.map((shipment) =>
+            shipment.id === shipmentId
+              ? { ...shipment, status: received ? 'recibido' : 'no_recibido' }
+              : shipment
+          )
         )
-      )
-      console.log(`Envío ${shipmentId} marcado como ${received ? 'recibido' : 'no recibido'}`)
+      }
     }
+  }
+
+  // Función para marcar envío como en proceso (cuando sale de la sucursal origen)
+  const markShipmentInTransit = async (shipmentId) => {
+    try {
+      console.log(`🚚 Marcando envío ${shipmentId} como en tránsito`)
+
+      const response = await inventoryService.updateShipmentStatus(shipmentId, 'en_transito')
+
+      if (response.status === 'success') {
+        setPendingShipments((prev) =>
+          prev.map((shipment) =>
+            shipment.id === shipmentId ? { ...shipment, status: 'en_transito' } : shipment
+          )
+        )
+        toast.success('✅ Envío marcado como en tránsito')
+      } else {
+        toast.error('❌ Error al actualizar estado: ' + (response.message || 'Error desconocido'))
+      }
+    } catch (error) {
+      console.error('❌ Error actualizando estado del envío:', error)
+      toast.error('❌ Error al actualizar estado: ' + error.message)
+    }
+  }
+
+  // Función para abrir el modal de productos
+  const openProductModal = (shipment) => {
+    setSelectedShipmentProducts(shipment.products)
+    setSelectedShipmentInfo(shipment)
+    setShowProductModal(true)
+  }
+
+  // Función para cerrar el modal de productos
+  const closeProductModal = () => {
+    setShowProductModal(false)
+    setSelectedShipmentProducts([])
+    setSelectedShipmentInfo(null)
   }
 
   const executeMovement = async () => {
@@ -596,6 +677,17 @@ export default function MoveInventory() {
               <Truck className="h-5 w-5" />
               Envíos Realizados
             </button>
+
+            {/* Botón temporal para crear envíos de prueba */}
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={createTestShipments}
+                className="btn btn-outline btn-warning btn-sm"
+                title="Crear envíos de prueba (solo desarrollo)"
+              >
+                🧪 Test Data
+              </button>
+            )}
           </div>
 
           {/* Vista de envíos pendientes */}
@@ -644,14 +736,21 @@ export default function MoveInventory() {
                           <tr key={shipment.id} className="hover">
                             <td>
                               <div className="font-medium">{shipment.fromStorage}</div>
+                              <div className="text-sm opacity-70">Envío #{shipment.id}</div>
                             </td>
                             <td>
                               <div className="text-sm">
-                                {shipment.products.map((product, idx) => (
-                                  <div key={idx}>
-                                    {product.name} (x{product.quantity})
-                                  </div>
-                                ))}
+                                <button
+                                  onClick={() => openProductModal(shipment)}
+                                  className="btn btn-info btn-xs"
+                                  title="Ver detalles de productos"
+                                >
+                                  📦 Ver Productos
+                                </button>
+                                <div className="mt-1 text-xs opacity-70">
+                                  {shipment.products.length} producto
+                                  {shipment.products.length !== 1 ? 's' : ''}
+                                </div>
                               </div>
                             </td>
                             <td>
@@ -663,39 +762,76 @@ export default function MoveInventory() {
                                       ? 'badge-info'
                                       : shipment.status === 'recibido'
                                         ? 'badge-success'
-                                        : 'badge-error'
+                                        : shipment.status === 'no_recibido'
+                                          ? 'badge-error'
+                                          : 'badge-neutral'
                                 }`}
                               >
                                 {shipment.status === 'en_transito'
-                                  ? 'En tránsito'
+                                  ? '🚚 En tránsito'
                                   : shipment.status === 'empacado'
-                                    ? 'Empacado'
+                                    ? '📦 Empacado'
                                     : shipment.status === 'recibido'
-                                      ? 'Recibido'
-                                      : 'No recibido'}
+                                      ? '✅ Recibido'
+                                      : shipment.status === 'no_recibido'
+                                        ? '❌ No recibido'
+                                        : shipment.status}
                               </div>
                             </td>
-                            <td>{shipment.createdAt}</td>
                             <td>
-                              {shipment.status !== 'recibido' &&
-                                shipment.status !== 'no_recibido' && (
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => markShipmentReceived(shipment.id, true)}
-                                      className="btn btn-success btn-xs"
-                                      title="Marcar como recibido"
-                                    >
-                                      <CheckCircle className="h-3 w-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => markShipmentReceived(shipment.id, false)}
-                                      className="btn btn-error btn-xs"
-                                      title="Marcar como no recibido"
-                                    >
-                                      <XCircle className="h-3 w-3" />
-                                    </button>
+                              <div className="text-sm">{shipment.createdAt}</div>
+                              {shipment.shippedAt && (
+                                <div className="text-xs opacity-70">
+                                  Enviado: {shipment.shippedAt}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <div className="flex flex-col gap-1">
+                                {/* Solo mostrar botones de acción para envíos en tránsito */}
+                                {shipment.status === 'en_transito' && (
+                                  <>
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => markShipmentReceived(shipment.id, true)}
+                                        className="btn btn-success btn-xs"
+                                        title="Marcar como recibido correctamente"
+                                      >
+                                        ✅ Recibido
+                                      </button>
+                                      <button
+                                        onClick={() => markShipmentReceived(shipment.id, false)}
+                                        className="btn btn-error btn-xs"
+                                        title="Marcar como no recibido (problemas)"
+                                      >
+                                        ❌ No recibido
+                                      </button>
+                                    </div>
+                                    <div className="text-center text-xs opacity-70">
+                                      ¿Llegó el envío?
+                                    </div>
+                                  </>
+                                )}
+
+                                {/* Estados informativos - no editables */}
+                                {shipment.status === 'empacado' && (
+                                  <div className="text-center text-xs opacity-70">
+                                    📦 Esperando salida
                                   </div>
                                 )}
+
+                                {shipment.status === 'recibido' && (
+                                  <div className="text-center text-xs opacity-70">
+                                    🎉 Envío completado
+                                  </div>
+                                )}
+
+                                {shipment.status === 'no_recibido' && (
+                                  <div className="text-center text-xs opacity-70">
+                                    ⚠️ Requiere atención
+                                  </div>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1270,6 +1406,164 @@ export default function MoveInventory() {
             </>
           )}
         </>
+      )}
+
+      {/* Modal de productos del envío */}
+      {showProductModal && selectedShipmentInfo && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-4xl">
+            <h3 className="mb-4 text-lg font-bold">
+              Productos del Envío #{selectedShipmentInfo.id}
+            </h3>
+
+            <div className="bg-base-200 mb-4 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p>
+                    <strong>Desde:</strong> {selectedShipmentInfo.fromStorage}
+                  </p>
+                  <p>
+                    <strong>Hacia:</strong> {selectedShipmentInfo.toStorage}
+                  </p>
+                </div>
+                <div>
+                  <p>
+                    <strong>Estado:</strong>
+                    <span
+                      className={`badge ml-2 ${
+                        selectedShipmentInfo.status === 'en_transito'
+                          ? 'badge-warning'
+                          : selectedShipmentInfo.status === 'empacado'
+                            ? 'badge-info'
+                            : selectedShipmentInfo.status === 'recibido'
+                              ? 'badge-success'
+                              : selectedShipmentInfo.status === 'no_recibido'
+                                ? 'badge-error'
+                                : 'badge-neutral'
+                      }`}
+                    >
+                      {selectedShipmentInfo.status === 'en_transito'
+                        ? '🚚 En tránsito'
+                        : selectedShipmentInfo.status === 'empacado'
+                          ? '📦 Empacado'
+                          : selectedShipmentInfo.status === 'recibido'
+                            ? '✅ Recibido'
+                            : selectedShipmentInfo.status === 'no_recibido'
+                              ? '❌ No recibido'
+                              : selectedShipmentInfo.status}
+                    </span>
+                  </p>
+                  <p>
+                    <strong>Fecha:</strong> {selectedShipmentInfo.createdAt}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="table-zebra table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Marca</th>
+                    <th>Variante</th>
+                    <th>Cantidad</th>
+                    <th>Precio Venta</th>
+                    <th>Costo</th>
+                    <th>Código</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedShipmentProducts.map((product, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <div className="font-medium">{product.name}</div>
+                      </td>
+                      <td>
+                        <span className="badge badge-outline">{product.brand}</span>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="badge badge-sm">{product.size}</span>
+                          <div className="flex items-center gap-1">
+                            <div
+                              className="h-4 w-4 rounded border"
+                              style={{ backgroundColor: product.color_hex }}
+                            ></div>
+                            <span className="text-xs">{product.color}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge badge-primary">{product.quantity}</span>
+                      </td>
+                      <td>
+                        <span className="font-mono">
+                          ${product.sale_price?.toFixed(2) || '0.00'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="font-mono text-sm opacity-70">
+                          ${product.cost?.toFixed(2) || '0.00'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="font-mono text-xs">{product.variant_barcode}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="bg-base-200 mt-4 rounded-lg p-3">
+              <div className="flex justify-between text-sm">
+                <span>
+                  <strong>Total productos:</strong> {selectedShipmentProducts.length}
+                </span>
+                <span>
+                  <strong>Total unidades:</strong>{' '}
+                  {selectedShipmentProducts.reduce((sum, p) => sum + p.quantity, 0)}
+                </span>
+                <span>
+                  <strong>Valor total:</strong> $
+                  {selectedShipmentProducts
+                    .reduce((sum, p) => sum + p.sale_price * p.quantity, 0)
+                    .toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="modal-action">
+              {/* Solo mostrar botones de acción para envíos en tránsito */}
+              {selectedShipmentInfo.status === 'en_transito' && (
+                <>
+                  <button
+                    onClick={() => {
+                      markShipmentReceived(selectedShipmentInfo.id, true)
+                      closeProductModal()
+                    }}
+                    className="btn btn-success"
+                  >
+                    ✅ Marcar como Recibido
+                  </button>
+                  <button
+                    onClick={() => {
+                      markShipmentReceived(selectedShipmentInfo.id, false)
+                      closeProductModal()
+                    }}
+                    className="btn btn-error"
+                  >
+                    ❌ Marcar como No Recibido
+                  </button>
+                </>
+              )}
+              <button onClick={closeProductModal} className="btn">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -287,6 +287,20 @@ export const inventoryService = {
             })
             throw error
         }
+    },
+
+    /**
+     * Crea envíos de prueba (temporal para desarrollo)
+     * @returns {Promise} Resultado de la creación
+     */
+    async createTestShipments() {
+        try {
+            const response = await axios.post(`${API_URL}/create-test-shipments`)
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al crear envíos de prueba:', error)
+            throw error
+        }
     }
 }
 

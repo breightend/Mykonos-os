@@ -1431,6 +1431,7 @@ def get_pending_shipments(storage_id):
     Obtiene envíos pendientes que llegan a una sucursal específica
     """
     try:
+        print(f"🔍 DEBUG get_pending_shipments: storage_id = {storage_id}")
         db = Database()
 
         query = """
@@ -1454,23 +1455,61 @@ def get_pending_shipments(storage_id):
         LEFT JOIN products p ON im.product_id = p.id
         WHERE img.destination_branch_id = %s 
         AND img.status IN ('empacado', 'en_transito')
-        GROUP BY img.id
+        GROUP BY img.id, so.name, sd.name, img.status, img.created_at, img.shipped_at, img.delivered_at, img.notes
         ORDER BY img.created_at DESC
         """
 
+        print(f"🔍 DEBUG get_pending_shipments: Ejecutando query...")
         shipments = db.execute_query(query, (storage_id,))
+        print(
+            f"🔍 DEBUG get_pending_shipments: Resultados = {len(shipments) if shipments else 0}"
+        )
+
+        if shipments:
+            print("🔍 DEBUG get_pending_shipments: Envíos encontrados:")
+            for ship in shipments:
+                print(
+                    f"  - ID: {ship['id']}, De: {ship['from_storage']} → A: {ship['to_storage']}, Estado: {ship['status']}"
+                )
+        else:
+            print(
+                f"🔍 DEBUG get_pending_shipments: No se encontraron envíos HACIA la sucursal {storage_id}"
+            )
+            print(
+                "   Esto significa que no hay envíos de otras sucursales dirigidos a esta sucursal"
+            )
+            print(
+                "   Para crear envíos de prueba, usa el botón '🧪 Test Data' en el frontend"
+            )
 
         # Formatear resultados
         result = []
         for shipment in shipments:
-            # Obtener productos detallados
+            # Obtener productos detallados con más información
             products_query = """
-            SELECT p.product_name, im.quantity
+            SELECT 
+                p.product_name, 
+                p.sale_price,
+                p.cost,
+                b.brand_name,
+                im.quantity,
+                s.size_name,
+                c.color_name,
+                c.color_hex,
+                wsv.variant_barcode
             FROM inventory_movements im
             JOIN products p ON im.product_id = p.id
+            LEFT JOIN brands b ON p.brand_id = b.id
+            LEFT JOIN warehouse_stock_variants wsv ON im.product_id = wsv.product_id 
+                AND wsv.branch_id = %s
+            LEFT JOIN sizes s ON wsv.size_id = s.id
+            LEFT JOIN colors c ON wsv.color_id = c.id
             WHERE im.inventory_movements_group_id = %s
+            ORDER BY p.product_name, s.size_name, c.color_name
             """
-            products = db.execute_query(products_query, (shipment["id"],))
+            products = db.execute_query(
+                products_query, (shipment["id"], shipment["id"])
+            )
 
             result.append(
                 {
@@ -1480,7 +1519,7 @@ def get_pending_shipments(storage_id):
                     "status": shipment["status"],
                     "createdAt": shipment["created_at"].strftime("%Y-%m-%d")
                     if shipment["created_at"]
-                    else None,  # Solo fecha
+                    else None,
                     "shippedAt": shipment["shipped_at"].strftime("%Y-%m-%d")
                     if shipment["shipped_at"]
                     else None,
@@ -1489,7 +1528,19 @@ def get_pending_shipments(storage_id):
                     else None,
                     "notes": shipment["notes"],
                     "products": [
-                        {"name": p["product_name"], "quantity": p["quantity"]}
+                        {
+                            "name": p["product_name"],
+                            "brand": p["brand_name"] or "Sin marca",
+                            "quantity": p["quantity"],
+                            "sale_price": float(p["sale_price"])
+                            if p["sale_price"]
+                            else 0,
+                            "cost": float(p["cost"]) if p["cost"] else 0,
+                            "size": p["size_name"] or "Sin talle",
+                            "color": p["color_name"] or "Sin color",
+                            "color_hex": p["color_hex"] or "#cccccc",
+                            "variant_barcode": p["variant_barcode"] or "Sin código",
+                        }
                         for p in products
                     ],
                 }
@@ -1498,6 +1549,119 @@ def get_pending_shipments(storage_id):
         return jsonify({"status": "success", "data": result}), 200
 
     except Exception as e:
+        print(f"❌ Error en get_pending_shipments: {e}")
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/create-test-shipments", methods=["POST"])
+def create_test_shipments():
+    """
+    Crea envíos de prueba para testing (temporal)
+    """
+    try:
+        print("🧪 Creando envíos de prueba...")
+        db = Database()
+
+        # Verificar sucursales
+        storages = db.execute_query("SELECT id, name FROM storage ORDER BY id LIMIT 3")
+        if len(storages) < 2:
+            return jsonify(
+                {"status": "error", "message": "Se necesitan al menos 2 sucursales"}
+            ), 400
+
+        # Verificar productos
+        products = db.execute_query("SELECT id, product_name FROM products LIMIT 5")
+        if len(products) == 0:
+            return jsonify(
+                {"status": "error", "message": "No hay productos en la base de datos"}
+            ), 400
+
+        # Crear envío de prueba: Sucursal 1 → Sucursal 2 (EMPACADO)
+        insert_group_query = """
+        INSERT INTO inventory_movements_groups 
+        (origin_branch_id, destination_branch_id, status, created_at, user_id)
+        VALUES (%s, %s, %s, NOW(), %s)
+        """
+
+        db.execute_query(insert_group_query, (1, 2, "empacado", 1))
+
+        # Obtener el ID del grupo recién creado
+        group_id_query = """
+        SELECT id FROM inventory_movements_groups 
+        WHERE origin_branch_id = %s AND destination_branch_id = %s 
+        ORDER BY created_at DESC LIMIT 1
+        """
+        group_result = db.execute_query(group_id_query, (1, 2))
+
+        if group_result:
+            group_id = group_result[0]["id"]
+            print(
+                f"✅ Grupo empacado creado con ID: {group_id} (Sucursal 1 → Sucursal 2)"
+            )
+
+            # Insertar movimientos individuales
+            insert_movement_query = """
+            INSERT INTO inventory_movements 
+            (inventory_movements_group_id, product_id, quantity, movement_type, created_at)
+            VALUES (%s, %s, %s, %s, NOW())
+            """
+
+            for i, product in enumerate(products[:2]):  # Solo 2 productos
+                quantity = (i + 1) * 2  # 2, 4
+                db.execute_query(
+                    insert_movement_query,
+                    (group_id, product["id"], quantity, "transfer"),
+                )
+                print(f"  - Movimiento: {product['product_name']} x{quantity}")
+
+        # Crear segundo envío: Sucursal 1 → Sucursal 2 (EN_TRANSITO)
+        db.execute_query(insert_group_query, (1, 2, "en_transito", 1))
+        group_result2 = db.execute_query(group_id_query, (1, 2))
+
+        if group_result2:
+            group_id2 = group_result2[0]["id"]
+            print(
+                f"✅ Grupo en tránsito creado con ID: {group_id2} (Sucursal 1 → Sucursal 2)"
+            )
+
+            if len(products) > 2:
+                db.execute_query(
+                    insert_movement_query, (group_id2, products[2]["id"], 3, "transfer")
+                )
+                print(f"  - Movimiento: {products[2]['product_name']} x3")
+
+        # También crear envíos hacia la sucursal 1 para pruebas completas
+        db.execute_query(insert_group_query, (2, 1, "empacado", 1))
+        group_result3 = db.execute_query(group_id_query, (2, 1))
+
+        if group_result3:
+            group_id3 = group_result3[0]["id"]
+            print(
+                f"✅ Grupo adicional creado con ID: {group_id3} (Sucursal 2 → Sucursal 1)"
+            )
+
+            if len(products) > 3:
+                db.execute_query(
+                    insert_movement_query, (group_id3, products[3]["id"], 1, "transfer")
+                )
+                print(f"  - Movimiento: {products[3]['product_name']} x1")
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Envíos de prueba creados exitosamente",
+                "data": {
+                    "groups_created": 3,
+                    "movements_created": 4,
+                    "description": "Creados envíos bidireccionales para pruebas completas",
+                },
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"❌ Error creando envíos de prueba: {e}")
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -1641,6 +1805,10 @@ def update_shipment_status(shipment_id):
             date_field = "delivered_at"
         elif new_status == "recibido":
             date_field = "received_at"
+        elif new_status == "no_recibido":
+            date_field = (
+                "received_at"  # También registrar cuando se marcó como no recibido
+            )
 
         # Construir query de actualización
         if date_field:
