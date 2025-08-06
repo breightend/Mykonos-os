@@ -57,9 +57,6 @@ export default function Inventario() {
       setLoading(true)
       setError(null)
 
-      // Obtener información de la sucursal actual del usuario
-      const currentStorage = getCurrentStorage()
-
       // Primero cargar las sucursales
       try {
         const storagesResponse = await fetchSucursales()
@@ -93,15 +90,22 @@ export default function Inventario() {
       }
 
       // Establecer la sucursal por defecto basada en la sesión del usuario
-      if (currentStorage?.id) {
-        setSelectedStorage(currentStorage.id.toString())
+      const storage = getCurrentStorage()
+      if (storage?.id) {
+        setSelectedStorage(storage.id.toString())
       } else {
         setSelectedStorage('')
       }
 
       // Luego cargar el inventario
-      const initialStorageId = currentStorage?.id || null
-      await loadInventoryData(initialStorageId)
+      const initialStorageId = storage?.id || null
+      const response = await inventoryService.getProductsSummary(initialStorageId)
+
+      if (response.status === 'success') {
+        setInventoryData(response.data)
+      } else {
+        setError('La respuesta del servidor no fue exitosa')
+      }
     } catch (err) {
       const errorMessage = err.message || 'Error desconocido al cargar datos iniciales'
       setError(errorMessage)
@@ -109,19 +113,22 @@ export default function Inventario() {
     } finally {
       setLoading(false)
     }
-  }, [loadInventoryData, getCurrentStorage])
+  }, [getCurrentStorage])
 
+  // Solo se ejecuta una vez al montar el componente
   useEffect(() => {
     loadInitialData()
   }, [loadInitialData])
 
+  // Efecto separado para cuando cambia la sucursal seleccionada manualmente
   useEffect(() => {
-    if (selectedStorage) {
+    // Solo cargar si selectedStorage ha sido establecido después de la carga inicial
+    if (selectedStorage !== '' && selectedStorage !== currentStorage?.id?.toString()) {
       loadInventoryData(selectedStorage)
-    } else {
+    } else if (selectedStorage === '' && storageList.length > 0) {
       loadInventoryData()
     }
-  }, [selectedStorage, loadInventoryData])
+  }, [selectedStorage, loadInventoryData, currentStorage?.id, storageList.length])
 
   // Función para obtener todos los IDs de un grupo y sus hijos recursivamente
   const getAllGroupIds = (groupData, targetGroupId) => {
@@ -329,9 +336,9 @@ export default function Inventario() {
             <li>
               <button
                 className="btn btn-ghost tooltip tooltip-bottom"
-                data-tip="Agregar colores y talles"                
+                data-tip="Agregar colores y talles"
               >
-                <ListPlus className='h-5 w-5' />
+                <ListPlus className="h-5 w-5" />
               </button>
             </li>
           </ul>

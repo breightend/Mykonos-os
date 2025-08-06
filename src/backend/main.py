@@ -13,7 +13,6 @@ from routes.purchase_router import purchase_bp
 from routes.barcode_router import barcode_router
 from routes.debug_router import debug_router
 from routes.sales_router import sales_router
-from routes.fix_data_router import fix_data_bp
 from routes.account_movements_router import account_movements_router
 from routes.client_sales_router import client_sales_router
 
@@ -38,7 +37,6 @@ app.register_blueprint(purchase_bp, url_prefix="/api/purchases")
 app.register_blueprint(barcode_router, url_prefix="/api/barcode")
 app.register_blueprint(debug_router, url_prefix="/api/debug")
 app.register_blueprint(sales_router, url_prefix="/api/sales")
-app.register_blueprint(fix_data_bp, url_prefix="/api/fix")
 app.register_blueprint(account_movements_router, url_prefix="/api/account")
 app.register_blueprint(client_sales_router, url_prefix="/api/client-sales")
 
