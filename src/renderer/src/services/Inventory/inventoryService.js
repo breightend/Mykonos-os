@@ -152,6 +152,29 @@ export const inventoryService = {
     },
 
     /**
+     * Crea un nuevo movimiento de inventario de variantes específicas entre sucursales
+     * @param {number} fromStorageId - ID de la sucursal origen
+     * @param {number} toStorageId - ID de la sucursal destino
+     * @param {Array} variants - Array de variantes con {variant_id, product_id, size_id, color_id, quantity, variant_barcode}
+     * @returns {Promise} Resultado del movimiento
+     */
+    async createVariantMovement(fromStorageId, toStorageId, variants) {
+        try {
+            const response = await axios.post(`${API_URL}/variant-movements`, {
+                from_storage_id: fromStorageId,
+                to_storage_id: toStorageId,
+                variants: variants,
+                notes: '',
+                user_id: 1 // TODO: Obtener del contexto de sesión
+            })
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al crear movimiento de variantes:', error)
+            throw error
+        }
+    },
+
+    /**
      * Obtiene envíos pendientes para una sucursal
      * @param {number} storageId - ID de la sucursal
      * @returns {Promise} Lista de envíos pendientes

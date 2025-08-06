@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
 from datetime import datetime
+import traceback
 
 inventory_router = Blueprint("inventory_router", __name__)
 
@@ -1067,14 +1068,21 @@ def create_movement():
 
         # Crear el grupo de movimiento
         group_query = """
-        INSERT INTO inventory_movemetns_groups 
+        INSERT INTO inventory_movements_groups 
         (origin_branch_id, destination_branch_id, status, movement_type, created_by_user_id, notes)
-        VALUES (?, ?, 'empacado', 'transfer', ?, ?)
+        VALUES (%s, %s, 'empacado', 'transfer', %s, %s)
+        RETURNING id
         """
         group_result = db.execute_query(
             group_query, (from_storage_id, to_storage_id, user_id, notes)
         )
-        group_id = db.get_last_insert_id()
+
+        if not group_result:
+            return jsonify(
+                {"status": "error", "message": "Error al crear el grupo de movimiento"}
+            ), 500
+
+        group_id = group_result[0]["id"]
 
         total_movement_value = 0
 
@@ -1089,11 +1097,11 @@ def create_movement():
             # Verificar stock disponible
             stock_query = """
             SELECT quantity FROM warehouse_stock 
-            WHERE product_id = ? AND branch_id = ?
+            WHERE product_id = %s AND branch_id = %s
             """
             stock_result = db.execute_query(stock_query, (product_id, from_storage_id))
 
-            if not stock_result or stock_result[0][0] < quantity:
+            if not stock_result or stock_result[0]["quantity"] < quantity:
                 return jsonify(
                     {
                         "status": "error",
@@ -1102,18 +1110,18 @@ def create_movement():
                 ), 400
 
             # Obtener precio del producto
-            price_query = "SELECT sale_price FROM products WHERE id = ?"
+            price_query = "SELECT sale_price FROM products WHERE id = %s"
             price_result = db.execute_query(price_query, (product_id,))
-            unit_price = price_result[0][0] if price_result else 0
+            unit_price = price_result[0]["sale_price"] if price_result else 0
 
             subtotal = float(unit_price) * int(quantity)
             total_movement_value += subtotal
 
             # Insertar el movimiento individual
             movement_query = """
-            INSERT INTO inventory_movemetns 
+            INSERT INTO inventory_movements 
             (inventory_movements_group_id, product_id, quantity, discount, subtotal, total)
-            VALUES (?, ?, ?, 0.0, ?, ?)
+            VALUES (%s, %s, %s, 0.0, %s, %s)
             """
             db.execute_query(
                 movement_query, (group_id, product_id, quantity, subtotal, subtotal)
@@ -1122,8 +1130,8 @@ def create_movement():
             # Actualizar stock en sucursal origen (restar)
             update_origin_query = """
             UPDATE warehouse_stock 
-            SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP
-            WHERE product_id = ? AND branch_id = ?
+            SET quantity = quantity - %s, last_updated = NOW()
+            WHERE product_id = %s AND branch_id = %s
             """
             db.execute_query(
                 update_origin_query, (quantity, product_id, from_storage_id)
@@ -1132,7 +1140,7 @@ def create_movement():
             # Verificar si existe stock en sucursal destino
             dest_stock_query = """
             SELECT id FROM warehouse_stock 
-            WHERE product_id = ? AND branch_id = ?
+            WHERE product_id = %s AND branch_id = %s
             """
             dest_stock = db.execute_query(dest_stock_query, (product_id, to_storage_id))
 
@@ -1140,8 +1148,8 @@ def create_movement():
                 # Actualizar stock existente en destino (sumar)
                 update_dest_query = """
                 UPDATE warehouse_stock 
-                SET quantity = quantity + ?, last_updated = CURRENT_TIMESTAMP
-                WHERE product_id = ? AND branch_id = ?
+                SET quantity = quantity + %s, last_updated = NOW()
+                WHERE product_id = %s AND branch_id = %s
                 """
                 db.execute_query(
                     update_dest_query, (quantity, product_id, to_storage_id)
@@ -1149,8 +1157,8 @@ def create_movement():
             else:
                 # Crear nuevo registro de stock en destino
                 insert_dest_query = """
-                INSERT INTO warehouse_stock (product_id, branch_id, quantity)
-                VALUES (?, ?, ?)
+                INSERT INTO warehouse_stock (product_id, branch_id, quantity, last_updated)
+                VALUES (%s, %s, %s, NOW())
                 """
                 db.execute_query(
                     insert_dest_query, (product_id, to_storage_id, quantity)
@@ -1166,6 +1174,254 @@ def create_movement():
         ), 201
 
     except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/variant-movements", methods=["POST"])
+def create_variant_movement():
+    """
+    Crea un nuevo movimiento de inventario entre sucursales basado en variantes específicas
+    """
+    try:
+        data = request.get_json()
+        from_storage_id = data.get("from_storage_id")
+        to_storage_id = data.get("to_storage_id")
+        variants = data.get("variants", [])
+        notes = data.get("notes", "")
+        user_id = data.get("user_id")
+
+        print(
+            f"🚚 Creando movimiento de variantes desde {from_storage_id} hacia {to_storage_id}"
+        )
+        print(f"📦 Variantes a mover: {len(variants)}")
+
+        if not from_storage_id or not to_storage_id or not variants:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Faltan datos requeridos: from_storage_id, to_storage_id, variants",
+                }
+            ), 400
+
+        if from_storage_id == to_storage_id:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "La sucursal de origen y destino no pueden ser la misma",
+                }
+            ), 400
+
+        db = Database()
+
+        # Crear el grupo de movimiento - FIXED: handle PostgreSQL transaction properly
+        group_query = """
+        INSERT INTO inventory_movements_groups 
+        (origin_branch_id, destination_branch_id, status, movement_type, created_by_user_id, notes)
+        VALUES (%s, %s, 'empacado', 'variant_transfer', %s, %s)
+        """
+        try:
+            # Execute the INSERT without RETURNING (since execute_query doesn't handle it properly)
+            db.execute_query(
+                group_query, (from_storage_id, to_storage_id, user_id, notes)
+            )
+
+            # Get the last inserted ID separately
+            last_id_query = """
+            SELECT id FROM inventory_movements_groups 
+            WHERE origin_branch_id = %s AND destination_branch_id = %s 
+            AND created_by_user_id = %s AND notes = %s
+            ORDER BY id DESC LIMIT 1
+            """
+            group_result = db.execute_query(
+                last_id_query, (from_storage_id, to_storage_id, user_id, notes)
+            )
+            print(f"🔍 DEBUG group_result: {group_result}, tipo: {type(group_result)}")
+        except Exception as e:
+            print(f"❌ Error creating movement group: {e}")
+            import traceback
+
+            traceback.print_exc()
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": f"Error al crear el grupo de movimiento: {str(e)}",
+                }
+            ), 500
+
+        if not group_result:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Error al crear el grupo de movimiento - no se pudo obtener ID",
+                }
+            ), 500
+
+        # Handle both dict and tuple result formats
+        if isinstance(group_result[0], dict):
+            group_id = group_result[0]["id"]
+        else:
+            group_id = group_result[0][0]
+        print(f"✅ Grupo de movimiento creado con ID: {group_id}")
+
+        total_movement_value = 0
+
+        # Procesar cada variante
+        for variant in variants:
+            variant_id = variant.get("variant_id")
+            product_id = variant.get("product_id")
+            size_id = variant.get("size_id")
+            color_id = variant.get("color_id")
+            quantity = variant.get("quantity")
+
+            print(
+                f"🔄 Procesando variante: ID={variant_id}, Producto={product_id}, Cantidad={quantity}"
+            )
+
+            if not variant_id or not product_id or not quantity or quantity <= 0:
+                print(f"⚠️ Variante incompleta, saltando...")
+                continue
+
+            # Verificar stock disponible de la variante en sucursal origen
+            stock_query = """
+            SELECT quantity FROM warehouse_stock_variants 
+            WHERE id = %s AND branch_id = %s
+            """
+            try:
+                stock_result = db.execute_query(
+                    stock_query, (variant_id, from_storage_id)
+                )
+                print(
+                    f"🔍 DEBUG stock_result: {stock_result}, tipo: {type(stock_result)}"
+                )
+            except Exception as e:
+                print(f"❌ Error checking stock: {e}")
+                import traceback
+
+                traceback.print_exc()
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Error al verificar stock: {str(e)}",
+                    }
+                ), 500
+
+            if not stock_result:
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Variante ID {variant_id} no encontrada en sucursal {from_storage_id}",
+                    }
+                ), 400
+
+            # Handle both dict and tuple result formats
+            if isinstance(stock_result[0], dict):
+                current_stock = stock_result[0]["quantity"]
+            else:
+                current_stock = stock_result[0][0]
+
+            if current_stock < quantity:
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Stock insuficiente para la variante ID {variant_id}. Disponible: {current_stock}, Solicitado: {quantity}",
+                    }
+                ), 400
+
+            # Obtener precio del producto
+            price_query = "SELECT sale_price FROM products WHERE id = %s"
+            try:
+                price_result = db.execute_query(price_query, (product_id,))
+                print(
+                    f"🔍 DEBUG price_result: {price_result}, tipo: {type(price_result)}"
+                )
+            except Exception as e:
+                print(f"❌ Error getting price: {e}")
+                import traceback
+
+                traceback.print_exc()
+                return jsonify(
+                    {"status": "error", "message": f"Error al obtener precio: {str(e)}"}
+                ), 500
+
+            # Handle both dict and tuple result formats
+            if price_result:
+                if isinstance(price_result[0], dict):
+                    unit_price = price_result[0]["sale_price"]
+                else:
+                    unit_price = price_result[0][0]
+            else:
+                unit_price = 0
+
+            subtotal = float(unit_price) * int(quantity)
+            total_movement_value += subtotal
+
+            # Insertar el movimiento individual - SIN variant_id (no existe en la tabla)
+            movement_query = """
+            INSERT INTO inventory_movements 
+            (inventory_movements_group_id, product_id, quantity, discount, subtotal, total)
+            VALUES (%s, %s, %s, 0.0, %s, %s)
+            """
+            movement_result = db.execute_query(
+                movement_query,
+                (group_id, product_id, quantity, subtotal, subtotal),
+            )
+
+            print(f"✅ Movimiento individual registrado para producto {product_id}")
+
+            # Actualizar stock de variante en sucursal origen (restar)
+            # SOLO reducir stock en origen - NO agregar en destino hasta confirmación
+            update_origin_query = """
+            UPDATE warehouse_stock_variants 
+            SET quantity = quantity - %s, last_updated = NOW()
+            WHERE id = %s AND branch_id = %s
+            """
+            db.execute_query(
+                update_origin_query, (quantity, variant_id, from_storage_id)
+            )
+            print(f"✅ Stock reducido en origen para variante {variant_id}")
+
+            # Actualizar también el stock general del producto (warehouse_stock)
+            # SOLO restar en origen - NO agregar en destino hasta confirmación
+            general_stock_origin = """
+            SELECT id FROM warehouse_stock WHERE product_id = %s AND branch_id = %s
+            """
+            origin_stock = db.execute_query(
+                general_stock_origin, (product_id, from_storage_id)
+            )
+
+            if origin_stock:
+                db.execute_query(
+                    """
+                    UPDATE warehouse_stock 
+                    SET quantity = quantity - %s, last_updated = NOW()
+                    WHERE product_id = %s AND branch_id = %s
+                """,
+                    (quantity, product_id, from_storage_id),
+                )
+                print(f"✅ Stock general reducido en origen")
+
+            # NOTA: El stock NO se agrega al destino aquí.
+            # Solo se agregará cuando la sucursal destino confirme la recepción del envío.
+
+        print(
+            f"🎉 Movimiento completado exitosamente. Total de variantes: {len(variants)}"
+        )
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Movimiento de variantes creado exitosamente",
+                "movement_id": group_id,
+                "total_value": total_movement_value,
+                "variants_moved": len(variants),
+            }
+        ), 201
+
+    except Exception as e:
+        print(f"❌ Error creando movimiento de variantes: {e}")
+        import traceback
+
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -1191,10 +1447,10 @@ def get_pending_shipments(storage_id):
                 p.product_name || ' (x' || im.quantity || ')', 
                 ', '
             ) as products_summary
-        FROM inventory_movemetns_groups img
+        FROM inventory_movements_groups img
         JOIN storage so ON img.origin_branch_id = so.id
         JOIN storage sd ON img.destination_branch_id = sd.id
-        LEFT JOIN inventory_movemetns im ON img.id = im.inventory_movements_group_id
+        LEFT JOIN inventory_movements im ON img.id = im.inventory_movements_group_id
         LEFT JOIN products p ON im.product_id = p.id
         WHERE img.destination_branch_id = %s 
         AND img.status IN ('empacado', 'en_transito')
@@ -1210,25 +1466,32 @@ def get_pending_shipments(storage_id):
             # Obtener productos detallados
             products_query = """
             SELECT p.product_name, im.quantity
-            FROM inventory_movemetns im
+            FROM inventory_movements im
             JOIN products p ON im.product_id = p.id
-            WHERE im.inventory_movements_group_id = ?
+            WHERE im.inventory_movements_group_id = %s
             """
-            products = db.execute_query(products_query, (shipment[0],))
+            products = db.execute_query(products_query, (shipment["id"],))
 
             result.append(
                 {
-                    "id": shipment[0],
-                    "fromStorage": shipment[1],
-                    "toStorage": shipment[2],
-                    "status": shipment[3],
-                    "createdAt": shipment[4][:10]
-                    if shipment[4]
+                    "id": shipment["id"],
+                    "fromStorage": shipment["from_storage"],
+                    "toStorage": shipment["to_storage"],
+                    "status": shipment["status"],
+                    "createdAt": shipment["created_at"].strftime("%Y-%m-%d")
+                    if shipment["created_at"]
                     else None,  # Solo fecha
-                    "shippedAt": shipment[5][:10] if shipment[5] else None,
-                    "deliveredAt": shipment[6][:10] if shipment[6] else None,
-                    "notes": shipment[7],
-                    "products": [{"name": p[0], "quantity": p[1]} for p in products],
+                    "shippedAt": shipment["shipped_at"].strftime("%Y-%m-%d")
+                    if shipment["shipped_at"]
+                    else None,
+                    "deliveredAt": shipment["delivered_at"].strftime("%Y-%m-%d")
+                    if shipment["delivered_at"]
+                    else None,
+                    "notes": shipment["notes"],
+                    "products": [
+                        {"name": p["product_name"], "quantity": p["quantity"]}
+                        for p in products
+                    ],
                 }
             )
 
@@ -1244,6 +1507,7 @@ def get_sent_shipments(storage_id):
     Obtiene envíos realizados desde una sucursal específica
     """
     try:
+        print(f"🔍 DEBUG get_sent_shipments: storage_id = {storage_id}")
         db = Database()
 
         query = """
@@ -1256,44 +1520,66 @@ def get_sent_shipments(storage_id):
             img.shipped_at,
             img.delivered_at,
             img.notes
-        FROM inventory_movemetns_groups img
+        FROM inventory_movements_groups img
         JOIN storage so ON img.origin_branch_id = so.id
         JOIN storage sd ON img.destination_branch_id = sd.id
-        WHERE img.origin_branch_id = ?
+        WHERE img.origin_branch_id = %s
         ORDER BY img.created_at DESC
         """
 
+        print(f"🔍 DEBUG get_sent_shipments: Ejecutando query principal...")
         shipments = db.execute_query(query, (storage_id,))
+        print(
+            f"🔍 DEBUG get_sent_shipments: Resultados = {len(shipments) if shipments else 0}"
+        )
 
         # Formatear resultados
         result = []
         for shipment in shipments:
+            print(
+                f"🔍 DEBUG get_sent_shipments: Procesando shipment ID = {shipment['id']}"
+            )
             # Obtener productos detallados
             products_query = """
             SELECT p.product_name, im.quantity
-            FROM inventory_movemetns im
+            FROM inventory_movements im
             JOIN products p ON im.product_id = p.id
-            WHERE im.inventory_movements_group_id = ?
+            WHERE im.inventory_movements_group_id = %s
             """
-            products = db.execute_query(products_query, (shipment[0],))
+            products = db.execute_query(products_query, (shipment["id"],))
+            print(
+                f"🔍 DEBUG get_sent_shipments: Productos = {len(products) if products else 0}"
+            )
 
             result.append(
                 {
-                    "id": shipment[0],
-                    "fromStorage": shipment[1],
-                    "toStorage": shipment[2],
-                    "status": shipment[3],
-                    "createdAt": shipment[4][:10] if shipment[4] else None,
-                    "shippedAt": shipment[5][:10] if shipment[5] else None,
-                    "deliveredAt": shipment[6][:10] if shipment[6] else None,
-                    "notes": shipment[7],
-                    "products": [{"name": p[0], "quantity": p[1]} for p in products],
+                    "id": shipment["id"],
+                    "fromStorage": shipment["from_storage"],
+                    "toStorage": shipment["to_storage"],
+                    "status": shipment["status"],
+                    "createdAt": shipment["created_at"].strftime("%Y-%m-%d")
+                    if shipment["created_at"]
+                    else None,
+                    "shippedAt": shipment["shipped_at"].strftime("%Y-%m-%d")
+                    if shipment["shipped_at"]
+                    else None,
+                    "deliveredAt": shipment["delivered_at"].strftime("%Y-%m-%d")
+                    if shipment["delivered_at"]
+                    else None,
+                    "notes": shipment["notes"],
+                    "products": [
+                        {"name": p["product_name"], "quantity": p["quantity"]}
+                        for p in products
+                    ],
                 }
             )
 
+        print(f"🔍 DEBUG get_sent_shipments: Total resultados = {len(result)}")
         return jsonify({"status": "success", "data": result}), 200
 
     except Exception as e:
+        print(f"❌ Error en get_sent_shipments: {e}")
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -1301,18 +1587,22 @@ def get_sent_shipments(storage_id):
 def update_shipment_status(shipment_id):
     """
     Actualiza el estado de un envío
+    Cuando el estado cambia a 'recibido', transfiere el stock al destino
     """
     try:
         data = request.get_json()
         new_status = data.get("status")
         user_id = data.get("user_id")  # Se debería obtener del token de sesión
 
+        print(f"🔄 Actualizando estado de envío {shipment_id} a '{new_status}'")
+
         valid_statuses = [
             "empacado",
             "en_transito",
             "entregado",
             "recibido",
-            "no_recibido",
+            "cancelado",
+            "retomado",
         ]
         if new_status not in valid_statuses:
             return jsonify(
@@ -1324,42 +1614,237 @@ def update_shipment_status(shipment_id):
 
         db = Database()
 
+        # Obtener información del envío antes de actualizar
+        shipment_query = """
+        SELECT origin_branch_id, destination_branch_id, status
+        FROM inventory_movements_groups 
+        WHERE id = %s
+        """
+        shipment_info = db.execute_query(shipment_query, (shipment_id,))
+
+        if not shipment_info:
+            return jsonify({"status": "error", "message": "Envío no encontrado"}), 404
+
+        origin_branch_id = shipment_info[0]["origin_branch_id"]
+        destination_branch_id = shipment_info[0]["destination_branch_id"]
+        current_status = shipment_info[0]["status"]
+
+        print(
+            f"📦 Envío: Origen={origin_branch_id}, Destino={destination_branch_id}, Estado actual='{current_status}'"
+        )
+
         # Preparar campos de fecha según el nuevo estado
         date_field = None
         if new_status == "en_transito":
             date_field = "shipped_at"
         elif new_status == "entregado":
             date_field = "delivered_at"
-        elif new_status in ["recibido", "no_recibido"]:
+        elif new_status == "recibido":
             date_field = "received_at"
 
         # Construir query de actualización
         if date_field:
             query = f"""
-            UPDATE inventory_movemetns_groups 
-            SET status = ?, {date_field} = CURRENT_TIMESTAMP, 
-                updated_at = CURRENT_TIMESTAMP, updated_by_user_id = ?
-            WHERE id = ?
+            UPDATE inventory_movements_groups 
+            SET status = %s, {date_field} = NOW(), 
+                updated_at = NOW(), updated_by_user_id = %s
+            WHERE id = %s
             """
             params = (new_status, user_id, shipment_id)
         else:
             query = """
-            UPDATE inventory_movemetns_groups 
-            SET status = ?, updated_at = CURRENT_TIMESTAMP, updated_by_user_id = ?
-            WHERE id = ?
+            UPDATE inventory_movements_groups 
+            SET status = %s, updated_at = NOW(), updated_by_user_id = %s
+            WHERE id = %s
             """
             params = (new_status, user_id, shipment_id)
 
-        result = db.execute_query(query, params)
+        db.execute_query(query, params)
+        print(f"✅ Estado actualizado a '{new_status}'")
 
-        if db.cursor.rowcount == 0:
-            return jsonify({"status": "error", "message": "Envío no encontrado"}), 404
+        # LÓGICA ESPECIAL: Si el estado cambia a "recibido", transferir stock al destino
+        if new_status == "recibido":
+            print("🚚 Iniciando transferencia de stock al destino...")
+
+            # Obtener todos los movimientos del grupo
+            movements_query = """
+            SELECT 
+                im.product_id,
+                im.quantity,
+                wsv.id as variant_id,
+                wsv.size_id,
+                wsv.color_id,
+                wsv.variant_barcode
+            FROM inventory_movements im
+            LEFT JOIN warehouse_stock_variants wsv ON im.product_id = wsv.product_id 
+                AND wsv.branch_id = %s
+            WHERE im.inventory_movements_group_id = %s
+            """
+            movements = db.execute_query(
+                movements_query, (origin_branch_id, shipment_id)
+            )
+
+            for movement in movements:
+                product_id = movement["product_id"]
+                quantity = movement["quantity"]
+                size_id = movement["size_id"]
+                color_id = movement["color_id"]
+                variant_barcode = movement["variant_barcode"]
+
+                print(f"🔄 Transfiriendo producto {product_id}, cantidad {quantity}")
+
+                # Verificar si existe la misma variante en sucursal destino
+                dest_variant_query = """
+                SELECT id FROM warehouse_stock_variants 
+                WHERE product_id = %s AND size_id = %s AND color_id = %s AND branch_id = %s
+                """
+                dest_variant = db.execute_query(
+                    dest_variant_query,
+                    (product_id, size_id, color_id, destination_branch_id),
+                )
+
+                if dest_variant:
+                    # Actualizar stock existente en destino (sumar)
+                    update_dest_query = """
+                    UPDATE warehouse_stock_variants 
+                    SET quantity = quantity + %s, last_updated = NOW()
+                    WHERE product_id = %s AND size_id = %s AND color_id = %s AND branch_id = %s
+                    """
+                    db.execute_query(
+                        update_dest_query,
+                        (
+                            quantity,
+                            product_id,
+                            size_id,
+                            color_id,
+                            destination_branch_id,
+                        ),
+                    )
+                    print("✅ Stock de variante actualizado en destino")
+                else:
+                    # Crear nuevo registro de variante en destino
+                    # Si no tiene barcode, generar uno nuevo
+                    if not variant_barcode:
+                        try:
+                            from services.barcode_service import BarcodeService
+
+                            barcode_service = BarcodeService()
+                            variant_barcode = barcode_service.generate_variant_barcode(
+                                product_id, size_id, color_id
+                            )
+                        except Exception as e:
+                            print(f"⚠️ Error generando código de barras: {e}")
+                            variant_barcode = (
+                                f"VAR{product_id:04d}{size_id:03d}{color_id:03d}"
+                            )
+
+                    insert_dest_query = """
+                    INSERT INTO warehouse_stock_variants 
+                    (product_id, size_id, color_id, branch_id, quantity, variant_barcode, last_updated)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                    """
+                    db.execute_query(
+                        insert_dest_query,
+                        (
+                            product_id,
+                            size_id,
+                            color_id,
+                            destination_branch_id,
+                            quantity,
+                            variant_barcode,
+                        ),
+                    )
+                    print("✅ Nueva variante creada en destino")
+
+                # Actualizar también el stock general del producto (warehouse_stock)
+                general_stock_dest = """
+                SELECT id FROM warehouse_stock WHERE product_id = %s AND branch_id = %s
+                """
+                dest_stock = db.execute_query(
+                    general_stock_dest, (product_id, destination_branch_id)
+                )
+
+                if dest_stock:
+                    db.execute_query(
+                        """
+                        UPDATE warehouse_stock 
+                        SET quantity = quantity + %s, last_updated = NOW()
+                        WHERE product_id = %s AND branch_id = %s
+                    """,
+                        (quantity, product_id, destination_branch_id),
+                    )
+                    print("✅ Stock general aumentado en destino")
+                else:
+                    db.execute_query(
+                        """
+                        INSERT INTO warehouse_stock (product_id, branch_id, quantity, last_updated)
+                        VALUES (%s, %s, %s, NOW())
+                    """,
+                        (product_id, destination_branch_id, quantity),
+                    )
+                    print("✅ Nuevo stock general creado en destino")
+
+            print("🎉 Transferencia de stock completada")
+
+        # LÓGICA ESPECIAL: Si el estado cambia a "cancelado", devolver stock al origen
+        elif new_status == "cancelado":
+            print("↩️ Iniciando devolución de stock al origen...")
+
+            # Obtener todos los movimientos del grupo para devolverlos
+            movements_query = """
+            SELECT 
+                im.product_id,
+                im.quantity
+            FROM inventory_movements im
+            WHERE im.inventory_movements_group_id = %s
+            """
+            movements = db.execute_query(movements_query, (shipment_id,))
+
+            for movement in movements:
+                product_id = movement["product_id"]
+                quantity = movement["quantity"]
+
+                print(f"🔄 Devolviendo producto {product_id}, cantidad {quantity}")
+
+                # Devolver stock general al origen
+                origin_stock_query = """
+                SELECT id FROM warehouse_stock WHERE product_id = %s AND branch_id = %s
+                """
+                origin_stock = db.execute_query(
+                    origin_stock_query, (product_id, origin_branch_id)
+                )
+
+                if origin_stock:
+                    db.execute_query(
+                        """
+                        UPDATE warehouse_stock 
+                        SET quantity = quantity + %s, last_updated = NOW()
+                        WHERE product_id = %s AND branch_id = %s
+                    """,
+                        (quantity, product_id, origin_branch_id),
+                    )
+                    print("✅ Stock general devuelto al origen")
+                else:
+                    db.execute_query(
+                        """
+                        INSERT INTO warehouse_stock (product_id, branch_id, quantity, last_updated)
+                        VALUES (%s, %s, %s, NOW())
+                    """,
+                        (product_id, origin_branch_id, quantity),
+                    )
+                    print("✅ Nuevo stock general creado en origen")
+
+            print("🎉 Devolución de stock completada")
 
         return jsonify(
             {"status": "success", "message": f"Estado actualizado a: {new_status}"}
         ), 200
 
     except Exception as e:
+        print(f"❌ Error actualizando estado: {e}")
+        import traceback
+
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -1421,7 +1906,7 @@ def update_product():
             params.append(1 if data["has_discount"] else 0)
 
         # Actualizar fecha de modificación
-        update_fields.append("last_modified_date = CURRENT_TIMESTAMP")
+        update_fields.append("last_modified_date = NOW()")
 
         if update_fields:
             params.append(product_id)
@@ -1450,7 +1935,7 @@ def update_product():
                 ):
                     update_variant_query = """
                     UPDATE warehouse_stock_variants 
-                    SET quantity = ?, last_updated = CURRENT_TIMESTAMP
+                    SET quantity = ?, last_updated = NOW()
                     WHERE product_id = ? AND size_id = ? AND color_id = ? AND branch_id = ?
                     """
 

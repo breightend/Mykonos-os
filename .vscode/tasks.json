@@ -4,10 +4,11 @@
     {
       "label": "Start Backend Server",
       "type": "shell",
-      "command": "cd src/backend && C:\\Python312\\python.exe main.py",
+      "command": "cd src/backend && uv run python main.py",
       "group": "build",
       "isBackground": true,
       "problemMatcher": []
     }
   ]
 }
+

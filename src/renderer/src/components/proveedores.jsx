@@ -1,4 +1,4 @@
-import { Search, UserPlus, Package, FileChartPie } from 'lucide-react'
+import { Search, Package, FileChartPie, HousePlus } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
@@ -102,7 +102,7 @@ export default function Proveedores() {
               data-tip="Nuevo proveedor"
               onClick={() => setLocation('/nuevoProveedor')}
             >
-              <UserPlus className="h-5 w-5" />
+              <HousePlus className="h-5 w-5" />
             </button>
           </li>
           <li>
