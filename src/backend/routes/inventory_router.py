@@ -1730,6 +1730,90 @@ def update_product_by_id(product_id):
                         else:
                             print(f"⚠️ Variante incompleta: {variant}")
 
+                    # 🔄 SINCRONIZAR WAREHOUSE_STOCK CON LAS VARIANTES ACTUALIZADAS
+                    print(
+                        f"🔄 Sincronizando warehouse_stock para producto {product_id}"
+                    )
+
+                    # Obtener todos los branch_ids que tienen variantes de este producto
+                    cursor.execute(
+                        """
+                        SELECT DISTINCT branch_id 
+                        FROM warehouse_stock_variants 
+                        WHERE product_id = %s
+                        """,
+                        (product_id,),
+                    )
+
+                    affected_branches = cursor.fetchall()
+
+                    for branch_row in affected_branches:
+                        branch_id = branch_row[0]
+
+                        # Calcular la suma total de variantes para este producto en esta sucursal
+                        cursor.execute(
+                            """
+                            SELECT COALESCE(SUM(quantity), 0) as total_quantity
+                            FROM warehouse_stock_variants 
+                            WHERE product_id = %s AND branch_id = %s
+                            """,
+                            (product_id, branch_id),
+                        )
+
+                        total_result = cursor.fetchone()
+                        total_quantity = total_result[0] if total_result else 0
+
+                        print(
+                            f"📊 Sucursal {branch_id}: Total calculado = {total_quantity}"
+                        )
+
+                        # Verificar si existe registro en warehouse_stock
+                        cursor.execute(
+                            """
+                            SELECT id FROM warehouse_stock 
+                            WHERE product_id = %s AND branch_id = %s
+                            """,
+                            (product_id, branch_id),
+                        )
+
+                        existing_stock = cursor.fetchone()
+
+                        if existing_stock:
+                            # Actualizar cantidad existente
+                            cursor.execute(
+                                """
+                                UPDATE warehouse_stock 
+                                SET quantity = %s, last_updated = %s
+                                WHERE product_id = %s AND branch_id = %s
+                                """,
+                                (
+                                    total_quantity,
+                                    datetime.now().isoformat(),
+                                    product_id,
+                                    branch_id,
+                                ),
+                            )
+                            print(
+                                f"✅ warehouse_stock actualizado: producto {product_id}, sucursal {branch_id}, cantidad {total_quantity}"
+                            )
+                        else:
+                            # Crear nuevo registro si no existe
+                            cursor.execute(
+                                """
+                                INSERT INTO warehouse_stock (product_id, branch_id, quantity, last_updated)
+                                VALUES (%s, %s, %s, %s)
+                                """,
+                                (
+                                    product_id,
+                                    branch_id,
+                                    total_quantity,
+                                    datetime.now().isoformat(),
+                                ),
+                            )
+                            print(
+                                f"✅ warehouse_stock creado: producto {product_id}, sucursal {branch_id}, cantidad {total_quantity}"
+                            )
+
                 # Confirmar transacción
                 conn.commit()
 
