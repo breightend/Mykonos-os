@@ -107,22 +107,58 @@ export default function ProductsFamily({ onGroupSelect, selectedGroupId }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (formData.marked_as_root === '') {
-      formData.marked_as_root = 1
+    // Validar datos requeridos
+    if (!formData.group_name || formData.group_name.trim() === '') {
+      alert('El nombre del grupo es requerido')
+      return
     }
-    if (formData.parent_group_id === '') {
-      formData.parent_group_id = null
+
+    // Preparar datos para envío
+    const dataToSend = {
+      group_name: formData.group_name.trim(),
+      parent_group_id: formData.parent_group_id || null,
+      marked_as_root: formData.marked_as_root || 0
     }
+
+    console.log('📤 Enviando datos de familia:', dataToSend)
+
     try {
-      const response = await postFamilyData(formData)
-      console.log('Familia de productos guardada:', response)
+      const response = await postFamilyData(dataToSend)
+      console.log('✅ Familia de productos guardada:', response)
+      
+      // Limpiar formulario
       setFormData({
         group_name: '',
         parent_group_id: '',
         marked_as_root: ''
       })
+
+      // Recargar datos
+      const fetchData = async () => {
+        try {
+          const familyGroupResponse = await fetchFamilyProducts()
+          setFamilyGroup(familyGroupResponse)
+          const hierarchy = buildHierarchy(familyGroupResponse)
+          setHierarchicalFamilyGroup(hierarchy)
+        } catch (error) {
+          console.error('Error fetching family products after creation:', error)
+        }
+      }
+      await fetchData()
+
+      // Mostrar mensaje de éxito
+      alert('Familia de productos creada exitosamente!')
+
+      // Cerrar formulario
+      setMostrarAgregarFamilia(false)
     } catch (error) {
-      console.error('Error saving family product:', error)
+      console.error('❌ Error saving family product:', error)
+      console.error('❌ Error details:', error.response?.data)
+      
+      // Mostrar error específico si está disponible
+      const errorMessage =
+        error.response?.data?.mensaje || error.message || 'Error desconocido al crear la familia'
+      alert(`Error al crear la familia de productos: ${errorMessage}`)
     }
   }
 

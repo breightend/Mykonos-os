@@ -570,33 +570,53 @@ def verificar_uso_color(color_id):
 @product_router.route("/familyProducts", methods=["POST"])
 def recibir_datos_familia_producto():
     data = request.json
+    print(f"🔄 Recibiendo datos de familia: {data}")
+    
     # Obtenemos los datos del producto
     group_name = data.get("group_name")
     parent_group_id = data.get("parent_group_id")
     marked_as_root = data.get("marked_as_root")
 
+    if not group_name:
+        return jsonify({"mensaje": "El nombre del grupo es requerido", "status": "error"}), 400
+
     db = Database()
-    # if not family_name or not description:
-    #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    success = db.add_record(
-        "groups",
-        {
-            "group_name": group_name,
-            "parent_group_id": parent_group_id,
-            "marked_as_root": marked_as_root,
-        },
-    )
-    if success:
-        return (
-            jsonify(
-                {"mensaje": "Familia de productos creada con éxito", "status": "éxito"}
-            ),
-            200,
+    
+    try:
+        # Usar la nueva funcionalidad de add_record que es compatible con PostgreSQL
+        result = db.add_record(
+            "groups",
+            {
+                "group_name": group_name,
+                "parent_group_id": parent_group_id,
+                "marked_as_root": marked_as_root,
+            },
         )
-    else:
+        
+        print(f"🔍 Resultado add_record: {result}")
+        
+        if result and result.get("success"):
+            return (
+                jsonify(
+                    {"mensaje": "Familia de productos creada con éxito", "status": "éxito", "id": result.get("rowid")}
+                ),
+                200,
+            )
+        else:
+            error_msg = result.get("message", "Error desconocido") if result else "Error al crear la familia"
+            return (
+                jsonify(
+                    {"mensaje": f"Error al crear la familia de productos: {error_msg}", "status": "error"}
+                ),
+                500,
+            )
+    except Exception as e:
+        print(f"❌ Error en recibir_datos_familia_producto: {e}")
+        import traceback
+        traceback.print_exc()
         return (
             jsonify(
-                {"mensaje": "Error al crear la familia de productos", "status": "error"}
+                {"mensaje": f"Error interno: {str(e)}", "status": "error"}
             ),
             500,
         )
@@ -604,14 +624,23 @@ def recibir_datos_familia_producto():
 
 @product_router.route("/familyProducts", methods=["GET"])
 def obtener_familia_producto():
-    # Obtener los colores de la base de datos
-    db = Database()
-    family_products = db.get_all_records("groups")
-    if not family_products:
-        return jsonify(
-            {"mensaje": "No se encontraron familias de productos", "status": "error"}
-        ), 404
-    return jsonify(family_products), 200
+    try:
+        print("🔍 Obteniendo familias de productos...")
+        db = Database()
+        family_products = db.get_all_records("groups")
+        
+        print(f"🔍 Familias encontradas: {len(family_products) if family_products else 0}")
+        print(f"🔍 Datos: {family_products}")
+        
+        if not family_products:
+            # Retornar lista vacía en lugar de error, para que el frontend funcione
+            return jsonify([]), 200
+        return jsonify(family_products), 200
+    except Exception as e:
+        print(f"❌ Error obteniendo familias: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"mensaje": f"Error interno: {str(e)}", "status": "error"}), 500
 
 
 @product_router.route("/familyProducts/tree", methods=["GET"])

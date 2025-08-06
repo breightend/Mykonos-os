@@ -706,11 +706,11 @@ const EditarProducto = () => {
                         Precio de Costo
                       </label>
                       <input
-                        type="number"
-                        step="0.01"
+                        type="text"
                         value={formData.cost}
                         onChange={(e) => setFormData((prev) => ({ ...prev, cost: e.target.value }))}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                        placeholder="0.00"
                       />
                     </div>
 
@@ -719,8 +719,7 @@ const EditarProducto = () => {
                         Precio Original
                       </label>
                       <input
-                        type="number"
-                        step="0.01"
+                        type="text"
                         value={formData.original_price}
                         onChange={(e) => {
                           // Solo actualizar el precio original, NO recalcular descuentos automáticamente
@@ -739,11 +738,11 @@ const EditarProducto = () => {
                         Precio de Venta
                       </label>
                       <input
-                        type="number"
-                        step="0.01"
+                        type="text"
                         value={formData.sale_price}
                         onChange={(e) => calculateDiscount('sale_price', e.target.value)}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                        placeholder="0.00"
                       />
                     </div>
                   </div>
@@ -812,9 +811,7 @@ const EditarProducto = () => {
                               Descuento (%)
                             </label>
                             <input
-                              type="number"
-                              step="0.01"
-                              max="100"
+                              type="text"
                               value={formData.discount_percentage}
                               onChange={(e) => calculateDiscount('percentage', e.target.value)}
                               className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
@@ -827,8 +824,7 @@ const EditarProducto = () => {
                               Descuento ($)
                             </label>
                             <input
-                              type="number"
-                              step="0.01"
+                              type="text"
                               value={formData.discount_amount}
                               onChange={(e) => calculateDiscount('amount', e.target.value)}
                               className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
@@ -841,8 +837,7 @@ const EditarProducto = () => {
                               Descuento General
                             </label>
                             <input
-                              type="number"
-                              step="0.01"
+                              type="text"
                               value={formData.discount || ''}
                               onChange={(e) =>
                                 setFormData((prev) => ({ ...prev, discount: e.target.value }))
@@ -1012,13 +1007,13 @@ const EditarProducto = () => {
                             Cantidad
                           </label>
                           <input
-                            type="number"
-                            min="0"
+                            type="text"
                             value={newVariant.quantity}
                             onChange={(e) =>
                               setNewVariant((prev) => ({ ...prev, quantity: e.target.value }))
                             }
                             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                            placeholder="0"
                           />
                         </div>
                       </div>
@@ -1086,11 +1081,11 @@ const EditarProducto = () => {
                               style={{ backgroundColor: variant.color_hex || '#ccc' }}
                             ></div>
                             <input
-                              type="number"
-                              min="0"
+                              type="text"
                               value={variant.quantity || 0}
                               onChange={(e) => updateVariantStock(index, e.target.value)}
                               className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                              placeholder="0"
                             />
                             <span className="text-xs text-gray-500">unid.</span>
                           </div>
