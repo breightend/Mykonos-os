@@ -5,9 +5,9 @@ import {
   getCategoryXsize,
   postDataCategory,
   deleteCategory,
-  deleteSize
+  deleteSize,
+  fetchSize
 } from '../../services/products/sizeService'
-import { fetchSize } from '../../services/products/sizeService'
 import { useEffect, useState } from 'react'
 
 export default function ModalSize({ onRefresh }) {
@@ -25,7 +25,6 @@ export default function ModalSize({ onRefresh }) {
   const [mostrarAgregarCategoria, setMostrarAgregarCategoria] = useState(false)
   const [error, setError] = useState('')
 
-  // Auto-mostrar la sección de agregar categoría si no hay categorías
   useEffect(() => {
     if (category.length === 0) {
       setMostrarAgregarCategoria(true)
@@ -142,15 +141,12 @@ export default function ModalSize({ onRefresh }) {
         const response = await deleteCategory(categoryId)
         console.log('Categoría eliminada:', response)
 
-        // Refrescar la lista de categorías
         const updatedCategories = await fetchCategorySize()
         setCategory(updatedCategories)
 
-        // También refrescar talles por si se eliminó una categoría
         const updatedSizes = await fetchSize()
         setSizes(updatedSizes)
 
-        // Llamar a onRefresh si está disponible
         if (onRefresh) {
           onRefresh()
         }
@@ -203,15 +199,12 @@ export default function ModalSize({ onRefresh }) {
     const fetchData = async () => {
       try {
         const sizesResponse = await fetchSize()
-        console.log('Talles', sizesResponse)
         setSizes(sizesResponse)
 
         const categoryResponse = await fetchCategorySize()
-        console.log('Categoria', categoryResponse)
         setCategory(categoryResponse)
 
         const sizeXcategoryResponse = await getCategoryXsize()
-        console.log('Categoria por talles', sizeXcategoryResponse)
         setSizeXcategory(sizeXcategoryResponse)
       } catch (error) {
         console.error('Error fetching data:', error)

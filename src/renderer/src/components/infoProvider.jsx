@@ -88,11 +88,14 @@ export default function InfoProvider() {
         const purchasesData = await fetchPurchasesByProvider(providerId)
         console.log('Fetched provider purchases:', purchasesData)
         setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
-        
+
         // Calculate provider balance (total pending payments)
         if (Array.isArray(purchasesData)) {
           const pendingAmount = purchasesData
-            .filter(purchase => purchase.status === 'Pendiente de pago' || purchase.status === 'Pendiente')
+            .filter(
+              (purchase) =>
+                purchase.status === 'Pendiente de pago' || purchase.status === 'Pendiente'
+            )
             .reduce((total, purchase) => total + (purchase.total || 0), 0)
           setProviderBalance(pendingAmount)
         }
@@ -124,6 +127,16 @@ export default function InfoProvider() {
       return
     }
 
+    // Check if brand name already exists
+    const brandExists = allBrands.some(
+      (brand) => brand.brand_name.toLowerCase() === brandFormData.brand_name.toLowerCase()
+    )
+
+    if (brandExists) {
+      toast.error(`Ya existe una marca con el nombre "${brandFormData.brand_name}"`)
+      return
+    }
+
     try {
       setLoading(true)
       const currentDate = new Date().toISOString()
@@ -134,12 +147,42 @@ export default function InfoProvider() {
       })
 
       if (brandResponse.status === 'éxito' && brandResponse.brand_id) {
-        await assignBrandToProvider(providerId, brandResponse.brand_id)
+        try {
+          // Try to assign the brand to the provider
+          await assignBrandToProvider(providerId, brandResponse.brand_id)
 
-        const brands = await fetchBrandByProviders(providerId)
-        setProviderBrands(Array.isArray(brands) ? brands : [])
+          const brands = await fetchBrandByProviders(providerId)
+          setProviderBrands(Array.isArray(brands) ? brands : [])
 
-        toast.success('Marca creada y asignada exitosamente')
+          toast.success('Marca creada y asignada exitosamente')
+        } catch (assignError) {
+          console.error('Error assigning brand to provider:', assignError)
+
+          // Even if assignment fails, the brand was created successfully
+          if (assignError.response?.data?.error_type === 'duplicate_assignment') {
+            toast('Marca creada, pero ya estaba asignada a este proveedor', {
+              icon: '⚠️',
+              style: {
+                borderRadius: '10px',
+                background: '#f59e0b',
+                color: '#fff'
+              }
+            })
+          } else {
+            toast('Marca creada exitosamente, pero hubo un error al asignarla al proveedor', {
+              icon: '⚠️',
+              style: {
+                borderRadius: '10px',
+                background: '#f59e0b',
+                color: '#fff'
+              }
+            })
+          }
+
+          // Refresh the brands list anyway
+          const brands = await fetchBrandByProviders(providerId)
+          setProviderBrands(Array.isArray(brands) ? brands : [])
+        }
       } else {
         toast.success('Marca creada exitosamente')
       }
@@ -151,7 +194,17 @@ export default function InfoProvider() {
       setAllBrands(Array.isArray(allBrandsData) ? allBrandsData : [])
     } catch (error) {
       console.error('Error creating brand:', error)
-      toast.error('Error al crear la marca')
+
+      // Handle specific error types
+      if (error.response?.data?.error_type === 'duplicate_brand_name') {
+        toast.error(`Ya existe una marca con el nombre "${brandFormData.brand_name}"`)
+      } else if (error.response?.data?.mensaje) {
+        toast.error(error.response.data.mensaje)
+      } else if (error.response?.status === 400) {
+        toast.error('Datos inválidos. Verifica la información ingresada.')
+      } else {
+        toast.error('Error al crear la marca')
+      }
     } finally {
       setLoading(false)
     }
@@ -276,11 +329,13 @@ export default function InfoProvider() {
       setLoadingPurchases(true)
       const purchasesData = await fetchPurchasesByProvider(providerId)
       setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
-      
+
       // Recalculate provider balance
       if (Array.isArray(purchasesData)) {
         const pendingAmount = purchasesData
-          .filter((purchase) => purchase.status === 'Pendiente de pago' || purchase.status === 'Pendiente')
+          .filter(
+            (purchase) => purchase.status === 'Pendiente de pago' || purchase.status === 'Pendiente'
+          )
           .reduce((total, purchase) => total + (purchase.total || 0), 0)
         setProviderBalance(pendingAmount)
       }
@@ -384,7 +439,7 @@ export default function InfoProvider() {
         </div>
         <div>
           <hr className="my-6 border-slate-200 dark:border-slate-600" />
-          
+
           {/* Brands Section - Slideable */}
           <div className="card bg-base-100 mb-6 shadow-xl">
             <div className="card-body">
@@ -399,12 +454,32 @@ export default function InfoProvider() {
                     onClick={() => setShowBrands(!showBrands)}
                   >
                     {showBrands ? (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     )}
                   </button>
@@ -437,25 +512,32 @@ export default function InfoProvider() {
                     <div className="flex items-center justify-center py-8">
                       <div className="flex items-center gap-3">
                         <div className="loading loading-spinner loading-md"></div>
-                        <span className="text-slate-600 dark:text-slate-300">Cargando marcas...</span>
+                        <span className="text-slate-600 dark:text-slate-300">
+                          Cargando marcas...
+                        </span>
                       </div>
                     </div>
                   ) : (
-                    <table className="table table-zebra w-full">
+                    <table className="table-zebra table w-full">
                       <thead>
                         <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
                           <th className="text-slate-700 dark:text-slate-200">ID</th>
                           <th className="text-slate-700 dark:text-slate-200">Nombre</th>
                           <th className="text-slate-700 dark:text-slate-200">Descripción</th>
                           <th className="text-slate-700 dark:text-slate-200">Fecha Creación</th>
-                          <th className="text-slate-700 dark:text-slate-200">Última Modificación</th>
+                          <th className="text-slate-700 dark:text-slate-200">
+                            Última Modificación
+                          </th>
                           <th className="text-slate-700 dark:text-slate-200">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Array.isArray(providerBrands) && providerBrands.length > 0 ? (
                           providerBrands.map((brand) => (
-                            <tr key={brand.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700">
+                            <tr
+                              key={brand.id}
+                              className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                            >
                               <td className="font-medium">{brand.id}</td>
                               <td className="font-semibold">{brand.brand_name}</td>
                               <td>{brand.description || 'N/A'}</td>
@@ -503,7 +585,7 @@ export default function InfoProvider() {
                           <tr>
                             <td colSpan="6" className="py-8 text-center">
                               <div className="text-slate-500 dark:text-slate-400">
-                                <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
                                 No hay marcas asignadas a este proveedor
                               </div>
                             </td>
@@ -532,11 +614,21 @@ export default function InfoProvider() {
                 >
                   {showPurchases ? (
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
                     </svg>
                   ) : (
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   )}
                 </button>
@@ -549,7 +641,11 @@ export default function InfoProvider() {
                   ${Number(providerBalance || 0).toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {providerBalance > 0 ? 'Debemos' : providerBalance < 0 ? 'A nuestro favor' : 'Sin deuda'}
+                  {providerBalance > 0
+                    ? 'Debemos'
+                    : providerBalance < 0
+                      ? 'A nuestro favor'
+                      : 'Sin deuda'}
                 </div>
               </div>
             </div>
@@ -575,12 +671,16 @@ export default function InfoProvider() {
               </div>
 
               <div className="overflow-x-auto rounded-lg">
-                <h3 className="mb-4 text-lg font-semibold text-slate-700 dark:text-slate-200">Historial de Compras</h3>
+                <h3 className="mb-4 text-lg font-semibold text-slate-700 dark:text-slate-200">
+                  Historial de Compras
+                </h3>
                 {loadingPurchases ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="flex items-center gap-3">
                       <div className="loading loading-spinner loading-md"></div>
-                      <span className="text-slate-600 dark:text-slate-300">Cargando compras...</span>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Cargando compras...
+                      </span>
                     </div>
                   </div>
                 ) : (
@@ -602,7 +702,10 @@ export default function InfoProvider() {
                     <tbody>
                       {Array.isArray(purchases) && purchases.length > 0 ? (
                         purchases.map((purchase) => (
-                          <tr key={purchase.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700">
+                          <tr
+                            key={purchase.id}
+                            className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                          >
                             <td className="font-medium">{purchase.id}</td>
                             <td className="font-medium">
                               {purchase.purchase_date
@@ -622,9 +725,15 @@ export default function InfoProvider() {
                                 {purchase.status || 'Pendiente'}
                               </span>
                             </td>
-                            <td className="font-mono">${purchase.subtotal?.toFixed(2) || '0.00'}</td>
-                            <td className="font-mono">${purchase.discount?.toFixed(2) || '0.00'}</td>
-                            <td className="font-mono font-bold">${purchase.total?.toFixed(2) || '0.00'}</td>
+                            <td className="font-mono">
+                              ${purchase.subtotal?.toFixed(2) || '0.00'}
+                            </td>
+                            <td className="font-mono">
+                              ${purchase.discount?.toFixed(2) || '0.00'}
+                            </td>
+                            <td className="font-mono font-bold">
+                              ${purchase.total?.toFixed(2) || '0.00'}
+                            </td>
                             <td>{purchase.payment_method || 'N/A'}</td>
                             <td>{purchase.invoice_number || 'N/A'}</td>
                             <td>
@@ -670,9 +779,9 @@ export default function InfoProvider() {
           </div>
         </div>
 
-        <div className="flex justify-center mb-6">
-          <button 
-            className="btn btn-primary btn-wide gap-2 shadow-lg transition-all hover:shadow-xl" 
+        <div className="mb-6 flex justify-center">
+          <button
+            className="btn btn-primary btn-wide gap-2 shadow-lg transition-all hover:shadow-xl"
             onClick={() => setLocation('/proveedores')}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -688,188 +797,188 @@ export default function InfoProvider() {
 
         {/* Create Brand Modal */}
         {showCreateBrandModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
-            <h3 className="mb-4 text-lg font-bold text-gray-800">Nueva Marca</h3>
-            <form onSubmit={handleCreateBrand} className="space-y-4">
-              <div>
-                <label className="label">
-                  <span className="label-text">Nombre de la Marca *</span>
-                </label>
-                <input
-                  type="text"
-                  name="brand_name"
-                  value={brandFormData.brand_name}
-                  onChange={handleBrandInputChange}
-                  className="input input-bordered w-full"
-                  placeholder="Nombre de la marca"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">
-                  <span className="label-text">Descripción</span>
-                </label>
-                <textarea
-                  name="description"
-                  value={brandFormData.description}
-                  onChange={handleBrandInputChange}
-                  className="textarea textarea-bordered w-full"
-                  placeholder="Descripción de la marca"
-                  rows="3"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    setShowCreateBrandModal(false)
-                    setBrandFormData({ brand_name: '', description: '' })
-                  }}
-                  disabled={loading}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-success" disabled={loading}>
-                  {loading ? 'Creando...' : 'Crear Marca'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Brand Modal */}
-      {showEditBrandModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
-            <h3 className="mb-4 text-lg font-bold text-gray-800">Editar Marca</h3>
-            <form onSubmit={handleEditBrand} className="space-y-4">
-              <div>
-                <label className="label">
-                  <span className="label-text">Nombre de la Marca *</span>
-                </label>
-                <input
-                  type="text"
-                  name="brand_name"
-                  value={brandFormData.brand_name}
-                  onChange={handleBrandInputChange}
-                  className="input input-bordered w-full"
-                  placeholder="Nombre de la marca"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">
-                  <span className="label-text">Descripción</span>
-                </label>
-                <textarea
-                  name="description"
-                  value={brandFormData.description}
-                  onChange={handleBrandInputChange}
-                  className="textarea textarea-bordered w-full"
-                  placeholder="Descripción de la marca"
-                  rows="3"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    setShowEditBrandModal(false)
-                    setBrandFormData({ brand_name: '', description: '' })
-                    setSelectedBrand(null)
-                  }}
-                  disabled={loading}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                  {loading ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Assign Brand Modal */}
-      {showAssignBrandModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-3/4 max-w-2xl rounded-lg bg-white p-6 shadow-2xl">
-            <h3 className="mb-4 text-lg font-bold text-gray-800">Asignar Marca</h3>
-
-            {getUnassignedBrands().length > 0 ? (
-              <>
-                <div className="mb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
+              <h3 className="mb-4 text-lg font-bold text-gray-800">Nueva Marca</h3>
+              <form onSubmit={handleCreateBrand} className="space-y-4">
+                <div>
+                  <label className="label">
+                    <span className="label-text">Nombre de la Marca *</span>
+                  </label>
                   <input
                     type="text"
-                    placeholder="Buscar marca por nombre o descripción..."
-                    value={brandSearchTerm}
-                    onChange={(e) => setBrandSearchTerm(e.target.value)}
+                    name="brand_name"
+                    value={brandFormData.brand_name}
+                    onChange={handleBrandInputChange}
                     className="input input-bordered w-full"
+                    placeholder="Nombre de la marca"
+                    required
                   />
                 </div>
-
-                <div className="max-h-96 space-y-2 overflow-y-auto">
-                  {getFilteredUnassignedBrands().length > 0 ? (
-                    getFilteredUnassignedBrands().map((brand) => (
-                      <div
-                        key={brand.id}
-                        className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50"
-                      >
-                        <div>
-                          <h4 className="font-medium">{brand.brand_name}</h4>
-                          <p className="text-sm text-gray-600">{brand.description}</p>
-                        </div>
-                        <button
-                          onClick={() => handleAssignBrand(brand.id)}
-                          className="btn btn-primary btn-sm"
-                          disabled={loading}
-                        >
-                          Asignar
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="py-4 text-center text-gray-500">
-                      No se encontraron marcas que coincidan con la búsqueda
-                    </p>
-                  )}
+                <div>
+                  <label className="label">
+                    <span className="label-text">Descripción</span>
+                  </label>
+                  <textarea
+                    name="description"
+                    value={brandFormData.description}
+                    onChange={handleBrandInputChange}
+                    className="textarea textarea-bordered w-full"
+                    placeholder="Descripción de la marca"
+                    rows="3"
+                  />
                 </div>
-              </>
-            ) : (
-              <p className="py-4 text-center text-gray-500">
-                No hay marcas disponibles para asignar
-              </p>
-            )}
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => {
-                  setShowAssignBrandModal(false)
-                  setBrandSearchTerm('')
-                }}
-                className="btn"
-                disabled={loading}
-              >
-                Cerrar
-              </button>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      setShowCreateBrandModal(false)
+                      setBrandFormData({ brand_name: '', description: '' })
+                    }}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-success" disabled={loading}>
+                    {loading ? 'Creando...' : 'Crear Marca'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <PurchaseDetailsModal
-        purchaseId={selectedPurchaseId}
-        isOpen={showPurchaseDetails}
-        onClose={handleClosePurchaseDetails}
-        onUpdate={handlePurchaseUpdate}
-      />
+        {/* Edit Brand Modal */}
+        {showEditBrandModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
+              <h3 className="mb-4 text-lg font-bold text-gray-800">Editar Marca</h3>
+              <form onSubmit={handleEditBrand} className="space-y-4">
+                <div>
+                  <label className="label">
+                    <span className="label-text">Nombre de la Marca *</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="brand_name"
+                    value={brandFormData.brand_name}
+                    onChange={handleBrandInputChange}
+                    className="input input-bordered w-full"
+                    placeholder="Nombre de la marca"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Descripción</span>
+                  </label>
+                  <textarea
+                    name="description"
+                    value={brandFormData.description}
+                    onChange={handleBrandInputChange}
+                    className="textarea textarea-bordered w-full"
+                    placeholder="Descripción de la marca"
+                    rows="3"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      setShowEditBrandModal(false)
+                      setBrandFormData({ brand_name: '', description: '' })
+                      setSelectedBrand(null)
+                    }}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
-      <Toaster position="bottom-right" />
+        {/* Assign Brand Modal */}
+        {showAssignBrandModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-3/4 max-w-2xl rounded-lg bg-white p-6 shadow-2xl">
+              <h3 className="mb-4 text-lg font-bold text-gray-800">Asignar Marca</h3>
+
+              {getUnassignedBrands().length > 0 ? (
+                <>
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      placeholder="Buscar marca por nombre o descripción..."
+                      value={brandSearchTerm}
+                      onChange={(e) => setBrandSearchTerm(e.target.value)}
+                      className="input input-bordered w-full"
+                    />
+                  </div>
+
+                  <div className="max-h-96 space-y-2 overflow-y-auto">
+                    {getFilteredUnassignedBrands().length > 0 ? (
+                      getFilteredUnassignedBrands().map((brand) => (
+                        <div
+                          key={brand.id}
+                          className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50"
+                        >
+                          <div>
+                            <h4 className="font-medium">{brand.brand_name}</h4>
+                            <p className="text-sm text-gray-600">{brand.description}</p>
+                          </div>
+                          <button
+                            onClick={() => handleAssignBrand(brand.id)}
+                            className="btn btn-primary btn-sm"
+                            disabled={loading}
+                          >
+                            Asignar
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="py-4 text-center text-gray-500">
+                        No se encontraron marcas que coincidan con la búsqueda
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="py-4 text-center text-gray-500">
+                  No hay marcas disponibles para asignar
+                </p>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowAssignBrandModal(false)
+                    setBrandSearchTerm('')
+                  }}
+                  className="btn"
+                  disabled={loading}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <PurchaseDetailsModal
+          purchaseId={selectedPurchaseId}
+          isOpen={showPurchaseDetails}
+          onClose={handleClosePurchaseDetails}
+          onUpdate={handlePurchaseUpdate}
+        />
+
+        <Toaster position="bottom-right" />
       </div>
     </div>
   )

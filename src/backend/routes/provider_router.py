@@ -195,42 +195,89 @@ def delete_provider(provider_id):
 
 @provider_router.route("/brand", methods=["POST"])
 def recibir_datos_marca():
-    data = request.json
-    # Obtenemos los datos del producto
-    brand_name = data.get("brand_name")
-    description = data.get("description")
-    creation_date = data.get("creation_date")
-    last_modified_date = data.get("last_modified_date")
-    db = Database()
-    # if not family_name or not description:
-    #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    result = db.add_record(
-        "brands",
-        {
-            "brand_name": brand_name,
-            "description": description,
-            "creation_date": creation_date,
-            "last_modified_date": last_modified_date,
-        },
-    )
-    if result["success"]:
-        return (
-            jsonify(
-                {
-                    "mensaje": "Marca creada con éxito",
-                    "status": "éxito",
-                    "brand_id": result["rowid"],
-                }
-            ),
-            200,
+    try:
+        data = request.json
+        print(f"🔍 Received brand data: {data}")
+
+        # Obtenemos los datos del producto
+        brand_name = data.get("brand_name")
+        description = data.get("description")
+        creation_date = data.get("creation_date")
+        last_modified_date = data.get("last_modified_date")
+
+        print(f"🔍 Processing brand: {brand_name}, desc: {description}")
+
+        if not brand_name:
+            return jsonify(
+                {"mensaje": "El nombre de la marca es requerido", "status": "error"}
+            ), 400
+
+        db = Database()
+        result = db.add_record(
+            "brands",
+            {
+                "brand_name": brand_name,
+                "description": description,
+                "creation_date": creation_date,
+                "last_modified_date": last_modified_date,
+            },
         )
-    else:
+
+        print(f"🔍 Database result: {result}")
+
+        if result["success"]:
+            return (
+                jsonify(
+                    {
+                        "mensaje": "Marca creada con éxito",
+                        "status": "éxito",
+                        "brand_id": result["rowid"],
+                    }
+                ),
+                200,
+            )
+        else:
+            print(f"❌ Database error: {result.get('message', 'Unknown error')}")
+            error_message = result["message"]
+
+            # Check if it's a duplicate key error
+            if (
+                "duplicate key value violates unique constraint" in error_message
+                and "brands_brand_name_key" in error_message
+            ):
+                return (
+                    jsonify(
+                        {
+                            "mensaje": f"Ya existe una marca con el nombre '{brand_name}'",
+                            "status": "error",
+                            "error_type": "duplicate_brand_name",
+                            "error": error_message,
+                        }
+                    ),
+                    400,  # Bad Request instead of 500
+                )
+            else:
+                return (
+                    jsonify(
+                        {
+                            "mensaje": "Error al crear la marca",
+                            "status": "error",
+                            "error": error_message,
+                        }
+                    ),
+                    500,
+                )
+    except Exception as e:
+        print(f"❌ Exception in brand creation: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
         return (
             jsonify(
                 {
-                    "mensaje": "Error al crear la marca",
+                    "mensaje": "Error interno del servidor",
                     "status": "error",
-                    "error": result["message"],
+                    "error": str(e),
                 }
             ),
             500,
@@ -246,30 +293,74 @@ def get_all_brands():
 
 @provider_router.route("/providerXbrand", methods=["POST"])
 def recibir_datos_marcaXproveedores():
-    data = request.json
-    id_brand = data.get("id_brand")
-    id_provider = data.get("id_provider")
+    try:
+        data = request.json
+        print(f"🔍 Received brand-provider assignment data: {data}")
 
-    db = Database()
-    result = db.add_record(
-        "proveedorxmarca", {"id_provider": id_provider, "id_brand": id_brand}
-    )
-    if result["success"]:
-        return (
-            jsonify({"mensaje": "Marca asignada con éxito", "status": "éxito"}),
-            200,
-        )
-    else:
-        return (
-            jsonify(
+        id_brand = data.get("id_brand")
+        id_provider = data.get("id_provider")
+
+        print(f"🔍 Assigning brand {id_brand} to provider {id_provider}")
+
+        if not id_brand or not id_provider:
+            return jsonify(
                 {
-                    "mensaje": "Error al asignar la marca",
+                    "mensaje": "ID de marca e ID de proveedor son requeridos",
                     "status": "error",
-                    "error": result["message"],
                 }
-            ),
-            500,
+            ), 400
+
+        db = Database()
+        result = db.add_record(
+            "proveedorxmarca", {"id_provider": id_provider, "id_brand": id_brand}
         )
+
+        print(f"🔍 Assignment result: {result}")
+
+        if result["success"]:
+            return (
+                jsonify({"mensaje": "Marca asignada con éxito", "status": "éxito"}),
+                200,
+            )
+        else:
+            print(f"❌ Assignment error: {result.get('message', 'Unknown error')}")
+            error_message = result["message"]
+
+            # Check for duplicate assignment
+            if (
+                "duplicate key value violates unique constraint" in error_message
+                or "UNIQUE constraint failed" in error_message
+            ):
+                return jsonify(
+                    {
+                        "mensaje": "Esta marca ya está asignada a este proveedor",
+                        "status": "error",
+                        "error_type": "duplicate_assignment",
+                    }
+                ), 400
+            else:
+                return (
+                    jsonify(
+                        {
+                            "mensaje": "Error al asignar la marca",
+                            "status": "error",
+                            "error": error_message,
+                        }
+                    ),
+                    500,
+                )
+    except Exception as e:
+        print(f"❌ Exception in brand-provider assignment: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify(
+            {
+                "mensaje": "Error interno del servidor",
+                "status": "error",
+                "error": str(e),
+            }
+        ), 500
 
 
 @provider_router.route("/providerXbrand", methods=["GET"])

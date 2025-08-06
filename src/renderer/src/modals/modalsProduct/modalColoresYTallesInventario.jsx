@@ -1,25 +1,45 @@
-import { Trash2 } from 'lucide-react'
-import { use, useEffect, useState } from 'react'
+import { ChevronsUp, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import {
   fetchColor,
   postData,
   deleteColor,
   checkColorInUse
 } from '../../services/products/colorService'
-
+import {
+  fetchCategorySize,
+  postDataSize,
+  getCategoryXsize,
+  postDataCategory,
+  deleteCategory,
+  deleteSize,
+  fetchSize
+} from '../../services/products/sizeService'
 export default function ModalColoresYTalles() {
-
   const [colors, setColors] = useState([])
+  const [sizes, setSizes] = useState([])
+  const [category, setCategory] = useState([])
+  const [, setSizeXcategory] = useState([])
+  const [, setLoading] = useState(false)
+  const [mostrarAgregarCategoria, setMostrarAgregarCategoria] = useState(false)
+  const [error, setError] = useState('')
 
-  const [formData, setFormData] = useState({
+  const [formDataColor, setFormDataColor] = useState({
     color_name: '',
     color_hex: '#000000'
+  })
+  const [formDataSize, setFormDataSize] = useState({
+    size_name: '',
+    category_id: '',
+    description: '',
+    category_name: '',
+    permanent: 1
   })
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData({
-      ...formData,
+    setFormDataColor({
+      ...formDataColor,
       [name]: value
     })
   }
@@ -27,10 +47,10 @@ export default function ModalColoresYTalles() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await postData(formData)
+      const response = await postData(formDataColor)
       console.log('Color agregado:', response)
       setColors([...colors, response])
-      setFormData({
+      setFormDataColor({
         color_name: '',
         color_hex: '#000000'
       })
@@ -41,24 +61,100 @@ export default function ModalColoresYTalles() {
   const handleDeleteColor = (colorId) => async () => {
     try {
       await deleteColor(colorId)
-      setColors(colors.filter(color => color.id !== colorId))
+      setColors(colors.filter((color) => color.id !== colorId))
       console.log('Color eliminado:', colorId)
     } catch (error) {
       console.error('Error al eliminar color:', error)
     }
   }
+  
+    const handleDeleteCategory = async (categoryId, categoryName) => {
+    if (
+      window.confirm(
+        `¿Estás seguro de que quieres eliminar la categoría "${categoryName}"?\n\nEsto solo será posible si no hay talles o productos asociados.`
+      )
+    ) {
+      try {
+        const response = await deleteCategory(categoryId)
+        console.log('Categoría eliminada:', response)
+
+        const updatedCategories = await fetchCategorySize()
+        setCategory(updatedCategories)
+
+        const updatedSizes = await fetchSize()
+        setSizes(updatedSizes)
+
+        if (onRefresh) {
+          onRefresh()
+        }
+
+        setError('') // Clear any previous errors
+      } catch (error) {
+        console.error('Error:', error)
+        if (error.response?.data?.mensaje) {
+          setError(error.response.data.mensaje)
+        } else {
+          setError('Ocurrió un error al eliminar la categoría.')
+        }
+      }
+    }
+  }
+    const handleDeleteSize = async (sizeId, sizeName) => {
+    if (
+      window.confirm(
+        `¿Estás seguro de que quieres eliminar el talle "${sizeName}"?\n\nEsto solo será posible si no hay productos que lo utilicen.`
+      )
+    ) {
+      try {
+        const response = await deleteSize(sizeId)
+        console.log('Talle eliminado:', response)
+
+        // Refrescar la lista de talles
+        const updatedSizes = await fetchSize()
+        setSizes(updatedSizes)
+
+        // Llamar a onRefresh si está disponible
+        if (onRefresh) {
+          onRefresh()
+        }
+
+        setError('') // Clear any previous errors
+      } catch (error) {
+        console.error('Error:', error)
+        if (error.response?.data?.mensaje) {
+          setError(error.response.data.mensaje)
+        } else {
+          setError('Ocurrió un error al eliminar el talle.')
+        }
+      }
+    }
+  }
   useEffect(() => {
+    setLoading(true)
     const fetchColors = async () => {
       try {
         const response = await fetchColor()
         setColors(response)
+        const sizesResponse = await fetchSize()
+        setSizes(sizesResponse)
+        const categoryResponse = await fetchCategorySize()
+        setCategory(categoryResponse)
+
+        const sizeXcategoryResponse = await getCategoryXsize()
+        setSizeXcategory(sizeXcategoryResponse)
       } catch (error) {
         console.error('Error al obtener colores:', error)
       }
+      setLoading(false)
     }
     fetchColors()
   }, [])
 
+  useEffect(() => {
+    if (category.length === 0) {
+      setMostrarAgregarCategoria(true)
+    }
+  }, [category])
   return (
     <>
       <dialog id="sizeColorModal" className="modal modal-bottom sm:modal-middle">
@@ -98,7 +194,7 @@ export default function ModalColoresYTalles() {
               </tbody>
             </table>
           </div>
-            <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             <h3 className="text-lg font-bold">Agregar nuevo color</h3>
             <div className="form-control w-full max-w-xs">
               <label className="label">
@@ -107,7 +203,7 @@ export default function ModalColoresYTalles() {
               <input
                 type="text"
                 name="color_name"
-                value={formData.color_name}
+                value={formDataColor.color_name}
                 onChange={handleChange}
                 placeholder="Nombre del color"
                 className="input input-bordered w-full max-w-xs"
@@ -120,7 +216,7 @@ export default function ModalColoresYTalles() {
               <input
                 type="color"
                 name="color_hex"
-                value={formData.color_hex}
+                value={formDataColor.color_hex}
                 defaultValue={'#000000'}
                 onChange={handleChange}
                 className="input input-bordered w-full max-w-xs"

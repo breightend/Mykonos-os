@@ -1193,7 +1193,23 @@ class Database:
             placeholders = ", ".join(["%s" for _ in data.keys()])
             columns = ", ".join(data.keys())
             values = list(data.values())
-            sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) RETURNING id"
+
+            # Check if table has an 'id' column before using RETURNING id
+            # Tables like 'proveedorxmarca' use composite primary keys without an 'id' column
+            tables_without_id = [
+                "proveedorxmarca",
+                "usersxstorage",
+                "product_sizes",
+                "product_colors",
+            ]
+
+            if table_name in tables_without_id:
+                sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+            else:
+                sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) RETURNING id"
+
+            print(f"🔍 PostgreSQL SQL: {sql}")
+            print(f"🔍 PostgreSQL Values: {values}")
         else:
             # SQLite placeholders use :key
             placeholders = ", ".join([f":{key}" for key in data.keys()])
@@ -1206,9 +1222,23 @@ class Database:
                     cur = conn.cursor()
                     if self.use_postgres:
                         cur.execute(sql, values)
-                        result = cur.fetchone()
-                        rowid = result[0] if result else None
+
+                        # Only try to fetch result if we used RETURNING id
+                        tables_without_id = [
+                            "proveedorxmarca",
+                            "usersxstorage",
+                            "product_sizes",
+                            "product_colors",
+                        ]
+
+                        if table_name in tables_without_id:
+                            rowid = None  # No id to return for composite key tables
+                        else:
+                            result = cur.fetchone()
+                            rowid = result[0] if result else None
+
                         conn.commit()
+                        print(f"✅ PostgreSQL insert successful, rowid: {rowid}")
                     else:
                         cur.execute(sql, data)
                         rowid = cur.lastrowid
@@ -1220,6 +1250,10 @@ class Database:
                         "rowid": rowid,
                     }
         except Exception as e:
+            print(f"❌ Database error in add_record: {e}")
+            import traceback
+
+            traceback.print_exc()
             return {
                 "success": False,
                 "message": f"Error al agregar registro en la tabla '{table_name}': {e}",
