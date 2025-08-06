@@ -480,8 +480,9 @@ export default function NuevoProducto() {
       group_id: parseInt(tipo), // Usar el grupo seleccionado
       provider_id: parseInt(selectedProvider),
       description: '', // Keep as empty for now, or add a separate description field if needed
-      cost: parseFloat(cost) || 0,
-      sale_price: parseFloat(salePrice) || 0,
+      cost: cost && !isNaN(parseFloat(cost)) ? parseFloat(cost) : null,
+      sale_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null,
+      original_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null, // Set original price to initial sale price
       tax: 0, // Por defecto
       discount: 0, // Por defecto
       comments: comments || null,
@@ -526,8 +527,9 @@ export default function NuevoProducto() {
     if (!tipo) newErrors.tipo = 'El grupo de producto es requerido'
     if (!selectedProvider) newErrors.provider = 'El proveedor es requerido'
     if (!marca) newErrors.marca = 'La marca es requerida'
-    if (!cost || parseFloat(cost) <= 0) newErrors.cost = 'El costo debe ser mayor a 0'
-    if (!salePrice || parseFloat(salePrice) <= 0)
+    if (!cost || isNaN(parseFloat(cost)) || parseFloat(cost) <= 0)
+      newErrors.cost = 'El costo debe ser mayor a 0'
+    if (!salePrice || isNaN(parseFloat(salePrice)) || parseFloat(salePrice) <= 0)
       newErrors.salePrice = 'El precio de venta debe ser mayor a 0'
     if (cantidadTotal <= 0) newErrors.cantidad = 'Debe agregar al menos una unidad'
 

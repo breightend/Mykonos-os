@@ -23,6 +23,7 @@ def recibir_datos():
     description = data.get("description")
     cost = data.get("cost")
     sale_price = data.get("sale_price")
+    original_price = data.get("original_price")  # Add original_price extraction
     tax = data.get("tax")
     discount = data.get("discount")
     comments = data.get("comments")
@@ -57,6 +58,7 @@ def recibir_datos():
             "description": description,
             "cost": cost,
             "sale_price": sale_price,
+            "original_price": original_price,  # Add original_price to database record
             "tax": tax,
             "discount": discount,
             "comments": comments,
@@ -93,7 +95,7 @@ def recibir_datos():
 
                     # Actualizar el campo images_ids del producto con el ID de la imagen
                     db.update_record(
-                        "products", {"images_ids": str(image_id)}, f"id = {product_id}"
+                        "products", {"images_ids": str(image_id), "id": product_id}
                     )
                 else:
                     print(f"❌ Error al guardar imagen: {image_result.get('message')}")

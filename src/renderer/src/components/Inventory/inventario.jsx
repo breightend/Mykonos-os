@@ -6,6 +6,7 @@ import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import ProductsFamily from '../../modals/modalsInventory/productsFamily'
 import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailModal'
+import ModalColoresYTalles from '../../modals/modalsProduct/modalColoresYTallesInventario'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
 import { useSession } from '../../contexts/SessionContext'
@@ -71,10 +72,8 @@ export default function Inventario() {
           storagesResponse.status === 'success' &&
           Array.isArray(storagesResponse.data)
         ) {
-          // Si es un objeto con status y data
           storageArray = storagesResponse.data
         } else {
-          // Si no es ninguno de los formatos esperados
           storageArray = []
         }
 
@@ -86,10 +85,8 @@ export default function Inventario() {
       } catch (storageError) {
         console.error('❌ Error específico al cargar sucursales:', storageError)
         setStorageList([])
-        // No lanzar el error aquí, continuar con la carga del inventario
       }
 
-      // Establecer la sucursal por defecto basada en la sesión del usuario
       const storage = getCurrentStorage()
       if (storage?.id) {
         setSelectedStorage(storage.id.toString())
@@ -97,7 +94,6 @@ export default function Inventario() {
         setSelectedStorage('')
       }
 
-      // Luego cargar el inventario
       const initialStorageId = storage?.id || null
       const response = await inventoryService.getProductsSummary(initialStorageId)
 
@@ -115,14 +111,11 @@ export default function Inventario() {
     }
   }, [getCurrentStorage])
 
-  // Solo se ejecuta una vez al montar el componente
   useEffect(() => {
     loadInitialData()
   }, [loadInitialData])
 
-  // Efecto separado para cuando cambia la sucursal seleccionada manualmente
   useEffect(() => {
-    // Solo cargar si selectedStorage ha sido establecido después de la carga inicial
     if (selectedStorage !== '' && selectedStorage !== currentStorage?.id?.toString()) {
       loadInventoryData(selectedStorage)
     } else if (selectedStorage === '' && storageList.length > 0) {
@@ -337,6 +330,7 @@ export default function Inventario() {
               <button
                 className="btn btn-ghost tooltip tooltip-bottom"
                 data-tip="Agregar colores y talles"
+                onClick={() => document.getElementById('sizeColorModal').showModal()}
               >
                 <ListPlus className="h-5 w-5" />
               </button>
@@ -599,6 +593,8 @@ export default function Inventario() {
         />
 
         <ProductsFamily onGroupSelect={handleGroupSelect} selectedGroupId={selectedGroup} />
+
+        <ModalColoresYTalles onRefresh={loadInitialData} />
       </div>
     </div>
   )

@@ -25,17 +25,17 @@ def get_products_summary():
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
                 COALESCE(SUM(ws.quantity), 0) as cantidad_total,
-                COALESCE(p.last_modified_date, datetime('now')) as fecha_edicion,
+                COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
                 COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
                 p.sale_price
             FROM products p
-            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = ?
+            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = %s
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
             GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price
-            HAVING cantidad_total > 0
+            HAVING SUM(ws.quantity) > 0
             ORDER BY p.product_name
             """
             products = db.execute_query(query, (storage_id,))
@@ -47,7 +47,7 @@ def get_products_summary():
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
                 COALESCE(SUM(ws.quantity), 0) as cantidad_total,
-                COALESCE(p.last_modified_date, datetime('now')) as fecha_edicion,
+                COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
                 COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
@@ -141,7 +141,7 @@ def get_product_details(product_id):
             b.description as brand_description
         FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
-        WHERE p.id = ?
+        WHERE p.id = %s
         """
         product_info = db.execute_query(product_query, (product_id,))
 
@@ -220,7 +220,7 @@ def get_product_details(product_id):
             ws.last_updated
         FROM warehouse_stock ws
         JOIN storage s ON ws.branch_id = s.id
-        WHERE ws.product_id = ?
+        WHERE ws.product_id = %s
         ORDER BY s.name
         """
         stock_data = db.execute_query(stock_query, (product_id,))
@@ -256,7 +256,7 @@ def get_product_details(product_id):
         SELECT c.id, c.color_name, c.color_hex
         FROM product_colors pc
         JOIN colors c ON pc.color_id = c.id
-        WHERE pc.product_id = ?
+        WHERE pc.product_id = %s
         """
         colors_data = db.execute_query(colors_query, (product_id,))
         print(f"🔍 DEBUG product-details: Colors data: {colors_data}")
@@ -284,7 +284,7 @@ def get_product_details(product_id):
             SELECT ps.id, s.size_name
             FROM product_sizes ps
             JOIN sizes s ON ps.size_id = s.id
-            WHERE ps.product_id = ?
+            WHERE ps.product_id = %s
             """
             sizes_data = db.execute_query(sizes_query, (product_id,))
             print(f"🔍 DEBUG product-details: Sizes data: {sizes_data}")
@@ -328,7 +328,7 @@ def get_product_details(product_id):
             LEFT JOIN sizes s ON wsv.size_id = s.id
             LEFT JOIN colors c ON wsv.color_id = c.id
             JOIN storage st ON wsv.branch_id = st.id
-            WHERE wsv.product_id = ?
+            WHERE wsv.product_id = %s
             ORDER BY s.size_name, c.color_name, st.name
             """
             variants_data = db.execute_query(variants_query, (product_id,))
@@ -437,7 +437,7 @@ def get_product_details(product_id):
             image_check_query = """
             SELECT COUNT(*) as image_count
             FROM images 
-            WHERE product_id = ? 
+            WHERE product_id = %s 
             LIMIT 1
             """
             print(
@@ -504,16 +504,16 @@ def get_products_by_storage():
                 ws.quantity as cantidad,
                 s.name as sucursal,
                 s.id as sucursal_id,
-                COALESCE(p.last_modified_date, datetime('now')) as fecha,
-                COALESCE(GROUP_CONCAT(c.color_name, ', '), 'Sin colores') as colores
+                COALESCE(p.last_modified_date, NOW()) as fecha,
+                COALESCE(STRING_AGG(c.color_name, ', '), 'Sin colores') as colores
             FROM warehouse_stock ws
             JOIN products p ON ws.product_id = p.id
             JOIN storage s ON ws.branch_id = s.id
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN product_colors pc ON p.id = pc.product_id
             LEFT JOIN colors c ON pc.color_id = c.id
-            WHERE ws.branch_id = ?
-            GROUP BY p.id, ws.branch_id
+            WHERE ws.branch_id = %s
+            GROUP BY p.id, ws.branch_id, p.product_name, b.brand_name, ws.quantity, s.name, s.id, p.last_modified_date
             ORDER BY p.product_name
             """
             products = db.execute_query(query, (storage_id,))
@@ -528,15 +528,15 @@ def get_products_by_storage():
                 ws.quantity as cantidad,
                 s.name as sucursal,
                 s.id as sucursal_id,
-                COALESCE(p.last_modified_date, datetime('now')) as fecha,
-                COALESCE(GROUP_CONCAT(c.color_name, ', '), 'Sin colores') as colores
+                COALESCE(p.last_modified_date, NOW()) as fecha,
+                COALESCE(STRING_AGG(c.color_name, ', '), 'Sin colores') as colores
             FROM warehouse_stock ws
             JOIN products p ON ws.product_id = p.id
             JOIN storage s ON ws.branch_id = s.id
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN product_colors pc ON p.id = pc.product_id
             LEFT JOIN colors c ON pc.color_id = c.id
-            GROUP BY p.id, ws.branch_id
+            GROUP BY p.id, ws.branch_id, p.product_name, b.brand_name, ws.quantity, s.name, s.id, p.last_modified_date
             ORDER BY p.product_name, s.name
             """
             products = db.execute_query(query)
@@ -683,7 +683,7 @@ def get_product_stock_by_storage(product_id):
         FROM warehouse_stock ws
         JOIN products p ON ws.product_id = p.id
         JOIN storage s ON ws.branch_id = s.id
-        WHERE p.id = ?
+        WHERE p.id = %s
         ORDER BY s.name
         """
         stock = db.execute_query(query, (product_id,))
@@ -718,7 +718,7 @@ def update_stock():
         # Verificar si ya existe un registro para este producto en esta sucursal
         check_query = """
         SELECT id FROM warehouse_stock 
-        WHERE product_id = ? AND branch_id = ?
+        WHERE product_id = %s AND branch_id = %s
         """
         existing = db.execute_query(check_query, (product_id, storage_id))
 
@@ -726,8 +726,8 @@ def update_stock():
             # Actualizar registro existente usando execute_query
             update_query = """
             UPDATE warehouse_stock 
-            SET quantity = ?, last_updated = datetime('now', 'localtime')
-            WHERE product_id = ? AND branch_id = ?
+            SET quantity = %s, last_updated = NOW()
+            WHERE product_id = %s AND branch_id = %s
             """
             with db.create_connection() as conn:
                 cur = conn.cursor()
@@ -999,14 +999,14 @@ def debug_inventory():
                 s.name as sucursal,
                 s.id as sucursal_id,
                 p.last_modified_date as fecha,
-                GROUP_CONCAT(DISTINCT c.color_name, ', ') as colores
+                STRING_AGG(DISTINCT c.color_name, ', ') as colores
             FROM warehouse_stock ws
             JOIN products p ON ws.product_id = p.id
             JOIN storage s ON ws.branch_id = s.id
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN product_colors pc ON p.id = pc.product_id
             LEFT JOIN colors c ON pc.color_id = c.id
-            GROUP BY p.id, ws.branch_id
+            GROUP BY p.id, ws.branch_id, p.product_name, b.brand_name, ws.quantity, s.name, s.id, p.last_modified_date
             ORDER BY p.product_name, s.name
             LIMIT 3
             """
@@ -1187,7 +1187,7 @@ def get_pending_shipments(storage_id):
             img.shipped_at,
             img.delivered_at,
             img.notes,
-            GROUP_CONCAT(
+            STRING_AGG(
                 p.product_name || ' (x' || im.quantity || ')', 
                 ', '
             ) as products_summary
@@ -1196,7 +1196,7 @@ def get_pending_shipments(storage_id):
         JOIN storage sd ON img.destination_branch_id = sd.id
         LEFT JOIN inventory_movemetns im ON img.id = im.inventory_movements_group_id
         LEFT JOIN products p ON im.product_id = p.id
-        WHERE img.destination_branch_id = ? 
+        WHERE img.destination_branch_id = %s 
         AND img.status IN ('empacado', 'en_transito')
         GROUP BY img.id
         ORDER BY img.created_at DESC
@@ -1526,7 +1526,7 @@ def update_product_by_id(product_id):
 
                 for field, column in updatable_fields.items():
                     if field in data:
-                        update_fields.append(f"{column} = ?")
+                        update_fields.append(f"{column} = %s")
                         # Convertir booleanos a enteros para has_discount
                         if field == "has_discount":
                             update_values.append(1 if data[field] else 0)
@@ -1535,14 +1535,14 @@ def update_product_by_id(product_id):
 
                 # Agregar fecha de modificación
                 if update_fields:
-                    update_fields.append("last_modified_date = ?")
+                    update_fields.append("last_modified_date = %s")
                     update_values.append(datetime.now().isoformat())
                     update_values.append(product_id)
 
                     update_query = f"""
                     UPDATE products 
                     SET {", ".join(update_fields)}
-                    WHERE id = ?
+                    WHERE id = %s
                     """
 
                     cursor.execute(update_query, update_values)
@@ -1593,12 +1593,12 @@ def update_product_by_id(product_id):
 
                         # Eliminar imagen anterior si existe
                         cursor.execute(
-                            "DELETE FROM images WHERE product_id = ?", (product_id,)
+                            "DELETE FROM images WHERE product_id = %s", (product_id,)
                         )
 
                         # Insertar nueva imagen
                         cursor.execute(
-                            "INSERT INTO images (product_id, image_data) VALUES (?, ?)",
+                            "INSERT INTO images (product_id, image_data) VALUES (%s, %s)",
                             (product_id, optimized_image_bytes),
                         )
 
@@ -1616,14 +1616,15 @@ def update_product_by_id(product_id):
 
                     # Eliminar colores existentes
                     cursor.execute(
-                        "DELETE FROM product_colors WHERE product_id = ?", (product_id,)
+                        "DELETE FROM product_colors WHERE product_id = %s",
+                        (product_id,),
                     )
 
                     # Agregar nuevos colores
                     for color_id in data["colors"]:
                         if color_id:
                             cursor.execute(
-                                "INSERT INTO product_colors (product_id, color_id) VALUES (?, ?)",
+                                "INSERT INTO product_colors (product_id, color_id) VALUES (%s, %s)",
                                 (product_id, color_id),
                             )
                     print(f"✅ Colores actualizados para producto {product_id}")
@@ -1634,14 +1635,14 @@ def update_product_by_id(product_id):
 
                     # Eliminar tallas existentes
                     cursor.execute(
-                        "DELETE FROM product_sizes WHERE product_id = ?", (product_id,)
+                        "DELETE FROM product_sizes WHERE product_id = %s", (product_id,)
                     )
 
                     # Agregar nuevas tallas
                     for size_id in data["sizes"]:
                         if size_id:
                             cursor.execute(
-                                "INSERT INTO product_sizes (product_id, size_id) VALUES (?, ?)",
+                                "INSERT INTO product_sizes (product_id, size_id) VALUES (%s, %s)",
                                 (product_id, size_id),
                             )
                     print(f"✅ Tallas actualizadas para producto {product_id}")
@@ -1684,7 +1685,7 @@ def update_product_by_id(product_id):
                                     """
                                     INSERT INTO warehouse_stock_variants 
                                     (product_id, size_id, color_id, branch_id, quantity, variant_barcode, last_updated)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                                 """,
                                     (
                                         product_id,
@@ -1705,8 +1706,8 @@ def update_product_by_id(product_id):
                                 cursor.execute(
                                     """
                                     UPDATE warehouse_stock_variants 
-                                    SET quantity = ?, last_updated = ?
-                                    WHERE product_id = ? AND size_id = ? AND color_id = ? AND branch_id = ?
+                                    SET quantity = %s, last_updated = %s
+                                    WHERE product_id = %s AND size_id = %s AND color_id = %s AND branch_id = %s
                                 """,
                                     (
                                         variant.get("quantity", 0),
@@ -1738,7 +1739,7 @@ def update_product_by_id(product_id):
                     SELECT p.*, b.brand_name 
                     FROM products p 
                     LEFT JOIN brands b ON p.brand_id = b.id 
-                    WHERE p.id = ?
+                    WHERE p.id = %s
                 """,
                     (product_id,),
                 )

@@ -1547,15 +1547,29 @@ class Database:
         """
 
         try:
-            with self.create_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                cur.execute(sql)
-                rows = cur.fetchall()
-                if rows:
-                    return [dict(row) for row in rows]
-                else:
-                    return []
+            if self.use_postgres:
+                # PostgreSQL version
+                with self.create_connection() as conn:
+                    with conn.cursor(
+                        cursor_factory=psycopg2.extras.RealDictCursor
+                    ) as cur:
+                        cur.execute(sql)
+                        rows = cur.fetchall()
+                        if rows:
+                            return [dict(row) for row in rows]
+                        else:
+                            return []
+            else:
+                # SQLite version
+                with self.create_connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cur = conn.cursor()
+                    cur.execute(sql)
+                    rows = cur.fetchall()
+                    if rows:
+                        return [dict(row) for row in rows]
+                    else:
+                        return []
         except Exception as e:
             print(f"Error al obtener registros con JOIN: {e}")
             return []
@@ -1599,20 +1613,40 @@ class Database:
             sql += f" WHERE {where_clause}"
 
         try:
-            with self.create_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
+            if self.use_postgres:
+                # PostgreSQL version
+                with self.create_connection() as conn:
+                    with conn.cursor(
+                        cursor_factory=psycopg2.extras.RealDictCursor
+                    ) as cur:
+                        if where_params:
+                            # Convert SQLite-style placeholders to PostgreSQL
+                            sql_postgres = sql.replace("?", "%s")
+                            cur.execute(sql_postgres, where_params)
+                        else:
+                            cur.execute(sql)
 
-                if where_params:
-                    cur.execute(sql, where_params)
-                else:
-                    cur.execute(sql)
+                        rows = cur.fetchall()
+                        if rows:
+                            return [dict(row) for row in rows]
+                        else:
+                            return []
+            else:
+                # SQLite version
+                with self.create_connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cur = conn.cursor()
 
-                rows = cur.fetchall()
-                if rows:
-                    return [dict(row) for row in rows]
-                else:
-                    return []
+                    if where_params:
+                        cur.execute(sql, where_params)
+                    else:
+                        cur.execute(sql)
+
+                    rows = cur.fetchall()
+                    if rows:
+                        return [dict(row) for row in rows]
+                    else:
+                        return []
         except Exception as e:
             print(f"Error al obtener registros con JOIN: {e}")
             return []
