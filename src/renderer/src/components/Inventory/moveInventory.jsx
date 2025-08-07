@@ -17,7 +17,9 @@ import {
   Search,
   Scan,
   Plus,
-  Minus
+  Minus,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
 
@@ -46,8 +48,35 @@ export default function MoveInventory() {
   const [selectedShipmentProducts, setSelectedShipmentProducts] = useState([])
   const [selectedShipmentInfo, setSelectedShipmentInfo] = useState(null)
 
+  // Estado para manejar filas expandidas en envíos realizados
+  const [expandedSentShipments, setExpandedSentShipments] = useState(new Set())
+
   const { getCurrentStorage } = useSession()
   const currentStorage = getCurrentStorage()
+
+  // Función para limpiar y validar el color hex (similar a ProductDetailModal)
+  const getValidHexColor = (hexValue) => {
+    if (!hexValue) return '#6B7280' // fallback gris
+
+    // Limpiar espacios y caracteres invisibles
+    const cleanHex = hexValue.toString().trim()
+
+    // Verificar si es un formato hex válido
+    const hexRegex = /^#[0-9A-Fa-f]{6}$/
+
+    if (hexRegex.test(cleanHex)) {
+      return cleanHex
+    }
+
+    // Si no tiene # al inicio pero tiene 6 caracteres hex válidos, agregarlo
+    const hexWithoutHash = cleanHex.replace('#', '')
+    if (/^[0-9A-Fa-f]{6}$/.test(hexWithoutHash)) {
+      return `#${hexWithoutHash}`
+    }
+
+    console.warn('Color hex inválido:', hexValue, 'usando fallback')
+    return '#6B7280' // fallback gris
+  }
 
   // Buscar producto por código de barras de variante
   const searchByBarcode = async (barcode) => {
@@ -262,26 +291,89 @@ export default function MoveInventory() {
     try {
       setLoadingShipments(true)
       if (currentStorage?.id) {
+        console.log('📤 Cargando envíos realizados desde sucursal:', currentStorage.id)
         const response = await inventoryService.getSentShipments(currentStorage.id)
+
+        console.log('🔍 DEBUG: Respuesta completa de getSentShipments:', response)
+
         if (response.status === 'success' && response.data) {
+          console.log('🔍 DEBUG: Datos de envíos recibidos:', response.data)
+
+          // Log detallado de la estructura de cada envío
+          response.data.forEach((shipment, index) => {
+            console.log(`🔍 DEBUG: Envío ${index + 1} (ID: ${shipment.id}):`, {
+              shipment_structure: Object.keys(shipment),
+              products_count: shipment.products?.length || 0,
+              products_structure: shipment.products?.map((p, idx) => ({
+                index: idx,
+                keys: Object.keys(p),
+                data: p
+              }))
+            })
+          })
+
+          // Procesar cada envío y enriquecer los productos
+          const enrichedShipments = response.data.map((shipment) => {
+            console.log('🔍 DEBUG: Procesando envío:', shipment.id)
+
+            // Por ahora, NO procesar nada, solo devolver tal como viene del backend
+            console.log('� Envío tal como viene del backend:', shipment)
+
+            return {
+              ...shipment,
+              // Si los productos ya tienen la información completa, usarla
+              products: (shipment.products || []).map((product, index) => {
+                console.log(`📦 Producto ${index + 1} original del backend:`, product)
+
+                // Devolver exactamente como viene del backend
+                return {
+                  ...product
+                }
+              })
+            }
+          })
+
           setSentShipments(response.data)
+          console.log('✅ Envíos realizados cargados con información completa:', response.data)
         } else {
-          // Datos de ejemplo si no hay envíos todavía
+          console.log('⚠️ No se recibieron datos de envíos o respuesta fallida')
           setSentShipments([])
         }
       }
     } catch (error) {
       console.error('❌ Error cargando envíos salientes:', error)
       setError(error.message || 'Error al cargar envíos salientes')
-      // Mostrar datos de ejemplo en caso de error (para desarrollo)
+
+      // Mostrar datos de ejemplo mejorados en caso de error (para desarrollo)
+      console.log('🧪 Usando datos mock debido a error')
       const mockSentShipments = [
         {
           id: 3,
           fromStorage: currentStorage?.name || 'Mi Sucursal',
           toStorage: 'Sucursal Norte',
           products: [
-            { name: 'Producto X', quantity: 10 },
-            { name: 'Producto Y', quantity: 5 }
+            {
+              name: 'Zapatillas Nike Air Max',
+              quantity: 2,
+              brand: 'Nike',
+              sale_price: 89999,
+              cost: 45000,
+              size: '42',
+              color: 'Negro',
+              color_hex: '#000000',
+              variant_barcode: 'VAR0001042001'
+            },
+            {
+              name: 'Remera Adidas Classic',
+              quantity: 5,
+              brand: 'Adidas',
+              sale_price: 25999,
+              cost: 12000,
+              size: 'L',
+              color: 'Blanco',
+              color_hex: '#FFFFFF',
+              variant_barcode: 'VAR0002003002'
+            }
           ],
           status: 'empacado',
           createdAt: '2024-01-16'
@@ -290,7 +382,19 @@ export default function MoveInventory() {
           id: 4,
           fromStorage: currentStorage?.name || 'Mi Sucursal',
           toStorage: 'Sucursal Sur',
-          products: [{ name: 'Producto Z', quantity: 3 }],
+          products: [
+            {
+              name: "Pantalón Levi's 501",
+              quantity: 1,
+              brand: "Levi's",
+              sale_price: 67999,
+              cost: 34000,
+              size: '32',
+              color: 'Azul',
+              color_hex: '#1E40AF',
+              variant_barcode: 'VAR0003032003'
+            }
+          ],
           status: 'en_transito',
           createdAt: '2024-01-15'
         }
@@ -468,6 +572,19 @@ export default function MoveInventory() {
     setShowProductModal(false)
     setSelectedShipmentProducts([])
     setSelectedShipmentInfo(null)
+  }
+
+  // Funciones para manejar la expansión de productos en envíos realizados
+  const toggleSentShipmentExpansion = (shipmentId) => {
+    setExpandedSentShipments((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(shipmentId)) {
+        newSet.delete(shipmentId)
+      } else {
+        newSet.add(shipmentId)
+      }
+      return newSet
+    })
   }
 
   const executeMovement = async () => {
@@ -649,7 +766,7 @@ export default function MoveInventory() {
           <div className="mb-6 flex gap-4">
             <button
               onClick={startProductSelection}
-              className="btn btn-primary"
+              className={`btn ${!showPendingShipments && !showSentShipments && step >= 1 ? 'btn-primary' : 'btn-outline btn-primary'}`}
               disabled={!currentStorage?.id}
             >
               <Package className="h-5 w-5" />
@@ -661,10 +778,11 @@ export default function MoveInventory() {
                 setShowSentShipments(false)
                 loadPendingShipments()
               }}
-              className="btn btn-secondary"
+              className={`btn ${showPendingShipments ? 'btn-secondary' : 'btn-outline btn-secondary'}`}
             >
               <Clock className="h-5 w-5" />
               Envíos Pendientes
+              {showPendingShipments && <span className="ml-1">📍</span>}
             </button>
             <button
               onClick={() => {
@@ -672,10 +790,11 @@ export default function MoveInventory() {
                 setShowPendingShipments(false)
                 loadSentShipments()
               }}
-              className="btn btn-accent"
+              className={`btn ${showSentShipments ? 'btn-accent' : 'btn-outline btn-accent'}`}
             >
               <Truck className="h-5 w-5" />
               Envíos Realizados
+              {showSentShipments && <span className="ml-1">📍</span>}
             </button>
 
             {/* Botón temporal para crear envíos de prueba */}
@@ -695,7 +814,10 @@ export default function MoveInventory() {
             <div className="card bg-base-200 mb-6 shadow-xl">
               <div className="card-body">
                 <div className="mb-4 flex items-center justify-between">
-                  <h4 className="card-title">Envíos Pendientes</h4>
+                  <div className="flex items-center gap-3">
+                    <h4 className="card-title text-secondary">📥 Envíos Pendientes</h4>
+                    <div className="badge badge-secondary">Recibiendo</div>
+                  </div>
                   <button
                     onClick={() => setShowPendingShipments(false)}
                     className="btn btn-ghost btn-sm"
@@ -848,7 +970,10 @@ export default function MoveInventory() {
             <div className="card bg-base-200 mb-6 shadow-xl">
               <div className="card-body">
                 <div className="mb-4 flex items-center justify-between">
-                  <h4 className="card-title">Envíos Realizados</h4>
+                  <div className="flex items-center gap-3">
+                    <h4 className="card-title text-accent">📤 Envíos Realizados</h4>
+                    <div className="badge badge-accent">Enviando</div>
+                  </div>
                   <button
                     onClick={() => setShowSentShipments(false)}
                     className="btn btn-ghost btn-sm"
@@ -886,138 +1011,275 @@ export default function MoveInventory() {
                       </thead>
                       <tbody>
                         {sentShipments.map((shipment) => (
-                          <tr key={shipment.id} className="hover">
-                            <td>
-                              <div className="font-medium">{shipment.toStorage}</div>
-                            </td>
-                            <td>
-                              <div className="text-sm">
-                                {shipment.products.map((product, idx) => (
-                                  <div key={idx}>
-                                    {product.name} (x{product.quantity})
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                            <td>
-                              <div
-                                className={`badge ${
-                                  shipment.status === 'empacado'
-                                    ? 'badge-info'
+                          <>
+                            <tr key={shipment.id} className="hover">
+                              <td>
+                                <div className="font-medium">{shipment.toStorage}</div>
+                              </td>
+                              <td>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => toggleSentShipmentExpansion(shipment.id)}
+                                    className="btn btn-ghost btn-xs"
+                                    title="Ver/ocultar detalles de productos"
+                                  >
+                                    {expandedSentShipments.has(shipment.id) ? (
+                                      <ChevronDown className="h-3 w-3" />
+                                    ) : (
+                                      <ChevronRight className="h-3 w-3" />
+                                    )}
+                                    Más información
+                                  </button>
+                                  <span className="text-xs opacity-70">
+                                    {shipment.products.length} producto
+                                    {shipment.products.length !== 1 ? 's' : ''} ({' '}
+                                    {shipment.products.reduce((sum, p) => sum + p.quantity, 0)}{' '}
+                                    unidades)
+                                  </span>
+                                </div>
+                              </td>
+                              <td>
+                                <div
+                                  className={`badge ${
+                                    shipment.status === 'empacado'
+                                      ? 'badge-info'
+                                      : shipment.status === 'en_transito'
+                                        ? 'badge-warning'
+                                        : shipment.status === 'entregado' ||
+                                            shipment.status === 'recibido'
+                                          ? 'badge-success'
+                                          : shipment.status === 'cancelado'
+                                            ? 'badge-error'
+                                            : shipment.status === 'retomado'
+                                              ? 'badge-secondary'
+                                              : 'badge-neutral'
+                                  }`}
+                                >
+                                  {shipment.status === 'empacado'
+                                    ? 'Empacado'
                                     : shipment.status === 'en_transito'
-                                      ? 'badge-warning'
-                                      : shipment.status === 'entregado' ||
-                                          shipment.status === 'recibido'
-                                        ? 'badge-success'
+                                      ? 'En tránsito'
+                                      : shipment.status === 'entregado'
+                                        ? 'Entregado'
                                         : shipment.status === 'cancelado'
-                                          ? 'badge-error'
+                                          ? 'Cancelado'
                                           : shipment.status === 'retomado'
-                                            ? 'badge-secondary'
-                                            : 'badge-neutral'
-                                }`}
-                              >
-                                {shipment.status === 'empacado'
-                                  ? 'Empacado'
-                                  : shipment.status === 'en_transito'
-                                    ? 'En tránsito'
-                                    : shipment.status === 'entregado'
-                                      ? 'Entregado'
-                                      : shipment.status === 'cancelado'
-                                        ? 'Cancelado'
-                                        : shipment.status === 'retomado'
-                                          ? 'Retomado'
-                                          : shipment.status === 'recibido'
-                                            ? 'Recibido'
-                                            : shipment.status}
-                              </div>
-                            </td>
-                            <td>{shipment.createdAt}</td>
-                            <td>
-                              {shipment.status === 'empacado' && (
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    onClick={() =>
-                                      updateSentShipmentStatus(shipment.id, 'en_transito')
-                                    }
-                                    className="btn btn-warning btn-xs"
-                                    title="Marcar como en tránsito"
-                                  >
-                                    🚚 En tránsito
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      updateSentShipmentStatus(shipment.id, 'cancelado')
-                                    }
-                                    className="btn btn-error btn-xs"
-                                    title="Cancelar envío"
-                                  >
-                                    ❌ Cancelar
-                                  </button>
+                                            ? 'Retomado'
+                                            : shipment.status === 'recibido'
+                                              ? 'Recibido'
+                                              : shipment.status}
                                 </div>
-                              )}
-                              {shipment.status === 'en_transito' && (
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    onClick={() =>
-                                      updateSentShipmentStatus(shipment.id, 'entregado')
-                                    }
-                                    className="btn btn-success btn-xs"
-                                    title="Marcar como entregado"
-                                  >
-                                    ✅ Entregado
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      updateSentShipmentStatus(shipment.id, 'cancelado')
-                                    }
-                                    className="btn btn-error btn-xs"
-                                    title="Cancelar envío"
-                                  >
-                                    ❌ Cancelar
-                                  </button>
-                                </div>
-                              )}
-                              {shipment.status === 'cancelado' && (
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() =>
-                                      updateSentShipmentStatus(shipment.id, 'retomado')
-                                    }
-                                    className="btn btn-info btn-xs"
-                                    title="Retomar envío"
-                                  >
-                                    🔄 Retomar
-                                  </button>
-                                </div>
-                              )}
-                              {shipment.status === 'retomado' && (
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    onClick={() =>
-                                      updateSentShipmentStatus(shipment.id, 'en_transito')
-                                    }
-                                    className="btn btn-warning btn-xs"
-                                    title="Marcar como en tránsito"
-                                  >
-                                    🚚 En tránsito
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      updateSentShipmentStatus(shipment.id, 'cancelado')
-                                    }
-                                    className="btn btn-error btn-xs"
-                                    title="Cancelar envío nuevamente"
-                                  >
-                                    ❌ Cancelar
-                                  </button>
-                                </div>
-                              )}
-                              {(shipment.status === 'entregado' ||
-                                shipment.status === 'recibido') && (
-                                <div className="text-sm text-gray-500">✅ Envío completado</div>
-                              )}
-                            </td>
-                          </tr>
+                              </td>
+                              <td>{shipment.createdAt}</td>
+                              <td>
+                                {shipment.status === 'empacado' && (
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      onClick={() =>
+                                        updateSentShipmentStatus(shipment.id, 'en_transito')
+                                      }
+                                      className="btn btn-warning btn-xs"
+                                      title="Marcar como en tránsito (envío salió de la sucursal)"
+                                    >
+                                      🚚 En tránsito
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        updateSentShipmentStatus(shipment.id, 'cancelado')
+                                      }
+                                      className="btn btn-error btn-xs"
+                                      title="Cancelar envío"
+                                    >
+                                      ❌ Cancelar
+                                    </button>
+                                  </div>
+                                )}
+                                {shipment.status === 'en_transito' && (
+                                  <div className="flex flex-wrap gap-2">
+                                    <div className="text-sm text-gray-500">
+                                      🚚 Envío en camino al destino
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        updateSentShipmentStatus(shipment.id, 'cancelado')
+                                      }
+                                      className="btn btn-error btn-xs"
+                                      title="Cancelar envío"
+                                    >
+                                      ❌ Cancelar
+                                    </button>
+                                  </div>
+                                )}
+                                {shipment.status === 'cancelado' && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() =>
+                                        updateSentShipmentStatus(shipment.id, 'retomado')
+                                      }
+                                      className="btn btn-info btn-xs"
+                                      title="Retomar envío"
+                                    >
+                                      🔄 Retomar
+                                    </button>
+                                  </div>
+                                )}
+                                {shipment.status === 'retomado' && (
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      onClick={() =>
+                                        updateSentShipmentStatus(shipment.id, 'en_transito')
+                                      }
+                                      className="btn btn-warning btn-xs"
+                                      title="Marcar como en tránsito"
+                                    >
+                                      🚚 En tránsito
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        updateSentShipmentStatus(shipment.id, 'cancelado')
+                                      }
+                                      className="btn btn-error btn-xs"
+                                      title="Cancelar envío nuevamente"
+                                    >
+                                      ❌ Cancelar
+                                    </button>
+                                  </div>
+                                )}
+                                {(shipment.status === 'entregado' ||
+                                  shipment.status === 'recibido') && (
+                                  <div className="text-sm text-gray-500">
+                                    ✅ Envío completado por el destinatario
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                            {/* Fila expandible con detalles de productos */}
+                            {expandedSentShipments.has(shipment.id) && (
+                              <tr key={`${shipment.id}-details`} className="bg-base-300">
+                                <td colSpan="5" className="p-0">
+                                  <div className="p-4">
+                                    <h6 className="mb-3 text-sm font-semibold">
+                                      Detalles de productos:
+                                    </h6>
+                                    <div className="grid gap-2">
+                                      {shipment.products.map((product, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="bg-base-100 flex items-center justify-between rounded-lg p-3"
+                                        >
+                                          <div className="flex items-center gap-3">
+                                            <div className="avatar placeholder">
+                                              <div className="bg-neutral text-neutral-content h-8 w-8 rounded text-xs">
+                                                <span>{product.name.charAt(0)}</span>
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="text-sm font-medium">
+                                                {product.name}
+                                              </div>
+                                              <div className="flex flex-wrap items-center gap-2 text-xs opacity-70">
+                                                {product.brand && (
+                                                  <span className="badge badge-outline badge-xs">
+                                                    {product.brand}
+                                                  </span>
+                                                )}
+                                                {product.size && (
+                                                  <span className="badge badge-outline badge-xs">
+                                                    Talle: {product.size}
+                                                  </span>
+                                                )}
+                                                {product.color && (
+                                                  <span className="badge badge-outline badge-xs flex items-center gap-1">
+                                                    {product.color_hex && (
+                                                      <div
+                                                        className="h-2 w-2 rounded-full border border-gray-300"
+                                                        style={{
+                                                          backgroundColor: getValidHexColor(
+                                                            product.color_hex
+                                                          )
+                                                        }}
+                                                      ></div>
+                                                    )}
+                                                    {product.color}
+                                                  </span>
+                                                )}
+                                                {!product.brand &&
+                                                  !product.size &&
+                                                  !product.color && (
+                                                    <span className="text-xs italic opacity-50">
+                                                      Sin detalles adicionales disponibles
+                                                    </span>
+                                                  )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="text-right">
+                                            <div className="text-sm font-medium">
+                                              Cantidad:{' '}
+                                              <span className="badge badge-primary badge-sm">
+                                                {product.quantity}
+                                              </span>
+                                            </div>
+                                            {product.sale_price && (
+                                              <div className="text-xs opacity-70">
+                                                Precio:{' '}
+                                                <span className="font-mono">
+                                                  ${parseFloat(product.sale_price).toFixed(2)}
+                                                </span>
+                                              </div>
+                                            )}
+                                            {product.sale_price && (
+                                              <div className="text-xs opacity-70">
+                                                Total:{' '}
+                                                <span className="font-mono font-semibold">
+                                                  $
+                                                  {(
+                                                    parseFloat(product.sale_price) *
+                                                    product.quantity
+                                                  ).toFixed(2)}
+                                                </span>
+                                              </div>
+                                            )}
+                                            {!product.sale_price && (
+                                              <div className="text-xs italic opacity-50">
+                                                Precio no disponible
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="border-base-300 mt-3 flex justify-between border-t pt-3 text-sm">
+                                      <span>
+                                        <strong>Total productos:</strong> {shipment.products.length}
+                                      </span>
+                                      <span>
+                                        <strong>Total unidades:</strong>{' '}
+                                        {shipment.products.reduce((sum, p) => sum + p.quantity, 0)}
+                                      </span>
+                                      <span>
+                                        <strong>Valor total:</strong>{' '}
+                                        {shipment.products.some((p) => p.sale_price) ? (
+                                          `$${shipment.products
+                                            .reduce(
+                                              (sum, p) =>
+                                                sum +
+                                                (p.sale_price
+                                                  ? parseFloat(p.sale_price) * p.quantity
+                                                  : 0),
+                                              0
+                                            )
+                                            .toFixed(2)}`
+                                        ) : (
+                                          <span className="italic opacity-50">No disponible</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         ))}
                       </tbody>
                     </table>
@@ -1179,7 +1441,9 @@ export default function MoveInventory() {
                                     <div className="flex items-center gap-1">
                                       <div
                                         className="h-4 w-4 rounded border"
-                                        style={{ backgroundColor: variant.color_hex || '#ccc' }}
+                                        style={{
+                                          backgroundColor: getValidHexColor(variant.color_hex)
+                                        }}
                                       ></div>
                                       <span className="text-xs">{variant.color_name}</span>
                                     </div>
@@ -1262,7 +1526,9 @@ export default function MoveInventory() {
                                       <div className="flex items-center gap-1">
                                         <div
                                           className="h-3 w-3 rounded border"
-                                          style={{ backgroundColor: variant.color_hex || '#ccc' }}
+                                          style={{
+                                            backgroundColor: getValidHexColor(variant.color_hex)
+                                          }}
                                         ></div>
                                         <span className="text-xs">{variant.color_name}</span>
                                       </div>
@@ -1411,7 +1677,7 @@ export default function MoveInventory() {
       {/* Modal de productos del envío */}
       {showProductModal && selectedShipmentInfo && (
         <div className="modal modal-open">
-          <div className="modal-box max-w-4xl">
+          <div className="modal-box w-11/12 max-w-7xl">
             <h3 className="mb-4 text-lg font-bold">
               Productos del Envío #{selectedShipmentInfo.id}
             </h3>
@@ -1467,9 +1733,9 @@ export default function MoveInventory() {
                     <th>Producto</th>
                     <th>Marca</th>
                     <th>Variante</th>
+                    <th>Color</th>
                     <th>Cantidad</th>
                     <th>Precio Venta</th>
-                    <th>Costo</th>
                     <th>Código</th>
                   </tr>
                 </thead>
@@ -1485,13 +1751,15 @@ export default function MoveInventory() {
                       <td>
                         <div className="flex items-center gap-2">
                           <span className="badge badge-sm">{product.size}</span>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className="h-4 w-4 rounded border"
-                              style={{ backgroundColor: product.color_hex }}
-                            ></div>
-                            <span className="text-xs">{product.color}</span>
-                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <div
+                            className="h-4 w-4 rounded border"
+                            style={{ backgroundColor: getValidHexColor(product.color_hex) }}
+                          ></div>
+                          <span className="text-xs">{product.color}</span>
                         </div>
                       </td>
                       <td>
@@ -1499,14 +1767,10 @@ export default function MoveInventory() {
                       </td>
                       <td>
                         <span className="font-mono">
-                          ${product.sale_price?.toFixed(2) || '0.00'}
+                          ${(parseFloat(product.sale_price) || 0).toFixed(2)}
                         </span>
                       </td>
-                      <td>
-                        <span className="font-mono text-sm opacity-70">
-                          ${product.cost?.toFixed(2) || '0.00'}
-                        </span>
-                      </td>
+
                       <td>
                         <span className="font-mono text-xs">{product.variant_barcode}</span>
                       </td>
@@ -1528,7 +1792,7 @@ export default function MoveInventory() {
                 <span>
                   <strong>Valor total:</strong> $
                   {selectedShipmentProducts
-                    .reduce((sum, p) => sum + p.sale_price * p.quantity, 0)
+                    .reduce((sum, p) => sum + (parseFloat(p.sale_price) || 0) * p.quantity, 0)
                     .toFixed(2)}
                 </span>
               </div>

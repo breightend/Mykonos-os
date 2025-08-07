@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2, Gift } from 'lucide-react'
+import { ArrowLeft, Trash2, Gift, Replace } from 'lucide-react'
 import { useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { useLocation } from 'wouter'
@@ -6,8 +6,8 @@ import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useSellContext } from '../contexts/sellContext'
 import salesService from '../services/salesService'
+import CambioProductoModal from '../modals/VentasModal/cambioModal'
 
-//TODO agregar el cliente a la venta
 //TODO agregar el vendedor a la venta
 //TODO agregar logica de regalos
 
@@ -197,6 +197,13 @@ function Ventas() {
 
   const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0)
 
+  const refreshProducts = () => {
+    // This function could be called after successful exchange
+    // to refresh the current products list if needed
+    // For now, we'll just show a message
+    toast.success('Productos actualizados', { duration: 2000 })
+  }
+
   return (
     <div>
       <MenuVertical currentPath="/ventas" />
@@ -242,6 +249,10 @@ function Ventas() {
                 >
                   <Gift />
                 </button>
+                <CambioProductoModal 
+                  selectedProduct={productoSeleccionado}
+                  onExchangeComplete={refreshProducts}
+                />
                 {/* Modal eliminar producto seleccionado */}
                 <dialog id="eliminarProducto" className="modal">
                   <div className="modal-box">

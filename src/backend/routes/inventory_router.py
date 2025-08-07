@@ -1355,16 +1355,27 @@ def create_variant_movement():
             subtotal = float(unit_price) * int(quantity)
             total_movement_value += subtotal
 
-            # Insertar el movimiento individual - FIXED: Agregar información de variantes
-            # TODO: Modificar tabla inventory_movements para incluir variant_id, size_id, color_id, variant_barcode
+            # Insertar el movimiento individual - FIXED: Incluir información de variante
+            # Ahora que tenemos los campos en la DB, podemos almacenar la información completa
+            variant_barcode = variant.get("variant_barcode", "")
             movement_query = """
             INSERT INTO inventory_movements 
-            (inventory_movements_group_id, product_id, quantity, discount, subtotal, total)
-            VALUES (%s, %s, %s, 0.0, %s, %s)
+            (inventory_movements_group_id, product_id, quantity, discount, subtotal, total, variant_id, size_id, color_id, variant_barcode)
+            VALUES (%s, %s, %s, 0.0, %s, %s, %s, %s, %s, %s)
             """
             movement_result = db.execute_query(
                 movement_query,
-                (group_id, product_id, quantity, subtotal, subtotal),
+                (
+                    group_id,
+                    product_id,
+                    quantity,
+                    subtotal,
+                    subtotal,
+                    variant_id,
+                    size_id,
+                    color_id,
+                    variant_barcode,
+                ),
             )
 
             print(
@@ -1488,25 +1499,28 @@ def get_pending_shipments(storage_id):
         # Formatear resultados
         result = []
         for shipment in shipments:
-            # Obtener productos detallados - FIXED: trabajar con estructura actual
-            # Como inventory_movements solo tiene product_id, vamos a mostrar productos generales
-            # TODO: En el futuro agregar variant_id a inventory_movements para información específica
+            # Obtener productos detallados - FIXED: Usar misma lógica que sent-shipments
+            # Ahora que inventory_movements tiene campos de variante, podemos obtener la información real
             products_query = """
             SELECT 
-                p.product_name, 
+                p.product_name,
                 p.sale_price,
                 p.cost,
                 b.brand_name,
                 im.quantity,
-                'Talle general' as size_name,
-                'Color general' as color_name,
-                '#cccccc' as color_hex,
-                CONCAT('PROD', LPAD(p.id::text, 4, '0')) as variant_barcode
+                im.product_id,
+                im.variant_id,
+                s.size_name,
+                c.color_name,
+                c.color_hex,
+                im.variant_barcode
             FROM inventory_movements im
             JOIN products p ON im.product_id = p.id
             LEFT JOIN brands b ON p.brand_id = b.id
+            LEFT JOIN warehouse_stock_variants wsv ON im.variant_id = wsv.id
+            LEFT JOIN sizes s ON im.size_id = s.id OR wsv.size_id = s.id  
+            LEFT JOIN colors c ON im.color_id = c.id OR wsv.color_id = c.id
             WHERE im.inventory_movements_group_id = %s
-            ORDER BY p.product_name
             """
             products = db.execute_query(products_query, (shipment["id"],))
 
@@ -1529,16 +1543,18 @@ def get_pending_shipments(storage_id):
                     "products": [
                         {
                             "name": p["product_name"],
-                            "brand": p["brand_name"] or "Sin marca",
                             "quantity": p["quantity"],
+                            "product_id": p["product_id"],
+                            "variant_id": p["variant_id"],
+                            "brand": p["brand_name"],
                             "sale_price": float(p["sale_price"])
                             if p["sale_price"]
                             else 0,
                             "cost": float(p["cost"]) if p["cost"] else 0,
-                            "size": p["size_name"] or "Sin talle",
-                            "color": p["color_name"] or "Sin color",
-                            "color_hex": p["color_hex"] or "#cccccc",
-                            "variant_barcode": p["variant_barcode"] or "Sin código",
+                            "size": p["size_name"],
+                            "color": p["color_name"],
+                            "color_hex": p["color_hex"],
+                            "variant_barcode": p["variant_barcode"],
                         }
                         for p in products
                     ],
@@ -1702,11 +1718,26 @@ def get_sent_shipments(storage_id):
             print(
                 f"🔍 DEBUG get_sent_shipments: Procesando shipment ID = {shipment['id']}"
             )
-            # Obtener productos detallados
+            # Obtener productos detallados - FIXED: Usar nombres correctos de columnas
             products_query = """
-            SELECT p.product_name, im.quantity
+            SELECT 
+                p.product_name,
+                p.sale_price,
+                p.cost,
+                b.brand_name,
+                im.quantity,
+                im.product_id,
+                im.variant_id,
+                s.size_name,
+                c.color_name,
+                c.color_hex,
+                im.variant_barcode
             FROM inventory_movements im
             JOIN products p ON im.product_id = p.id
+            LEFT JOIN brands b ON p.brand_id = b.id
+            LEFT JOIN warehouse_stock_variants wsv ON im.variant_id = wsv.id
+            LEFT JOIN sizes s ON im.size_id = s.id OR wsv.size_id = s.id  
+            LEFT JOIN colors c ON im.color_id = c.id OR wsv.color_id = c.id
             WHERE im.inventory_movements_group_id = %s
             """
             products = db.execute_query(products_query, (shipment["id"],))
@@ -1731,7 +1762,21 @@ def get_sent_shipments(storage_id):
                     else None,
                     "notes": shipment["notes"],
                     "products": [
-                        {"name": p["product_name"], "quantity": p["quantity"]}
+                        {
+                            "name": p["product_name"],
+                            "quantity": p["quantity"],
+                            "product_id": p["product_id"],
+                            "variant_id": p["variant_id"],
+                            "brand": p["brand_name"],
+                            "sale_price": float(p["sale_price"])
+                            if p["sale_price"]
+                            else 0,
+                            "cost": float(p["cost"]) if p["cost"] else 0,
+                            "size": p["size_name"],
+                            "color": p["color_name"],
+                            "color_hex": p["color_hex"],
+                            "variant_barcode": p["variant_barcode"],
+                        }
                         for p in products
                     ],
                 }
