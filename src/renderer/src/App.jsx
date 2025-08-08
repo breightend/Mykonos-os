@@ -28,6 +28,7 @@ import MoveInventory from './components/Inventory/moveInventory'
 import TestColorPage from './test/TestColorPage'
 import ResumenProveedores from './components/stadistics/resumenProveedores'
 import EditarProducto from './components/Inventory/editarProducto'
+import MultiProductExchangeTestPage from './components/MultiProductExchangeTestPage'
 
 function App() {
   return (
@@ -162,6 +163,11 @@ function App() {
         <Route path="/editarProducto">
           <ProtectedRoute>
             <EditarProducto />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/test-multi-exchange">
+          <ProtectedRoute>
+            <MultiProductExchangeTestPage />
           </ProtectedRoute>
         </Route>
       </Switch>

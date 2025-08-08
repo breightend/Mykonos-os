@@ -173,7 +173,7 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
       <dialog className="modal modal-bottom sm:modal-middle" id="cambioProductoModal">
         <div className="modal-box max-w-4xl">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-bold">Cambio de Producto</h2>
             <div className="flex items-center space-x-2">
               <div className="badge badge-primary">{step}/3</div>
@@ -187,7 +187,7 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
           </div>
 
           {/* Progress Steps */}
-          <div className="steps w-full mb-8">
+          <div className="steps mb-8 w-full">
             <div className={`step ${step >= 1 ? 'step-primary' : ''}`}>Producto a Devolver</div>
             <div className={`step ${step >= 2 ? 'step-primary' : ''}`}>Producto Nuevo</div>
             <div className={`step ${step >= 3 ? 'step-primary' : ''}`}>Confirmación</div>
@@ -197,7 +197,7 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
           {step === 1 && (
             <div className="space-y-6">
               <div className="card bg-base-200 p-4">
-                <h3 className="font-semibold mb-4 text-error">Producto a Devolver</h3>
+                <h3 className="text-error mb-4 font-semibold">Producto a Devolver</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="label">
@@ -231,7 +231,7 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
                     onClick={validateReturnProduct}
                     disabled={validatingReturn}
                   >
-                    <Search className="h-4 w-4 mr-2" />
+                    <Search className="mr-2 h-4 w-4" />
                     {validatingReturn ? 'Validando...' : 'Validar Producto'}
                   </button>
                 </div>
@@ -244,9 +244,9 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
             <div className="space-y-6">
               {/* Show return product info */}
               <div className="card bg-base-200 p-4">
-                <h3 className="font-semibold mb-2 text-error">Producto a Devolver</h3>
+                <h3 className="text-error mb-2 font-semibold">Producto a Devolver</h3>
                 <div className="flex items-center space-x-4">
-                  <Check className="h-5 w-5 text-success" />
+                  <Check className="text-success h-5 w-5" />
                   <div>
                     <p className="font-medium">{returnProduct?.product_name}</p>
                     <p className="text-sm opacity-70">
@@ -260,7 +260,7 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
 
               {/* New product selection */}
               <div className="card bg-base-200 p-4">
-                <h3 className="font-semibold mb-4 text-success">
+                <h3 className="text-success mb-4 font-semibold">
                   Producto Nuevo (Opcional - Dejar vacío solo para devolución)
                 </h3>
                 <div className="space-y-4">
@@ -295,7 +295,7 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
                       onClick={validateNewProduct}
                       disabled={validatingNew}
                     >
-                      <Search className="h-4 w-4 mr-2" />
+                      <Search className="mr-2 h-4 w-4" />
                       {validatingNew ? 'Validando...' : 'Validar y Continuar'}
                     </button>
                     <button
@@ -317,14 +317,14 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
           {/* Step 3: Confirmation */}
           {step === 3 && (
             <div className="space-y-6">
-              <h3 className="font-semibold text-lg">Confirmar Intercambio</h3>
+              <h3 className="text-lg font-semibold">Confirmar Intercambio</h3>
 
               {/* Return Product Summary */}
-              <div className="card bg-red-50 border border-red-200 p-4">
-                <div className="flex items-center space-x-2 mb-2">
+              <div className="card border border-red-200 bg-red-50 p-4">
+                <div className="mb-2 flex items-center space-x-2">
                   <div className="badge badge-error">DEVOLVER</div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
                     <p className="font-medium">{returnProduct?.product_name}</p>
                     <p className="text-sm">
@@ -344,11 +344,11 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
 
               {/* New Product Summary */}
               {newProduct && (
-                <div className="card bg-green-50 border border-green-200 p-4">
-                  <div className="flex items-center space-x-2 mb-2">
+                <div className="card border border-green-200 bg-green-50 p-4">
+                  <div className="mb-2 flex items-center space-x-2">
                     <div className="badge badge-success">NUEVO</div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <p className="font-medium">{newProduct.product_name}</p>
                       <p className="text-sm">
@@ -372,9 +372,11 @@ export default function CambioProductoModal({ selectedProduct, onExchangeComplet
                 const difference = calculatePriceDifference()
                 if (difference !== 0) {
                   return (
-                    <div className={`card p-4 ${difference > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'}`}>
+                    <div
+                      className={`card p-4 ${difference > 0 ? 'border-yellow-200 bg-yellow-50' : 'border-blue-200 bg-blue-50'}`}
+                    >
                       <div className="flex items-center space-x-2">
-                        <AlertCircle className="h-5 w-5 text-warning" />
+                        <AlertCircle className="text-warning h-5 w-5" />
                         <div>
                           <p className="font-semibold">
                             {difference > 0

@@ -15,24 +15,24 @@ export const getCurrentBranchId = () => {
   // 2. Local storage setting
   // 3. Global application state
   // 4. Configuration file
-  
+
   // For now, returning default branch ID 1
   // In production, you should implement proper branch management
   const defaultBranchId = 1
-  
+
   try {
     // Example: Get from localStorage
     const storedBranchId = localStorage.getItem('currentBranchId')
     if (storedBranchId) {
       return parseInt(storedBranchId, 10)
     }
-    
+
     // Example: Get from session storage
     const sessionBranchId = sessionStorage.getItem('activeBranch')
     if (sessionBranchId) {
       return parseInt(sessionBranchId, 10)
     }
-    
+
     return defaultBranchId
   } catch (error) {
     console.error('Error getting current branch ID:', error)

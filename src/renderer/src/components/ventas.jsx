@@ -6,7 +6,7 @@ import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useSellContext } from '../contexts/sellContext'
 import salesService from '../services/salesService'
-import CambioProductoModal from '../modals/VentasModal/cambioModal'
+import ExchangeModalSelector from '../modals/VentasModal/exchangeModalSelector'
 
 //TODO agregar el vendedor a la venta
 //TODO agregar logica de regalos
@@ -249,10 +249,30 @@ function Ventas() {
                 >
                   <Gift />
                 </button>
-                <CambioProductoModal 
-                  selectedProduct={productoSeleccionado}
-                  onExchangeComplete={refreshProducts}
-                />
+                <button
+                  className={`btn btn-info ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
+                  onClick={() => document.getElementById('intercambioModal').showModal()}
+                  title="Intercambio de productos"
+                >
+                  <Replace />
+                </button>
+
+                {/* Exchange Modal Selector */}
+                <dialog id="intercambioModal" className="modal">
+                  <div
+                    className="modal-backdrop"
+                    onClick={() => document.getElementById('intercambioModal').close()}
+                  ></div>
+                  <ExchangeModalSelector
+                    isOpen={true}
+                    onClose={() => document.getElementById('intercambioModal').close()}
+                    onExchangeComplete={() => {
+                      refreshProducts()
+                      document.getElementById('intercambioModal').close()
+                    }}
+                    selectedProduct={productoSeleccionado}
+                  />
+                </dialog>
                 {/* Modal eliminar producto seleccionado */}
                 <dialog id="eliminarProducto" className="modal">
                   <div className="modal-box">
