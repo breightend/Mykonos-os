@@ -93,7 +93,6 @@ function Ventas() {
           )
         }
 
-        // Limpiar input
         setCodigoInput('')
       } else {
         toast.error(response.message || 'Producto no encontrado', {
@@ -125,11 +124,10 @@ function Ventas() {
     )
     if (index === -1) return
 
-    let cantidadEliminar = cantidadAEliminar || 1 // Si no se ingresó cantidad, se elimina 1 por defecto
+    let cantidadEliminar = cantidadAEliminar || 1 
     const eliminarTodos = document.getElementById('eliminarTodosCheckbox')?.checked
 
     if (eliminarTodos || cantidadEliminar >= productos[index].cantidad) {
-      // Elimina el producto completamente si está marcado el checkbox o la cantidad a eliminar es igual/mayor a la cantidad total
       setProductos(
         productos.filter((p) => p.variant_barcode !== productoSeleccionado.variant_barcode)
       )
@@ -141,7 +139,7 @@ function Ventas() {
     }
 
     setProductoSeleccionado(null)
-    setCantidadAEliminar(0) // Resetea el input de cantidad
+    setCantidadAEliminar(0)
   }
 
   const addToGifts = () => {
@@ -150,7 +148,6 @@ function Ventas() {
       return
     }
 
-    // Add product to gifts context with validation
     const result = addProductToGifts(productoSeleccionado, productos)
 
     if (result.success) {
@@ -203,7 +200,7 @@ function Ventas() {
     // For now, we'll just show a message
     toast.success('Productos actualizados', { duration: 2000 })
   }
-
+//Quiero cambiar la logica del intercambio de productos para que suceda en la pestaña principal de ventas, 
   return (
     <div>
       <MenuVertical currentPath="/ventas" />
@@ -249,13 +246,7 @@ function Ventas() {
                 >
                   <Gift />
                 </button>
-                <button
-                  className={`btn btn-info ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
-                  onClick={() => document.getElementById('intercambioModal').showModal()}
-                  title="Intercambio de productos"
-                >
-                  <Replace />
-                </button>
+                
 
                 {/* Exchange Modal Selector */}
                 <dialog id="intercambioModal" className="modal">
@@ -505,7 +496,15 @@ function Ventas() {
 
           <div className="mt-4">
             <p className="text-xl font-bold">Total: ${total.toLocaleString()}</p>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-4">
+              <button
+                  className={`btn btn-info ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
+                  onClick={() => document.getElementById('intercambioModal').showModal()}
+                  title="Intercambio de productos"
+                >
+                  <Replace />
+                  <label htmlFor="intercambioModal">Cambio </label>
+                </button>
               <button
                 className={`flex justify-end ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
                 onClick={handleSubmit}

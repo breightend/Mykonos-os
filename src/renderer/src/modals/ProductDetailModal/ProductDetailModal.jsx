@@ -15,9 +15,9 @@ import { inventoryService } from '../../services/inventory/inventoryService'
 import BarcodeService from '../../services/barcodeService'
 import { useLocation } from 'wouter'
 import toast from 'react-hot-toast'
+import { getCurrentBranchId } from '../../utils/posUtils'
 //BUG: stock_total muestra un valor erroneo
-//Promp: the conections with the var stock_total are wrong made because they doesnt update when a variant is added or removed but I also Need to make the conection in order to show the name of the privider and the name of the group, for that i need 
-
+//Promp: the conections with the var stock_total are wrong made because they doesnt update when a variant is added or removed but I also Need to make the conection in order to show the name of the privider and the name of the group, for that i need
 
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
@@ -306,7 +306,9 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Proveedor:</span>
-                      <p className="text-gray-800">{productDetails.provider_name || 'Sin proveedor'}</p>
+                      <p className="text-gray-800">
+                        {productDetails.provider_name || 'Sin proveedor'}
+                      </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-600">Marca:</span>
@@ -495,143 +497,169 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
               </div>
 
               {/* Inventario Detallado por Talle y Color */}
-              {productDetails.stock_variants?.length > 0 && (
-                <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
-                  <h3 className="mb-6 flex items-center text-xl font-semibold text-gray-800">
-                    <Package className="mr-3 h-6 w-6 text-blue-600" />
-                    Inventario Detallado por Talle y Color
-                  </h3>
+              {productDetails.stock_variants?.length > 0 &&
+                (() => {
+                  const currentBranchVariants = productDetails.stock_variants.filter(
+                    (variant) => variant.sucursal_id === getCurrentBranchId()
+                  )
 
-                  <div className="space-y-6">
-                    {/* Agrupar variantes por talle */}
-                    {Object.entries(
-                      productDetails.stock_variants.reduce((acc, variant) => {
-                        const sizeName = variant.size_name || 'Sin talle'
-                        if (!acc[sizeName]) {
-                          acc[sizeName] = []
-                        }
-                        acc[sizeName].push(variant)
-                        return acc
-                      }, {})
-                    ).map(([sizeName, variants]) => (
-                      <div
-                        key={sizeName}
-                        className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
-                      >
-                        <h4 className="mb-4 text-lg font-semibold text-gray-800">
-                          Talle: {sizeName}
-                        </h4>
+                  return currentBranchVariants.length > 0 ? (
+                    <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
+                      <h3 className="mb-6 flex items-center text-xl font-semibold text-gray-800">
+                        <Package className="mr-3 h-6 w-6 text-blue-600" />
+                        Inventario Detallado por Talle y Color
+                      </h3>
 
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                          {variants.map((variant) => (
-                            <div
-                              key={`${variant.size_id}-${variant.color_id}-${variant.sucursal_id}`}
-                              className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-300 hover:border-blue-300 hover:shadow-md"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <div
-                                    className="h-8 w-8 rounded-full border-2 border-gray-300 shadow-sm"
-                                    style={{
-                                      backgroundColor: getValidHexColor(variant.color_hex)
-                                    }}
-                                    title={variant.color_name || 'Sin color'}
-                                  ></div>
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-700">
-                                      {variant.color_name || 'Sin color'}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                      {variant.sucursal_nombre}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <span className="text-lg font-bold text-blue-600">
-                                    {variant.quantity}
-                                  </span>
-                                  <p className="text-xs text-gray-500">unidades</p>
-                                </div>
-                              </div>
+                      <div className="space-y-6">
+                        {/* Agrupar variantes por talle - Solo mostrar las de la sucursal actual */}
+                        {Object.entries(
+                          productDetails.stock_variants
+                            .filter((variant) => variant.sucursal_id === getCurrentBranchId())
+                            .reduce((acc, variant) => {
+                              const sizeName = variant.size_name || 'Sin talle'
+                              if (!acc[sizeName]) {
+                                acc[sizeName] = []
+                              }
+                              acc[sizeName].push(variant)
+                              return acc
+                            }, {})
+                        ).map(([sizeName, variants]) => (
+                          <div
+                            key={sizeName}
+                            className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+                          >
+                            <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                              Talle: {sizeName}
+                            </h4>
 
-                              {/* Código de barras de la variante */}
-                              <div className="mt-3 border-t border-gray-100 pt-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-medium text-gray-600">Código:</span>
-                                  {variant.variant_barcode ? (
-                                    <div className="flex items-center space-x-2">
-                                      <code className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700">
-                                        {variant.variant_barcode}
-                                      </code>
-                                      <button
-                                        onClick={() =>
-                                          generateBarcodePreview(variant.variant_barcode)
-                                        }
-                                        className="flex items-center text-xs text-blue-600 hover:text-blue-800"
-                                        title="Ver código de barras"
-                                      >
-                                        <QrCode className="h-3 w-3" />
-                                      </button>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                              {variants.map((variant) => (
+                                <div
+                                  key={`${variant.size_id}-${variant.color_id}-${variant.sucursal_id}`}
+                                  className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white p-4 transition-all duration-300 hover:border-blue-300 hover:shadow-md"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <div
+                                        className="h-8 w-8 rounded-full border-2 border-gray-300 shadow-sm"
+                                        style={{
+                                          backgroundColor: getValidHexColor(variant.color_hex)
+                                        }}
+                                        title={variant.color_name || 'Sin color'}
+                                      ></div>
+                                      <div>
+                                        <p className="text-sm font-medium text-gray-700">
+                                          {variant.color_name || 'Sin color'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {variant.sucursal_nombre}
+                                        </p>
+                                      </div>
                                     </div>
-                                  ) : (
-                                    <span className="text-xs text-gray-400">Sin código</span>
+                                    <div className="text-right">
+                                      <span className="text-lg font-bold text-blue-600">
+                                        {variant.quantity}
+                                      </span>
+                                      <p className="text-xs text-gray-500">unidades</p>
+                                    </div>
+                                  </div>
+
+                                  {/* Código de barras de la variante */}
+                                  <div className="mt-3 border-t border-gray-100 pt-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-medium text-gray-600">
+                                        Código:
+                                      </span>
+                                      {variant.variant_barcode ? (
+                                        <div className="flex items-center space-x-2">
+                                          <code className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700">
+                                            {variant.variant_barcode}
+                                          </code>
+                                          <button
+                                            onClick={() =>
+                                              generateBarcodePreview(variant.variant_barcode)
+                                            }
+                                            className="flex items-center text-xs text-blue-600 hover:text-blue-800"
+                                            title="Ver código de barras"
+                                          >
+                                            <QrCode className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <span className="text-xs text-gray-400">Sin código</span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {variant.last_updated && (
+                                    <div className="mt-2 text-xs text-gray-400">
+                                      Actualizado: {formatDate(variant.last_updated)}
+                                    </div>
                                   )}
                                 </div>
-                              </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
 
-                              {variant.last_updated && (
-                                <div className="mt-2 text-xs text-gray-400">
-                                  Actualizado: {formatDate(variant.last_updated)}
-                                </div>
+                      {/* Resumen de Variantes */}
+                      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+                        <h5 className="mb-3 font-semibold text-gray-700">Resumen de Variantes</h5>
+                        <div className="grid grid-cols-2 gap-4 text-center md:grid-cols-5">
+                          <div className="rounded-lg bg-blue-50 p-3">
+                            <div className="text-2xl font-bold text-blue-600">
+                              {productDetails.stock_variants.length}
+                            </div>
+                            <div className="text-sm text-blue-700">Variantes con stock</div>
+                          </div>
+                          <div className="rounded-lg bg-green-50 p-3">
+                            <div className="text-2xl font-bold text-green-600">
+                              {new Set(productDetails.stock_variants.map((v) => v.size_name)).size}
+                            </div>
+                            <div className="text-sm text-green-700">Tallas disponibles</div>
+                          </div>
+                          <div className="rounded-lg bg-pink-50 p-3">
+                            <div className="text-2xl font-bold text-pink-600">
+                              {new Set(productDetails.stock_variants.map((v) => v.color_name)).size}
+                            </div>
+                            <div className="text-sm text-pink-700">Colores disponibles</div>
+                          </div>
+                          <div className="rounded-lg bg-purple-50 p-3">
+                            <div className="text-2xl font-bold text-purple-600">
+                              {productDetails.stock_variants.reduce(
+                                (sum, v) => sum + v.quantity,
+                                0
                               )}
                             </div>
-                          ))}
+                            <div className="text-sm text-purple-700">Stock total real</div>
+                          </div>
+                          <div className="rounded-lg bg-orange-50 p-3">
+                            <div className="text-2xl font-bold text-orange-600">
+                              {
+                                new Set(productDetails.stock_variants.map((v) => v.sucursal_nombre))
+                                  .size
+                              }
+                            </div>
+                            <div className="text-sm text-orange-700">Sucursales</div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Resumen de Variantes */}
-                  <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
-                    <h5 className="mb-3 font-semibold text-gray-700">Resumen de Variantes</h5>
-                    <div className="grid grid-cols-2 gap-4 text-center md:grid-cols-5">
-                      <div className="rounded-lg bg-blue-50 p-3">
-                        <div className="text-2xl font-bold text-blue-600">
-                          {productDetails.stock_variants.length}
-                        </div>
-                        <div className="text-sm text-blue-700">Variantes con stock</div>
-                      </div>
-                      <div className="rounded-lg bg-green-50 p-3">
-                        <div className="text-2xl font-bold text-green-600">
-                          {new Set(productDetails.stock_variants.map((v) => v.size_name)).size}
-                        </div>
-                        <div className="text-sm text-green-700">Tallas disponibles</div>
-                      </div>
-                      <div className="rounded-lg bg-pink-50 p-3">
-                        <div className="text-2xl font-bold text-pink-600">
-                          {new Set(productDetails.stock_variants.map((v) => v.color_name)).size}
-                        </div>
-                        <div className="text-sm text-pink-700">Colores disponibles</div>
-                      </div>
-                      <div className="rounded-lg bg-purple-50 p-3">
-                        <div className="text-2xl font-bold text-purple-600">
-                          {productDetails.stock_variants.reduce((sum, v) => sum + v.quantity, 0)}
-                        </div>
-                        <div className="text-sm text-purple-700">Stock total real</div>
-                      </div>
-                      <div className="rounded-lg bg-orange-50 p-3">
-                        <div className="text-2xl font-bold text-orange-600">
-                          {
-                            new Set(productDetails.stock_variants.map((v) => v.sucursal_nombre))
-                              .size
-                          }
-                        </div>
-                        <div className="text-sm text-orange-700">Sucursales</div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  ) : (
+                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-center">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
+                        <Package className="h-6 w-6 text-yellow-600" />
+                      </div>
+                      <h3 className="mb-2 text-lg font-semibold text-yellow-800">
+                        Sin inventario en esta sucursal
+                      </h3>
+                      <p className="text-yellow-700">
+                        Este producto no tiene variantes disponibles en la sucursal actual.
+                      </p>
+                    </div>
+                  )
+                })()}
 
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-800">
