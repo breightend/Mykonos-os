@@ -8,40 +8,40 @@
   --card-foreground: 210 22% 22%;
   --popover: 0 0% 100%;
   --popover-foreground: 210 22% 22%;
-  --primary: 20 95% 63%;         /* Naranja vibrante #ff8c42 */
+  --primary: 20 95% 63%; /* Naranja vibrante #ff8c42 */
   --primary-foreground: 0 0% 100%;
-  --secondary: 238 69% 64%;      /* Índigo moderno #6366f1 */
+  --secondary: 238 69% 64%; /* Índigo moderno #6366f1 */
   --secondary-foreground: 0 0% 100%;
-  --muted: 210 40% 98%;          /* Gris muy claro */
+  --muted: 210 40% 98%; /* Gris muy claro */
   --muted-foreground: 210 22% 22%;
-  --accent: 188 95% 43%;         /* Cian elegante #06b6d4 */
+  --accent: 188 95% 43%; /* Cian elegante #06b6d4 */
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;      /* Rojo coral #ef4444 */
+  --destructive: 0 84% 60%; /* Rojo coral #ef4444 */
   --destructive-foreground: 0 0% 100%;
-  --border: 214 32% 91%;         /* Gris suave */
+  --border: 214 32% 91%; /* Gris suave */
   --input: 214 32% 91%;
-  --ring: 20 95% 63%;            /* Mismo que primary */
+  --ring: 20 95% 63%; /* Mismo que primary */
 }
 
 /* Tema oscuro */
-[data-theme="night"] {
-  --background: 215 25% 9%;      /* Fondo muy oscuro */
-  --foreground: 210 17% 98%;     /* Texto claro */
+[data-theme='night'] {
+  --background: 215 25% 9%; /* Fondo muy oscuro */
+  --foreground: 210 17% 98%; /* Texto claro */
   --card: 215 25% 9%;
   --card-foreground: 210 17% 98%;
   --popover: 215 25% 9%;
   --popover-foreground: 210 17% 98%;
-  --primary: 20 95% 63%;         /* Mismo naranja */
+  --primary: 20 95% 63%; /* Mismo naranja */
   --primary-foreground: 0 0% 100%;
-  --secondary: 239 84% 67%;      /* Índigo más claro */
+  --secondary: 239 84% 67%; /* Índigo más claro */
   --secondary-foreground: 229 84% 15%;
-  --muted: 215 19% 16%;          /* Gris oscuro */
+  --muted: 215 19% 16%; /* Gris oscuro */
   --muted-foreground: 210 17% 98%;
-  --accent: 186 100% 69%;        /* Cian brillante */
+  --accent: 186 100% 69%; /* Cian brillante */
   --accent-foreground: 186 100% 10%;
-  --destructive: 0 84% 70%;      /* Rojo suave */
+  --destructive: 0 84% 70%; /* Rojo suave */
   --destructive-foreground: 0 93% 12%;
-  --border: 215 14% 22%;         /* Gris medio */
+  --border: 215 14% 22%; /* Gris medio */
   --input: 215 14% 22%;
   --ring: 20 95% 63%;
 }
@@ -65,19 +65,19 @@
 
 /* Mejorar botones DaisyUI para que mantengan colores - Nueva Paleta */
 .btn-primary {
-  background-color: #ff8c42 !important;   /* Naranja vibrante */
+  background-color: #ff8c42 !important; /* Naranja vibrante */
   color: #ffffff !important;
   border-color: #ff8c42 !important;
 }
 
 .btn-secondary {
-  background-color: #6366f1 !important;   /* Índigo moderno */
+  background-color: #6366f1 !important; /* Índigo moderno */
   color: #ffffff !important;
   border-color: #6366f1 !important;
 }
 
 .btn-accent {
-  background-color: #06b6d4 !important;   /* Cian elegante */
+  background-color: #06b6d4 !important; /* Cian elegante */
   color: #ffffff !important;
   border-color: #06b6d4 !important;
 }
@@ -90,25 +90,25 @@
 
 /* Colores adicionales para DaisyUI - Nueva Paleta de Ropa */
 .btn-warning {
-  background-color: #f59e0b !important;   /* Ámbar dorado */
+  background-color: #f59e0b !important; /* Ámbar dorado */
   color: #ffffff !important;
   border-color: #f59e0b !important;
 }
 
 .btn-error {
-  background-color: #ef4444 !important;   /* Rojo coral */
+  background-color: #ef4444 !important; /* Rojo coral */
   color: #ffffff !important;
   border-color: #ef4444 !important;
 }
 
 .btn-info {
-  background-color: #0ea5e9 !important;   /* Azul cielo */
+  background-color: #0ea5e9 !important; /* Azul cielo */
   color: #ffffff !important;
   border-color: #0ea5e9 !important;
 }
 
 .btn-success {
-  background-color: #10b981 !important;   /* Verde esmeralda */
+  background-color: #10b981 !important; /* Verde esmeralda */
   color: #ffffff !important;
   border-color: #10b981 !important;
 }
@@ -203,35 +203,29 @@
   color: #ff8c42 !important;
 }
 
-/* Tooltips mejorados */
-.tooltip:before {
-  background-color: #374151 !important;
-  color: #ffffff !important;
-  border-radius: 6px !important;
-  font-size: 0.75rem !important;
-  padding: 0.5rem 0.75rem !important;
-}
+/* Tooltips nativos de DaisyUI - NO SOBREESCRIBIR */
+/* Mantenemos la funcionalidad nativa */
 .menu li > a {
-  color: #374151 !important;  /* Gris carbón para mejor legibilidad */
+  color: #374151 !important; /* Gris carbón para mejor legibilidad */
   border-radius: 8px !important;
 }
 
 .menu li > a:hover {
-  background-color: rgba(255, 140, 66, 0.1) !important;  /* Fondo naranja suave */
-  color: #ff8c42 !important;  /* Texto naranja */
+  background-color: rgba(255, 140, 66, 0.1) !important; /* Fondo naranja suave */
+  color: #ff8c42 !important; /* Texto naranja */
 }
 
 .menu li > a.active {
-  background-color: #ff8c42 !important;  /* Fondo naranja completo */
-  color: #ffffff !important;  /* Texto blanco */
+  background-color: #ff8c42 !important; /* Fondo naranja completo */
+  color: #ffffff !important; /* Texto blanco */
 }
 
 /* Tema oscuro para menú */
-[data-theme="night"] .menu li > a {
-  color: #f9fafb !important;  /* Texto claro */
+[data-theme='night'] .menu li > a {
+  color: #f9fafb !important; /* Texto claro */
 }
 
-[data-theme="night"] .menu li > a:hover {
+[data-theme='night'] .menu li > a:hover {
   background-color: rgba(255, 140, 66, 0.15) !important;
   color: #ff8c42 !important;
 }
@@ -242,7 +236,7 @@
   border-bottom: 1px solid #e2e8f0 !important;
 }
 
-[data-theme="night"] .navbar {
+[data-theme='night'] .navbar {
   background-color: #111827 !important;
   border-bottom: 1px solid #374151 !important;
 }
@@ -252,37 +246,97 @@
   background-color: #f8fafc !important;
 }
 
-[data-theme="night"] .bg-base-200 {
+[data-theme='night'] .bg-base-200 {
   background-color: #1f2937 !important;
 }
 
-/* Mejoras específicas para menú vertical - EXCLUIR componentes DaisyUI nativos */
-.menu li > a:not(.btn):not(.swap):not(.btn-ghost),
-.menu li > .menu-item:not(.btn):not(.swap):not(.btn-ghost),
-.sidebar-item:not(.btn):not(.swap):not(.btn-ghost),
-.nav-item:not(.btn):not(.swap):not(.btn-ghost) {
-  background-color: transparent !important;  
-  color: #6b7280 !important;  
+/* Menú vertical con alta especificidad */
+.menu-vertical,
+[data-menu='vertical'] {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  height: 100vh !important;
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.9), rgba(255, 140, 66, 0.7)) !important;
+  transition: all 0.3s ease-in-out !important;
+}
+
+.menu-vertical .btn-ghost,
+[data-menu='vertical'] .btn-ghost {
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  transition: all 0.2s ease !important;
+}
+
+.menu-vertical .btn-ghost:hover,
+[data-menu='vertical'] .btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Estado activo del menú */
+.menu-vertical .btn-active,
+.menu-vertical .active,
+[data-menu='vertical'] .btn-active,
+[data-menu='vertical'] .active,
+.menu-vertical .btn-ghost.btn-active,
+.menu-vertical .btn-ghost.active,
+[data-menu='vertical'] .btn-ghost.btn-active,
+[data-menu='vertical'] .btn-ghost.active {
+  background-color: #ff8c42 !important;
+  border: 1px solid #e07a37 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4) !important;
+  transform: translateX(2px) !important;
+}
+
+.menu-vertical .btn-active:hover,
+.menu-vertical .active:hover,
+[data-menu='vertical'] .btn-active:hover,
+[data-menu='vertical'] .active:hover,
+.menu-vertical .btn-ghost.btn-active:hover,
+.menu-vertical .btn-ghost.active:hover,
+[data-menu='vertical'] .btn-ghost.btn-active:hover,
+[data-menu='vertical'] .btn-ghost.active:hover {
+  background-color: #e07a37 !important;
+  transform: translateX(3px) !important;
+}
+
+/* Iconos del menú */
+.menu-vertical .lucide,
+[data-menu='vertical'] .lucide {
+  flex-shrink: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+/* ESTILOS ESPECÍFICOS SOLO PARA ELEMENTOS NO-DAISYUI */
+/* Solo aplicar a elementos que NO usen clases DaisyUI nativas */
+
+/* Elementos personalizados que NO interfieren con DaisyUI */
+.custom-nav:not(.menu):not(.navbar),
+.custom-sidebar:not(.menu):not(.sidebar) {
+  background-color: transparent !important;
+  color: #6b7280 !important;
   border-radius: 8px !important;
   transition: all 0.2s ease !important;
   border: 1px solid transparent !important;
 }
 
-.menu li > a:not(.btn):not(.swap):not(.btn-ghost):hover,
-.menu li > .menu-item:not(.btn):not(.swap):not(.btn-ghost):hover,
-.sidebar-item:not(.btn):not(.swap):not(.btn-ghost):hover,
-.nav-item:not(.btn):not(.swap):not(.btn-ghost):hover {
-  background-color: #f3f4f6 !important;  
-  color: #ff8c42 !important; 
+.custom-nav:not(.menu):not(.navbar):hover,
+.custom-sidebar:not(.menu):not(.sidebar):hover {
+  background-color: #f3f4f6 !important;
+  color: #ff8c42 !important;
   border-color: rgba(255, 140, 66, 0.2) !important;
 }
 
-.menu li > a:not(.btn):not(.swap):not(.btn-ghost).active,
-.menu li > .menu-item:not(.btn):not(.swap):not(.btn-ghost).active,
-.sidebar-item:not(.btn):not(.swap):not(.btn-ghost).active,
-.nav-item:not(.btn):not(.swap):not(.btn-ghost).active {
-  background-color: #ff8c42 !important; 
-  color: #ffffff !important; 
+.custom-nav:not(.menu):not(.navbar).active,
+.custom-sidebar:not(.menu):not(.sidebar).active {
+  background-color: #ff8c42 !important;
+  color: #ffffff !important;
 }
 
 /* MANTENER estilos nativos de DaisyUI para swap y botones */
@@ -424,32 +478,28 @@
 }
 
 /* Tema oscuro para menú - EXCLUIR componentes DaisyUI nativos */
-[data-theme="night"] .menu li > a:not(.btn):not(.swap):not(.btn-ghost),
-[data-theme="night"] .menu li > .menu-item:not(.btn):not(.swap):not(.btn-ghost),
-[data-theme="night"] .sidebar-item:not(.btn):not(.swap):not(.btn-ghost),
-[data-theme="night"] .nav-item:not(.btn):not(.swap):not(.btn-ghost) {
+[data-theme='night'] .menu li > a:not(.btn):not(.swap):not(.btn-ghost),
+[data-theme='night'] .menu li > .menu-item:not(.btn):not(.swap):not(.btn-ghost),
+[data-theme='night'] .sidebar-item:not(.btn):not(.swap):not(.btn-ghost),
+[data-theme='night'] .nav-item:not(.btn):not(.swap):not(.btn-ghost) {
   background-color: transparent !important;
-  color: #9ca3af !important; 
+  color: #9ca3af !important;
 }
 
-[data-theme="night"] .menu li > a:not(.btn):not(.swap):not(.btn-ghost):hover,
-[data-theme="night"] .menu li > .menu-item:not(.btn):not(.swap):not(.btn-ghost):hover,
-[data-theme="night"] .sidebar-item:not(.btn):not(.swap):not(.btn-ghost):hover,
-[data-theme="night"] .nav-item:not(.btn):not(.swap):not(.btn-ghost):hover {
-  background-color: #374151 !important; 
+[data-theme='night'] .menu li > a:not(.btn):not(.swap):not(.btn-ghost):hover,
+[data-theme='night'] .menu li > .menu-item:not(.btn):not(.swap):not(.btn-ghost):hover,
+[data-theme='night'] .sidebar-item:not(.btn):not(.swap):not(.btn-ghost):hover,
+[data-theme='night'] .nav-item:not(.btn):not(.swap):not(.btn-ghost):hover {
+  background-color: #374151 !important;
   color: #ff8c42 !important;
   border-color: rgba(255, 140, 66, 0.3) !important;
 }
 
-/* Tablas mejoradas - SOLO para elementos que NO usen clases DaisyUI */
-.data-table:not(.table):not(.table-zebra),
-.custom-table:not(.table):not(.table-zebra) {
-  background-color: #ffffff !important;
-  color: #374151 !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
-}
+/* MANTENER SOLO estilos mínimos necesarios para DaisyUI */
+/* Tooltips - usar comportamiento nativo de DaisyUI sin modificaciones */
+
+/* Tablas - mantener estilos nativos de DaisyUI */
+/* NO sobreescribir .table, mantener funcionalidad nativa */
 
 /* Pestañas y tabs mejoradas - SOLO para elementos personalizados, NO DaisyUI */
 .custom-tabs:not(.tabs),
@@ -507,8 +557,8 @@
   box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.1) !important;
 }
 
-[data-theme="night"] .form-input:not(.input),
-[data-theme="night"] .form-textarea:not(.textarea) {
+[data-theme='night'] .form-input:not(.input),
+[data-theme='night'] .form-textarea:not(.textarea) {
   background-color: #1f2937 !important;
   color: #f9fafb !important;
   border-color: #4b5563 !important;
@@ -548,8 +598,8 @@
   margin-left: 8px !important;
 }
 
-[data-theme="night"] .modal,
-[data-theme="night"] .modal-box {
+[data-theme='night'] .modal,
+[data-theme='night'] .modal-box {
   background-color: #1f2937 !important;
   color: #f9fafb !important;
 }
@@ -628,30 +678,77 @@
   background-color: #e5e7eb !important;
 }
 
-[data-theme="night"] .divider {
+[data-theme='night'] .divider {
   color: #9ca3af !important;
 }
 
-[data-theme="night"] .divider:before,
-[data-theme="night"] .divider:after {
+[data-theme='night'] .divider:before,
+[data-theme='night'] .divider:after {
   background-color: #4b5563 !important;
 }
 
 /* Stats cards mejorados - USAR SOLO ESPECIFICIDAD ALTA */
 .estadisticas .stat,
 .stat.stat-custom,
-[data-page="estadisticas"] .stat {
+[data-page='estadisticas'] .stat,
+[data-page='registro-ventas'] .stat {
   background-color: #ffffff !important;
   color: #374151 !important;
   border-radius: 12px !important;
   border: 1px solid #f3f4f6 !important;
   padding: 1.5rem !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  position: relative !important;
+}
+
+/* Asegurar que las stats se vean horizontalmente */
+.stats,
+.stats-horizontal {
+  display: inline-flex !important;
+  overflow: visible !important;
+}
+
+.stats .stat,
+.stats-horizontal .stat,
+[data-page='registro-ventas'] .stat {
+  display: flex !important;
+  flex: 1 1 0% !important;
+  flex-direction: column !important;
+  padding: 1rem 1.5rem !important;
+  position: relative !important;
+}
+
+.stat-figure {
+  position: absolute !important;
+  right: 1rem !important;
+  top: 1rem !important;
+  color: hsl(var(--s) / 0.8) !important;
+}
+
+.stat-title {
+  color: hsl(var(--bc) / 0.6) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.stat-value {
+  color: hsl(var(--bc)) !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.stat-desc {
+  color: hsl(var(--bc) / 0.6) !important;
+  font-size: 0.875rem !important;
 }
 
 .estadisticas .stat-title,
 .stat.stat-custom .stat-title,
-[data-page="estadisticas"] .stat-title {
+[data-page='estadisticas'] .stat-title,
+[data-page='registro-ventas'] .stat-title {
   color: #6b7280 !important;
   font-weight: 500 !important;
   font-size: 0.875rem !important;
@@ -660,7 +757,8 @@
 
 .estadisticas .stat-value,
 .stat.stat-custom .stat-value,
-[data-page="estadisticas"] .stat-value {
+[data-page='estadisticas'] .stat-value,
+[data-page='registro-ventas'] .stat-value {
   font-weight: 700 !important;
   font-size: 1.875rem !important;
   line-height: 2.25rem !important;
@@ -669,7 +767,8 @@
 
 .estadisticas .stat-desc,
 .stat.stat-custom .stat-desc,
-[data-page="estadisticas"] .stat-desc {
+[data-page='estadisticas'] .stat-desc,
+[data-page='registro-ventas'] .stat-desc {
   color: #9ca3af !important;
   font-size: 0.875rem !important;
   font-weight: 500 !important;
@@ -677,7 +776,8 @@
 
 .estadisticas .stat-figure,
 .stat.stat-custom .stat-figure,
-[data-page="estadisticas"] .stat-figure {
+[data-page='estadisticas'] .stat-figure,
+[data-page='registro-ventas'] .stat-figure {
   position: absolute !important;
   right: 1.5rem !important;
   top: 1.5rem !important;
@@ -685,23 +785,26 @@
 }
 
 /* Tema oscuro para stats */
-[data-theme="night"] .estadisticas .stat,
-[data-theme="night"] .stat.stat-custom,
-[data-theme="night"] [data-page="estadisticas"] .stat {
+[data-theme='night'] .estadisticas .stat,
+[data-theme='night'] .stat.stat-custom,
+[data-theme='night'] [data-page='estadisticas'] .stat,
+[data-theme='night'] [data-page='registro-ventas'] .stat {
   background-color: #1f2937 !important;
   color: #f9fafb !important;
   border-color: #374151 !important;
 }
 
-[data-theme="night"] .estadisticas .stat-title,
-[data-theme="night"] .stat.stat-custom .stat-title,
-[data-theme="night"] [data-page="estadisticas"] .stat-title {
+[data-theme='night'] .estadisticas .stat-title,
+[data-theme='night'] .stat.stat-custom .stat-title,
+[data-theme='night'] [data-page='estadisticas'] .stat-title,
+[data-theme='night'] [data-page='registro-ventas'] .stat-title {
   color: #9ca3af !important;
 }
 
-[data-theme="night"] .estadisticas .stat-desc,
-[data-theme="night"] .stat.stat-custom .stat-desc,
-[data-theme="night"] [data-page="estadisticas"] .stat-desc {
+[data-theme='night'] .estadisticas .stat-desc,
+[data-theme='night'] .stat.stat-custom .stat-desc,
+[data-theme='night'] [data-page='estadisticas'] .stat-desc,
+[data-theme='night'] [data-page='registro-ventas'] .stat-desc {
   color: #6b7280 !important;
 }
 
@@ -749,16 +852,16 @@
   color: #6b7280 !important;
 }
 
-[data-theme="night"] .collapse {
+[data-theme='night'] .collapse {
   background-color: #1f2937 !important;
   border-color: #4b5563 !important;
 }
 
-[data-theme="night"] .collapse-title {
+[data-theme='night'] .collapse-title {
   color: #f9fafb !important;
 }
 
-[data-theme="night"] .collapse-content {
+[data-theme='night'] .collapse-content {
   color: #d1d5db !important;
 }
 
@@ -775,8 +878,8 @@
   margin-bottom: 0.5rem !important;
 }
 
-[data-theme="night"] .label,
-[data-theme="night"] .form-label {
+[data-theme='night'] .label,
+[data-theme='night'] .form-label {
   color: #f9fafb !important;
 }
 
@@ -827,7 +930,7 @@
   background-color: rgba(255, 140, 66, 0.05) !important;
 }
 
-[data-theme="night"] .file-input {
+[data-theme='night'] .file-input {
   background-color: #1f2937 !important;
   border-color: #4b5563 !important;
   color: #9ca3af !important;

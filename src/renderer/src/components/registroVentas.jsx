@@ -219,42 +219,44 @@ export default function RegistroVentas() {
         <div className="ml-20 flex-1">
           {/* Aca resto del contenido*/}
           <div className="mr-4 flex justify-end">
-            <div className="stats shadow">
+            <div className="stats stats-horizontal shadow" data-page="registro-ventas">
               <div className="stat">
-                <div className="stat-figure text-secondary">
-                  <DollarSign />
+                <div className="stat-figure text-orange-500">
+                  <DollarSign className="h-8 w-8" />
                 </div>
                 <div className="stat-title">Total vendido hoy</div>
-                <div className="stat-value">${formatPrice(stats.total_revenue)}</div>
+                <div className="stat-value text-orange-500">
+                  ${formatPrice(stats.total_revenue)}
+                </div>
                 <div className="stat-desc">{new Date().toLocaleDateString()}</div>
               </div>
 
               <div className="stat">
-                <div className="stat-figure text-secondary">
-                  <Package />
+                <div className="stat-figure text-indigo-500">
+                  <Package className="h-8 w-8" />
                 </div>
                 <div className="stat-title">Productos vendidos</div>
-                <div className="stat-value">{stats.total_products_sold}</div>
+                <div className="stat-value text-indigo-500">{stats.total_products_sold}</div>
                 <div className="stat-desc">Unidades hoy</div>
               </div>
 
               <div className="stat">
-                <div className="stat-figure text-secondary">
-                  <Archive />
+                <div className="stat-figure text-cyan-500">
+                  <Archive className="h-8 w-8" />
                 </div>
                 <div className="stat-title">Ventas realizadas</div>
-                <div className="stat-value">{stats.total_sales}</div>
+                <div className="stat-value text-cyan-500">{stats.total_sales}</div>
                 <div className="stat-desc">Transacciones hoy</div>
               </div>
             </div>
           </div>
-          <h2 className="text-warning mt-4 mb-6 text-3xl font-bold">
+          <h2 className="mb-6 mt-4 text-3xl font-bold text-warning">
             Registro de ventas: {currentStorage?.id}
           </h2>
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 gap-4">
               {/* Buscador */}
-              <label className="input input-bordered input-warning flex flex-1 items-center gap-2">
+              <label className="input-bordered input input-warning flex flex-1 items-center gap-2">
                 <input
                   type="text"
                   placeholder="Buscar por notas, número de factura, cliente..."
@@ -269,7 +271,7 @@ export default function RegistroVentas() {
               <div className="relative">
                 <button
                   type="button"
-                  className={`btn btn-outline btn-warning min-w-[200px] ${showCalendar ? 'btn-active' : ''}`}
+                  className={`btn btn-warning btn-outline min-w-[200px] ${showCalendar ? 'btn-active' : ''}`}
                   onClick={toggleCalendar}
                 >
                   <Calendar className="h-4 w-4" />
@@ -286,12 +288,12 @@ export default function RegistroVentas() {
                       }
                     }}
                   >
-                    <div className="bg-base-100 relative mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg p-6 shadow-xl">
+                    <div className="relative mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-base-100 p-6 shadow-xl">
                       <div className="mb-4 flex items-center justify-between">
                         <h3 className="text-lg font-semibold">Seleccionar período</h3>
                         <button
                           type="button"
-                          className="btn btn-sm btn-circle btn-ghost"
+                          className="btn btn-ghost btn-sm btn-circle"
                           onClick={() => setShowCalendar(false)}
                         >
                           <X className="h-4 w-4" />
@@ -437,7 +439,7 @@ export default function RegistroVentas() {
             </div>
           </div>
 
-          <div className="bg-base-100 mt-4 overflow-x-auto shadow-2xs">
+          <div className="shadow-2xs mt-4 overflow-x-auto bg-base-100">
             <table className="table">
               {/* head */}
               <thead className="bg-accent/30">
@@ -469,7 +471,7 @@ export default function RegistroVentas() {
                   salesList.map((sale) => (
                     <tr
                       key={sale.id}
-                      className="hover:bg-base-200 cursor-pointer transition-colors"
+                      className="cursor-pointer transition-colors hover:bg-base-200"
                       onDoubleClick={() => handleRowDoubleClick(sale)}
                       title="Doble click para ver detalles"
                     >
@@ -513,7 +515,7 @@ export default function RegistroVentas() {
 
           {/* Modal de Detalles de Venta */}
           {showModal && (
-            <div className="modal modal-open">
+            <div className="modal-open modal">
               <div className="modal-box max-w-6xl">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-bold">Detalles de Venta #{selectedSale?.id}</h3>
@@ -531,7 +533,7 @@ export default function RegistroVentas() {
                   <div className="space-y-6">
                     {/* Información General */}
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      <div className="bg-base-200 rounded-lg p-4">
+                      <div className="rounded-lg bg-base-200 p-4">
                         <h4 className="mb-2 font-semibold">Información de Venta</h4>
                         <p>
                           <strong>Fecha:</strong> {formatDate(saleDetails.sale.sale_date)}
@@ -558,7 +560,7 @@ export default function RegistroVentas() {
                         )}
                       </div>
 
-                      <div className="bg-base-200 rounded-lg p-4">
+                      <div className="rounded-lg bg-base-200 p-4">
                         <h4 className="mb-2 font-semibold">Cliente</h4>
                         <p>
                           <strong>Nombre:</strong>{' '}
@@ -576,7 +578,7 @@ export default function RegistroVentas() {
                         )}
                       </div>
 
-                      <div className="bg-base-200 rounded-lg p-4">
+                      <div className="rounded-lg bg-base-200 p-4">
                         <h4 className="mb-2 font-semibold">Totales</h4>
                         <p>
                           <strong>Subtotal:</strong> ${formatPrice(saleDetails.sale.subtotal)}
@@ -603,7 +605,7 @@ export default function RegistroVentas() {
                           Productos Vendidos ({saleDetails.products_sold.length})
                         </h4>
                         <div className="overflow-x-auto">
-                          <table className="table-zebra table w-full">
+                          <table className="table table-zebra w-full">
                             <thead>
                               <tr>
                                 <th>Producto</th>
@@ -660,7 +662,7 @@ export default function RegistroVentas() {
                           Productos Devueltos ({saleDetails.products_returned.length})
                         </h4>
                         <div className="overflow-x-auto">
-                          <table className="table-zebra table w-full">
+                          <table className="table table-zebra w-full">
                             <thead>
                               <tr className="bg-red-50">
                                 <th>Producto</th>
@@ -717,7 +719,7 @@ export default function RegistroVentas() {
                     {saleDetails.sale.notes && (
                       <div>
                         <h4 className="mb-2 text-lg font-semibold">Notas</h4>
-                        <div className="bg-base-200 rounded-lg p-4">
+                        <div className="rounded-lg bg-base-200 p-4">
                           <p className="text-sm">{saleDetails.sale.notes}</p>
                         </div>
                       </div>

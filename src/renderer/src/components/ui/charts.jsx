@@ -44,9 +44,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div className="rounded-lg border bg-background p-2 shadow-sm">
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col">
-            <span className="text-[0.70rem] uppercase text-muted-foreground">
-              {label}
-            </span>
+            <span className="text-[0.70rem] uppercase text-muted-foreground">{label}</span>
             {payload.map((entry, index) => (
               <span key={index} className="font-bold text-muted-foreground">
                 {entry.value}
@@ -62,12 +60,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export function SalesChart({ className }) {
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn('w-full', className)}>
       <ResponsiveContainer width="100%" height={350}>
         <BarChart data={salesData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis 
-            dataKey="month" 
+          <XAxis
+            dataKey="month"
             stroke="hsl(var(--muted-foreground))"
             fontSize={12}
             tickLine={false}
@@ -81,11 +79,7 @@ export function SalesChart({ className }) {
             tickFormatter={(value) => `$${value}`}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Bar 
-            dataKey="sales" 
-            fill="hsl(var(--primary))" 
-            radius={[4, 4, 0, 0]}
-          />
+          <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -98,8 +92,8 @@ export function ProductsLineChart({ className }) {
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={salesData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis 
-            dataKey="month" 
+          <XAxis
+            dataKey="month"
             stroke="hsl(var(--muted-foreground))"
             fontSize={12}
             tickLine={false}
@@ -113,30 +107,30 @@ export function ProductsLineChart({ className }) {
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Line 
-            type="monotone" 
-            dataKey="products" 
-            stroke="#ff8c42" 
+          <Line
+            type="monotone"
+            dataKey="products"
+            stroke="#ff8c42"
             strokeWidth={3}
             name="Productos Vendidos"
-            dot={{ fill: "#ff8c42", strokeWidth: 2, r: 4 }}
+            dot={{ fill: '#ff8c42', strokeWidth: 2, r: 4 }}
           />
-          <Line 
-            type="monotone" 
-            dataKey="returns" 
-            stroke="#ef4444" 
+          <Line
+            type="monotone"
+            dataKey="returns"
+            stroke="#ef4444"
             strokeWidth={2}
             name="Devoluciones"
-            dot={{ fill: "#ef4444", strokeWidth: 2, r: 3 }}
+            dot={{ fill: '#ef4444', strokeWidth: 2, r: 3 }}
             strokeDasharray="5 5"
           />
-          <Line 
-            type="monotone" 
-            dataKey="exchanges" 
-            stroke="#10b981" 
+          <Line
+            type="monotone"
+            dataKey="exchanges"
+            stroke="#10b981"
             strokeWidth={2}
             name="Intercambios"
-            dot={{ fill: "#10b981", strokeWidth: 2, r: 3 }}
+            dot={{ fill: '#10b981', strokeWidth: 2, r: 3 }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -151,8 +145,8 @@ export function MultiBarChart({ className }) {
       <ResponsiveContainer width="100%" height={350}>
         <BarChart data={salesData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis 
-            dataKey="month" 
+          <XAxis
+            dataKey="month"
             stroke="hsl(var(--muted-foreground))"
             fontSize={12}
             tickLine={false}
@@ -177,7 +171,7 @@ export function MultiBarChart({ className }) {
 
 export function CategoryPieChart({ className }) {
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn('w-full', className)}>
       <ResponsiveContainer width="100%" height={350}>
         <PieChart>
           <Pie

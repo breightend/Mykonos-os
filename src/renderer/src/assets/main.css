@@ -185,7 +185,7 @@
 }
 
 /* Tema oscuro */
-[data-theme="night"] {
+[data-theme='night'] {
   /* Variables DaisyUI para tema oscuro */
   --p: 31 78% 70%;
   --pc: 31 34% 20%;

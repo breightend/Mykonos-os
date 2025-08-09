@@ -344,9 +344,7 @@ function Ventas() {
       <MenuVertical currentPath="/ventas" />
       <Navbar />
       <div className="wl-20">
-        <button className="btn btn-circle" onClick={() => setLocation('/home')}>
-          <ArrowLeft />
-        </button>
+        
 
         <div className="mr-3 ml-20 flex-1">
           <h2 className="text-warning mb-6 text-2xl font-bold">Venta</h2>
@@ -767,7 +765,7 @@ function Ventas() {
             </div>
             <div className="flex justify-end gap-4">
               <button
-                className={`flex justify-end ${productos.length > 0 ? 'daisy-btn daisy-btn-success' : 'daisy-btn daisy-btn-disabled'}`}
+                className={`flex justify-end ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
                 onClick={handleSubmit}
               >
                 Confirmar venta

@@ -4,7 +4,7 @@ import { useLocation } from 'wouter'
 import { useSettings } from '../contexts/settingsContext'
 import { useRef, useState, useEffect } from 'react'
 
-export default function Settings() {
+export default function Settings({ isMenuOpen = true }) {
   const { isDarkMode, toggleDarkMode } = useTheme()
   const { settings, updateSettings } = useSettings()
   const dialogRef = useRef(null)
@@ -33,17 +33,18 @@ export default function Settings() {
   }
 
   return (
-    <div>
+    <div className="w-full">
       <button
-        className="btn btn-ghost btn-circle mb-2"
+        className="btn btn-ghost w-full justify-start rounded-lg px-3 py-2 text-white/90 transition-all duration-200 hover:bg-white/10 hover:text-white"
         onClick={() => dialogRef.current.showModal()}
       >
-        <Cog size={30} className="transition-transform hover:rotate-180" />
+        <Cog size={20} className="flex-shrink-0 transition-transform hover:rotate-180" />
+        {isMenuOpen && <span className="ml-3 font-medium">Configuración</span>}
       </button>
       <dialog
         ref={dialogRef}
         id="settings"
-        className="modal animate-fade-in backdrop-blur-sm backdrop:bg-black/50"
+        className="animate-fade-in modal backdrop-blur-sm backdrop:bg-black/50"
         onClick={handleOutsideClick}
       >
         <div className="modal-box max-w-sm rounded-2xl p-6 md:max-w-lg">
@@ -51,7 +52,7 @@ export default function Settings() {
             <h3 className="text-2xl font-bold">Configuraciones</h3>
           </div>
 
-          <div className="text-base-content flex flex-col gap-6">
+          <div className="flex flex-col gap-6 text-base-content">
             {/* Configuración de tema */}
             <div className="card bg-base-200 p-4">
               <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold">
@@ -74,7 +75,7 @@ export default function Settings() {
               </label>
             </div>
 
-            <div className="text-base-content flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-4 text-base-content">
               <button
                 className="btn btn-ghost w-full rounded-xl dark:text-white"
                 onClick={() => setLocation('/createUser')}
@@ -112,7 +113,7 @@ export default function Settings() {
                         <span className="label-text font-medium">Tipo de margen</span>
                       </label>
                       <select
-                        className="select select-bordered w-full"
+                        className="select-bordered select w-full"
                         value={localSettings.markupType}
                         onChange={(e) => handleSettingsChange('markupType', e.target.value)}
                       >
@@ -130,8 +131,8 @@ export default function Settings() {
                             : 'Ganancia fija'}
                         </span>
                       </label>
-                      <div className="join w-full">
-                        <span className="join-item btn btn-outline btn-disabled">
+                      <div className="w-full join">
+                        <span className="btn btn-disabled btn-outline join-item">
                           {localSettings.markupType === 'percentage' ? (
                             <Percent className="h-4 w-4" />
                           ) : (
@@ -140,7 +141,7 @@ export default function Settings() {
                         </span>
                         <input
                           type="number"
-                          className="input input-bordered join-item flex-1"
+                          className="input-bordered input flex-1 join-item"
                           placeholder={localSettings.markupType === 'percentage' ? '50' : '100.00'}
                           value={localSettings.priceMarkupPercentage}
                           onChange={(e) =>
