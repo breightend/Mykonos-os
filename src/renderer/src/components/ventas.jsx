@@ -6,7 +6,6 @@ import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useSellContext } from '../contexts/sellContext'
 import salesService from '../services/salesService'
-import ExchangeModalSelector from '../modals/VentasModal/exchangeModalSelector'
 
 //TODO agregar el vendedor a la venta
 //TODO agregar logica de regalos
@@ -14,12 +13,116 @@ import ExchangeModalSelector from '../modals/VentasModal/exchangeModalSelector'
 function Ventas() {
   const [, setLocation] = useLocation()
   const [codigoInput, setCodigoInput] = useState('')
-  const [productos, setProductos] = useState([]) // lista de productos en la venta
+  const [productos, setProductos] = useState([])
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
   const [cantidadAEliminar, setCantidadAEliminar] = useState(0)
   const [loading, setLoading] = useState(false)
+
+  // Estados para el intercambio
+  const [modoIntercambio, setModoIntercambio] = useState(false)
+  const [codigoDevolucionInput, setCodigoDevolucionInput] = useState('')
+  const [productosDevolucion, setProductosDevolucion] = useState([])
+  const [loadingDevolucion, setLoadingDevolucion] = useState(false)
+
   const { setSaleData, saleData, addProductToGifts, removeGiftProduct, updateGiftQuantity } =
     useSellContext()
+
+  const agregarProductoDevolucion = async () => {
+    const codigo = codigoDevolucionInput.trim()
+    if (!codigo) {
+      toast.error('Por favor ingrese un código de barras de variante para devolución', {
+        duration: 2000
+      })
+      return
+    }
+
+    setLoadingDevolucion(true)
+    try {
+      console.log('🔍 Buscando producto de devolución por código de variante:', codigo)
+
+      const response = await salesService.getProductByVariantBarcode(codigo)
+
+      if (response.status === 'success') {
+        const productData = response.data
+        console.log('✅ Producto de devolución encontrado:', productData)
+
+        const existingProductIndex = productosDevolucion.findIndex(
+          (p) => p.variant_barcode === codigo
+        )
+
+        if (existingProductIndex !== -1) {
+          const nuevosProductos = [...productosDevolucion]
+          nuevosProductos[existingProductIndex].cantidad += 1
+          setProductosDevolucion(nuevosProductos)
+          toast.success(`Cantidad de devolución incrementada: ${productData.product_name}`, {
+            duration: 2000
+          })
+        } else {
+          const nuevoProductoDevolucion = {
+            variant_barcode: productData.variant_barcode,
+            product_id: productData.product_id,
+            descripcion: productData.product_name,
+            marca: productData.brand_name || 'Sin marca',
+            precio: productData.sale_price || 0,
+            cantidad: 1,
+            grupo: productData.group_name || 'Sin grupo',
+            talle: productData.size_name || 'Sin talle',
+            color: productData.color_name || 'Sin color',
+            color_hex: productData.color_hex || '#808080',
+            variant_id: productData.variant_id,
+            size_id: productData.size_id,
+            color_id: productData.color_id,
+            sucursal_id: productData.sucursal_id,
+            sucursal_nombre: productData.sucursal_nombre,
+            tax: productData.tax || 0,
+            discount: productData.discount || 0
+          }
+
+          setProductosDevolucion([...productosDevolucion, nuevoProductoDevolucion])
+          toast.success(
+            `Producto de devolución agregado: ${productData.product_name} - ${productData.size_name} - ${productData.color_name}`,
+            {
+              duration: 3000
+            }
+          )
+        }
+
+        setCodigoDevolucionInput('')
+      } else {
+        toast.error(response.message || 'Producto de devolución no encontrado', {
+          duration: 3000
+        })
+      }
+    } catch (error) {
+      console.error('❌ Error buscando producto de devolución:', error)
+
+      if (error.response?.status === 404) {
+        toast.error('Producto de devolución no encontrado', {
+          duration: 3000
+        })
+      } else {
+        toast.error('Error en la búsqueda del producto de devolución', {
+          duration: 2000
+        })
+      }
+    } finally {
+      setLoadingDevolucion(false)
+    }
+  }
+
+  const eliminarProductoDevolucion = (variantBarcode) => {
+    setProductosDevolucion(productosDevolucion.filter((p) => p.variant_barcode !== variantBarcode))
+    toast.success('Producto de devolución eliminado', { duration: 2000 })
+  }
+
+  const toggleModoIntercambio = () => {
+    setModoIntercambio(!modoIntercambio)
+    if (!modoIntercambio) {
+      // Limpiar productos de devolución al entrar al modo intercambio
+      setProductosDevolucion([])
+      setCodigoDevolucionInput('')
+    }
+  }
 
   const agregarProducto = async () => {
     const codigo = codigoInput.trim()
@@ -34,18 +137,15 @@ function Ventas() {
     try {
       console.log('🔍 Buscando producto por código de variante:', codigo)
 
-      // Buscar producto por código de barras de variante
       const response = await salesService.getProductByVariantBarcode(codigo)
 
       if (response.status === 'success') {
         const productData = response.data
         console.log('✅ Producto encontrado:', productData)
 
-        // Verificar si el producto ya está en la lista
         const existingProductIndex = productos.findIndex((p) => p.variant_barcode === codigo)
 
         if (existingProductIndex !== -1) {
-          // Si ya existe, incrementar cantidad
           const nuevosProductos = [...productos]
           const cantidadActual = nuevosProductos[existingProductIndex].cantidad
           const stockDisponible = productData.stock_disponible
@@ -62,7 +162,6 @@ function Ventas() {
             })
           }
         } else {
-          // Si no existe, agregar nuevo producto
           const nuevoProducto = {
             variant_barcode: productData.variant_barcode,
             product_id: productData.product_id,
@@ -124,7 +223,7 @@ function Ventas() {
     )
     if (index === -1) return
 
-    let cantidadEliminar = cantidadAEliminar || 1 
+    let cantidadEliminar = cantidadAEliminar || 1
     const eliminarTodos = document.getElementById('eliminarTodosCheckbox')?.checked
 
     if (eliminarTodos || cantidadEliminar >= productos[index].cantidad) {
@@ -164,6 +263,13 @@ function Ventas() {
 
   const handleSubmit = () => {
     const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0)
+    const totalDevolucion = productosDevolucion.reduce(
+      (acc, prod) => acc + prod.precio * prod.cantidad,
+      0
+    )
+
+    // Si hay intercambio, el total final es la diferencia
+    const totalFinal = modoIntercambio ? total - totalDevolucion : total
 
     setSaleData((prev) => ({
       ...prev, // Conserva el estado existente
@@ -186,21 +292,53 @@ function Ventas() {
         tax: p.tax,
         discount: p.discount
       })),
-      total: total
+      // Guardar datos del intercambio si existe
+      exchange: modoIntercambio
+        ? {
+            hasExchange: true,
+            returnedProducts: productosDevolucion.map((p) => ({
+              variant_barcode: p.variant_barcode,
+              product_id: p.product_id,
+              variant_id: p.variant_id,
+              description: p.descripcion,
+              brand: p.marca,
+              size_name: p.talle,
+              color_name: p.color,
+              color_hex: p.color_hex,
+              price: p.precio,
+              quantity: p.cantidad,
+              size_id: p.size_id,
+              color_id: p.color_id,
+              sucursal_id: p.sucursal_id,
+              sucursal_nombre: p.sucursal_nombre,
+              group_name: p.grupo,
+              tax: p.tax,
+              discount: p.discount
+            })),
+            totalProductsValue: total,
+            totalReturnedValue: totalDevolucion,
+            finalAmount: totalFinal
+          }
+        : {
+            hasExchange: false,
+            returnedProducts: [],
+            totalProductsValue: total,
+            totalReturnedValue: 0,
+            finalAmount: total
+          },
+      total: totalFinal // El total que se paga es la diferencia
     }))
 
     setLocation('/formaPago')
   }
 
   const total = productos.reduce((acc, prod) => acc + prod.precio * prod.cantidad, 0)
+  const totalDevolucion = productosDevolucion.reduce(
+    (acc, prod) => acc + prod.precio * prod.cantidad,
+    0
+  )
+  const totalFinal = total - totalDevolucion
 
-  const refreshProducts = () => {
-    // This function could be called after successful exchange
-    // to refresh the current products list if needed
-    // For now, we'll just show a message
-    toast.success('Productos actualizados', { duration: 2000 })
-  }
-//Quiero cambiar la logica del intercambio de productos para que suceda en la pestaña principal de ventas, 
   return (
     <div>
       <MenuVertical currentPath="/ventas" />
@@ -245,25 +383,16 @@ function Ventas() {
                   title="Agregar a regalos"
                 >
                   <Gift />
+                  Regalo
                 </button>
-                
-
-                {/* Exchange Modal Selector */}
-                <dialog id="intercambioModal" className="modal">
-                  <div
-                    className="modal-backdrop"
-                    onClick={() => document.getElementById('intercambioModal').close()}
-                  ></div>
-                  <ExchangeModalSelector
-                    isOpen={true}
-                    onClose={() => document.getElementById('intercambioModal').close()}
-                    onExchangeComplete={() => {
-                      refreshProducts()
-                      document.getElementById('intercambioModal').close()
-                    }}
-                    selectedProduct={productoSeleccionado}
-                  />
-                </dialog>
+                <button
+                  className={`btn btn-info ${productos.length === 0 ? 'pointer-events-none opacity-50' : ''}`}
+                  onClick={toggleModoIntercambio}
+                  title="Activar modo intercambio"
+                >
+                  <Replace />
+                  {modoIntercambio ? 'Cancelar Intercambio' : 'Intercambio'}
+                </button>
                 {/* Modal eliminar producto seleccionado */}
                 <dialog id="eliminarProducto" className="modal">
                   <div className="modal-box">
@@ -284,7 +413,7 @@ function Ventas() {
                               value={cantidadAEliminar}
                               onChange={(e) => {
                                 setCantidadAEliminar(Number(e.target.value))
-                                document.getElementById('eliminarTodosCheckbox').checked = false // Desmarca el checkbox si el usuario ingresa una cantidad
+                                document.getElementById('eliminarTodosCheckbox').checked = false
                               }}
                             />
                             <label className="ml-4 flex cursor-pointer items-center">
@@ -494,17 +623,149 @@ function Ventas() {
             </div>
           )}
 
+          {/* Sección de Intercambio */}
+          {modoIntercambio && (
+            <div className="card bg-base-300 mt-6 p-5 shadow-xl">
+              <div className="card-body pt-0.5">
+                <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-blue-500">
+                  <Replace className="h-5 w-5" />
+                  Productos a Devolver (Intercambio)
+                </h3>
+                <div className="mb-4">
+                  <p>Escanee o ingrese los productos que el cliente devuelve:</p>
+                  <div className="mt-2 flex flex-row items-center gap-4">
+                    <input
+                      type="text"
+                      placeholder="VAR-123-456-789..."
+                      value={codigoDevolucionInput}
+                      onChange={(e) => setCodigoDevolucionInput(e.target.value)}
+                      className="input input-bordered input-warning w-full max-w-xs"
+                      onKeyDown={(e) => e.key === 'Enter' && agregarProductoDevolucion()}
+                      disabled={loadingDevolucion}
+                    />
+                    <button
+                      className={`btn btn-warning ${loadingDevolucion ? 'loading' : ''}`}
+                      onClick={agregarProductoDevolucion}
+                      disabled={loadingDevolucion}
+                    >
+                      {loadingDevolucion ? 'Buscando...' : 'Agregar Devolución'}
+                    </button>
+                  </div>
+                </div>
+
+                {productosDevolucion.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Código Variante</th>
+                          <th>Descripción</th>
+                          <th>Talle</th>
+                          <th>Color</th>
+                          <th>Cantidad</th>
+                          <th>Precio unitario</th>
+                          <th>Marca</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productosDevolucion.map((producto) => (
+                          <tr key={producto.variant_barcode}>
+                            <td className="font-mono text-xs">{producto.variant_barcode}</td>
+                            <td>{producto.descripcion}</td>
+                            <td>
+                              <span className="badge badge-warning">{producto.talle}</span>
+                            </td>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-4 w-4 rounded-full border border-gray-300"
+                                  style={{ backgroundColor: producto.color_hex }}
+                                  title={producto.color}
+                                ></div>
+                                <span>{producto.color}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  className="btn btn-xs btn-circle btn-ghost"
+                                  onClick={() => {
+                                    if (producto.cantidad > 1) {
+                                      const nuevosProductos = productosDevolucion.map((p) =>
+                                        p.variant_barcode === producto.variant_barcode
+                                          ? { ...p, cantidad: p.cantidad - 1 }
+                                          : p
+                                      )
+                                      setProductosDevolucion(nuevosProductos)
+                                    }
+                                  }}
+                                  disabled={producto.cantidad <= 1}
+                                >
+                                  -
+                                </button>
+                                <span className="badge badge-error">{producto.cantidad}</span>
+                                <button
+                                  className="btn btn-xs btn-circle btn-ghost"
+                                  onClick={() => {
+                                    const nuevosProductos = productosDevolucion.map((p) =>
+                                      p.variant_barcode === producto.variant_barcode
+                                        ? { ...p, cantidad: p.cantidad + 1 }
+                                        : p
+                                    )
+                                    setProductosDevolucion(nuevosProductos)
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </td>
+                            <td>${producto.precio.toLocaleString()}</td>
+                            <td>{producto.marca}</td>
+                            <td>
+                              <button
+                                className="btn btn-xs btn-error"
+                                onClick={() => eliminarProductoDevolucion(producto.variant_barcode)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="bg-base-100 mt-4 rounded-lg p-4">
+                      <p className="text-error text-lg font-semibold">
+                        Total productos devueltos: ${totalDevolucion.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="mt-4">
-            <p className="text-xl font-bold">Total: ${total.toLocaleString()}</p>
+            <div className="bg-base-200 rounded-lg p-4">
+              <p className="text-xl font-bold">
+                Total productos a llevar: ${total.toLocaleString()}
+              </p>
+              {modoIntercambio && totalDevolucion > 0 && (
+                <>
+                  <p className="text-error text-lg font-semibold">
+                    Total productos devueltos: -${totalDevolucion.toLocaleString()}
+                  </p>
+                  <hr className="my-2" />
+                  <p className="text-2xl font-bold text-black">
+                    Total a pagar: ${totalFinal.toLocaleString()}
+                  </p>
+                </>
+              )}
+              {!modoIntercambio && (
+                <p className="text-primary text-2xl font-bold">Total: ${total.toLocaleString()}</p>
+              )}
+            </div>
             <div className="flex justify-end gap-4">
-              <button
-                  className={`btn btn-info ${!productoSeleccionado ? 'pointer-events-none opacity-50' : ''}`}
-                  onClick={() => document.getElementById('intercambioModal').showModal()}
-                  title="Intercambio de productos"
-                >
-                  <Replace />
-                  <label htmlFor="intercambioModal">Cambio </label>
-                </button>
               <button
                 className={`flex justify-end ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
                 onClick={handleSubmit}
@@ -512,7 +773,7 @@ function Ventas() {
                 Confirmar venta
               </button>
             </div>
-            <Toaster position="bottom-right" />
+            <Toaster position="bottom-center" />
           </div>
         </div>
       </div>

@@ -170,7 +170,7 @@ export default function FormasPago() {
     }
   }
 
-  const totalVenta = saleData.total
+  const totalVenta = saleData.exchange?.hasExchange ? saleData.exchange.finalAmount : saleData.total
 
   return (
     <div className="mx-auto max-w-4xl p-6">
