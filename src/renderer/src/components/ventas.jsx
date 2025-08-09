@@ -767,7 +767,7 @@ function Ventas() {
             </div>
             <div className="flex justify-end gap-4">
               <button
-                className={`flex justify-end ${productos.length > 0 ? 'btn btn-success' : 'btn btn-disabled'}`}
+                className={`flex justify-end ${productos.length > 0 ? 'daisy-btn daisy-btn-success' : 'daisy-btn daisy-btn-disabled'}`}
                 onClick={handleSubmit}
               >
                 Confirmar venta

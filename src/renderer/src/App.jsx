@@ -26,6 +26,7 @@ import InfoProducto from './components/inventory/infoInventory'
 import Estadisticas from './components/stadistics/estadisticas'
 import MoveInventory from './components/Inventory/moveInventory'
 import TestColorPage from './test/TestColorPage'
+import TestDaisyUI from './test/TestDaisyUI'
 import ResumenProveedores from './components/stadistics/resumenProveedores'
 import EditarProducto from './components/Inventory/editarProducto'
 import MultiProductExchangeTestPage from './components/MultiProductExchangeTestPage'
@@ -63,6 +64,11 @@ function App() {
         <Route path="/test-colors">
           <ProtectedRoute>
             <TestColorPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/test-daisy">
+          <ProtectedRoute>
+            <TestDaisyUI />
           </ProtectedRoute>
         </Route>
         <Route path="/usuario">

@@ -3,16 +3,93 @@ import { useSellContext } from '../contexts/sellContext'
 import toast, { Toaster } from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { Replace, RotateCcw } from 'lucide-react'
+import { salesService } from '../services/salesService'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
   const [, setLocation] = useLocation()
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  const handleSubmit = () => {
-    setLocation('/ventas')
-    toast.success('Venta finalizada con éxito', {
-      duration: 2000
-    })
+  const handleSubmit = async () => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+
+    try {
+      // Preparar datos para el backend
+      const saleDataForBackend = {
+        customer: saleData.customer || null,
+        products: saleData.products.map((product) => ({
+          product_id: product.product_id,
+          variant_id: product.variant_id,
+          product_name:
+            product.description || product.descripcion || product.product_name || 'Producto',
+          description: product.description || product.descripcion || '',
+          brand: product.brand || product.marca || '',
+          size_name: product.size_name || product.talle || '',
+          color_name: product.color_name || product.color || '',
+          price: parseFloat(product.price || product.precio || 0),
+          quantity: parseInt(product.quantity || product.cantidad || 1),
+          variant_barcode: product.variant_barcode || ''
+        })),
+        exchange: saleData.exchange?.hasExchange
+          ? {
+              hasExchange: true,
+              returnedProducts: saleData.exchange.returnedProducts.map((product) => ({
+                product_id: product.product_id,
+                variant_id: product.variant_id,
+                product_name:
+                  product.description || product.descripcion || product.product_name || 'Producto',
+                description: product.description || product.descripcion || '',
+                brand: product.brand || product.marca || '',
+                size_name: product.size_name || product.talle || '',
+                color_name: product.color_name || product.color || '',
+                price: parseFloat(product.price || product.precio || 0),
+                quantity: parseInt(product.quantity || product.cantidad || 1),
+                variant_barcode: product.variant_barcode || ''
+              })),
+              totalProductsValue: parseFloat(saleData.exchange.totalProductsValue),
+              totalReturnedValue: parseFloat(saleData.exchange.totalReturnedValue),
+              finalAmount: parseFloat(saleData.exchange.finalAmount)
+            }
+          : null,
+        payments: saleData.payments.map((payment) => ({
+          method: payment.method,
+          amount: parseFloat(payment.amount),
+          reference: payment.reference || ''
+        })),
+        total: saleData.exchange?.hasExchange
+          ? parseFloat(saleData.exchange.finalAmount)
+          : parseFloat(saleData.total),
+        storage_id: 1, // TODO: Obtener de la configuración del usuario
+        employee_id: 1, // TODO: Obtener del usuario logueado
+        cashier_user_id: 1 // TODO: Obtener del usuario logueado
+      }
+
+      console.log('📋 Enviando venta al backend:', saleDataForBackend)
+
+      // Enviar venta al backend
+      const result = await salesService.createSale(saleDataForBackend)
+
+      if (result.status === 'success') {
+        toast.success(
+          `Venta finalizada con éxito${saleData.exchange?.hasExchange ? ' con intercambio' : ''}`,
+          { duration: 3000 }
+        )
+
+        // Esperar un poco para que el usuario vea el mensaje
+        setTimeout(() => {
+          setLocation('/ventas')
+        }, 2000)
+      } else {
+        throw new Error(result.message || 'Error desconocido al procesar la venta')
+      }
+    } catch (error) {
+      console.error('❌ Error al finalizar venta:', error)
+      toast.error(`Error al finalizar la venta: ${error.message}`, { duration: 4000 })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   console.log('Productos')
@@ -111,12 +188,16 @@ export default function ConfirmacionDatosDeCompra() {
               <tbody>
                 {saleData.products.map((product, index) => (
                   <tr key={index}>
-                    <td>{product.description}</td>
-                    <td>{product.brand}</td>
-                    <td>{product.quantity}</td>
-                    <td>${parseFloat(product.price || 0).toFixed(2)}</td>
+                    <td>{product.descripcion || product.description}</td>
+                    <td>{product.marca || product.brand}</td>
+                    <td>{product.cantidad || product.quantity}</td>
+                    <td>${parseFloat(product.precio || product.price || 0).toFixed(2)}</td>
                     <td>
-                      ${(parseFloat(product.price || 0) * (product.quantity || 0)).toFixed(2)}
+                      $
+                      {(
+                        parseFloat(product.precio || product.price || 0) *
+                        (product.cantidad || product.quantity || 0)
+                      ).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -177,11 +258,11 @@ export default function ConfirmacionDatosDeCompra() {
                     <tbody>
                       {saleData.exchange.returnedProducts.map((product, index) => (
                         <tr key={index}>
-                          <td>{product.description}</td>
-                          <td>{product.brand}</td>
+                          <td>{product.descripcion || product.description}</td>
+                          <td>{product.marca || product.brand}</td>
                           <td>
                             <span className="badge badge-warning badge-sm">
-                              {product.size_name}
+                              {product.talle || product.size_name}
                             </span>
                           </td>
                           <td>
@@ -190,14 +271,17 @@ export default function ConfirmacionDatosDeCompra() {
                                 className="h-3 w-3 rounded-full border"
                                 style={{ backgroundColor: product.color_hex }}
                               ></div>
-                              <span className="text-xs">{product.color_name}</span>
+                              <span className="text-xs">{product.color || product.color_name}</span>
                             </div>
                           </td>
-                          <td>{product.quantity}</td>
-                          <td>${parseFloat(product.price || 0).toFixed(2)}</td>
+                          <td>{product.cantidad || product.quantity}</td>
+                          <td>${parseFloat(product.precio || product.price || 0).toFixed(2)}</td>
                           <td className="font-semibold text-red-600">
                             -$
-                            {(parseFloat(product.price || 0) * (product.quantity || 0)).toFixed(2)}
+                            {(
+                              parseFloat(product.precio || product.price || 0) *
+                              (product.cantidad || product.quantity || 0)
+                            ).toFixed(2)}
                           </td>
                         </tr>
                       ))}
@@ -259,15 +343,23 @@ export default function ConfirmacionDatosDeCompra() {
         </div>
       </div>
 
-      {/* Botón de acción (puedes personalizar según necesidades) */}
+      {/* Botones de acción */}
       <div className="mb-6 flex justify-between">
-        <button className="btn btn-neutral" onClick={() => setLocation('/ventas')}>
+        <button
+          className="btn btn-neutral"
+          onClick={() => setLocation('/ventas')}
+          disabled={isProcessing}
+        >
           Cancelar
         </button>
       </div>
       <div className="flex justify-center">
-        <button className="btn btn-success" onClick={handleSubmit}>
-          Finalizar Venta
+        <button
+          className={`btn btn-success ${isProcessing ? 'loading' : ''}`}
+          onClick={handleSubmit}
+          disabled={isProcessing}
+        >
+          {isProcessing ? 'Procesando...' : 'Finalizar Venta'}
         </button>
       </div>
       <Toaster />

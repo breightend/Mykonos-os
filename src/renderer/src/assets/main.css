@@ -1,39 +1,231 @@
-@import 'tailwindcss';
-@custom-variant dark (&:where([data-theme=night], [data-theme=night] *));
-@plugin "daisyui" {
-  themes:
-    'night',
-    'cupcake' --default;
-}
-@plugin "daisyui/theme" {
-  name: 'cupcake';
-  default: true;
-  --color-primary: #fdba74;
-  --color-primary-content: #202020; 
-  --color-secondary: #7284ea;
-  --color-secondary-content: ;
-  --color-accent: #47f8ff;
-  --color-accent-content: ;
-  --color-error: #f37372  ;
-  --color-success: #45ca16;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
-@plugin "daisyui/theme" {
-  name: 'night';
-
-  --color-base-100: #111820;
-
-}
-
-.tree, .tree ul {
+/* Estilos personalizados para el árbol */
+.tree,
+.tree ul {
   list-style-type: none;
   padding-left: 20px;
 }
 
 .tree li::before {
-  content: "›"; /* Puedes usar otro carácter como un icono */
+  content: '›';
   color: gray;
   display: inline-block;
   width: 1em;
   margin-left: -1em;
+}
+
+/* Forzar estilos DaisyUI si no cargan automáticamente */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  height: 3rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  min-height: 3rem;
+  font-size: 0.875rem;
+  line-height: 1em;
+  gap: 0.5rem;
+  font-weight: 600;
+  text-decoration-line: none;
+  border-width: 1px;
+  border-color: transparent;
+  background-color: hsl(var(--n) / var(--tw-bg-opacity, 1));
+  color: hsl(var(--nc) / var(--tw-text-opacity, 1));
+  cursor: pointer;
+  user-select: none;
+  transition-property:
+    color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow,
+    transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  animation: button-pop var(--animation-btn, 0.25s) ease-out;
+}
+
+.btn-primary {
+  --tw-border-opacity: 1;
+  border-color: hsl(var(--p) / var(--tw-border-opacity, 1));
+  --tw-bg-opacity: 1;
+  background-color: hsl(var(--p) / var(--tw-bg-opacity, 1));
+  --tw-text-opacity: 1;
+  color: hsl(var(--pc) / var(--tw-text-opacity, 1));
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--rounded-box, 1rem);
+  background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1));
+  --tw-bg-opacity: 1;
+}
+
+.card-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: var(--padding-card, 2rem);
+  gap: 0.5rem;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+}
+
+.input {
+  flex-shrink: 1;
+  height: 3rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 1rem;
+  line-height: 2;
+  border-width: 1px;
+  border-color: hsl(var(--bc) / var(--tw-border-opacity, 0.2));
+  --tw-border-opacity: 0.2;
+  background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1));
+  --tw-bg-opacity: 1;
+  border-radius: var(--rounded-btn, 0.5rem);
+}
+
+.input-bordered {
+  --tw-border-opacity: 0.2;
+  border-color: hsl(var(--bc) / var(--tw-border-opacity));
+}
+
+.alert {
+  display: grid;
+  width: 100%;
+  grid-auto-flow: row;
+  align-content: flex-start;
+  align-items: center;
+  justify-items: start;
+  gap: 1rem;
+  text-align: start;
+  border-width: 1px;
+  border-color: transparent;
+  padding: 1rem;
+  border-radius: var(--rounded-box, 1rem);
+}
+
+.alert-info {
+  border-color: hsl(var(--in) / 0.2);
+  --tw-text-opacity: 1;
+  color: hsl(var(--inc) / var(--tw-text-opacity));
+  background-color: hsl(var(--in) / 0.1);
+}
+
+.alert-error {
+  border-color: hsl(var(--er) / 0.2);
+  --tw-text-opacity: 1;
+  color: hsl(var(--erc) / var(--tw-text-opacity));
+  background-color: hsl(var(--er) / 0.1);
+}
+
+:root {
+  /* Variables DaisyUI */
+  --p: 31 78% 70%;
+  --pc: 31 34% 20%;
+  --s: 235 61% 74%;
+  --sc: 231 19% 26%;
+  --a: 185 100% 64%;
+  --ac: 185 15% 19%;
+  --n: 210 9% 31%;
+  --nc: 212 13% 93%;
+  --b1: 0 0% 100%;
+  --b2: 0 0% 95%;
+  --b3: 0 0% 87%;
+  --bc: 215 28% 17%;
+  --in: 198 93% 60%;
+  --inc: 198 100% 12%;
+  --su: 158 64% 52%;
+  --suc: 158 100% 10%;
+  --wa: 43 96% 56%;
+  --wac: 43 100% 11%;
+  --er: 0 91% 71%;
+  --erc: 0 100% 14%;
+
+  /* Variables Shadcn UI que mapean a DaisyUI */
+  --background: var(--b1);
+  --foreground: var(--bc);
+  --card: var(--b1);
+  --card-foreground: var(--bc);
+  --popover: var(--b1);
+  --popover-foreground: var(--bc);
+  --primary: var(--p);
+  --primary-foreground: var(--pc);
+  --secondary: var(--s);
+  --secondary-foreground: var(--sc);
+  --muted: var(--b2);
+  --muted-foreground: var(--bc);
+  --accent: var(--a);
+  --accent-foreground: var(--ac);
+  --destructive: var(--er);
+  --destructive-foreground: var(--erc);
+  --border: var(--b3);
+  --input: var(--b1);
+  --ring: var(--p);
+}
+
+/* Tema oscuro */
+[data-theme="night"] {
+  /* Variables DaisyUI para tema oscuro */
+  --p: 31 78% 70%;
+  --pc: 31 34% 20%;
+  --s: 235 61% 74%;
+  --sc: 231 19% 26%;
+  --a: 185 100% 64%;
+  --ac: 185 15% 19%;
+  --n: 210 9% 31%;
+  --nc: 212 13% 93%;
+  --b1: 213 18% 10%;
+  --b2: 212 17% 12%;
+  --b3: 210 9% 17%;
+  --bc: 212 13% 93%;
+  --in: 198 93% 60%;
+  --inc: 198 100% 12%;
+  --su: 158 64% 52%;
+  --suc: 158 100% 10%;
+  --wa: 43 96% 56%;
+  --wac: 43 100% 11%;
+  --er: 0 91% 71%;
+  --erc: 0 100% 14%;
+
+  /* Variables Shadcn UI para tema oscuro */
+  --background: var(--b1);
+  --foreground: var(--bc);
+  --card: var(--b1);
+  --card-foreground: var(--bc);
+  --popover: var(--b1);
+  --popover-foreground: var(--bc);
+  --primary: var(--p);
+  --primary-foreground: var(--pc);
+  --secondary: var(--s);
+  --secondary-foreground: var(--sc);
+  --muted: var(--b2);
+  --muted-foreground: var(--bc);
+  --accent: var(--a);
+  --accent-foreground: var(--ac);
+  --destructive: var(--er);
+  --destructive-foreground: var(--erc);
+  --border: var(--b3);
+  --input: var(--b1);
+  --ring: var(--p);
 }

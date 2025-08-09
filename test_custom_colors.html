@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cupcake">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test DaisyUI Colores Personalizados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* Colores personalizados para probar */
+        :root {
+            --p: 31 78% 70%;  /* #fdba74 convertido a HSL */
+            --pc: 31 34% 20%;
+            --s: 235 61% 74%;
+            --a: 185 100% 64%;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-primary mb-8">🎨 Test de Colores Personalizados</h1>
+        
+        <!-- Botones con colores personalizados -->
+        <div class="flex gap-4 mb-6">
+            <button class="btn btn-primary">Primary Personalizado</button>
+            <button class="btn btn-secondary">Secondary</button>
+            <button class="btn btn-accent">Accent</button>
+            <button class="btn btn-info">Info</button>
+        </div>
+
+        <!-- Card mostrando los colores -->
+        <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+                <h2 class="card-title text-primary">Colores Actuales</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-primary rounded-box mx-auto mb-2"></div>
+                        <span class="text-sm">Primary</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-secondary rounded-box mx-auto mb-2"></div>
+                        <span class="text-sm">Secondary</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-accent rounded-box mx-auto mb-2"></div>
+                        <span class="text-sm">Accent</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-info rounded-box mx-auto mb-2"></div>
+                        <span class="text-sm">Info</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cambio de tema -->
+        <div class="form-control mb-6">
+            <label class="label">
+                <span class="label-text">Cambiar tema para probar colores:</span>
+            </label>
+            <select 
+                class="select select-bordered" 
+                onchange="document.documentElement.setAttribute('data-theme', this.value)"
+            >
+                <option value="cupcake">Cupcake (Personalizado)</option>
+                <option value="night">Night (Personalizado)</option>
+            </select>
+        </div>
+
+        <!-- Alert de confirmación -->
+        <div class="alert alert-success">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Si ves el color naranja/dorado en los botones Primary, ¡los colores personalizados están funcionando!</span>
+        </div>
+    </div>
+</body>
+</html>

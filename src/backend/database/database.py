@@ -10,7 +10,6 @@ from datetime import datetime
 from enum import Enum
 from commons.tools import print_debug  # noqa: F401
 from config.config import Config
-# TODO: hacer tabla ProveedoresXMarcas para poder relacionar varios proveedores a una misma marca y viceversa.
 
 
 class TABLES(Enum):
