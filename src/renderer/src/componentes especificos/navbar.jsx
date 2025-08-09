@@ -12,32 +12,50 @@ export default function Navbar() {
   return (
     <>
       <div className="ml-16">
-        <div className="navbar bg-base-100 border-base-300 border-b shadow-sm">
+        <div className="navbar grid grid-cols-3 gap-4 border-b border-base-300 bg-base-100 shadow-sm">
           {/* Logo/Home Section */}
-          <div className="navbar-start">
+          <div className="navbar-start col-span-2">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-primary text-3xl font-bold">Mykonos OS</h1>
-                <p className="text-base-content/70 text-sm">Sistema de Gestión</p>
+                <h1 className="text-3xl font-bold text-orange-500">Mykonos OS</h1>
+                <p className="text-sm text-gray-600">Sistema de Gestión</p>
               </div>
             </div>
           </div>
 
           {/* Sucursal Section */}
           <div className="navbar-end">
-            <div className="bg-base-200 flex items-center gap-2 rounded-lg px-4 py-2">
-              <div
-                className={`rounded-full p-2 ${hasSucursal ? 'bg-success text-success-content' : 'bg-warning text-warning-content'}`}
-              >
-                {hasSucursal ? <Building2 className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
-              </div>
-              <div className="text-right">
-                <p className="text-base-content/80 text-sm font-medium">
-                  {hasSucursal ? 'Sucursal Activa' : 'Sin Sucursal'}
-                </p>
-                <p className={`text-lg font-bold ${hasSucursal ? 'text-success' : 'text-warning'}`}>
-                  {sucursalName}
-                </p>
+            <div
+              className={`card-compact card shadow-lg ${
+                hasSucursal
+                  ? 'border border-emerald-200 bg-emerald-50'
+                  : 'border border-amber-200 bg-amber-50'
+              }`}
+            >
+              <div className="card-body">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`rounded-full p-3 ${
+                      hasSucursal ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
+                    }`}
+                  >
+                    {hasSucursal ? (
+                      <Building2 className="h-5 w-5" />
+                    ) : (
+                      <MapPin className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div>
+                    <p
+                      className={`text-sm font-bold uppercase tracking-wide ${
+                        hasSucursal ? 'text-emerald-600' : 'text-amber-600'
+                      }`}
+                    >
+                      {hasSucursal ? 'Sucursal Activa' : 'Sin Sucursal'}
+                    </p>
+                    <p className="text-lg font-bold text-gray-800">{sucursalName}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

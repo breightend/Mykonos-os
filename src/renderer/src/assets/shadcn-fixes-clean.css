@@ -194,8 +194,58 @@
   transition: all 0.2s ease;
 }
 
+/* IMPORTANTE: No sobrescribir btn-ghost, mantener comportamiento nativo de DaisyUI */
+/* Los botones btn-ghost deben ser transparentes por defecto */
+
+/* Solo agregar hover sutil para btn-ghost en menus horizontales */
 .menu.menu-horizontal .btn-ghost:hover {
   background-color: rgba(255, 140, 66, 0.1) !important;
+  color: #ff8c42 !important;
+  border-color: rgba(255, 140, 66, 0.2) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.15) !important;
+}
+
+/* Mejorar todos los btn-ghost del sistema */
+.btn-ghost {
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  color: inherit !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-ghost:hover {
+  background-color: rgba(255, 140, 66, 0.08) !important;
+  color: #ff8c42 !important;
+  border-color: rgba(255, 140, 66, 0.15) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn-ghost:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 140, 66, 0.2) !important;
+}
+
+.btn-ghost:active {
+  transform: translateY(0) !important;
+  background-color: rgba(255, 140, 66, 0.15) !important;
+}
+
+/* Botones ghost en modales y calendarios */
+.modal .btn-ghost,
+.calendar .btn-ghost,
+.dropdown .btn-ghost {
+  background-color: transparent !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+.modal .btn-ghost:hover,
+.calendar .btn-ghost:hover,
+.dropdown .btn-ghost:hover {
+  background-color: rgba(255, 140, 66, 0.1) !important;
+  border-color: rgba(255, 140, 66, 0.3) !important;
   color: #ff8c42 !important;
 }
 
@@ -267,7 +317,7 @@
   white-space: nowrap !important;
 }
 
-/* Menú vertical personalizado ÚNICAMENTE */
+/* Menú vertical personalizado ÚNICAMENTE - No afectar otros btn-ghost */
 .menu-vertical,
 [data-menu='vertical'] {
   position: fixed !important;
@@ -279,6 +329,7 @@
   transition: all 0.3s ease-in-out !important;
 }
 
+/* Solo afectar btn-ghost DENTRO del menu vertical específico */
 .menu-vertical .btn-ghost,
 [data-menu='vertical'] .btn-ghost {
   background-color: transparent !important;
@@ -378,16 +429,77 @@
   opacity: 0 !important;
 }
 
-/* Mejoras generales para navegación */
+/* Mejoras mínimas para navegación - mantener estilos DaisyUI nativos */
 .navbar {
-  background-color: #ffffff !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  background-color: hsl(var(--b1)) !important;
+  border-bottom: 1px solid hsl(var(--bc) / 0.1) !important;
 }
 
-[data-theme='night'] .navbar {
-  background-color: #111827 !important;
-  border-bottom: 1px solid #374151 !important;
+/* Título con color naranja específico */
+.navbar .text-orange-500 {
+  color: #f97316 !important;
+  font-weight: 700 !important;
 }
+
+/* Card de sucursal mejorada */
+.navbar-end .card {
+  min-width: 200px !important;
+  transition: all 0.2s ease !important;
+}
+
+.navbar-end .card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-end .card-body {
+  padding: 1rem !important;
+}
+
+/* Iconos de sucursal con mejor efecto */
+.navbar-end .rounded-full {
+  transition: transform 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-end .rounded-full:hover {
+  transform: scale(1.05) !important;
+}
+
+/* Colores específicos para emerald y amber si no están disponibles */
+.bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+}
+
+.border-emerald-200 {
+  border-color: #a7f3d0 !important;
+}
+
+.bg-emerald-500 {
+  background-color: #10b981 !important;
+}
+
+.text-emerald-600 {
+  color: #059669 !important;
+}
+
+.bg-amber-50 {
+  background-color: #fffbeb !important;
+}
+
+.border-amber-200 {
+  border-color: #fde68a !important;
+}
+
+.bg-amber-500 {
+  background-color: #f59e0b !important;
+}
+
+.text-amber-600 {
+  color: #d97706 !important;
+}
+
+/* Mantener todos los demás estilos nativos de DaisyUI */
 
 /* Sidebar/menu vertical */
 .bg-base-200 {
@@ -532,20 +644,48 @@
 /* Modals mejorados */
 .modal,
 .modal-box {
-  background-color: #ffffff !important;
+  background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
   color: #374151 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(255, 140, 66, 0.1) !important;
+}
+
+/* Backdrop del modal con mejor blur */
+.fixed.inset-0.bg-black\/50 {
+  backdrop-filter: blur(4px) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
 }
 
 .modal-action .btn {
   margin-left: 8px !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+/* Botones outline mejorados */
+.btn-outline {
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 140, 66, 0.3) !important;
+  color: #ff8c42 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-outline:hover {
+  background-color: #ff8c42 !important;
+  color: #ffffff !important;
+  border-color: #ff8c42 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(255, 140, 66, 0.2) !important;
 }
 
 [data-theme='night'] .modal,
 [data-theme='night'] .modal-box {
-  background-color: #1f2937 !important;
+  background: linear-gradient(135deg, #1f2937, #111827) !important;
   color: #f9fafb !important;
+  border-color: rgba(255, 140, 66, 0.2) !important;
 }
 
 /* Breadcrumbs */
@@ -769,10 +909,12 @@
   border-collapse: separate !important;
   border-spacing: 0 !important;
   background-color: transparent !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
 }
 
 .table thead tr {
-  background-color: rgba(255, 140, 66, 0.1) !important;
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.1), rgba(255, 140, 66, 0.05)) !important;
 }
 
 .table thead th {
@@ -782,30 +924,44 @@
   text-transform: uppercase !important;
   font-size: 0.875rem !important;
   padding: 0.75rem 1rem !important;
-  border-bottom: 2px solid rgba(255, 140, 66, 0.2) !important;
+  border-bottom: 2px solid rgba(255, 140, 66, 0.3) !important;
+  letter-spacing: 0.5px !important;
 }
 
 .table tbody tr {
   transition: all 0.2s ease !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
 .table tbody tr:hover {
   background-color: rgba(255, 140, 66, 0.05) !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.1) !important;
 }
 
 .table tbody td {
   padding: 0.75rem 1rem !important;
   vertical-align: middle !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
 .table tbody tr.bg-secondary\/20 {
-  background-color: rgba(109, 40, 217, 0.2) !important;
+  background-color: rgba(109, 40, 217, 0.1) !important;
 }
 
 .table .badge {
   font-size: 0.75rem !important;
   padding: 0.25rem 0.5rem !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+
+/* Contenedores de tabla con mejor estilo */
+.bg-base-200.overflow-x-auto {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
+  border: 1px solid rgba(255, 140, 66, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Tabla compacta */
@@ -824,7 +980,7 @@
 
 /* Tabla zebra */
 .table-zebra tbody tr:nth-child(even) {
-  background-color: rgba(0, 0, 0, 0.02) !important;
+  background-color: rgba(255, 140, 66, 0.02) !important;
 }
 
 .table-zebra tbody tr:nth-child(even):hover {

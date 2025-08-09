@@ -150,6 +150,7 @@ export default function RegistroVentas() {
   // Manejar doble click en una fila
   const handleRowDoubleClick = (sale) => {
     setSelectedSale(sale)
+    setShowModal(true) // Agregar esta línea para abrir el modal
     loadSaleDetails(sale.id)
   }
 
@@ -439,18 +440,18 @@ export default function RegistroVentas() {
             </div>
           </div>
 
-          <div className="shadow-2xs mt-4 overflow-x-auto bg-base-100">
-            <table className="table">
+          <div className="overflow-x-auto rounded-lg bg-base-200 shadow-lg">
+            <table className="table w-full">
               {/* head */}
-              <thead className="bg-accent/30">
+              <thead className="bg-warning/10">
                 <tr>
-                  <th>#</th>
-                  <th>Fecha</th>
-                  <th>Cliente</th>
-                  <th>Productos</th>
-                  <th>Método de Pago</th>
-                  <th>Total</th>
-                  <th>Estado</th>
+                  <th className="text-warning">#</th>
+                  <th className="text-warning">Fecha</th>
+                  <th className="text-warning">Cliente</th>
+                  <th className="text-warning">Productos</th>
+                  <th className="text-warning">Método de Pago</th>
+                  <th className="text-warning">Total</th>
+                  <th className="text-warning">Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -471,7 +472,7 @@ export default function RegistroVentas() {
                   salesList.map((sale) => (
                     <tr
                       key={sale.id}
-                      className="cursor-pointer transition-colors hover:bg-base-200"
+                      className={`hover:bg-warning/10 cursor-pointer transition-colors`}
                       onDoubleClick={() => handleRowDoubleClick(sale)}
                       title="Doble click para ver detalles"
                     >
@@ -515,221 +516,229 @@ export default function RegistroVentas() {
 
           {/* Modal de Detalles de Venta */}
           {showModal && (
-            <div className="modal-open modal">
-              <div className="modal-box max-w-6xl">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-bold">Detalles de Venta #{selectedSale?.id}</h3>
-                  <button className="btn btn-sm btn-circle" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-
-                {loadingDetails ? (
-                  <div className="flex items-center justify-center py-8">
-                    <span className="loading loading-spinner loading-lg"></span>
-                    <span className="ml-2">Cargando detalles...</span>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-base-100 shadow-2xl">
+                <div className="p-6">
+                  <div className="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
+                    <h3 className="text-2xl font-bold text-warning">
+                      Detalles de Venta #{selectedSale?.id}
+                    </h3>
+                    <button
+                      className="hover:bg-warning/10 btn btn-ghost btn-sm btn-circle"
+                      onClick={closeModal}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                ) : saleDetails ? (
-                  <div className="space-y-6">
-                    {/* Información General */}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      <div className="rounded-lg bg-base-200 p-4">
-                        <h4 className="mb-2 font-semibold">Información de Venta</h4>
-                        <p>
-                          <strong>Fecha:</strong> {formatDate(saleDetails.sale.sale_date)}
-                        </p>
-                        <p>
-                          <strong>Estado:</strong>
-                          <span
-                            className={`badge ml-2 ${
-                              saleDetails.sale.status === 'Completada'
-                                ? 'badge-success'
-                                : 'badge-warning'
-                            } badge-sm`}
-                          >
-                            {saleDetails.sale.status}
-                          </span>
-                        </p>
-                        <p>
-                          <strong>Método de Pago:</strong> {saleDetails.sale.payment_method}
-                        </p>
-                        {saleDetails.sale.payment_reference && (
-                          <p>
-                            <strong>Referencia:</strong> {saleDetails.sale.payment_reference}
-                          </p>
-                        )}
-                      </div>
 
-                      <div className="rounded-lg bg-base-200 p-4">
-                        <h4 className="mb-2 font-semibold">Cliente</h4>
-                        <p>
-                          <strong>Nombre:</strong>{' '}
-                          {saleDetails.sale.customer_name || 'Cliente Anónimo'}
-                        </p>
-                        {saleDetails.sale.customer_phone && (
-                          <p>
-                            <strong>Teléfono:</strong> {saleDetails.sale.customer_phone}
-                          </p>
-                        )}
-                        {saleDetails.sale.customer_email && (
-                          <p>
-                            <strong>Email:</strong> {saleDetails.sale.customer_email}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="rounded-lg bg-base-200 p-4">
-                        <h4 className="mb-2 font-semibold">Totales</h4>
-                        <p>
-                          <strong>Subtotal:</strong> ${formatPrice(saleDetails.sale.subtotal)}
-                        </p>
-                        {saleDetails.sale.discount > 0 && (
-                          <p>
-                            <strong>Descuento:</strong> ${formatPrice(saleDetails.sale.discount)}
-                          </p>
-                        )}
-                        <p>
-                          <strong>Total:</strong>{' '}
-                          <span className="text-lg font-bold">
-                            ${formatPrice(saleDetails.sale.total)}
-                          </span>
-                        </p>
-                      </div>
+                  {loadingDetails ? (
+                    <div className="flex items-center justify-center py-8">
+                      <span className="loading loading-spinner loading-lg"></span>
+                      <span className="ml-2">Cargando detalles...</span>
                     </div>
-
-                    {/* Productos Vendidos */}
-                    {saleDetails.products_sold.length > 0 && (
-                      <div>
-                        <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                          <Package className="h-5 w-5" />
-                          Productos Vendidos ({saleDetails.products_sold.length})
-                        </h4>
-                        <div className="overflow-x-auto">
-                          <table className="table table-zebra w-full">
-                            <thead>
-                              <tr>
-                                <th>Producto</th>
-                                <th>Talle</th>
-                                <th>Color</th>
-                                <th>Cantidad</th>
-                                <th>Precio Unit.</th>
-                                <th>Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {saleDetails.products_sold.map((product, index) => (
-                                <tr key={index}>
-                                  <td>
-                                    <div>
-                                      <div className="font-semibold">{product.product_name}</div>
-                                      {product.brand_name && (
-                                        <div className="text-sm text-gray-500">
-                                          {product.brand_name}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td>
-                                    {product.size_name && (
-                                      <span className="badge badge-outline">
-                                        {product.size_name}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td>
-                                    {product.color_name && (
-                                      <span className="badge badge-secondary">
-                                        {product.color_name}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="font-semibold">{product.quantity}</td>
-                                  <td>${formatPrice(product.sale_price)}</td>
-                                  <td className="font-semibold">${formatPrice(product.total)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Productos Devueltos (si es intercambio) */}
-                    {saleDetails.has_exchange && saleDetails.products_returned.length > 0 && (
-                      <div>
-                        <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-red-600">
-                          <RotateCcw className="h-5 w-5" />
-                          Productos Devueltos ({saleDetails.products_returned.length})
-                        </h4>
-                        <div className="overflow-x-auto">
-                          <table className="table table-zebra w-full">
-                            <thead>
-                              <tr className="bg-red-50">
-                                <th>Producto</th>
-                                <th>Talle</th>
-                                <th>Color</th>
-                                <th>Cantidad</th>
-                                <th>Precio Unit.</th>
-                                <th>Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {saleDetails.products_returned.map((product, index) => (
-                                <tr key={index}>
-                                  <td>
-                                    <div>
-                                      <div className="font-semibold">{product.product_name}</div>
-                                      {product.brand_name && (
-                                        <div className="text-sm text-gray-500">
-                                          {product.brand_name}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td>
-                                    {product.size_name && (
-                                      <span className="badge badge-outline">
-                                        {product.size_name}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td>
-                                    {product.color_name && (
-                                      <span className="badge badge-secondary">
-                                        {product.color_name}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="font-semibold text-red-600">
-                                    -{product.quantity}
-                                  </td>
-                                  <td>${formatPrice(product.sale_price)}</td>
-                                  <td className="font-semibold text-red-600">
-                                    -${formatPrice(Math.abs(product.total))}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Notas */}
-                    {saleDetails.sale.notes && (
-                      <div>
-                        <h4 className="mb-2 text-lg font-semibold">Notas</h4>
+                  ) : saleDetails ? (
+                    <div className="space-y-6">
+                      {/* Información General */}
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="rounded-lg bg-base-200 p-4">
-                          <p className="text-sm">{saleDetails.sale.notes}</p>
+                          <h4 className="mb-2 font-semibold">Información de Venta</h4>
+                          <p>
+                            <strong>Fecha:</strong> {formatDate(saleDetails.sale.sale_date)}
+                          </p>
+                          <p>
+                            <strong>Estado:</strong>
+                            <span
+                              className={`badge ml-2 ${
+                                saleDetails.sale.status === 'Completada'
+                                  ? 'badge-success'
+                                  : 'badge-warning'
+                              } badge-sm`}
+                            >
+                              {saleDetails.sale.status}
+                            </span>
+                          </p>
+                          <p>
+                            <strong>Método de Pago:</strong> {saleDetails.sale.payment_method}
+                          </p>
+                          {saleDetails.sale.payment_reference && (
+                            <p>
+                              <strong>Referencia:</strong> {saleDetails.sale.payment_reference}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="rounded-lg bg-base-200 p-4">
+                          <h4 className="mb-2 font-semibold">Cliente</h4>
+                          <p>
+                            <strong>Nombre:</strong>{' '}
+                            {saleDetails.sale.customer_name || 'Cliente Anónimo'}
+                          </p>
+                          {saleDetails.sale.customer_phone && (
+                            <p>
+                              <strong>Teléfono:</strong> {saleDetails.sale.customer_phone}
+                            </p>
+                          )}
+                          {saleDetails.sale.customer_email && (
+                            <p>
+                              <strong>Email:</strong> {saleDetails.sale.customer_email}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="rounded-lg bg-base-200 p-4">
+                          <h4 className="mb-2 font-semibold">Totales</h4>
+                          <p>
+                            <strong>Subtotal:</strong> ${formatPrice(saleDetails.sale.subtotal)}
+                          </p>
+                          {saleDetails.sale.discount > 0 && (
+                            <p>
+                              <strong>Descuento:</strong> ${formatPrice(saleDetails.sale.discount)}
+                            </p>
+                          )}
+                          <p>
+                            <strong>Total:</strong>{' '}
+                            <span className="text-lg font-bold text-warning">
+                              ${formatPrice(saleDetails.sale.total)}
+                            </span>
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center text-gray-500">Error al cargar los detalles</div>
-                )}
+
+                      {/* Productos Vendidos */}
+                      {saleDetails.products_sold.length > 0 && (
+                        <div>
+                          <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+                            <Package className="h-5 w-5 text-warning" />
+                            Productos Vendidos ({saleDetails.products_sold.length})
+                          </h4>
+                          <div className="overflow-x-auto rounded-lg">
+                            <table className="table w-full">
+                              <thead className="bg-warning/10">
+                                <tr>
+                                  <th className="text-warning">Producto</th>
+                                  <th className="text-warning">Talle</th>
+                                  <th className="text-warning">Color</th>
+                                  <th className="text-warning">Cantidad</th>
+                                  <th className="text-warning">Precio Unit.</th>
+                                  <th className="text-warning">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {saleDetails.products_sold.map((product, index) => (
+                                  <tr key={index}>
+                                    <td>
+                                      <div>
+                                        <div className="font-semibold">{product.product_name}</div>
+                                        {product.brand_name && (
+                                          <div className="text-sm text-gray-500">
+                                            {product.brand_name}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td>
+                                      {product.size_name && (
+                                        <span className="badge badge-outline">
+                                          {product.size_name}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {product.color_name && (
+                                        <span className="badge badge-secondary">
+                                          {product.color_name}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="font-semibold">{product.quantity}</td>
+                                    <td>${formatPrice(product.sale_price)}</td>
+                                    <td className="font-semibold">${formatPrice(product.total)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Productos Devueltos (si es intercambio) */}
+                      {saleDetails.has_exchange && saleDetails.products_returned.length > 0 && (
+                        <div>
+                          <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-red-600">
+                            <RotateCcw className="h-5 w-5" />
+                            Productos Devueltos ({saleDetails.products_returned.length})
+                          </h4>
+                          <div className="overflow-x-auto rounded-lg">
+                            <table className="table w-full">
+                              <thead className="bg-red-50">
+                                <tr>
+                                  <th className="text-red-600">Producto</th>
+                                  <th className="text-red-600">Talle</th>
+                                  <th className="text-red-600">Color</th>
+                                  <th className="text-red-600">Cantidad</th>
+                                  <th className="text-red-600">Precio Unit.</th>
+                                  <th className="text-red-600">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {saleDetails.products_returned.map((product, index) => (
+                                  <tr key={index}>
+                                    <td>
+                                      <div>
+                                        <div className="font-semibold">{product.product_name}</div>
+                                        {product.brand_name && (
+                                          <div className="text-sm text-gray-500">
+                                            {product.brand_name}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td>
+                                      {product.size_name && (
+                                        <span className="badge badge-outline">
+                                          {product.size_name}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {product.color_name && (
+                                        <span className="badge badge-secondary">
+                                          {product.color_name}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="font-semibold text-red-600">
+                                      -{product.quantity}
+                                    </td>
+                                    <td>${formatPrice(product.sale_price)}</td>
+                                    <td className="font-semibold text-red-600">
+                                      -${formatPrice(Math.abs(product.total))}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notas */}
+                      {saleDetails.sale.notes && (
+                        <div>
+                          <h4 className="mb-2 text-lg font-semibold">Notas</h4>
+                          <div className="rounded-lg bg-base-200 p-4">
+                            <p className="text-sm">{saleDetails.sale.notes}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center text-gray-500">
+                      Error al cargar los detalles
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="modal-backdrop" onClick={closeModal}></div>
             </div>
           )}
         </div>
