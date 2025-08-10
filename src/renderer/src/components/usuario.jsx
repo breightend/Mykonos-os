@@ -9,14 +9,44 @@ import { pinwheel } from 'ldrs'
 export default function Usuario() {
   pinwheel.register()
   const [, setLocation] = useLocation()
-  const { getCurrentUser, getCurrentStorage, logout, changeBranchStorage } = useSession()
+  const { session, logout, changeBranchStorage } = useSession()
 
-  const currentUser = getCurrentUser()
-  const currentStorage = getCurrentStorage()
-
+  const [currentUser, setCurrentUser] = useState(null)
+  const [currentStorage, setCurrentStorage] = useState(null)
   const [availableStorages, setAvailableStorages] = useState([])
   const [selectedStorageId, setSelectedStorageId] = useState('')
   const [isChangingStorage, setIsChangingStorage] = useState(false)
+
+  // Actualizar datos del usuario y sucursal cuando cambie la sesión
+  useEffect(() => {
+    if (session) {
+      const user = {
+        id: session.user_id,
+        username: session.username,
+        fullname: session.fullname,
+        role: session.role
+      }
+
+      let storage = null
+      if (session.storage_id) {
+        storage = {
+          id: session.storage_id,
+          name: session.storage_name || 'Sucursal desconocida'
+        }
+      } else {
+        storage = {
+          id: null,
+          name: 'Sin sucursal'
+        }
+      }
+
+      setCurrentUser(user)
+      setCurrentStorage(storage)
+    } else {
+      setCurrentUser(null)
+      setCurrentStorage(null)
+    }
+  }, [session]) // Solo depende del estado session del contexto
 
   // Cargar sucursales disponibles para el usuario
   useEffect(() => {
@@ -52,7 +82,7 @@ export default function Usuario() {
     if (currentUser) {
       loadUserStorages()
     }
-  }, [currentUser])
+  }, [currentUser]) // Ahora depende del estado local
 
   // Establecer sucursal seleccionada cuando cambie la sucursal actual
   useEffect(() => {
@@ -81,14 +111,18 @@ export default function Usuario() {
       if (result.success) {
         toast.success(`Sucursal cambiada exitosamente`)
         console.log('✅ Sucursal cambiada exitosamente')
+
+        // Los estados se actualizarán automáticamente cuando el SessionContext se actualice
+        // No necesitamos actualizar manualmente porque el useEffect con [session] se encargará
       } else {
-        toast.error(result.message)
+        console.error('❌ Error en cambio de sucursal:', result.message)
+        toast.error(result.message || 'Error al cambiar sucursal')
         // Revertir selección si falla
         setSelectedStorageId(currentStorage?.id?.toString() || '')
       }
     } catch (error) {
       console.error('❌ Error cambiando sucursal:', error)
-      toast.error('Error al cambiar sucursal')
+      toast.error('Error de conexión al cambiar sucursal')
       // Revertir selección si falla
       setSelectedStorageId(currentStorage?.id?.toString() || '')
     } finally {
@@ -111,24 +145,24 @@ export default function Usuario() {
       <MenuVertical currentPath="/usuario" />
       <Navbar />
       <div className="flex h-screen w-full flex-col items-center justify-center">
-        <div className="card bg-base-100 from-base-200 to-base-300 w-96 transform bg-gradient-to-br p-6 shadow-xl transition-all hover:scale-105">
+        <div className="card w-96 transform bg-base-100 bg-gradient-to-br from-base-200 to-base-300 p-6 shadow-xl transition-all hover:scale-105">
           <figure className="px-10 pt-6">
             <img
               src="/src/images/user_icon.webp"
               alt="Usuario"
-              className="border-primary h-40 w-40 rounded-full border-4 object-cover shadow-lg"
+              className="h-40 w-40 rounded-full border-4 border-primary object-cover shadow-lg"
             />
           </figure>
           <div className="card-body items-center space-y-4 text-center">
             <h2 className="card-title text-2xl font-bold">{currentUser?.fullname}</h2>
-            <div className="badge badge-primary badge-outline p-3 text-lg">
+            <div className="badge badge-outline badge-primary p-3 text-lg">
               Rol: {currentUser?.role === 'administrator' ? 'Administrador' : 'Empleado'}
             </div>
 
             {/* Información de sucursal actual */}
-            <div className="bg-base-200 w-full rounded-lg p-3">
+            <div className="w-full rounded-lg bg-base-200 p-3">
               <p className="text-sm font-medium text-gray-600">Sucursal Actual:</p>
-              <p className="text-primary text-lg font-bold">
+              <p className="text-lg font-bold text-primary">
                 {currentStorage?.name || 'Sin sucursal asignada'}
               </p>
             </div>

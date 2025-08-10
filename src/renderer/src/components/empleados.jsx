@@ -5,6 +5,7 @@ import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { fetchEmployee } from '../services/employee/employeeService'
+import '../assets/modal-improvements.css'
 
 // Register the pinwheel loader
 pinwheel.register()
@@ -65,13 +66,13 @@ function Empleados() {
       <MenuVertical currentPath={'/empleados'} />
       <Navbar />
       <div className="ml-20 flex-1">
-        <h2 className="text-warning mb-6 text-2xl font-bold">Empleados</h2>
+        <h2 className="mb-6 text-2xl font-bold text-warning">Empleados</h2>
       </div>
-      <div className="mr-5 mb-6 ml-20 flex items-center justify-between">
-        <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
+      <div className="mb-6 ml-20 mr-5 flex items-center justify-between">
+        <ul className="menu menu-horizontal gap-2 rounded-box bg-base-200">
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-right"
+              className="tooltip tooltip-right btn btn-ghost"
               data-tip="Información del cliente"
               onClick={() => setLocation(`/infoEmpleado?id=${employeeSeleccionado.id}`)}
               disabled={!employeeSeleccionado}
@@ -83,7 +84,7 @@ function Empleados() {
 
         {/* Barra de búsqueda */}
         <div className="flex items-center gap-4">
-          <label className="input input-bordered input-warning flex items-center gap-2">
+          <label className="input-bordered input input-warning flex items-center gap-2">
             <input
               type="text"
               placeholder="Buscar..."
@@ -95,13 +96,13 @@ function Empleados() {
           </label>
         </div>
       </div>
-      <div className="mr-5 mb-10 ml-20 overflow-x-auto">
+      <div className="mb-10 ml-20 mr-5 overflow-x-auto">
         {loading ? (
           <div className="from-warning/5 to-warning/10 flex flex-col items-center justify-center rounded-lg bg-gradient-to-br p-12">
             <div className="mb-4">
               <l-pinwheel size="45" stroke="3.5" speed="0.9" color="#d97706"></l-pinwheel>
             </div>
-            <span className="text-warning text-lg font-medium">Cargando empleados...</span>
+            <span className="text-lg font-medium text-warning">Cargando empleados...</span>
             <span className="mt-1 text-sm text-gray-500">Por favor espera un momento</span>
           </div>
         ) : (
@@ -120,7 +121,7 @@ function Empleados() {
                 filteredEmployee.map((row, index) => (
                   <tr
                     key={row.id}
-                    className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
+                    className={`selectable-item ${selectedRow === row.id ? 'selected' : ''}`}
                     onClick={() => handleRowClick(row)}
                     onDoubleClick={() => handleRowDoubleClick(row)}
                   >

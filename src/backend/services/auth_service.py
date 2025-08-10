@@ -306,13 +306,34 @@ def change_user_storage(session_token, new_storage_id):
         session_id = session_record["id"]
 
         # Actualizar storage_id en la sesión
-        update_result = db.execute_query(
-            "UPDATE sessions SET storage_id = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?",
-            (new_storage_id, session_id),
-        )
+        try:
+            update_result = db.execute_query(
+                "UPDATE sessions SET storage_id = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?",
+                (new_storage_id, session_id),
+            )
 
-        if not update_result:
+            print("🔄 Resultado de actualización de sesión:")
+            print(f"   - Session ID: {session_id}")
+            print(f"   - New Storage ID: {new_storage_id}")
+            print(f"   - Update result type: {type(update_result)}")
+            print(f"   - Update result: {update_result}")
+
+            # Para UPDATE queries, execute_query devuelve una lista vacía si es exitoso
+            # No verificamos if not update_result porque [] es falsy pero indica éxito
+            print("✅ Sesión actualizada correctamente")
+
+        except Exception as update_error:
+            print(f"❌ Error actualizando sesión: {update_error}")
             return {"success": False, "message": "Error al actualizar la sesión."}
+
+        # Verificar que la actualización fue exitosa
+        verify_result = db.get_record_by_id("sessions", session_id)
+        if verify_result["success"] and verify_result["record"]:
+            updated_session = verify_result["record"]
+            print("✅ Verificación de sesión actualizada:")
+            print(f"   - Storage ID actualizado: {updated_session.get('storage_id')}")
+        else:
+            print("❌ Error verificando la actualización de la sesión")
 
         # Obtener datos del usuario para la respuesta
         user_response = db.get_record_by_id("users", user_id)

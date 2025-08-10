@@ -18,6 +18,7 @@ import { es } from 'react-day-picker/locale'
 import { useSession } from '../contexts/SessionContext'
 import { salesService } from '../services/salesService'
 import toast, { Toaster } from 'react-hot-toast'
+import '../assets/modal-improvements.css'
 
 export default function RegistroVentas() {
   const [range, setRange] = useState(null)
@@ -47,6 +48,18 @@ export default function RegistroVentas() {
     return 'Seleccionar rango de fechas'
   }
 
+  // Obtener texto descriptivo para las stats según el período
+  const getStatsDescription = () => {
+    if (!range) return 'Total histórico'
+    if (range.from && !range.to) return `desde ${range.from.toLocaleDateString()}`
+    if (range.from && range.to) {
+      const isSameDay = range.from.toDateString() === range.to.toDateString()
+      if (isSameDay) return range.from.toLocaleDateString()
+      return `${range.from.toLocaleDateString()} - ${range.to.toLocaleDateString()}`
+    }
+    return 'período seleccionado'
+  }
+
   // Limpiar filtros
   const clearFilters = () => {
     setRange(null)
@@ -70,24 +83,55 @@ export default function RegistroVentas() {
   // Cargar estadísticas
   const loadStats = useCallback(async () => {
     try {
-      const filters = {
-        storage_id: currentStorage?.id
+      console.log('🔍 Cargando stats para storage:', currentStorage?.id)
+
+      const filters = {}
+
+      // Solo aplicar filtro de sucursal si hay una seleccionada
+      if (currentStorage?.id) {
+        filters.storage_id = currentStorage.id
       }
 
-      // Agregar filtro de fecha de hoy
-      const today = new Date().toISOString().split('T')[0]
-      filters.start_date = today
-      filters.end_date = today
+      // Solo aplicar filtros de fecha si hay un rango seleccionado
+      // Si no hay rango, mostrar estadísticas generales (sin filtro de fecha)
+      if (range?.from) {
+        filters.start_date = range.from.toISOString().split('T')[0]
+        console.log('📅 Aplicando filtro desde:', filters.start_date)
+      }
+
+      if (range?.to) {
+        filters.end_date = range.to.toISOString().split('T')[0]
+        console.log('📅 Aplicando filtro hasta:', filters.end_date)
+      }
+
+      console.log('📅 Filtros para stats:', filters)
 
       const response = await salesService.getSalesStats(filters)
 
+      console.log('📊 Respuesta de stats:', response)
+
       if (response.status === 'success') {
         setStats(response.data)
+        console.log('✅ Stats actualizadas:', response.data)
+      } else {
+        console.warn('⚠️ Error en respuesta de stats:', response)
+        // Resetear stats en caso de error
+        setStats({
+          total_revenue: 0,
+          total_products_sold: 0,
+          total_sales: 0
+        })
       }
     } catch (error) {
-      console.error('Error cargando estadísticas:', error)
+      console.error('❌ Error cargando estadísticas:', error)
+      // Resetear stats en caso de error
+      setStats({
+        total_revenue: 0,
+        total_products_sold: 0,
+        total_sales: 0
+      })
     }
-  }, [currentStorage?.id])
+  }, [currentStorage?.id, range])
 
   // Cargar lista de ventas
   const loadSales = useCallback(async () => {
@@ -218,36 +262,40 @@ export default function RegistroVentas() {
       <Navbar />
       <div className={`transition-all duration-300 ease-in-out`}>
         <div className="ml-20 flex-1">
-          {/* Aca resto del contenido*/}
+          {/* Stats con fondo blanco y bordes de color */}
           <div className="mr-4 flex justify-end">
-            <div className="stats stats-horizontal shadow" data-page="registro-ventas">
-              <div className="stat">
-                <div className="stat-figure text-orange-500">
+            <div className="stats stats-horizontal shadow">
+              <div className="stat border-l-4 border-primary bg-base-100">
+                <div className="stat-figure text-primary">
                   <DollarSign className="h-8 w-8" />
                 </div>
-                <div className="stat-title">Total vendido hoy</div>
-                <div className="stat-value text-orange-500">
+                <div className="stat-title font-semibold text-primary">Total vendido</div>
+                <div className="stat-value text-base-content">
                   ${formatPrice(stats.total_revenue)}
                 </div>
-                <div className="stat-desc">{new Date().toLocaleDateString()}</div>
+                <div className="text-base-content/70 stat-desc">{getStatsDescription()}</div>
               </div>
 
-              <div className="stat">
-                <div className="stat-figure text-indigo-500">
+              <div className="stat border-l-4 border-secondary bg-base-100">
+                <div className="stat-figure text-secondary">
                   <Package className="h-8 w-8" />
                 </div>
-                <div className="stat-title">Productos vendidos</div>
-                <div className="stat-value text-indigo-500">{stats.total_products_sold}</div>
-                <div className="stat-desc">Unidades hoy</div>
+                <div className="stat-title font-semibold text-secondary">Productos vendidos</div>
+                <div className="stat-value text-base-content">{stats.total_products_sold}</div>
+                <div className="text-base-content/70 stat-desc">
+                  Unidades {getStatsDescription()}
+                </div>
               </div>
 
-              <div className="stat">
-                <div className="stat-figure text-cyan-500">
+              <div className="stat border-l-4 border-accent bg-base-100">
+                <div className="stat-figure text-accent">
                   <Archive className="h-8 w-8" />
                 </div>
-                <div className="stat-title">Ventas realizadas</div>
-                <div className="stat-value text-cyan-500">{stats.total_sales}</div>
-                <div className="stat-desc">Transacciones hoy</div>
+                <div className="stat-title font-semibold text-accent">Ventas realizadas</div>
+                <div className="stat-value text-base-content">{stats.total_sales}</div>
+                <div className="text-base-content/70 stat-desc">
+                  Transacciones {getStatsDescription()}
+                </div>
               </div>
             </div>
           </div>
@@ -282,14 +330,14 @@ export default function RegistroVentas() {
                 {/* Modal del calendario centrado */}
                 {showCalendar && (
                   <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                    className="fixed inset-0 z-50 flex items-center justify-center"
                     onClick={(e) => {
                       if (e.target === e.currentTarget) {
                         setShowCalendar(false)
                       }
                     }}
                   >
-                    <div className="relative mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-base-100 p-6 shadow-xl">
+                    <div className="relative mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-base-100 p-6 shadow-xl backdrop-blur-sm">
                       <div className="mb-4 flex items-center justify-between">
                         <h3 className="text-lg font-semibold">Seleccionar período</h3>
                         <button
@@ -472,7 +520,7 @@ export default function RegistroVentas() {
                   salesList.map((sale) => (
                     <tr
                       key={sale.id}
-                      className={`hover:bg-warning/10 cursor-pointer transition-colors`}
+                      className={`selectable-item cursor-pointer transition-colors`}
                       onDoubleClick={() => handleRowDoubleClick(sale)}
                       title="Doble click para ver detalles"
                     >
@@ -516,8 +564,8 @@ export default function RegistroVentas() {
 
           {/* Modal de Detalles de Venta */}
           {showModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-base-100 shadow-2xl">
+            <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+              <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-gray-200 shadow-2xl">
                 <div className="p-6">
                   <div className="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
                     <h3 className="text-2xl font-bold text-warning">

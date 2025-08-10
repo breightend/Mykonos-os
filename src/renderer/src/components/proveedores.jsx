@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { fetchProvider } from '../services/proveedores/proveedorService'
 import { fetchProviderJoinBrand } from '../services/proveedores/brandService'
 import toast, { Toaster } from 'react-hot-toast'
+import '../assets/modal-improvements.css'
 
 pinwheel.register()
 
@@ -79,7 +80,7 @@ export default function Proveedores() {
       try {
         const data = await fetchProvider()
         setProveedores(data)
-        setFilteredProveedores(data) 
+        setFilteredProveedores(data)
       } catch (error) {
         console.error('Error fetching data:', error)
       }
@@ -92,13 +93,13 @@ export default function Proveedores() {
       <MenuVertical currentPath="/proveedores" />
       <Navbar />
       <div className="ml-20 flex-1">
-        <h2 className="text-warning mb-6 text-2xl font-bold">Proveedores</h2>
+        <h2 className="mb-6 text-2xl font-bold text-warning">Proveedores</h2>
       </div>
-      <div className="mr-5 mb-6 ml-20 flex items-center justify-between">
-        <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
+      <div className="mb-6 ml-20 mr-5 flex items-center justify-between">
+        <ul className="menu menu-horizontal gap-2 rounded-box bg-base-200">
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-bottom"
+              className="tooltip tooltip-bottom btn btn-ghost"
               data-tip="Nuevo proveedor"
               onClick={() => setLocation('/nuevoProveedor')}
             >
@@ -107,7 +108,7 @@ export default function Proveedores() {
           </li>
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-bottom"
+              className="tooltip tooltip-bottom btn btn-ghost"
               data-tip="Ver todas las marcas"
               onClick={handleShowBrandsModal}
               disabled={loading}
@@ -121,7 +122,7 @@ export default function Proveedores() {
           </li>
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-bottom"
+              className="tooltip tooltip-bottom btn btn-ghost"
               data-tip="Resumen proveedores"
               onClick={() => setLocation('/resumenProveedores')}
             >
@@ -132,7 +133,7 @@ export default function Proveedores() {
 
         {/* Barra de búsqueda */}
         <div className="flex items-center gap-4">
-          <label className="input input-bordered input-warning flex items-center gap-2">
+          <label className="input-bordered input input-warning flex items-center gap-2">
             <input
               type="text"
               placeholder="Buscar..."
@@ -144,7 +145,7 @@ export default function Proveedores() {
           </label>
         </div>
       </div>
-      <div className="mr-5 mb-10 ml-20 overflow-x-auto">
+      <div className="mb-10 ml-20 mr-5 overflow-x-auto">
         <table className="table w-full">
           <thead>
             <tr>
@@ -163,9 +164,7 @@ export default function Proveedores() {
               filteredProveedores.map((row, index) => (
                 <tr
                   key={row.id}
-                  className={`hover:bg-warning/10 cursor-pointer ${
-                    selectedRow === row.id ? 'bg-warning/20' : ''
-                  }`}
+                  className={`selectable-item ${selectedRow === row.id ? 'selected' : ''}`}
                   onClick={() => handleRowClick(row)}
                   onDoubleClick={() => handleRowDoubleClick(row)}
                   title="Doble clic para ver información del proveedor"
@@ -193,7 +192,7 @@ export default function Proveedores() {
                 <Package className="h-6 w-6" />
                 Marcas y Proveedores
               </h3>
-              <button className="btn btn-circle btn-sm" onClick={() => setShowBrandsModal(false)}>
+              <button className="btn btn-sm btn-circle" onClick={() => setShowBrandsModal(false)}>
                 ✕
               </button>
             </div>
@@ -204,7 +203,7 @@ export default function Proveedores() {
                 placeholder="Buscar por marca o proveedor..."
                 value={brandSearchTerm}
                 onChange={(e) => setBrandSearchTerm(e.target.value)}
-                className="input input-bordered w-full"
+                className="input-bordered input w-full"
               />
             </div>
 

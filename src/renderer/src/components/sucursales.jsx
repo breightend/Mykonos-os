@@ -10,6 +10,7 @@ import {
   postData as createSucursal
 } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
+import '../assets/modal-improvements.css'
 
 // Register the pinwheel loader
 pinwheel.register()
@@ -164,14 +165,14 @@ function Sucursales() {
       <MenuVertical currentPath={'/sucursales'} />
       <Navbar />
       <div className="ml-20 flex-1">
-        <h2 className="text-warning mb-6 text-2xl font-bold">Sucursales</h2>
+        <h2 className="mb-6 text-2xl font-bold text-warning">Sucursales</h2>
       </div>
 
-      <div className="mr-5 mb-6 ml-20 flex items-center justify-between">
-        <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
+      <div className="mb-6 ml-20 mr-5 flex items-center justify-between">
+        <ul className="menu menu-horizontal gap-2 rounded-box bg-base-200">
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-right"
+              className="tooltip tooltip-right btn btn-ghost"
               data-tip="Empleados en sucursal"
               onClick={handleShowEmployees}
               disabled={!sucursalSeleccionada || loadingEmployees}
@@ -185,7 +186,7 @@ function Sucursales() {
           </li>
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-bottom"
+              className="tooltip tooltip-bottom btn btn-ghost"
               data-tip="Información de la sucursal"
               onClick={() => setLocation(`/infoSucursal?id=${sucursalSeleccionada?.id}`)}
               disabled={!sucursalSeleccionada}
@@ -195,7 +196,7 @@ function Sucursales() {
           </li>
           <li>
             <button
-              className="btn btn-ghost tooltip tooltip-bottom"
+              className="tooltip tooltip-bottom btn btn-ghost"
               data-tip="Crear nueva sucursal"
               onClick={() => setShowCreateModal(true)}
             >
@@ -206,7 +207,7 @@ function Sucursales() {
 
         {/* Search bar */}
         <div className="flex items-center gap-4">
-          <label className="input input-bordered input-warning flex items-center gap-2">
+          <label className="input-bordered input input-warning flex items-center gap-2">
             <input
               type="text"
               placeholder="Buscar sucursales..."
@@ -220,13 +221,13 @@ function Sucursales() {
       </div>
 
       {/* Sucursales table */}
-      <div className="mr-5 mb-10 ml-20 overflow-x-auto">
+      <div className="mb-10 ml-20 mr-5 overflow-x-auto">
         {loading ? (
           <div className="from-warning/5 to-warning/10 flex flex-col items-center justify-center rounded-lg bg-gradient-to-br p-12">
             <div className="mb-4">
               <l-pinwheel size="45" stroke="3.5" speed="0.9" color="#d97706"></l-pinwheel>
             </div>
-            <span className="text-warning text-lg font-medium">Cargando sucursales...</span>
+            <span className="text-lg font-medium text-warning">Cargando sucursales...</span>
             <span className="mt-1 text-sm text-gray-500">Por favor espera un momento</span>
           </div>
         ) : (
@@ -249,7 +250,7 @@ function Sucursales() {
                 filteredSucursales.map((row, index) => (
                   <tr
                     key={row.id}
-                    className={`hover:bg-warning/10 cursor-pointer ${selectedRow === row.id ? 'bg-warning/20' : ''}`}
+                    className={`selectable-item cursor-pointer ${selectedRow === row.id ? 'selectable-item-selected' : ''}`}
                     onClick={() => handleRowClick(row)}
                     onDoubleClick={() => handleRowDoubleClick(row)}
                     title="Doble clic para ver información de la sucursal"
@@ -275,8 +276,8 @@ function Sucursales() {
       {/* Create Sucursal Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-base-100 w-96 rounded-lg p-6 shadow-2xl">
-            <h3 className="text-warning mb-4 text-lg font-bold">Nueva Sucursal</h3>
+          <div className="w-96 rounded-lg bg-base-100 p-6 shadow-2xl">
+            <h3 className="mb-4 text-lg font-bold text-warning">Nueva Sucursal</h3>
             <form onSubmit={handleCreateSucursal} className="space-y-4">
               <div>
                 <label className="label">
@@ -287,7 +288,7 @@ function Sucursales() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="input input-bordered w-full"
+                  className="input-bordered input w-full"
                   placeholder="Nombre de la sucursal"
                   required
                 />
@@ -302,7 +303,7 @@ function Sucursales() {
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  className="input input-bordered w-full"
+                  className="input-bordered input w-full"
                   placeholder="Dirección"
                 />
               </div>
@@ -316,7 +317,7 @@ function Sucursales() {
                   name="postal_code"
                   value={formData.postal_code}
                   onChange={handleInputChange}
-                  className="input input-bordered w-full"
+                  className="input-bordered input w-full"
                   placeholder="Código postal"
                 />
               </div>
@@ -330,7 +331,7 @@ function Sucursales() {
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleInputChange}
-                  className="input input-bordered w-full"
+                  className="input-bordered input w-full"
                   placeholder="Número de teléfono"
                 />
               </div>
@@ -344,7 +345,7 @@ function Sucursales() {
                   name="area"
                   value={formData.area}
                   onChange={handleInputChange}
-                  className="input input-bordered w-full"
+                  className="input-bordered input w-full"
                   placeholder="Área o sección"
                 />
               </div>
@@ -373,7 +374,7 @@ function Sucursales() {
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  className="textarea textarea-bordered w-full"
+                  className="textarea-bordered textarea w-full"
                   placeholder="Descripción de la sucursal"
                   rows="3"
                 />
@@ -395,13 +396,13 @@ function Sucursales() {
       {/* Employees Modal */}
       {showEmployeesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-base-100 w-3/4 max-w-4xl rounded-lg p-6 shadow-2xl">
+          <div className="w-3/4 max-w-4xl rounded-lg bg-base-100 p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-warning text-lg font-bold">
+              <h3 className="text-lg font-bold text-warning">
                 Empleados - {sucursalSeleccionada?.name}
               </h3>
               <button
-                className="btn btn-circle btn-sm"
+                className="btn btn-sm btn-circle"
                 onClick={() => setShowEmployeesModal(false)}
               >
                 ✕

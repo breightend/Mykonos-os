@@ -94,8 +94,29 @@ export default function ConfirmacionDatosDeCompra() {
 
   console.log('Productos')
   console.log(saleData.products)
+  console.log('🔍 Debug - saleData completo:')
+  console.log(saleData)
+  console.log('🔍 Debug - Cliente:')
+  console.log(saleData.customer)
+  console.log('🔍 Debug - Pagos:')
+  console.log(saleData.payments)
 
-  const totalAbonado = saleData.payments.reduce((sum, payment) => sum + payment.amount, 0)
+  // Calcular total abonado excluyendo cuenta corriente (solo pagos reales)
+  const totalAbonado = saleData.payments.reduce((sum, payment) => {
+    // Solo sumar pagos que NO sean cuenta corriente
+    if (payment.method !== 'cuenta_corriente') {
+      return sum + payment.amount
+    }
+    return sum
+  }, 0)
+
+  // Calcular total en cuenta corriente
+  const totalCuentaCorriente = saleData.payments.reduce((sum, payment) => {
+    if (payment.method === 'cuenta_corriente') {
+      return sum + payment.amount
+    }
+    return sum
+  }, 0)
 
   // Usar el total correcto dependiendo si hay intercambio o no
   const totalVenta = saleData.exchange?.hasExchange ? saleData.exchange.finalAmount : saleData.total
@@ -126,7 +147,7 @@ export default function ConfirmacionDatosDeCompra() {
     <div className="container mx-auto max-w-4xl p-4">
       <h1 className="mb-6 text-center text-3xl font-bold">Resumen de Venta</h1>
 
-      <div className="bg-base-100 mb-6 rounded-lg p-6 shadow-lg">
+      <div className="mb-6 rounded-lg bg-base-100 p-6 shadow-lg">
         {/* Resumen General */}
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="stats bg-primary text-primary-content">
@@ -161,21 +182,67 @@ export default function ConfirmacionDatosDeCompra() {
                   <span className="font-bold">Nombre:</span> {saleData.customer.name}
                 </p>
                 <p>
-                  <span className="font-bold">Identificación:</span> {saleData.customer.id}
+                  <span className="font-bold">Identificación:</span>{' '}
+                  {saleData.customer.id || saleData.customer.dni}
                 </p>
-                <p>
-                  <span className="font-bold">Contacto:</span> {saleData.customer.contact}
-                </p>
+                {saleData.customer.contact && (
+                  <p>
+                    <span className="font-bold">Contacto:</span> {saleData.customer.contact}
+                  </p>
+                )}
+                {saleData.customer.type && (
+                  <p>
+                    <span className="font-bold">Tipo:</span> {saleData.customer.type}
+                  </p>
+                )}
               </div>
             </div>
           </div>
         )}
 
+        {/* Cliente de cuenta corriente desde payments (si no hay customer en saleData) */}
+        {!saleData.customer &&
+          saleData.payments.find((p) => p.method === 'cuenta_corriente' && p.costumer?.cliente) && (
+            <div className="mb-6">
+              <h2 className="mb-2 text-xl font-semibold">Cliente (Cuenta Corriente)</h2>
+              <div className="card bg-base-200">
+                <div className="card-body p-4">
+                  {(() => {
+                    const cuentaCorrientePago = saleData.payments.find(
+                      (p) => p.method === 'cuenta_corriente' && p.costumer?.cliente
+                    )
+                    const cliente = cuentaCorrientePago?.costumer?.cliente
+                    return (
+                      <>
+                        <p>
+                          <span className="font-bold">Nombre:</span>{' '}
+                          {cliente?.name || cliente?.entity_name}
+                        </p>
+                        <p>
+                          <span className="font-bold">Identificación:</span>{' '}
+                          {cliente?.dni || cliente?.id || cliente?.cuit}
+                        </p>
+                        {cliente?.contact && (
+                          <p>
+                            <span className="font-bold">Contacto:</span> {cliente.contact}
+                          </p>
+                        )}
+                        <p>
+                          <span className="font-bold">Tipo:</span> Cuenta Corriente
+                        </p>
+                      </>
+                    )
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+
         {/* Productos */}
         <div className="mb-6">
           <h2 className="mb-2 text-xl font-semibold">Productos ({saleData.products.length})</h2>
           <div className="overflow-x-auto">
-            <table className="table-zebra table">
+            <table className="table table-zebra">
               <thead>
                 <tr>
                   <th>Producto</th>
@@ -332,9 +399,17 @@ export default function ConfirmacionDatosDeCompra() {
               </>
             )}
             <div className="flex justify-between border-b pb-2">
-              <span className="font-bold">Total Pagado:</span>
+              <span className="font-bold">Total Pagado (Efectivo):</span>
               <span>${parseFloat(totalAbonado || 0).toFixed(2)}</span>
             </div>
+            {totalCuentaCorriente > 0 && (
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-bold text-orange-600">Pendiente (Cuenta Corriente):</span>
+                <span className="text-orange-600">
+                  ${parseFloat(totalCuentaCorriente || 0).toFixed(2)}
+                </span>
+              </div>
+            )}
             <div className="mt-2 flex justify-between text-lg font-bold">
               <span>Cambio:</span>
               <span>${parseFloat(change || 0).toFixed(2)}</span>

@@ -27,6 +27,7 @@ import Estadisticas from './components/stadistics/estadisticas'
 import MoveInventory from './components/Inventory/moveInventory'
 import TestColorPage from './test/TestColorPage'
 import TestDaisyUI from './test/TestDaisyUI'
+import StyleTest from './components/StyleTest'
 import ResumenProveedores from './components/stadistics/resumenProveedores'
 import EditarProducto from './components/Inventory/editarProducto'
 import MultiProductExchangeTestPage from './components/MultiProductExchangeTestPage'
@@ -69,6 +70,11 @@ function App() {
         <Route path="/test-daisy">
           <ProtectedRoute>
             <TestDaisyUI />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/style-test">
+          <ProtectedRoute>
+            <StyleTest />
           </ProtectedRoute>
         </Route>
         <Route path="/usuario">

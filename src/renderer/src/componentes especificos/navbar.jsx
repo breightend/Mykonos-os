@@ -11,7 +11,7 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="ml-16">
+      <div className="ml-20">
         <div className="navbar grid grid-cols-3 gap-4 border-b border-base-300 bg-base-100 shadow-sm">
           {/* Logo/Home Section */}
           <div className="navbar-start col-span-2">
@@ -24,7 +24,7 @@ export default function Navbar() {
           </div>
 
           {/* Sucursal Section */}
-          <div className="navbar-end">
+          <div className="navbar-end mb-2">
             <div
               className={`card-compact card shadow-lg ${
                 hasSucursal

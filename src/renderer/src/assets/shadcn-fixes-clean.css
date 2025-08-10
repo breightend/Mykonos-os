@@ -986,3 +986,764 @@
 .table-zebra tbody tr:nth-child(even):hover {
   background-color: rgba(255, 140, 66, 0.08) !important;
 }
+
+/* Formas de Pago - Mejorar visibilidad de colores */
+/* Botones de formas de pago */
+.formas-pago-button {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+[data-theme='night'] .formas-pago-button {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+.formas-pago-button.selected {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-color: #10b981 !important;
+}
+
+[data-theme='night'] .formas-pago-button.selected {
+  background-color: #064e3b !important;
+  color: #d1fae5 !important;
+  border-color: #10b981 !important;
+}
+
+/* Contenedores de pago */
+.payment-container {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+[data-theme='night'] .payment-container {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+/* Inputs de pago */
+.payment-input {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+[data-theme='night'] .payment-input {
+  background-color: #4b5563 !important;
+  color: #ffffff !important;
+  border-color: #6b7280 !important;
+}
+
+.payment-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Texto en general para formas de pago */
+.formas-pago .text-gray-700 {
+  color: #374151 !important;
+}
+
+[data-theme='night'] .formas-pago .text-gray-700 {
+  color: #f3f4f6 !important;
+}
+
+.formas-pago .dark\:text-gray-200 {
+  color: #374151 !important;
+}
+
+[data-theme='night'] .formas-pago .dark\:text-gray-200 {
+  color: #e5e7eb !important;
+}
+
+/* Títulos y encabezados */
+.formas-pago .text-gray-800 {
+  color: #1f2937 !important;
+}
+
+[data-theme='night'] .formas-pago .text-gray-800 {
+  color: #f9fafb !important;
+}
+
+.formas-pago h1,
+.formas-pago h2,
+.formas-pago h3,
+.formas-pago h4 {
+  color: #1f2937 !important;
+}
+
+[data-theme='night'] .formas-pago h1,
+[data-theme='night'] .formas-pago h2,
+[data-theme='night'] .formas-pago h3,
+[data-theme='night'] .formas-pago h4 {
+  color: #f9fafb !important;
+}
+
+/* Botón de navegación back específico */
+.back-button {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.back-button:hover {
+  background-color: #e5e7eb !important;
+  transform: scale(1.05) !important;
+}
+
+[data-theme='night'] .back-button {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+[data-theme='night'] .back-button:hover {
+  background-color: #4b5563 !important;
+}
+
+.back-button-icon {
+  color: #374151 !important;
+}
+
+[data-theme='night'] .back-button-icon {
+  color: #e5e7eb !important;
+}
+
+/* Modal con backdrop-blur funcional */
+.modal.backdrop-blur-sm::backdrop {
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.modal.backdrop-blur-sm {
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Asegurar que el modal tenga el overlay correcto */
+.modal:not(.modal-open) {
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.modal.modal-open,
+.modal:target,
+.modal[open] {
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Contenido del modal mejorado */
+.modal-box {
+  position: relative !important;
+  background-color: #ffffff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: none !important;
+  max-width: 600px !important;
+  margin: auto !important;
+}
+
+[data-theme='night'] .modal-box {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Mejorar contraste de texto en modales */
+.modal-box .text-gray-900 {
+  color: #111827 !important;
+}
+
+[data-theme='night'] .modal-box .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+.modal-box .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+[data-theme='night'] .modal-box .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+.modal-box .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+[data-theme='night'] .modal-box .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+/* Borders de items en modales */
+.modal-box .border {
+  border-color: #e5e7eb !important;
+}
+
+[data-theme='night'] .modal-box .border {
+  border-color: #374151 !important;
+}
+
+/* Hover effects en modales */
+.modal-box .hover\:bg-gray-100:hover {
+  background-color: #f3f4f6 !important;
+}
+
+[data-theme='night'] .modal-box .hover\:bg-gray-100:hover {
+  background-color: #4b5563 !important;
+}
+
+.modal-box .dark\:hover\:bg-gray-700:hover {
+  background-color: #f3f4f6 !important;
+}
+
+[data-theme='night'] .modal-box .dark\:hover\:bg-gray-700:hover {
+  background-color: #4b5563 !important;
+}
+
+/* === FORMAS DE PAGO - ESTILOS COMPLETOS === */
+
+/* Contenedor principal */
+.formas-pago {
+  color: #374151 !important;
+}
+
+[data-theme='night'] .formas-pago {
+  color: #f3f4f6 !important;
+}
+
+/* Botón de navegación back específico */
+.back-button {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.back-button:hover {
+  background-color: #e5e7eb !important;
+  transform: scale(1.05) !important;
+}
+
+[data-theme='night'] .back-button {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+[data-theme='night'] .back-button:hover {
+  background-color: #4b5563 !important;
+}
+
+.back-button-icon {
+  color: #374151 !important;
+}
+
+[data-theme='night'] .back-button-icon {
+  color: #e5e7eb !important;
+}
+
+/* Títulos y encabezados */
+.formas-pago h1 {
+  color: #1f2937 !important;
+}
+
+.formas-pago h2 {
+  color: #374151 !important;
+}
+
+.formas-pago h3 {
+  color: #4b5563 !important;
+}
+
+.formas-pago h4 {
+  color: #6b7280 !important;
+}
+
+[data-theme='night'] .formas-pago h1 {
+  color: #f9fafb !important;
+}
+
+[data-theme='night'] .formas-pago h2 {
+  color: #f3f4f6 !important;
+}
+
+[data-theme='night'] .formas-pago h3 {
+  color: #e5e7eb !important;
+}
+
+[data-theme='night'] .formas-pago h4 {
+  color: #d1d5db !important;
+}
+
+/* Botones de formas de pago */
+.formas-pago-button {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border: 2px solid #e5e7eb !important;
+}
+
+.formas-pago-button:hover {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  transform: scale(1.05) !important;
+}
+
+.formas-pago-button.selected {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-color: #10b981 !important;
+}
+
+.formas-pago-button.selected:hover {
+  background-color: #d1fae5 !important;
+}
+
+[data-theme='night'] .formas-pago-button {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+[data-theme='night'] .formas-pago-button:hover {
+  background-color: #4b5563 !important;
+  border-color: #6b7280 !important;
+}
+
+[data-theme='night'] .formas-pago-button.selected {
+  background-color: #064e3b !important;
+  color: #d1fae5 !important;
+  border-color: #10b981 !important;
+}
+
+[data-theme='night'] .formas-pago-button.selected:hover {
+  background-color: #065f46 !important;
+}
+
+/* Texto de botones de formas de pago */
+.formas-pago-button span {
+  color: #374151 !important;
+}
+
+.formas-pago-button.selected span {
+  color: #065f46 !important;
+}
+
+[data-theme='night'] .formas-pago-button span {
+  color: #e5e7eb !important;
+}
+
+[data-theme='night'] .formas-pago-button.selected span {
+  color: #d1fae5 !important;
+}
+
+/* Iconos de formas de pago */
+.formas-pago-button svg {
+  color: #ff8c42 !important;
+}
+
+[data-theme='night'] .formas-pago-button svg {
+  color: #ff8c42 !important;
+}
+
+/* Contenedores de pago */
+.payment-container {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.payment-container:hover {
+  background-color: #f9fafb !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme='night'] .payment-container {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+[data-theme='night'] .payment-container:hover {
+  background-color: #4b5563 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Inputs de pago */
+.payment-input {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.payment-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+[data-theme='night'] .payment-input {
+  background-color: #4b5563 !important;
+  color: #ffffff !important;
+  border-color: #6b7280 !important;
+}
+
+[data-theme='night'] .payment-input:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+}
+
+/* Cliente seleccionado - Verde */
+.formas-pago .border-green-200 {
+  border-color: #bbf7d0 !important;
+}
+
+.formas-pago .bg-green-50 {
+  background-color: #f0fdf4 !important;
+}
+
+.formas-pago .text-green-700 {
+  color: #15803d !important;
+}
+
+.formas-pago .text-green-600 {
+  color: #16a34a !important;
+}
+
+[data-theme='night'] .formas-pago .border-green-200 {
+  border-color: #166534 !important;
+}
+
+[data-theme='night'] .formas-pago .bg-green-50 {
+  background-color: #14532d !important;
+}
+
+[data-theme='night'] .formas-pago .text-green-700 {
+  color: #bbf7d0 !important;
+}
+
+[data-theme='night'] .formas-pago .text-green-600 {
+  color: #86efac !important;
+}
+
+/* Cuenta corriente - Azul */
+.formas-pago .border-blue-200 {
+  border-color: #bfdbfe !important;
+}
+
+.formas-pago .bg-blue-50 {
+  background-color: #eff6ff !important;
+}
+
+.formas-pago .text-blue-800 {
+  color: #1e40af !important;
+}
+
+.formas-pago .text-blue-200 {
+  color: #1e40af !important;
+}
+
+[data-theme='night'] .formas-pago .border-blue-200 {
+  border-color: #1e3a8a !important;
+}
+
+[data-theme='night'] .formas-pago .bg-blue-50 {
+  background-color: #1e3a8a !important;
+}
+
+[data-theme='night'] .formas-pago .text-blue-800 {
+  color: #bfdbfe !important;
+}
+
+[data-theme='night'] .formas-pago .text-blue-200 {
+  color: #93c5fd !important;
+}
+
+/* Pago inicial - Verde claro */
+.formas-pago .bg-green-50.p-4 {
+  background-color: #f0fdf4 !important;
+}
+
+.formas-pago .text-green-800 {
+  color: #166534 !important;
+}
+
+.formas-pago .text-green-200 {
+  color: #166534 !important;
+}
+
+.formas-pago .text-green-700 {
+  color: #15803d !important;
+}
+
+.formas-pago .text-green-300 {
+  color: #4ade80 !important;
+}
+
+[data-theme='night'] .formas-pago .bg-green-50.p-4 {
+  background-color: #14532d !important;
+}
+
+[data-theme='night'] .formas-pago .text-green-800 {
+  color: #bbf7d0 !important;
+}
+
+[data-theme='night'] .formas-pago .text-green-200 {
+  color: #86efac !important;
+}
+
+[data-theme='night'] .formas-pago .text-green-700 {
+  color: #86efac !important;
+}
+
+[data-theme='night'] .formas-pago .text-green-300 {
+  color: #4ade80 !important;
+}
+
+/* Resumen del pago - Gris */
+.formas-pago .bg-gray-100.p-4 {
+  background-color: #f3f4f6 !important;
+}
+
+.formas-pago .text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.formas-pago .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.formas-pago .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+.formas-pago .border-gray-300 {
+  border-color: #d1d5db !important;
+}
+
+[data-theme='night'] .formas-pago .bg-gray-100.p-4 {
+  background-color: #374151 !important;
+}
+
+[data-theme='night'] .formas-pago .text-gray-800 {
+  color: #f9fafb !important;
+}
+
+[data-theme='night'] .formas-pago .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+[data-theme='night'] .formas-pago .text-gray-300 {
+  color: #9ca3af !important;
+}
+
+[data-theme='night'] .formas-pago .border-gray-300 {
+  border-color: #4b5563 !important;
+}
+
+/* Botones de acción */
+.formas-pago .bg-green-600 {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.formas-pago .bg-green-600:hover {
+  background-color: #15803d !important;
+}
+
+.formas-pago .bg-blue-600 {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.formas-pago .bg-blue-600:hover {
+  background-color: #1d4ed8 !important;
+}
+
+.formas-pago .bg-gray-300 {
+  background-color: #d1d5db !important;
+  color: #6b7280 !important;
+}
+
+[data-theme='night'] .formas-pago .bg-green-600 {
+  background-color: #16a34a !important;
+}
+
+[data-theme='night'] .formas-pago .bg-green-600:hover {
+  background-color: #15803d !important;
+}
+
+[data-theme='night'] .formas-pago .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+[data-theme='night'] .formas-pago .bg-blue-600:hover {
+  background-color: #1d4ed8 !important;
+}
+
+[data-theme='night'] .formas-pago .bg-gray-300 {
+  background-color: #4b5563 !important;
+  color: #9ca3af !important;
+}
+
+/* Detalle - Fondo especial */
+.formas-pago .dark\:bg-blue-950 {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+[data-theme='night'] .formas-pago .dark\:bg-blue-950 {
+  background-color: #172554 !important;
+  color: #e5e7eb !important;
+}
+
+/* Inputs y selects */
+.formas-pago input,
+.formas-pago select {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.formas-pago input:focus,
+.formas-pago select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+[data-theme='night'] .formas-pago input,
+[data-theme='night'] .formas-pago select {
+  background-color: #4b5563 !important;
+  color: #ffffff !important;
+  border-color: #6b7280 !important;
+}
+
+[data-theme='night'] .formas-pago input:focus,
+[data-theme='night'] .formas-pago select:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+}
+
+/* Labels */
+.formas-pago label {
+  color: #374151 !important;
+}
+
+[data-theme='night'] .formas-pago label {
+  color: #e5e7eb !important;
+}
+
+/* Textos de ayuda */
+.formas-pago .text-sm {
+  color: #6b7280 !important;
+}
+
+[data-theme='night'] .formas-pago .text-sm {
+  color: #9ca3af !important;
+}
+
+/* Texto de error */
+.formas-pago .text-red-600 {
+  color: #dc2626 !important;
+}
+
+[data-theme='night'] .formas-pago .text-red-600 {
+  color: #f87171 !important;
+}
+
+/* ========================================
+   Modal de cuenta corriente específico
+======================================== */
+#cuentaCorriente {
+  backdrop-filter: blur(4px);
+}
+
+#cuentaCorriente::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+#cuentaCorriente .modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+#cuentaCorriente .modal-box {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 2px solid #fed7aa;
+}
+
+[data-theme='night'] #cuentaCorriente .modal-box {
+  border-color: #ea580c;
+}
+
+/* Mejorar contraste en items del modal */
+#cuentaCorriente .modal-box li:hover {
+  background-color: #fff7ed;
+  border-color: #fdba74;
+}
+
+[data-theme='night'] #cuentaCorriente .modal-box li:hover {
+  background-color: #374151;
+  border-color: #ea580c;
+}
+
+/* ========================================
+   Fix para Select Elements (DaisyUI)
+======================================== */
+
+/* Asegurar que los selects de DaisyUI funcionen correctamente */
+.select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-position: right 0.5rem center !important;
+  background-repeat: no-repeat !important;
+  background-size: 1.5em 1.5em !important;
+  padding-right: 2.5rem !important;
+}
+
+.select:focus {
+  outline: 2px solid transparent !important;
+  outline-offset: 2px !important;
+}
+
+/* Específico para select-warning */
+.select-warning:focus {
+  border-color: #d97706 !important;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2) !important;
+}
+
+/* Específico para select-bordered */
+.select-bordered {
+  border: 1px solid #d1d5db !important;
+}
+
+[data-theme='night'] .select-bordered {
+  border: 1px solid #4b5563 !important;
+}
+
+/* Override para cualquier conflicto de Tailwind/Shadcn */
+.select option {
+  padding: 0.5rem !important;
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+[data-theme='night'] .select {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+[data-theme='night'] .select option {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+}

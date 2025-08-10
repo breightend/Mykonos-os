@@ -6,11 +6,12 @@ import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import ProductsFamily from '../../modals/modalsInventory/productsFamily'
 import ProductDetailModal from '../../modals/ProductDetailModal/ProductDetailModal'
-import PrintBarcodeModal from '../../modals/modalsInventory/PrintBarcodeModal'
+import PrintBarcodeModal from '../../modals/modalsInventory/printBarcodeModal'
 import ModalColoresYTalles from '../../modals/modalsProduct/modalColoresYTallesInventario'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
 import { useSession } from '../../contexts/SessionContext'
+import '../../assets/modal-improvements.css'
 pinwheel.register()
 //TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
 export default function Inventario() {
@@ -244,25 +245,25 @@ export default function Inventario() {
     }).format(value)
   }
   return (
-    <div className="bg-base-100 min-h-screen">
+    <div className="min-h-screen bg-base-100">
       <MenuVertical currentPath="/inventario" />
       <Navbar />
       <div className="ml-20 flex-1">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-warning text-2xl font-bold">Inventario</h2>
+            <h2 className="text-2xl font-bold text-warning">Inventario</h2>
             {selectedStorage ? (
               <p className="mt-1 text-sm text-gray-600">
                 {selectedStorage === currentStorage?.id?.toString()
-                  ? `🏢 Mostrando productos de: ${currentStorage?.name} (Mi sucursal)`
-                  : `🏪 Mostrando productos de: ${
+                  ? `Mostrando productos de: ${currentStorage?.name} (Mi sucursal)`
+                  : `Mostrando productos de: ${
                       storageList.find((s) => s.id.toString() === selectedStorage)?.name ||
                       'Sucursal desconocida'
                     }`}
               </p>
             ) : (
               <p className="mt-1 text-sm text-gray-600">
-                🌍 Mostrando productos de todas las sucursales
+                Mostrando productos de todas las sucursales
               </p>
             )}
           </div>
@@ -274,7 +275,7 @@ export default function Inventario() {
             <div className="flex items-center justify-between">
               <span>{error}</span>
               <button
-                className="btn btn-sm btn-outline btn-error"
+                className="btn btn-error btn-outline btn-sm"
                 onClick={() => {
                   setError(null)
                   loadInitialData()
@@ -290,8 +291,8 @@ export default function Inventario() {
         {storageList.length === 0 && !loading && !error && (
           <div className="alert alert-info mb-4">
             <div className="flex items-center justify-between">
-              <span>ℹ️ No se pudieron cargar las sucursales. Mostrando todos los productos.</span>
-              <button className="btn btn-sm btn-outline btn-info" onClick={() => loadInitialData()}>
+              <span>No se pudieron cargar las sucursales. Mostrando todos los productos.</span>
+              <button className="btn btn-info btn-outline btn-sm" onClick={() => loadInitialData()}>
                 Reintentar cargar sucursales
               </button>
             </div>
@@ -300,62 +301,62 @@ export default function Inventario() {
 
         {/* Barra de navegación */}
         <div className="mb-6 flex items-center justify-between">
-          <ul className="menu menu-horizontal bg-base-200 rounded-box gap-2">
+          <ul className="menu menu-horizontal gap-3 rounded-box bg-base-200 p-2">
             <li>
               <button
-                className="btn btn-ghost tooltip tooltip-bottom"
+                className="tooltip tooltip-bottom btn btn-ghost btn-md"
                 data-tip="Grupos"
                 onClick={() => document.getElementById('productsFamily').showModal()}
               >
-                <Boxes className="h-5 w-5" />
+                <Boxes className="h-6 w-6" />
               </button>
             </li>
             <li>
               <button
-                className="btn btn-ghost tooltip tooltip-bottom"
+                className="tooltip tooltip-bottom btn btn-ghost btn-md"
                 data-tip="Editar producto"
                 onClick={handleEditClick}
                 disabled={!selectedRow}
               >
-                <Edit className="h-5 w-5" />
+                <Edit className="h-6 w-6" />
               </button>
             </li>
             <li>
               <button
-                className="btn btn-ghost tooltip tooltip-bottom"
+                className="tooltip tooltip-bottom btn btn-ghost btn-md"
                 data-tip="Imprimir código de barras"
                 onClick={handlePrintBarcodeClick}
                 disabled={!selectedRow}
               >
-                <Printer className="h-5 w-5" />
+                <Printer className="h-6 w-6" />
               </button>
             </li>
             <li>
               <button
-                className="btn btn-ghost tooltip tooltip-bottom"
+                className="tooltip tooltip-bottom btn btn-ghost btn-md"
                 data-tip="Nuevo producto"
                 onClick={() => setLocation('/nuevoProducto')}
               >
-                <PackagePlus className="h-5 w-5" />
+                <PackagePlus className="h-6 w-6" />
               </button>
             </li>
 
             <li>
               <button
-                className="btn btn-ghost tooltip tooltip-bottom"
+                className="tooltip tooltip-bottom btn btn-ghost btn-md"
                 data-tip="Mover producto entre sucursales"
                 onClick={handleMoveInventoryClick}
               >
-                <Truck className="h-5 w-5" />
+                <Truck className="h-6 w-6" />
               </button>
             </li>
             <li>
               <button
-                className="btn btn-ghost tooltip tooltip-bottom"
+                className="tooltip tooltip-bottom btn btn-ghost btn-md"
                 data-tip="Agregar colores y talles"
                 onClick={() => document.getElementById('sizeColorModal').showModal()}
               >
-                <ListPlus className="h-5 w-5" />
+                <ListPlus className="h-6 w-6" />
               </button>
             </li>
           </ul>
@@ -366,14 +367,14 @@ export default function Inventario() {
             <div className="flex items-center gap-1">
               <span className="text-sm font-medium text-gray-600">Sucursal:</span>
               <select
-                className="select select-bordered select-warning select-sm w-44"
+                className="select-enhanced"
                 value={selectedStorage}
                 onChange={handleStorageChange}
               >
-                <option value="">🌍 Todas</option>
+                <option value="">Todas las sucursales</option>
                 {currentStorage && (
                   <option value={currentStorage.id} className="font-semibold">
-                    🏢 {currentStorage.name}
+                    {currentStorage.name} (Mi sucursal)
                   </option>
                 )}
                 {storageList &&
@@ -381,7 +382,7 @@ export default function Inventario() {
                     .filter((storage) => storage.id !== currentStorage?.id)
                     .map((storage) => (
                       <option key={storage.id} value={storage.id}>
-                        🏪 {storage.name}
+                        {storage.name}
                       </option>
                     ))}
               </select>
@@ -396,7 +397,7 @@ export default function Inventario() {
                     {selectedGroupData?.group_name || `Grupo ${selectedGroup}`}
                   </span>
                   {selectedGroupData?.children && selectedGroupData.children.length > 0 && (
-                    <span className="badge badge-xs badge-outline ml-1">
+                    <span className="badge badge-outline badge-xs ml-1">
                       +
                       {(() => {
                         const allIds = getAllGroupIds(selectedGroupData, selectedGroup)
@@ -427,44 +428,41 @@ export default function Inventario() {
 
             {/* Barra de búsqueda más compacta */}
             <div className="flex items-center gap-1">
-              <label className="input input-bordered input-warning input-sm flex w-48 items-center gap-2">
+              <label className="search-enhanced input-bordered input flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Buscar por producto, marca o grupo..."
+                  placeholder="Buscar productos, marcas o grupos..."
                   className="grow text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <Search className="h-3 w-3" />
+                <Search className="h-4 w-4 opacity-70" />
               </label>
-              {/* Ahora busca por producto, marca y grupo (sin código de barras general) */}
             </div>
           </div>
         </div>
 
         {/* Tabla de inventario */}
-        <div className="bg-base-200 overflow-x-auto rounded-lg shadow-lg">
+        <div className="overflow-x-auto rounded-lg shadow-lg">
           {loading ? (
-            <div className="from-warning/5 to-warning/10 flex flex-col items-center justify-center rounded-lg bg-gradient-to-br p-12">
+            <div className="flex flex-col items-center justify-center rounded-lg bg-base-100 p-12">
               <div className="mb-4">
                 <l-pinwheel size="45" stroke="3.5" speed="0.9" color="#d97706"></l-pinwheel>
               </div>
-              <span className="text-warning text-lg font-medium">Cargando inventario...</span>
-              <span className="mt-1 text-sm text-gray-500">Por favor espera un momento</span>
+              <span className="text-lg font-medium text-orange-600">Cargando inventario...</span>
+              <span className="mt-1 text-sm text-base-content">Por favor espera un momento</span>
             </div>
           ) : (
-            <table className="table w-full">
-              <thead className="bg-warning/10">
+            <table className="table-modern table w-full">
+              <thead>
                 <tr>
-                  <th className="text-warning">Producto</th>
-                  <th className="text-warning">Marca</th>
-                  <th className="text-warning">Grupo</th>
-                  <th className="text-warning">
-                    {selectedStorage ? 'Cantidad en sucursal' : 'Cantidad total'}
-                  </th>
-                  <th className="text-warning">Precio</th>
-                  <th className="text-warning">Fecha de edición</th>
-                  {!selectedStorage && <th className="text-warning">Sucursales con stock</th>}
+                  <th>Producto</th>
+                  <th>Marca</th>
+                  <th>Grupo</th>
+                  <th>{selectedStorage ? 'Cantidad en sucursal' : 'Cantidad total'}</th>
+                  <th>Precio</th>
+                  <th>Fecha de edición</th>
+                  {!selectedStorage && <th>Sucursales con stock</th>}
                 </tr>
               </thead>
               <tbody>
@@ -498,9 +496,7 @@ export default function Inventario() {
                   filteredData.map((row) => (
                     <tr
                       key={row.id}
-                      className={`hover:bg-warning/10 cursor-pointer ${
-                        selectedRow === row.id ? 'bg-warning/20' : ''
-                      }`}
+                      className={`cursor-pointer ${selectedRow === row.id ? 'selected' : ''}`}
                       onClick={() => handleRowClick(row)}
                       onDoubleClick={() => handleRowDoubleClick(row)}
                       title="Doble clic para ver detalles completos"
@@ -543,8 +539,8 @@ export default function Inventario() {
         {/* Modal de edición */}
         {isModalOpen && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-            <div className="bg-base-100 w-96 rounded-lg p-6 shadow-2xl">
-              <h3 className="text-warning mb-4 text-lg font-bold">Editar Producto</h3>
+            <div className="w-96 rounded-lg bg-base-100 p-6 shadow-2xl">
+              <h3 className="mb-4 text-lg font-bold text-warning">Editar Producto</h3>
               <form className="space-y-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium">Producto</label>
@@ -552,7 +548,7 @@ export default function Inventario() {
                     type="text"
                     value={editedData.producto}
                     onChange={(e) => handleInputChange('producto', e.target.value)}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                   />
                 </div>
                 <div>
@@ -561,7 +557,7 @@ export default function Inventario() {
                     type="text"
                     value={editedData.marca}
                     onChange={(e) => handleInputChange('marca', e.target.value)}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                   />
                 </div>
                 <div>
@@ -570,7 +566,7 @@ export default function Inventario() {
                     type="number"
                     value={editedData.cantidad}
                     onChange={(e) => handleInputChange('cantidad', parseInt(e.target.value, 10))}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                   />
                 </div>
                 <div>
@@ -579,7 +575,7 @@ export default function Inventario() {
                     type="text"
                     value={editedData.colores}
                     onChange={(e) => handleInputChange('colores', e.target.value)}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                   />
                 </div>
                 <div>
@@ -588,7 +584,7 @@ export default function Inventario() {
                     type="text"
                     value={editedData.fecha}
                     onChange={(e) => handleInputChange('fecha', e.target.value)}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                   />
                 </div>
                 <div className="mt-4 flex justify-end gap-2">

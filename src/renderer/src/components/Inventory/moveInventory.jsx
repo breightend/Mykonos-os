@@ -719,7 +719,7 @@ export default function MoveInventory() {
   }
 
   return (
-    <div className="bg-base-100 min-h-screen p-4">
+    <div className="min-h-screen bg-base-100 p-4">
       <div className="mb-4 flex items-center gap-4">
         <button onClick={handleBackClick} className="btn btn-neutral mb-4">
           <ArrowLeft className="h-5 w-5" />
@@ -728,7 +728,7 @@ export default function MoveInventory() {
       </div>
 
       {/* Información de la sucursal actual */}
-      <div className="bg-base-200 mb-4 rounded-lg p-4">
+      <div className="mb-4 rounded-lg bg-base-200 p-4">
         <p className="text-sm opacity-70">Sucursal actual:</p>
         <p className="text-lg font-semibold">{currentStorage?.name || 'No seleccionada'}</p>
       </div>
@@ -747,7 +747,7 @@ export default function MoveInventory() {
           <XCircle className="h-5 w-5" />
           <span>{error}</span>
           <button
-            className="btn btn-sm btn-outline"
+            className="btn btn-outline btn-sm"
             onClick={() => {
               setError(null)
               if (currentStorage?.id) {
@@ -766,7 +766,7 @@ export default function MoveInventory() {
           <div className="mb-6 flex gap-4">
             <button
               onClick={startProductSelection}
-              className={`btn ${!showPendingShipments && !showSentShipments && step >= 1 ? 'btn-primary' : 'btn-outline btn-primary'}`}
+              className={`btn ${!showPendingShipments && !showSentShipments && step >= 1 ? 'btn-primary' : 'btn-primary btn-outline'}`}
               disabled={!currentStorage?.id}
             >
               <Package className="h-5 w-5" />
@@ -778,7 +778,7 @@ export default function MoveInventory() {
                 setShowSentShipments(false)
                 loadPendingShipments()
               }}
-              className={`btn ${showPendingShipments ? 'btn-secondary' : 'btn-outline btn-secondary'}`}
+              className={`btn ${showPendingShipments ? 'btn-secondary' : 'btn-secondary btn-outline'}`}
             >
               <Clock className="h-5 w-5" />
               Envíos Pendientes
@@ -790,7 +790,7 @@ export default function MoveInventory() {
                 setShowPendingShipments(false)
                 loadSentShipments()
               }}
-              className={`btn ${showSentShipments ? 'btn-accent' : 'btn-outline btn-accent'}`}
+              className={`btn ${showSentShipments ? 'btn-accent' : 'btn-accent btn-outline'}`}
             >
               <Truck className="h-5 w-5" />
               Envíos Realizados
@@ -801,7 +801,7 @@ export default function MoveInventory() {
             {process.env.NODE_ENV === 'development' && (
               <button
                 onClick={createTestShipments}
-                className="btn btn-outline btn-warning btn-sm"
+                className="btn btn-warning btn-outline btn-sm"
                 title="Crear envíos de prueba (solo desarrollo)"
               >
                 🧪 Test Data
@@ -811,7 +811,7 @@ export default function MoveInventory() {
 
           {/* Vista de envíos pendientes */}
           {showPendingShipments && (
-            <div className="card bg-base-200 mb-6 shadow-xl">
+            <div className="card mb-6 bg-base-200 shadow-xl">
               <div className="card-body">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -830,7 +830,7 @@ export default function MoveInventory() {
                 {loadingShipments && (
                   <div className="flex items-center gap-3">
                     <l-pinwheel size="25" stroke="2.5" speed="0.9" color="#d97706"></l-pinwheel>
-                    <span className="text-warning font-medium">Cargando envíos pendientes...</span>
+                    <span className="font-medium text-warning">Cargando envíos pendientes...</span>
                   </div>
                 )}
 
@@ -967,7 +967,7 @@ export default function MoveInventory() {
 
           {/* Vista de envíos realizados */}
           {showSentShipments && (
-            <div className="card bg-base-200 mb-6 shadow-xl">
+            <div className="card mb-6 bg-base-200 shadow-xl">
               <div className="card-body">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -986,7 +986,7 @@ export default function MoveInventory() {
                 {loadingShipments && (
                   <div className="flex items-center gap-3">
                     <l-pinwheel size="25" stroke="2.5" speed="0.9" color="#d97706"></l-pinwheel>
-                    <span className="text-warning font-medium">Cargando envíos realizados...</span>
+                    <span className="font-medium text-warning">Cargando envíos realizados...</span>
                   </div>
                 )}
 
@@ -1165,11 +1165,11 @@ export default function MoveInventory() {
                                       {shipment.products.map((product, idx) => (
                                         <div
                                           key={idx}
-                                          className="bg-base-100 flex items-center justify-between rounded-lg p-3"
+                                          className="flex items-center justify-between rounded-lg bg-base-100 p-3"
                                         >
                                           <div className="flex items-center gap-3">
-                                            <div className="avatar placeholder">
-                                              <div className="bg-neutral text-neutral-content h-8 w-8 rounded text-xs">
+                                            <div className="placeholder avatar">
+                                              <div className="h-8 w-8 rounded bg-neutral text-xs text-neutral-content">
                                                 <span>{product.name.charAt(0)}</span>
                                               </div>
                                             </div>
@@ -1249,7 +1249,7 @@ export default function MoveInventory() {
                                         </div>
                                       ))}
                                     </div>
-                                    <div className="border-base-300 mt-3 flex justify-between border-t pt-3 text-sm">
+                                    <div className="mt-3 flex justify-between border-t border-base-300 pt-3 text-sm">
                                       <span>
                                         <strong>Total productos:</strong> {shipment.products.length}
                                       </span>
@@ -1316,7 +1316,7 @@ export default function MoveInventory() {
                           <input
                             type="text"
                             placeholder="Escanear o escribir código de barras..."
-                            className="input input-bordered flex-1"
+                            className="input-bordered input flex-1"
                             value={barcodeInput}
                             onChange={(e) => setBarcodeInput(e.target.value)}
                             onKeyDown={handleBarcodeInput}
@@ -1357,7 +1357,7 @@ export default function MoveInventory() {
                         <div className="flex gap-2">
                           <button
                             onClick={handleSelectAllProducts}
-                            className="btn btn-sm btn-outline"
+                            className="btn btn-outline btn-sm"
                           >
                             {selectedVariants.length === availableVariants.length &&
                             availableVariants.length > 0 ? (
@@ -1370,7 +1370,7 @@ export default function MoveInventory() {
                               ? 'Deseleccionar Todo'
                               : 'Seleccionar Todo'}
                           </button>
-                          <button onClick={resetSelection} className="btn btn-sm btn-ghost">
+                          <button onClick={resetSelection} className="btn btn-ghost btn-sm">
                             Reiniciar
                           </button>
                         </div>
@@ -1384,7 +1384,7 @@ export default function MoveInventory() {
                             speed="0.9"
                             color="#d97706"
                           ></l-pinwheel>
-                          <span className="text-warning font-medium">Cargando variantes...</span>
+                          <span className="font-medium text-warning">Cargando variantes...</span>
                         </div>
                       )}
 
@@ -1394,7 +1394,7 @@ export default function MoveInventory() {
                           <p>No hay variantes con stock en esta sucursal</p>
                           <button
                             onClick={loadAvailableVariants}
-                            className="btn btn-sm btn-primary mt-2"
+                            className="btn btn-primary btn-sm mt-2"
                           >
                             Recargar Variantes
                           </button>
@@ -1403,7 +1403,7 @@ export default function MoveInventory() {
 
                       {!loadingProducts && availableVariants.length > 0 && (
                         <div className="max-h-96 overflow-x-auto">
-                          <table className="table-sm table-pin-rows table">
+                          <table className="table table-pin-rows table-sm">
                             <thead>
                               <tr>
                                 <th>Acción</th>
@@ -1420,7 +1420,7 @@ export default function MoveInventory() {
                                 <tr key={variant.variant_id} className="hover">
                                   <td>
                                     <button
-                                      className="btn btn-xs btn-primary"
+                                      className="btn btn-primary btn-xs"
                                       onClick={() => addVariantFromList(variant)}
                                       disabled={selectedVariants.some(
                                         (v) => v.variant_id === variant.variant_id
@@ -1489,7 +1489,7 @@ export default function MoveInventory() {
 
                       {selectedVariants.length > 0 && (
                         <div className="max-h-96 overflow-x-auto">
-                          <table className="table-sm table-pin-rows table">
+                          <table className="table table-pin-rows table-sm">
                             <thead>
                               <tr>
                                 <th>Acción</th>
@@ -1505,7 +1505,7 @@ export default function MoveInventory() {
                                 <tr key={variant.variant_id} className="hover">
                                   <td>
                                     <button
-                                      className="btn btn-xs btn-error"
+                                      className="btn btn-error btn-xs"
                                       onClick={() => removeSelectedVariant(variant.variant_id)}
                                     >
                                       <Minus className="h-3 w-3" />
@@ -1542,7 +1542,7 @@ export default function MoveInventory() {
                                   <td>
                                     <input
                                       type="text"
-                                      className="input input-sm input-bordered w-20"
+                                      className="input-bordered input input-sm w-20"
                                       value={variant.move_quantity}
                                       onChange={(e) =>
                                         updateMoveQuantity(variant.variant_id, e.target.value)
@@ -1603,7 +1603,7 @@ export default function MoveInventory() {
                       <select
                         value={selectedDestination}
                         onChange={handleDestinationChange}
-                        className="select select-bordered w-full max-w-md"
+                        className="select-bordered select w-full max-w-md"
                         disabled={
                           storageList.filter((storage) => storage[0] != currentStorage?.id)
                             .length === 1
@@ -1635,7 +1635,7 @@ export default function MoveInventory() {
                     </div>
 
                     {selectedDestination && (
-                      <div className="bg-base-100 mb-4 rounded-lg p-4">
+                      <div className="mb-4 rounded-lg bg-base-100 p-4">
                         <h5 className="mb-2 font-semibold">Resumen del movimiento:</h5>
                         <p>
                           <strong>Desde:</strong> {currentStorage?.name}
@@ -1676,13 +1676,19 @@ export default function MoveInventory() {
 
       {/* Modal de productos del envío */}
       {showProductModal && selectedShipmentInfo && (
-        <div className="modal modal-open">
-          <div className="modal-box w-11/12 max-w-7xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+          onClick={closeProductModal}
+        >
+          <div
+            className="modal-box w-11/12 max-w-7xl bg-base-100 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="mb-4 text-lg font-bold">
               Productos del Envío #{selectedShipmentInfo.id}
             </h3>
 
-            <div className="bg-base-200 mb-4 rounded-lg p-3">
+            <div className="mb-4 rounded-lg bg-base-200 p-3">
               <div className="flex items-center justify-between">
                 <div>
                   <p>
@@ -1727,7 +1733,7 @@ export default function MoveInventory() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="table-zebra table">
+              <table className="table table-zebra">
                 <thead>
                   <tr>
                     <th>Producto</th>
@@ -1780,7 +1786,7 @@ export default function MoveInventory() {
               </table>
             </div>
 
-            <div className="bg-base-200 mt-4 rounded-lg p-3">
+            <div className="mt-4 rounded-lg bg-base-200 p-3">
               <div className="flex justify-between text-sm">
                 <span>
                   <strong>Total productos:</strong> {selectedShipmentProducts.length}

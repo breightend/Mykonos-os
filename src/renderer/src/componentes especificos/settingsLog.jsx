@@ -16,11 +16,13 @@ export default function Settings({ isMenuOpen = true }) {
   useEffect(() => {
     setLocalSettings(settings)
   }, [settings])
+
   const handleOutsideClick = (e) => {
     if (e.target === dialogRef.current) {
       dialogRef.current.close()
     }
   }
+
   const handleSettingsChange = (key, value) => {
     const newSettings = { ...localSettings, [key]: value }
     setLocalSettings(newSettings)

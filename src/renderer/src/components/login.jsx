@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye } from 'lucide-react'
+import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye, LogIn } from 'lucide-react'
 import Settings from '../componentes especificos/settings'
 import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
 import { fetchSucursales } from '../services/sucursales/sucursalesService'
+import '../assets/login-only.css'
 
 export default function Login() {
   const [, setLocation] = useLocation()
@@ -34,16 +35,6 @@ export default function Login() {
     }
     loadStorages()
   }, [])
-
-  const handleShowPassword = () => {
-    setShowPassword((prev) => !prev)
-  }
-
-  // Efecto para monitorear cambios en el estado storages
-  useEffect(() => {
-    console.log('Estado storages actualizado:', storages)
-    console.log('Cantidad de sucursales:', storages?.length || 0)
-  }, [storages])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -99,91 +90,90 @@ export default function Login() {
   }
 
   return (
-    <div className="image-full relative z-0 w-full bg-cover bg-center">
-      <figure className="absolute inset-0">
-        <img
-          src="./src/images/sunset2.jpg"
-          alt="bgImage"
-          className="h-full w-full rounded-none dark:hidden"
-        />
+    <div className="login-page">
+      {/* Background */}
+      <div className="login-background">
+        <img src="./src/images/sunset2.jpg" alt="Background" className="dark:hidden" />
         <img
           src="./src/images/night-wallpaper.jpg"
-          alt="bgImage"
-          className="hidden h-full w-full rounded-none dark:block"
+          alt="Background"
+          className="hidden dark:block"
         />
-      </figure>
+      </div>
 
-      <div className="relative z-20 flex min-h-screen items-center justify-center">
-        <div className="card w-[32rem] flex-row rounded-lg bg-gray-800 bg-opacity-50 p-2 shadow-xl glass">
-          <Settings />
-          <figure className="flex items-center justify-center px-4">
-            <div className="avatar">
-              <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-gray-500">
-                <img src="./src/images/user_icon.webp" alt="User Icon" />
-              </div>
+      {/* Settings */}
+      <div className="login-settings">
+        <Settings />
+      </div>
+
+      {/* Login Card */}
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-avatar">
+            <img src="./src/images/user_icon.webp" alt="User" />
+          </div>
+          <h1 className="login-title">Iniciar Sesión</h1>
+        </div>
+
+        <div className="login-form">
+          {/* Errores */}
+          {(error || formError) && (
+            <div className="login-alert login-alert-error">
+              <AlertCircle className="h-4 w-4" />
+              {error || formError}
             </div>
-          </figure>
+          )}
 
-          <div className="card-body flex-1">
-            <h2 className="mb-2 text-center text-2xl font-semibold text-white">Iniciar Sesión</h2>
+          <form onSubmit={handleSubmit}>
+            {/* Usuario */}
+            <div className="login-input-group">
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                placeholder="Usuario"
+                className="login-input"
+                required
+                minLength="3"
+                maxLength="30"
+                pattern="[A-Za-z][A-Za-z0-9\-]*"
+                disabled={isSubmitting || loading}
+              />
+              <UserRound className="login-input-icon" />
+            </div>
 
-            {/* Mostrar errores */}
-            {(error || formError) && (
-              <div className="alert alert-error mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm">{error || formError}</span>
-              </div>
-            )}
+            {/* Contraseña */}
+            <div className="login-input-group">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Contraseña"
+                className="login-input"
+                required
+                minLength="8"
+                disabled={isSubmitting || loading}
+              />
+              <KeyRound className="login-input-icon" />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Campo Usuario */}
-              <label className="validator input">
-                <UserRound className="opacity-50" />
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="w-full text-base-content"
-                  required
-                  placeholder="Usuario"
-                  pattern="[A-Za-z][A-Za-z0-9\-]*"
-                  minLength="3"
-                  maxLength="30"
-                  disabled={isSubmitting || loading}
-                />
-              </label>
-
-              {/* Campo Contraseña */}
-              <label className="validator input relative">
-                <KeyRound className="opacity-50" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Contraseña"
-                  minLength="8"
-                  className="w-full text-base-content"
-                  disabled={isSubmitting || loading}
-                />
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 transform text-gray-500 hover:text-gray-700"
-                  onClick={handleShowPassword}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </label>
-
-              {/* Selector de Sucursal - Solo mostrar si hay sucursales disponibles */}
-              {storages && storages.length > 0 ? (
+            {/* Sucursal */}
+            {storages && storages.length > 0 ? (
+              <div className="login-input-group">
                 <select
                   name="storageId"
                   value={formData.storageId}
                   onChange={handleInputChange}
-                  className="select w-full"
+                  className="login-select"
                   required
                   disabled={isSubmitting || loading}
                 >
@@ -196,39 +186,30 @@ export default function Login() {
                     </option>
                   ))}
                 </select>
-              ) : (
-                <div className="alert alert-warning">
-                  <span className="text-sm">
-                    ⚠️ No hay sucursales configuradas. Solo administradores pueden acceder.
-                  </span>
-                </div>
-              )}
-
-              {/* Botón de envío */}
-              <div className="card-actions flex justify-end">
-                <button
-                  type="submit"
-                  className="btn btn-primary text-black"
-                  disabled={isSubmitting || loading}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Iniciando...
-                    </>
-                  ) : (
-                    'Iniciar Sesión'
-                  )}
-                </button>
               </div>
-            </form>
-          </div>
+            ) : (
+              <div className="login-alert login-alert-warning">
+                ⚠️ No hay sucursales configuradas. Solo administradores pueden acceder.
+              </div>
+            )}
+
+            {/* Botón */}
+            <button type="submit" className="login-button" disabled={isSubmitting || loading}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Iniciando...
+                </>
+              ) : (
+                'Iniciar Sesión'
+              )}
+            </button>
+          </form>
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 p-4">
-        <p className="text-6xl font-bold text-black dark:text-white">Mykonos-OS</p>
-      </div>
+      {/* Logo */}
+      <div className="login-logo">Mykonos-OS</div>
     </div>
   )
 }

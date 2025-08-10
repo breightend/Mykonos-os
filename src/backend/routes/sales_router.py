@@ -487,6 +487,46 @@ def create_sale():
                 else data.get("total", 0)
             )
 
+            # Procesar información del cliente
+            customer_data = data.get("customer")
+            customer_id = None
+            customer_notes = ""
+
+            print(f"🔍 DEBUG sales: Customer data recibido: {customer_data}")
+
+            # Verificar también si hay cliente en los pagos de cuenta corriente
+            cuenta_corriente_customer = None
+            for payment in data.get("payments", []):
+                if payment.get("method") == "cuenta_corriente" and payment.get(
+                    "costumer"
+                ):
+                    cuenta_corriente_customer = payment.get("costumer", {}).get(
+                        "cliente"
+                    )
+                    print(
+                        f"🔍 DEBUG sales: Cliente de cuenta corriente encontrado: {cuenta_corriente_customer}"
+                    )
+                    break
+
+            if customer_data and customer_data.get("id"):
+                customer_id = customer_data.get("id")
+                customer_notes = f"Cliente: {customer_data.get('name', 'N/A')} (ID: {customer_data.get('id')}, DNI: {customer_data.get('dni', 'N/A')})"
+                print(
+                    f"📋 DEBUG sales: Cliente procesado desde customer - ID: {customer_id}, Nombre: {customer_data.get('name')}"
+                )
+            elif cuenta_corriente_customer and cuenta_corriente_customer.get("id"):
+                customer_id = cuenta_corriente_customer.get("id")
+                customer_notes = f"Cliente (Cuenta Corriente): {cuenta_corriente_customer.get('name', cuenta_corriente_customer.get('entity_name', 'N/A'))} (ID: {cuenta_corriente_customer.get('id')}, DNI: {cuenta_corriente_customer.get('dni', cuenta_corriente_customer.get('cuit', 'N/A'))})"
+                print(
+                    f"📋 DEBUG sales: Cliente procesado desde cuenta corriente - ID: {customer_id}, Nombre: {cuenta_corriente_customer.get('name', cuenta_corriente_customer.get('entity_name'))}"
+                )
+            else:
+                print("📋 DEBUG sales: Venta sin cliente (anónima)")
+                print(f"📋 DEBUG sales: customer_data completo: {customer_data}")
+                print(
+                    f"📋 DEBUG sales: cuenta_corriente_customer completo: {cuenta_corriente_customer}"
+                )
+
             # Formatear métodos de pago
             payment_methods = []
             payment_references = []
@@ -503,6 +543,10 @@ def create_sale():
                 exchange_info = exchange_data
                 notes = f"Venta con intercambio - Productos: ${exchange_info.get('totalProductsValue', 0):.2f}, Devoluciones: ${exchange_info.get('totalReturnedValue', 0):.2f}"
 
+            # Agregar información del cliente a las notas si existe
+            if customer_notes:
+                notes = f"{customer_notes}. {notes}" if notes else customer_notes
+
             # 2. Crear conexión manual para manejar transacción
             conn = db.create_connection()
             cursor = conn.cursor()
@@ -518,7 +562,7 @@ def create_sale():
             """
 
             sales_params = (
-                None,  # customer_id (NULL por ahora)
+                customer_id,  # customer_id del cliente procesado
                 employee_id,
                 cashier_user_id,
                 storage_id,
@@ -1093,9 +1137,21 @@ def get_sales_stats():
             where_conditions.append("DATE(s.sale_date) <= %s")
             params.append(end_date)
 
+        print(
+            f"📅 DEBUG Stats: storage_id={storage_id}, start_date={start_date}, end_date={end_date}"
+        )
+        print(f"📅 DEBUG Stats: where_conditions={where_conditions}")
+        print(f"📅 DEBUG Stats: params={params}")
+
         where_clause = (
             f"WHERE {' AND '.join(where_conditions)}" if where_conditions else ""
         )
+
+        # Filter for completed/successful sales - Use exact status from database
+        if where_conditions:
+            where_clause += " AND s.status = 'Completed'"
+        else:
+            where_clause = "WHERE s.status = 'Completed'"
 
         # Query para obtener estadísticas generales
         stats_query = f"""
@@ -1113,8 +1169,10 @@ def get_sales_stats():
             GROUP BY sale_id
         ) sd_positive ON s.id = sd_positive.sale_id
         {where_clause}
-        AND s.status = 'Completada'
         """
+
+        print(f"🔍 DEBUG Stats query: {stats_query}")
+        print(f"🔍 DEBUG Stats params: {params}")
 
         result = db.execute_query(stats_query, params)
 

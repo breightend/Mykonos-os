@@ -17,6 +17,33 @@ export default function FormasPago() {
   const [metodoPagoInicial, setMetodoPagoInicial] = useState('efectivo')
   const { saleData, setSaleData } = useSellContext()
 
+  // Función helper para validar entrada numérica
+  const handleNumericInput = (value) => {
+    const cleanValue = value.replace(/[^0-9.]/g, '')
+    return cleanValue === '' || /^\d*\.?\d*$/.test(cleanValue) ? cleanValue : null
+  }
+
+  // Función helper para manejar keyDown en inputs numéricos
+  const handleNumericKeyDown = (e) => {
+    // Permitir: backspace, delete, tab, escape, enter, punto decimal
+    if (
+      [46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
+      // Permitir: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+      (e.keyCode === 65 && e.ctrlKey === true) ||
+      (e.keyCode === 67 && e.ctrlKey === true) ||
+      (e.keyCode === 86 && e.ctrlKey === true) ||
+      (e.keyCode === 88 && e.ctrlKey === true) ||
+      // Permitir: home, end, left, right
+      (e.keyCode >= 35 && e.keyCode <= 39)
+    ) {
+      return
+    }
+    // Prevenir si no es un número
+    if ((e.shiftKey || e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+      e.preventDefault()
+    }
+  }
+
   // Helper function to get payment method display name
   const getPaymentMethodName = (method) => {
     const methods = {
@@ -30,17 +57,17 @@ export default function FormasPago() {
   }
 
   const metodos = [
-    { id: 'contado', label: 'Contado', icon: <HandCoins className="text-primary h-10 w-10" /> },
+    { id: 'contado', label: 'Contado', icon: <HandCoins className="h-10 w-10 text-primary" /> },
     {
       id: 'transferencia',
       label: 'Transferencia',
-      icon: <Landmark className="text-primary h-10 w-10" />
+      icon: <Landmark className="h-10 w-10 text-primary" />
     },
-    { id: 'tarjeta', label: 'Tarjeta', icon: <CreditCard className="text-primary h-10 w-10" /> },
+    { id: 'tarjeta', label: 'Tarjeta', icon: <CreditCard className="h-10 w-10 text-primary" /> },
     {
       id: 'cuenta_corriente',
       label: 'Cuenta Corriente',
-      icon: <WalletCards className="text-primary h-10 w-10" />
+      icon: <WalletCards className="h-10 w-10 text-primary" />
     }
   ]
 
@@ -127,12 +154,18 @@ export default function FormasPago() {
         // Actualizar el contexto de venta
         setSaleData((prev) => ({
           ...prev,
-          payments: paymentData
+          payments: paymentData,
+          customer: {
+            id: clienteCuentaCorriente.id,
+            name: clienteCuentaCorriente.name,
+            dni: clienteCuentaCorriente.dni,
+            type: 'cuenta_corriente'
+          }
         }))
 
         const mensaje =
           pagoInicial > 0
-            ? `Pago agregado exitosamente!\n• Total: $${totalVenta}\n• Pago inicial (${metodoPagoInicial}): $${pagoInicial}\n• Deuda agregada: $${deudaReal}\n• Nuevo saldo del cliente: $${result.new_balance}`
+            ? `Pago agregado exitosamente!\n• Total de la venta: $${totalVenta}\n• Pago inicial (${getPaymentMethodName(metodoPagoInicial)}): $${pagoInicial}\n• Deuda agregada a cuenta corriente: $${deudaReal}\n• Nuevo saldo del cliente: $${result.new_balance}`
             : `Pago agregado exitosamente!\n• Total agregado a cuenta corriente: $${totalVenta}\n• Nuevo saldo del cliente: $${result.new_balance}`
 
         alert(mensaje)
@@ -156,6 +189,17 @@ export default function FormasPago() {
       !metodosSeleccionados.some((m) => m.id === 'cuenta_corriente') || clienteCuentaCorriente
 
     if (metodosSeleccionados.length > 0 && cuentaCorrienteValida) {
+      // Determinar el cliente para la venta
+      let customerForSale = null
+      if (metodosSeleccionados.some((m) => m.id === 'cuenta_corriente') && clienteCuentaCorriente) {
+        customerForSale = {
+          id: clienteCuentaCorriente.id,
+          name: clienteCuentaCorriente.name,
+          dni: clienteCuentaCorriente.dni,
+          type: 'cuenta_corriente'
+        }
+      }
+
       // Guardar en el contexto
       setSaleData((prev) => ({
         ...prev,
@@ -163,7 +207,8 @@ export default function FormasPago() {
           method: m.id,
           amount: m.monto,
           costumer: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
-        }))
+        })),
+        customer: customerForSale
       }))
 
       setLocation('/confirmacionDatosDeCompra')
@@ -173,17 +218,17 @@ export default function FormasPago() {
   const totalVenta = saleData.exchange?.hasExchange ? saleData.exchange.finalAmount : saleData.total
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="formas-pago mx-auto max-w-4xl p-6">
       {/* Encabezado */}
       <div className="mb-8 flex items-center gap-3">
         <button
           type="button"
-          className="dark:bg-base-300 dark:hover:bg-base-100 rounded-full bg-gray-100 p-2 transition hover:scale-105 hover:bg-gray-200"
+          className="back-button rounded-full bg-gray-100 p-2 transition hover:scale-105 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
           onClick={() => setLocation('/ventas')}
         >
-          <ArrowLeft className="h-6 w-6" />
+          <ArrowLeft className="back-button-icon h-6 w-6 text-gray-700 dark:text-gray-200" />
         </button>
-        <h1 className="text-3xl font-bold">Formas de Pago</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Formas de Pago</h1>
       </div>
 
       {/* Opciones de pago - CORREGIDO: pasar el objeto completo */}
@@ -192,14 +237,12 @@ export default function FormasPago() {
           <button
             key={metodo.id}
             onClick={() => toggleMetodo(metodo)}
-            className={`flex flex-col items-center gap-2 rounded-2xl p-6 shadow-md transition hover:scale-105 hover:shadow-lg ${
-              metodosSeleccionados.some((m) => m.id === metodo.id)
-                ? 'border-4 border-green-500 bg-green-50 dark:bg-green-950'
-                : 'dark:bg-base-300 bg-white'
+            className={`formas-pago-button flex flex-col items-center gap-2 rounded-2xl p-6 shadow-md transition hover:scale-105 hover:shadow-lg ${
+              metodosSeleccionados.some((m) => m.id === metodo.id) ? 'selected' : ''
             }`}
           >
             {metodo.icon}
-            <span className="text-sm font-semibold text-gray-700 dark:text-white">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
               {metodo.label}
             </span>
           </button>
@@ -246,11 +289,13 @@ export default function FormasPago() {
                     <span className="font-medium text-gray-600 dark:text-gray-300">
                       Total de la venta:
                     </span>
-                    <p className="text-lg font-bold text-gray-800 dark:text-white">${totalVenta}</p>
+                    <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                      ${totalVenta}
+                    </p>
                   </div>
                   <div>
                     <span className="font-medium text-gray-600 dark:text-gray-300">Cliente:</span>
-                    <p className="font-medium text-gray-800 dark:text-white">
+                    <p className="font-medium text-gray-800 dark:text-gray-200">
                       {clienteCuentaCorriente?.name || 'Seleccione un cliente'}
                     </p>
                   </div>
@@ -277,7 +322,7 @@ export default function FormasPago() {
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    {mostrarPagoInicial ? 'Sí, hay pago inicial' : 'No, todo a cuenta corriente'}
+                    {mostrarPagoInicial ? 'No, todo a cuenta corriente' : 'Sí, hay pago inicial'}
                   </button>
                 </div>
 
@@ -291,7 +336,7 @@ export default function FormasPago() {
                       <select
                         value={metodoPagoInicial}
                         onChange={(e) => setMetodoPagoInicial(e.target.value)}
-                        className="w-full rounded-lg border border-green-300 p-2 focus:border-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                        className="w-full rounded-lg border border-green-300 p-2 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                       >
                         <option value="efectivo">💵 Efectivo</option>
                         <option value="transferencia">🏦 Transferencia</option>
@@ -309,14 +354,17 @@ export default function FormasPago() {
                         $
                       </span>
                       <input
-                        type="number"
+                        type="text"
                         value={pagoInicial}
-                        onChange={(e) => setPagoInicial(parseFloat(e.target.value) || 0)}
-                        className="flex-1 rounded-lg border border-green-300 p-3 text-center text-lg font-bold focus:border-green-500 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                        onChange={(e) => {
+                          const cleanValue = handleNumericInput(e.target.value)
+                          if (cleanValue !== null) {
+                            setPagoInicial(parseFloat(cleanValue) || 0)
+                          }
+                        }}
+                        onKeyDown={handleNumericKeyDown}
+                        className="flex-1 rounded-lg border border-green-300 p-3 text-center text-lg font-bold focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                         placeholder="0.00"
-                        min="0"
-                        max={totalVenta}
-                        step="0.01"
                       />
                     </div>
                     <div className="mt-2 text-sm text-green-700 dark:text-green-300">
@@ -328,13 +376,15 @@ export default function FormasPago() {
 
               {/* Resumen del pago */}
               <div className="mb-4 rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
-                <h4 className="mb-3 font-medium text-gray-800 dark:text-white">
+                <h4 className="mb-3 font-medium text-gray-800 dark:text-gray-200">
                   Resumen del pago:
                 </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-300">Total de la venta:</span>
-                    <span className="font-bold text-gray-800 dark:text-white">${totalVenta}</span>
+                    <span className="font-bold text-gray-800 dark:text-gray-200">
+                      ${totalVenta}
+                    </span>
                   </div>
                   {mostrarPagoInicial && pagoInicial > 0 && (
                     <>
@@ -386,36 +436,44 @@ export default function FormasPago() {
                   {metodosSeleccionados.map((metodo, index) => (
                     <div
                       key={index}
-                      className="dark:bg-base-200 mb-2 flex w-4/12 items-center justify-between rounded-xl bg-white p-2 text-gray-700 shadow-sm transition-shadow duration-300 hover:shadow-md dark:text-white"
+                      className="payment-container mb-2 flex w-4/12 items-center justify-between rounded-xl p-2 shadow-sm transition-shadow duration-300 hover:shadow-md"
                     >
                       <label className="text-sm font-medium">{metodo.label}: $</label>
                       <input
-                        type="number"
-                        className="w-5/12 rounded-lg border border-gray-300 p-2 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        onChange={(e) => handlePaymentAmountChange(metodo.id, e.target.value)}
+                        type="text"
+                        className="payment-input w-5/12 rounded-lg p-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(e) => {
+                          const cleanValue = handleNumericInput(e.target.value)
+                          if (cleanValue !== null) {
+                            handlePaymentAmountChange(metodo.id, cleanValue)
+                          }
+                        }}
+                        onKeyDown={handleNumericKeyDown}
                         value={metodo.monto || ''}
-                        min="0"
-                        step="0.01"
+                        placeholder="0.00"
                       />
                     </div>
                   ))}
                 </div>
               ) : (
                 metodosSeleccionados.length === 1 && (
-                  <div className="dark:bg-base-200 mb-2 flex w-4/12 items-center justify-between rounded-xl bg-white p-2 text-gray-700 shadow-sm transition-shadow duration-300 hover:shadow-md dark:text-white">
+                  <div className="payment-container mb-2 flex w-4/12 items-center justify-between rounded-xl p-2 shadow-sm transition-shadow duration-300 hover:shadow-md">
                     <label className="text-sm font-medium">
                       {metodosSeleccionados[0].label}: $
                     </label>
                     <input
-                      type="number"
-                      className="w-5/12 rounded-lg border border-gray-300 p-2 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      onChange={(e) =>
-                        handlePaymentAmountChange(metodosSeleccionados[0].id, e.target.value)
-                      }
+                      type="text"
+                      className="payment-input w-5/12 rounded-lg p-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => {
+                        const cleanValue = handleNumericInput(e.target.value)
+                        if (cleanValue !== null) {
+                          handlePaymentAmountChange(metodosSeleccionados[0].id, cleanValue)
+                        }
+                      }}
+                      onKeyDown={handleNumericKeyDown}
                       value={metodosSeleccionados[0].monto || ''}
                       defaultValue={totalVenta}
-                      min="0"
-                      step="0.01"
+                      placeholder="0.00"
                     />
                   </div>
                 )
