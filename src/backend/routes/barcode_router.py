@@ -1,8 +1,10 @@
 from flask import Blueprint, jsonify, request
 from services.barcode_service import BarcodeService
+from barcode_generator import BarcodeGenerator
 
 barcode_router = Blueprint("barcode", __name__)
 barcode_service = BarcodeService()
+barcode_generator = BarcodeGenerator()
 
 
 @barcode_router.route("/generate", methods=["POST"])
@@ -174,3 +176,108 @@ def test_barcode():
 
     except Exception as e:
         return jsonify({"error": f"Error en test: {str(e)}"}), 500
+
+
+@barcode_router.route("/print", methods=["POST"])
+def print_barcodes():
+    """
+    Endpoint para generar e imprimir códigos de barras con texto personalizado
+    Body: {
+        "variants": [
+            {
+                "barcode": "1234567890123",
+                "product_info": {
+                    "name": "Nombre del Producto",
+                    "brand": "Marca",
+                    "size_name": "M",
+                    "color_name": "Rojo",
+                    "price": 25.99
+                },
+                "quantity": 2
+            }
+        ],
+        "print_options": {
+            "includeProductName": true,
+            "includeSize": true,
+            "includeColor": true,
+            "includePrice": true,
+            "includeCode": true
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'variants' not in data:
+            return jsonify({'error': 'variants es requerido'}), 400
+        
+        variants = data['variants']
+        print_options = data.get('print_options', {})
+        
+        if not isinstance(variants, list) or len(variants) == 0:
+            return jsonify({'error': 'variants debe ser una lista no vacía'}), 400
+        
+        all_generated_files = []
+        total_printed = 0
+        
+        # Generar códigos de barras para cada variante
+        for variant in variants:
+            barcode_data = variant.get('barcode')
+            product_info = variant.get('product_info', {})
+            quantity = variant.get('quantity', 1)
+            
+            if not barcode_data:
+                continue
+                
+            # Validar que el código de barras tenga el formato correcto para EAN13
+            if len(barcode_data) < 13:
+                # Rellenar con ceros a la izquierda hasta 13 dígitos
+                barcode_data = barcode_data.zfill(13)
+            elif len(barcode_data) > 13:
+                # Truncar a 13 dígitos
+                barcode_data = barcode_data[:13]
+            
+            # Generar imágenes con texto
+            generated_files = barcode_generator.generate_barcode_with_text(
+                barcode_data=barcode_data,
+                product_info=product_info,
+                print_options=print_options,
+                quantity=quantity
+            )
+            
+            all_generated_files.extend(generated_files)
+            total_printed += len(generated_files)
+        
+        if not all_generated_files:
+            return jsonify({'error': 'No se pudieron generar códigos de barras'}), 400
+        
+        # Imprimir todos los códigos generados
+        print_result = barcode_generator.print_barcodes(all_generated_files)
+        
+        # Limpiar archivos temporales después de un breve retraso
+        # (en una implementación real, podrías usar una tarea en segundo plano)
+        import threading
+        import time
+        
+        def cleanup_after_delay():
+            time.sleep(10)  # Esperar 10 segundos antes de limpiar
+            barcode_generator.cleanup_files(all_generated_files)
+        
+        cleanup_thread = threading.Thread(target=cleanup_after_delay)
+        cleanup_thread.daemon = True
+        cleanup_thread.start()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Códigos de barras enviados a impresión',
+            'total_variants': len(variants),
+            'total_printed': total_printed,
+            'print_result': print_result
+        })
+        
+    except Exception as e:
+        # Limpiar archivos en caso de error
+        if 'all_generated_files' in locals():
+            barcode_generator.cleanup_files(all_generated_files)
+            
+        return jsonify({'error': f'Error al imprimir códigos de barras: {str(e)}'}), 500

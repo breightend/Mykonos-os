@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Printer, X, Package, Palette, Tag, Ruler, DollarSign } from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
+import { barcodePrintService } from '../../services/barcodePrintService'
 import { pinwheel } from 'ldrs'
+import toast from 'react-hot-toast'
 import '../../assets/modal-improvements.css'
 
 pinwheel.register()
@@ -181,106 +183,198 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
 
   // Función para imprimir solo la vista previa
   const handlePrintPreview = () => {
-    if (!barcodePreview) {
-      alert('No hay vista previa para imprimir')
+    if (!barcodePreview?.png_data) {
+      alert('No hay vista previa PNG para imprimir')
       return
     }
 
-    // Crear una ventana de impresión con el SVG
-    const printWindow = window.open('', '_blank')
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Vista Previa - ${barcodePreview.variant_info.product_name}</title>
-          <style>
-            body {
-              margin: 0;
-              padding: 20px;
-              font-family: Arial, sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-              background: white;
-            }
-            .barcode-container {
-              text-align: center;
-              border: 2px dashed #ccc;
-              padding: 20px;
-              border-radius: 8px;
-              background: white;
-            }
-            .preview-title {
-              margin-bottom: 15px;
-              color: #666;
-              font-size: 12px;
-            }
-            @media print {
-              body { margin: 0; padding: 10px; }
-              .preview-title { display: none; }
-              .barcode-container { border: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="barcode-container">
-            <div class="preview-title">Vista Previa del Código de Barras</div>
-            ${barcodePreview.svg_content}
-          </div>
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
+    // Crear canvas para imprimir la imagen PNG
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    
+    img.onload = function() {
+      // Configurar canvas con el tamaño de la imagen
+      canvas.width = img.width
+      canvas.height = img.height
+      
+      // Dibujar la imagen en el canvas
+      ctx.drawImage(img, 0, 0)
+      
+      // Crear contenido HTML para impresión
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Vista Previa - ${barcodePreview.variant_info.product_name}</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: white;
               }
-            }
-          </script>
-        </body>
-      </html>
-    `
+              .barcode-container {
+                text-align: center;
+                border: 2px dashed #ccc;
+                padding: 20px;
+                border-radius: 8px;
+                background: white;
+              }
+              .preview-title {
+                margin-bottom: 15px;
+                color: #666;
+                font-size: 12px;
+              }
+              @media print {
+                body { margin: 0; padding: 10px; }
+                .preview-title { display: none; }
+                .barcode-container { border: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="barcode-container">
+              <div class="preview-title">Vista Previa del Código de Barras</div>
+              <img src="${canvas.toDataURL('image/png')}" alt="Código de barras" style="max-width: 100%; height: auto;"/>
+            </div>
+          </body>
+        </html>
+      `
 
-    printWindow.document.write(printContent)
-    printWindow.document.close()
+      // Crear iframe oculto para imprimir
+      const iframe = document.createElement('iframe')
+      iframe.style.position = 'absolute'
+      iframe.style.width = '0px'
+      iframe.style.height = '0px'
+      iframe.style.border = 'none'
+      iframe.style.visibility = 'hidden'
+      document.body.appendChild(iframe)
+
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
+        iframeDoc.open()
+        iframeDoc.write(printContent)
+        iframeDoc.close()
+
+        // Esperar un momento para que cargue el contenido
+        setTimeout(() => {
+          iframe.contentWindow.focus()
+          iframe.contentWindow.print()
+          
+          // Limpiar el iframe después de imprimir
+          setTimeout(() => {
+            if (iframe.parentNode) {
+              document.body.removeChild(iframe)
+            }
+          }, 1000)
+        }, 500)
+
+      } catch (error) {
+        console.error('Error al preparar la impresión:', error)
+        alert('Error al preparar la impresión. Intenta nuevamente.')
+        if (iframe.parentNode) {
+          document.body.removeChild(iframe)
+        }
+      }
+    }
+    
+    img.onerror = function() {
+      alert('Error al cargar la imagen PNG para imprimir')
+    }
+    
+    // Cargar la imagen base64
+    img.src = `data:image/png;base64,${barcodePreview.png_data}`
+  }
+
+  // Función alternativa para descargar la vista previa como PNG
+  const handleDownloadPreview = () => {
+    if (!barcodePreview?.png_data) {
+      alert('No hay vista previa PNG para descargar')
+      return
+    }
+
+    try {
+      // Crear blob de la imagen PNG
+      const byteCharacters = atob(barcodePreview.png_data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: 'image/png' })
+      
+      // Crear enlace de descarga
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `codigo-barras-${barcodePreview.variant_info.product_name.replace(/[^a-zA-Z0-9]/g, '-')}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      toast.success('Imagen PNG descargada correctamente')
+    } catch (error) {
+      console.error('Error al descargar PNG:', error)
+      toast.error('Error al descargar la imagen PNG')
+    }
   }
 
   // Función para imprimir códigos de barras
   const handlePrintBarcodes = async () => {
     try {
+      setLoading(true)
+      
+      // Preparar variantes seleccionadas con sus cantidades
       const selectedVariants = Object.entries(quantities)
         .filter(([, quantity]) => quantity > 0)
-        .map(([variantId, quantity]) => ({
-          variantId: parseInt(variantId),
-          quantity: quantity
-        }))
+        .map(([variantId, quantity]) => {
+          const variant = variants.find(v => v.id.toString() === variantId)
+          return {
+            variant: variant,
+            quantity: quantity
+          }
+        })
 
       if (selectedVariants.length === 0) {
-        alert('Por favor selecciona al menos una variante para imprimir')
+        toast.error('Por favor selecciona al menos una variante para imprimir')
         return
       }
 
-      const printData = {
-        productId: productId,
-        variants: selectedVariants,
-        options: printOptions
-      }
+      // Mostrar mensaje de progreso
+      toast.loading('Generando códigos de barras...', { duration: 2000 })
 
-      console.log('🖨️ Datos para imprimir:', printData)
+      // Usar el servicio de impresión de códigos de barras
+      const result = await barcodePrintService.processPrintRequest(
+        selectedVariants,
+        product,
+        printOptions
+      )
 
-      // Llamar al servicio de impresión real
-      const response = await inventoryService.printBarcodes(printData)
-
-      if (response.status === 'success') {
-        alert(`✅ ${response.message}`)
-        console.log('📊 Detalles de impresión:', response.data)
+      if (result.success) {
+        toast.success(result.message, { duration: 4000 })
+        console.log('📊 Impresión exitosa:', result)
+        
+        // Cerrar el modal después de una impresión exitosa
+        setTimeout(() => {
+          onClose()
+        }, 1000)
+        
       } else {
-        alert(`❌ Error: ${response.message}`)
+        toast.error(result.message, { duration: 4000 })
+        console.error('❌ Error en impresión:', result.message)
       }
 
-      onClose()
     } catch (err) {
       console.error('Error imprimiendo códigos:', err)
-      alert('❌ Error al imprimir códigos de barras')
+      toast.error('Error inesperado al imprimir códigos de barras', { duration: 4000 })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -496,7 +590,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                               Debug: Código {barcodePreview.barcode_code}
                             </div>
 
-                            {/* SVG del código de barras real */}
+                            {/* PNG del código de barras real */}
                             <div
                               className="mx-auto mb-2 rounded border-2 border-dashed border-gray-200 bg-white p-2"
                               style={{
@@ -504,13 +598,15 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                                 overflow: 'hidden'
                               }}
                             >
-                              {barcodePreview.svg_content ? (
-                                <div
-                                  dangerouslySetInnerHTML={{ __html: barcodePreview.svg_content }}
-                                  style={{ width: '100%' }}
+                              {barcodePreview.png_data ? (
+                                <img 
+                                  src={`data:image/png;base64,${barcodePreview.png_data}`}
+                                  alt="Código de barras"
+                                  style={{ width: '100%', height: 'auto' }}
+                                  className="mx-auto"
                                 />
                               ) : (
-                                <div className="text-xs text-red-500">No se pudo cargar el SVG</div>
+                                <div className="text-xs text-red-500">No se pudo cargar la imagen PNG</div>
                               )}
                             </div>
 
@@ -537,19 +633,32 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                               <details>
                                 <summary className="cursor-pointer">Ver datos debug</summary>
                                 <pre className="mt-1 overflow-x-auto rounded bg-gray-100 p-2 text-left text-xs">
-                                  {JSON.stringify(barcodePreview, null, 2)}
+                                  {JSON.stringify({
+                                    ...barcodePreview,
+                                    png_data: barcodePreview.png_data ? `[Base64 PNG: ${barcodePreview.png_data.length} chars]` : null
+                                  }, null, 2)}
                                 </pre>
                               </details>
                             </div>
 
-                            {/* Botón para imprimir solo esta vista previa */}
-                            <button
-                              onClick={handlePrintPreview}
-                              className="btn btn-primary btn-outline btn-xs mt-3"
-                              disabled={loadingPreview}
-                            >
-                              🖨️ Imprimir esta vista previa
-                            </button>
+                            {/* Botones para imprimir y descargar vista previa */}
+                            <div className="mt-3 flex gap-2 justify-center">
+                              <button
+                                onClick={handlePrintPreview}
+                                className="btn btn-primary btn-outline btn-xs"
+                                disabled={loadingPreview}
+                              >
+                                🖨️ Imprimir
+                              </button>
+                              <button
+                                onClick={handleDownloadPreview}
+                                className="btn btn-secondary btn-outline btn-xs"
+                                disabled={loadingPreview}
+                                title="Descargar como PNG para imprimir después"
+                              >
+                                📥 Descargar PNG
+                              </button>
+                            </div>
                           </div>
                         ) : previewVariant ? (
                           <div className="text-center">

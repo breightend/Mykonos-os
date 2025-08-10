@@ -349,14 +349,14 @@ export const inventoryService = {
     },
 
     /**
-     * Genera un código de barras SVG para una variante específica
+     * Genera vista previa del código de barras en formato PNG
      * @param {number} variantId - ID de la variante
      * @param {Object} options - Opciones de texto {includeProductName, includeSize, includeColor, includePrice, includeCode}
-     * @returns {Promise} Respuesta con el SVG del código de barras
+     * @returns {Promise} Respuesta con el PNG base64 del código de barras
      */
     async generateBarcodePreview(variantId, options = {}) {
         try {
-            const response = await axios.post(`${API_URL}/generate-barcode-svg/${variantId}`, {
+            const response = await axios.post(`${API_URL}/generate-barcode-preview/${variantId}`, {
                 options: options
             })
             return response.data
