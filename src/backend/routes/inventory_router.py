@@ -2598,10 +2598,19 @@ def get_product_detail(product_id):
 def get_product_variants(product_id):
     """
     Obtiene todas las variantes (talle + color) de un producto con su stock
+    Opcionalmente filtra por sucursal específica
     """
     try:
         db = Database()
+        
+        # Obtener parámetro opcional de sucursal
+        storage_id = request.args.get('storage_id', type=int)
+        
+        print(f"🔍 Obteniendo variantes del producto {product_id}")
+        if storage_id:
+            print(f"📍 Filtrado por sucursal ID: {storage_id}")
 
+        # Query base con filtro opcional por sucursal
         query = """
         SELECT 
             wsv.id,
@@ -2613,6 +2622,7 @@ def get_product_variants(product_id):
             s.size_name,
             c.color_name,
             c.color_hex,
+            st.id as branch_id,
             st.name as branch_name
         FROM warehouse_stock_variants wsv
         JOIN products p ON wsv.product_id = p.id
@@ -2621,10 +2631,22 @@ def get_product_variants(product_id):
         LEFT JOIN storage st ON wsv.branch_id = st.id
         WHERE wsv.product_id = %s
         AND wsv.quantity > 0
-        ORDER BY s.size_name, c.color_name, st.name
         """
+        
+        params = [product_id]
+        
+        # Agregar filtro por sucursal si se especifica
+        if storage_id:
+            query += " AND wsv.branch_id = %s"
+            params.append(storage_id)
+        
+        query += " ORDER BY s.size_name, c.color_name, st.name"
 
-        variants = db.execute_query(query, (product_id,))
+        variants = db.execute_query(query, tuple(params))
+        
+        print(f"✅ Encontradas {len(variants)} variantes")
+        if storage_id:
+            print(f"📍 Todas las variantes pertenecen a la sucursal: {variants[0]['branch_name'] if variants else 'N/A'}")
 
         return jsonify({"status": "success", "data": variants}), 200
 
@@ -3162,4 +3184,149 @@ def generate_barcode_preview(variant_id):
         import traceback
 
         traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ================================
+# ENDPOINTS PARA CONFIGURACIONES DE IMPRESIÓN
+# ================================
+
+@inventory_router.route("/print-settings", methods=["GET"])
+def get_print_settings():
+    """
+    Obtiene las configuraciones de impresión guardadas
+    """
+    try:
+        user_id = request.args.get("user_id", "default")
+        
+        db = Database()
+        
+        query = """
+        SELECT show_product_name, show_variant_name, show_size, show_color, 
+               show_price, show_barcode, print_width, print_height, font_size,
+               background_color, text_color
+        FROM barcode_print_settings 
+        WHERE user_id = %s
+        """
+        
+        result = db.execute_query(query, (user_id,))
+        
+        if result and len(result) > 0:
+            settings = result[0]
+            return jsonify({
+                "status": "success",
+                "settings": {
+                    "showProductName": settings[0],
+                    "showVariantName": settings[1],
+                    "showSize": settings[2],
+                    "showColor": settings[3],
+                    "showPrice": settings[4],
+                    "showBarcode": settings[5],
+                    "printWidth": settings[6],
+                    "printHeight": settings[7],
+                    "fontSize": settings[8],
+                    "backgroundColor": settings[9],
+                    "textColor": settings[10]
+                }
+            })
+        else:
+            # Devolver configuración por defecto
+            return jsonify({
+                "status": "success",
+                "settings": {
+                    "showProductName": True,
+                    "showVariantName": True,
+                    "showSize": True,
+                    "showColor": True,
+                    "showPrice": False,
+                    "showBarcode": True,
+                    "printWidth": 450,
+                    "printHeight": 200,
+                    "fontSize": 12,
+                    "backgroundColor": "#FFFFFF",
+                    "textColor": "#000000"
+                }
+            })
+            
+    except Exception as e:
+        print(f"❌ Error obteniendo configuraciones de impresión: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/print-settings", methods=["POST"])
+def save_print_settings():
+    """
+    Guarda las configuraciones de impresión
+    """
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        
+        settings = data.get("settings", {})
+        
+        db = Database()
+        
+        # Verificar si ya existe configuración para este usuario
+        check_query = "SELECT id FROM barcode_print_settings WHERE user_id = %s"
+        existing = db.execute_query(check_query, (user_id,))
+        
+        if existing and len(existing) > 0:
+            # Actualizar configuración existente
+            update_query = """
+            UPDATE barcode_print_settings 
+            SET show_product_name = %s, show_variant_name = %s, show_size = %s, 
+                show_color = %s, show_price = %s, show_barcode = %s,
+                print_width = %s, print_height = %s, font_size = %s,
+                background_color = %s, text_color = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = %s
+            """
+            
+            db.execute_query(update_query, (
+                settings.get("showProductName", True),
+                settings.get("showVariantName", True),
+                settings.get("showSize", True),
+                settings.get("showColor", True),
+                settings.get("showPrice", False),
+                settings.get("showBarcode", True),
+                settings.get("printWidth", 450),
+                settings.get("printHeight", 200),
+                settings.get("fontSize", 12),
+                settings.get("backgroundColor", "#FFFFFF"),
+                settings.get("textColor", "#000000"),
+                user_id
+            ))
+        else:
+            # Insertar nueva configuración
+            insert_query = """
+            INSERT INTO barcode_print_settings 
+            (user_id, show_product_name, show_variant_name, show_size, show_color, 
+             show_price, show_barcode, print_width, print_height, font_size,
+             background_color, text_color)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            
+            db.execute_query(insert_query, (
+                user_id,
+                settings.get("showProductName", True),
+                settings.get("showVariantName", True),
+                settings.get("showSize", True),
+                settings.get("showColor", True),
+                settings.get("showPrice", False),
+                settings.get("showBarcode", True),
+                settings.get("printWidth", 450),
+                settings.get("printHeight", 200),
+                settings.get("fontSize", 12),
+                settings.get("backgroundColor", "#FFFFFF"),
+                settings.get("textColor", "#000000")
+            ))
+        
+        print(f"✅ Configuraciones de impresión guardadas para usuario: {user_id}")
+        
+        return jsonify({
+            "status": "success",
+            "message": "Configuraciones guardadas exitosamente"
+        })
+        
+    except Exception as e:
+        print(f"❌ Error guardando configuraciones de impresión: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500

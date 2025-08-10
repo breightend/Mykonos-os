@@ -321,11 +321,19 @@ export const inventoryService = {
     /**
      * Obtiene las variantes de un producto (talles y colores)
      * @param {number} productId - ID del producto
+     * @param {number} storageId - ID de la sucursal (opcional)
      * @returns {Promise} Lista de variantes del producto
      */
-    async getProductVariants(productId) {
+    async getProductVariants(productId, storageId = null) {
         try {
-            const response = await axios.get(`${API_URL}/product-variants/${productId}`)
+            let url = `${API_URL}/product-variants/${productId}`
+            
+            // Agregar parámetro de sucursal si se especifica
+            if (storageId) {
+                url += `?storage_id=${storageId}`
+            }
+            
+            const response = await axios.get(url)
             return response.data
         } catch (error) {
             console.error('❌ Error al obtener variantes del producto:', error)

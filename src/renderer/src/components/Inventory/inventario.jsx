@@ -616,6 +616,7 @@ export default function Inventario() {
           isOpen={printBarcodeModalOpen}
           onClose={() => setPrintBarcodeModalOpen(false)}
           productId={selectedProductForPrint}
+          currentStorageId={currentStorage?.id}
         />
 
         <ProductsFamily onGroupSelect={handleGroupSelect} selectedGroupId={selectedGroup} />

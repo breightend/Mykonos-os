@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Printer, X, Package, Palette, Tag, Ruler, DollarSign } from 'lucide-react'
+import { Printer, X, Package, Palette, Tag, Ruler, DollarSign, Save, RefreshCw } from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { barcodePrintService } from '../../services/barcodePrintService'
+import printSettingsService from '../../services/printSettingsService'
 import { pinwheel } from 'ldrs'
 import toast from 'react-hot-toast'
 import '../../assets/modal-improvements.css'
 
 pinwheel.register()
 
-export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
+export default function PrintBarcodeModal({ isOpen, onClose, productId, currentStorageId }) {
   const [product, setProduct] = useState(null)
   const [variants, setVariants] = useState([])
   const [loading, setLoading] = useState(false)
@@ -27,10 +28,72 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
     includeProductName: true
   })
 
+  // Estados para configuraciones
+  const [settingsLoading, setSettingsLoading] = useState(false)
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [configurationChanged, setConfigurationChanged] = useState(false)
+
   // Estado para vista previa
   const [previewVariant, setPreviewVariant] = useState(null)
   const [barcodePreview, setBarcodePreview] = useState(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
+
+  // Cargar configuraciones guardadas
+  const loadPrintSettings = async () => {
+    try {
+      setSettingsLoading(true)
+      const response = await printSettingsService.getPrintSettings()
+      
+      if (response.status === 'success' && response.settings) {
+        const settings = response.settings
+        setPrintOptions({
+          includeProductName: settings.showProductName,
+          includeColor: settings.showColor,
+          includeSize: settings.showSize,
+          includePrice: settings.showPrice,
+          includeCode: settings.showBarcode
+        })
+        console.log('✅ Configuraciones cargadas:', settings)
+      }
+    } catch (error) {
+      console.error('❌ Error cargando configuraciones:', error)
+    } finally {
+      setSettingsLoading(false)
+    }
+  }
+
+  // Guardar configuraciones
+  const savePrintSettings = async () => {
+    try {
+      setSettingsSaving(true)
+      
+      const settings = {
+        showProductName: printOptions.includeProductName,
+        showColor: printOptions.includeColor,
+        showSize: printOptions.includeSize,
+        showPrice: printOptions.includePrice,
+        showBarcode: printOptions.includeCode,
+        // Valores por defecto para otros campos
+        printWidth: 450,
+        printHeight: 200,
+        fontSize: 12,
+        backgroundColor: '#FFFFFF',
+        textColor: '#000000'
+      }
+      
+      const response = await printSettingsService.savePrintSettings(settings)
+      
+      if (response.status === 'success') {
+        toast.success('✅ Configuraciones guardadas')
+        setConfigurationChanged(false)
+      }
+    } catch (error) {
+      console.error('❌ Error guardando configuraciones:', error)
+      toast.error('❌ Error al guardar configuraciones')
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
 
   // Función para generar texto de vista previa
   const generatePreviewText = (variant) => {
@@ -94,6 +157,13 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
     }
   }
 
+  // Cargar configuraciones cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      loadPrintSettings()
+    }
+  }, [isOpen])
+
   // Cargar datos del producto y sus variantes
   useEffect(() => {
     if (isOpen && productId) {
@@ -106,17 +176,25 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
       setLoading(true)
       setError(null)
 
+      console.log('🏪 Cargando variantes para sucursal:', currentStorageId)
+
       // Cargar información básica del producto
       const productResponse = await inventoryService.getProductDetail(productId)
       if (productResponse.status === 'success') {
         setProduct(productResponse.data)
       }
 
-      // Cargar variantes del producto
-      const variantsResponse = await inventoryService.getProductVariants(productId)
+      // Cargar variantes del producto filtradas por sucursal actual
+      const variantsResponse = await inventoryService.getProductVariants(productId, currentStorageId)
       if (variantsResponse.status === 'success') {
         const variantsList = variantsResponse.data
         setVariants(variantsList)
+
+        console.log(`✅ Cargadas ${variantsList.length} variantes de la sucursal actual`)
+        
+        if (variantsList.length === 0) {
+          setError('No hay variantes con stock disponible en esta sucursal')
+        }
 
         // Inicializar cantidades en 0 para cada variante
         const initialQuantities = {}
@@ -153,10 +231,10 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
   const handleSelectAll = (checked) => {
     setSelectAll(checked)
     if (checked) {
-      // Seleccionar todas las variantes con cantidad 1
+      // Seleccionar todas las variantes con su stock disponible como cantidad
       const allQuantities = {}
       variants.forEach((variant) => {
-        allQuantities[variant.id] = 1
+        allQuantities[variant.id] = variant.stock || 1 // Usar stock disponible o 1 como fallback
       })
       setQuantities(allQuantities)
     } else {
@@ -175,6 +253,9 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
       ...prev,
       [option]: checked
     }))
+    // Marcar que hubo cambios en la configuración
+    setConfigurationChanged(true)
+    
     // Recargar vista previa con nuevas opciones
     if (previewVariant) {
       loadBarcodePreview(previewVariant)
@@ -440,14 +521,24 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                       Precio: $
                       {product.sale_price ? parseFloat(product.sale_price).toFixed(2) : '0.00'}
                     </p>
+                    {variants.length > 0 && variants[0].branch_name && (
+                      <p className="text-sm font-semibold text-blue-600">
+                        🏪 Sucursal: {variants[0].branch_name}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-600">
-                      Variantes disponibles: {variants.length}
+                      Variantes en sucursal: {variants.length}
                     </p>
                     <p className="text-sm text-gray-600">
                       Total seleccionadas: {Object.values(quantities).filter((q) => q > 0).length}
                     </p>
+                    {currentStorageId && (
+                      <p className="mt-1 text-xs text-blue-500">
+                        ℹ️ Solo variantes con stock local
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -525,6 +616,32 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                       Código alfanumérico
                     </span>
                   </label>
+                </div>
+
+                {/* Botón para aplicar configuraciones */}
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {configurationChanged && (
+                      <span className="text-xs text-warning">⚠️ Configuración modificada</span>
+                    )}
+                  </div>
+                  <button
+                    className={`btn btn-sm ${settingsSaving ? 'loading btn-disabled' : configurationChanged ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={savePrintSettings}
+                    disabled={settingsSaving}
+                  >
+                    {settingsSaving ? (
+                      <>
+                        <l-pinwheel size="14" stroke="2" speed="0.9" color="currentColor" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3" />
+                        {configurationChanged ? 'Guardar cambios' : 'Configuración guardada'}
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -695,6 +812,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                     onChange={(e) => handleSelectAll(e.target.checked)}
                   />
                   <span className="font-medium">Seleccionar todas las variantes</span>
+                  <span className="ml-2 text-xs text-gray-500">(con stock completo)</span>
                 </label>
                 <div className="text-sm text-gray-600">
                   Total etiquetas:{' '}
