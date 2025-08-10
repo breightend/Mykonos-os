@@ -192,15 +192,15 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     const img = new Image()
-    
-    img.onload = function() {
+
+    img.onload = function () {
       // Configurar canvas con el tamaño de la imagen
       canvas.width = img.width
       canvas.height = img.height
-      
+
       // Dibujar la imagen en el canvas
       ctx.drawImage(img, 0, 0)
-      
+
       // Crear contenido HTML para impresión
       const printContent = `
         <!DOCTYPE html>
@@ -265,7 +265,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
         setTimeout(() => {
           iframe.contentWindow.focus()
           iframe.contentWindow.print()
-          
+
           // Limpiar el iframe después de imprimir
           setTimeout(() => {
             if (iframe.parentNode) {
@@ -273,7 +273,6 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
             }
           }, 1000)
         }, 500)
-
       } catch (error) {
         console.error('Error al preparar la impresión:', error)
         alert('Error al preparar la impresión. Intenta nuevamente.')
@@ -282,11 +281,11 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
         }
       }
     }
-    
-    img.onerror = function() {
+
+    img.onerror = function () {
       alert('Error al cargar la imagen PNG para imprimir')
     }
-    
+
     // Cargar la imagen base64
     img.src = `data:image/png;base64,${barcodePreview.png_data}`
   }
@@ -307,7 +306,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
       }
       const byteArray = new Uint8Array(byteNumbers)
       const blob = new Blob([byteArray], { type: 'image/png' })
-      
+
       // Crear enlace de descarga
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -317,7 +316,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
-      
+
       toast.success('Imagen PNG descargada correctamente')
     } catch (error) {
       console.error('Error al descargar PNG:', error)
@@ -329,12 +328,12 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
   const handlePrintBarcodes = async () => {
     try {
       setLoading(true)
-      
+
       // Preparar variantes seleccionadas con sus cantidades
       const selectedVariants = Object.entries(quantities)
         .filter(([, quantity]) => quantity > 0)
         .map(([variantId, quantity]) => {
-          const variant = variants.find(v => v.id.toString() === variantId)
+          const variant = variants.find((v) => v.id.toString() === variantId)
           return {
             variant: variant,
             quantity: quantity
@@ -359,17 +358,15 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
       if (result.success) {
         toast.success(result.message, { duration: 4000 })
         console.log('📊 Impresión exitosa:', result)
-        
+
         // Cerrar el modal después de una impresión exitosa
         setTimeout(() => {
           onClose()
         }, 1000)
-        
       } else {
         toast.error(result.message, { duration: 4000 })
         console.error('❌ Error en impresión:', result.message)
       }
-
     } catch (err) {
       console.error('Error imprimiendo códigos:', err)
       toast.error('Error inesperado al imprimir códigos de barras', { duration: 4000 })
@@ -599,14 +596,16 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                               }}
                             >
                               {barcodePreview.png_data ? (
-                                <img 
+                                <img
                                   src={`data:image/png;base64,${barcodePreview.png_data}`}
                                   alt="Código de barras"
                                   style={{ width: '100%', height: 'auto' }}
                                   className="mx-auto"
                                 />
                               ) : (
-                                <div className="text-xs text-red-500">No se pudo cargar la imagen PNG</div>
+                                <div className="text-xs text-red-500">
+                                  No se pudo cargar la imagen PNG
+                                </div>
                               )}
                             </div>
 
@@ -633,16 +632,22 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId }) {
                               <details>
                                 <summary className="cursor-pointer">Ver datos debug</summary>
                                 <pre className="mt-1 overflow-x-auto rounded bg-gray-100 p-2 text-left text-xs">
-                                  {JSON.stringify({
-                                    ...barcodePreview,
-                                    png_data: barcodePreview.png_data ? `[Base64 PNG: ${barcodePreview.png_data.length} chars]` : null
-                                  }, null, 2)}
+                                  {JSON.stringify(
+                                    {
+                                      ...barcodePreview,
+                                      png_data: barcodePreview.png_data
+                                        ? `[Base64 PNG: ${barcodePreview.png_data.length} chars]`
+                                        : null
+                                    },
+                                    null,
+                                    2
+                                  )}
                                 </pre>
                               </details>
                             </div>
 
                             {/* Botones para imprimir y descargar vista previa */}
-                            <div className="mt-3 flex gap-2 justify-center">
+                            <div className="mt-3 flex justify-center gap-2">
                               <button
                                 onClick={handlePrintPreview}
                                 className="btn btn-primary btn-outline btn-xs"

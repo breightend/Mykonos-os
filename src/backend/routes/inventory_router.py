@@ -2724,20 +2724,27 @@ def print_barcodes():
                     barcode_code = f"1{product_id:04d}{variant_id:04d}001"
                     # Asegurar que sea de 12 dígitos (EAN13 incluye dígito de control)
                     if len(barcode_code) < 12:
-                        barcode_code = barcode_code.ljust(12, '0')
+                        barcode_code = barcode_code.ljust(12, "0")
                 else:
                     # Si el código existe pero contiene letras, convertir a numérico
                     if not barcode_code.isdigit():
                         # Convertir código alfanumérico a numérico usando hash
                         import hashlib
+
                         # Crear un hash numérico del código original
                         hash_obj = hashlib.md5(barcode_code.encode())
                         # Tomar los primeros 12 dígitos del hash hexadecimal convertido a decimal
-                        hex_hash = hash_obj.hexdigest()[:8]  # 8 caracteres hex = hasta 32 bits
-                        numeric_hash = str(int(hex_hash, 16))[:12]  # Convertir a decimal y tomar 12 dígitos
+                        hex_hash = hash_obj.hexdigest()[
+                            :8
+                        ]  # 8 caracteres hex = hasta 32 bits
+                        numeric_hash = str(int(hex_hash, 16))[
+                            :12
+                        ]  # Convertir a decimal y tomar 12 dígitos
                         # Asegurar que tenga exactamente 12 dígitos
-                        barcode_code = numeric_hash.ljust(12, '0')[:12]
-                        print(f"🔄 Código original '{variant['variant_barcode']}' convertido a numérico: '{barcode_code}'")
+                        barcode_code = numeric_hash.ljust(12, "0")[:12]
+                        print(
+                            f"🔄 Código original '{variant['variant_barcode']}' convertido a numérico: '{barcode_code}'"
+                        )
 
                 print_job = {
                     "barcode": barcode_code,
@@ -2754,21 +2761,22 @@ def print_barcodes():
         try:
             import sys
             import os
+
             # Agregar el directorio padre al path para importación
             backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             if backend_dir not in sys.path:
                 sys.path.insert(0, backend_dir)
-            
+
             from barcode_generator import BarcodeGenerator
-            
+
             barcode_generator = BarcodeGenerator()
             all_generated_files = []
-            
+
             for i, print_job in enumerate(print_jobs):
                 # Obtener información de la variante correspondiente
                 variant_data = variants[i] if i < len(variants) else {}
                 variant_id = variant_data.get("variantId")
-                
+
                 # Obtener detalles adicionales de la variante si es necesario
                 variant_details = {}
                 if variant_id:
@@ -2782,33 +2790,35 @@ def print_barcodes():
                     variant_result = db.execute_query(variant_query, (variant_id,))
                     if variant_result:
                         variant_details = variant_result[0]
-                
+
                 # Construir información del producto para el generador
                 product_info = {
-                    'name': product["product_name"],
-                    'barcode': barcode_code,
-                    'original_barcode': variant["variant_barcode"],  # Código original para mostrar
-                    'price': product["sale_price"],
-                    'size_name': variant_details.get('size_name'),
-                    'color_name': variant_details.get('color_name')
+                    "name": product["product_name"],
+                    "barcode": barcode_code,
+                    "original_barcode": variant[
+                        "variant_barcode"
+                    ],  # Código original para mostrar
+                    "price": product["sale_price"],
+                    "size_name": variant_details.get("size_name"),
+                    "color_name": variant_details.get("color_name"),
                 }
-                
+
                 # Generar archivos de códigos de barras
                 generated_files = barcode_generator.generate_barcode_with_text(
                     barcode_code,  # Usar el código numérico para EAN13
-                    product_info, 
-                    options, 
-                    print_job["quantity"]
+                    product_info,
+                    options,
+                    print_job["quantity"],
                 )
                 all_generated_files.extend(generated_files)
-            
+
             # Imprimir todos los archivos
             print_result = barcode_generator.print_barcodes(all_generated_files)
-            
+
             # Limpiar archivos temporales
             barcode_generator.cleanup_files(all_generated_files)
-            
-            if print_result['status'] == 'success':
+
+            if print_result["status"] == "success":
                 return jsonify(
                     {
                         "status": "success",
@@ -2817,41 +2827,44 @@ def print_barcodes():
                             "product": product["product_name"],
                             "total_variants": len(print_jobs),
                             "total_labels": total_labels,
-                            "printed_count": print_result['printed_count']
+                            "printed_count": print_result["printed_count"],
                         },
                     }
                 ), 200
             else:
-                return jsonify({
-                    "status": "error", 
-                    "message": f"Error en impresión: {print_result['message']}"
-                }), 500
-                
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Error en impresión: {print_result['message']}",
+                    }
+                ), 500
+
         except ImportError as e:
             print(f"❌ Error importando BarcodeGenerator: {e}")
             print("🔍 Intentando importación alternativa...")
-            
-            # Método alternativo de importación  
+
+            # Método alternativo de importación
             try:
                 import importlib.util
+
                 spec = importlib.util.spec_from_file_location(
                     "barcode_generator",
-                    os.path.join(backend_dir, "barcode_generator.py") 
+                    os.path.join(backend_dir, "barcode_generator.py"),
                 )
                 barcode_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(barcode_module)
                 BarcodeGenerator = barcode_module.BarcodeGenerator
                 print("✅ Importación alternativa exitosa")
-                
+
                 # Continuar con el procesamiento normal
                 barcode_generator = BarcodeGenerator()
                 all_generated_files = []
-                
+
                 for i, print_job in enumerate(print_jobs):
                     # Obtener información de la variante correspondiente
                     variant_data = variants[i] if i < len(variants) else {}
                     variant_id = variant_data.get("variantId")
-                    
+
                     # Obtener detalles adicionales de la variante si es necesario
                     variant_details = {}
                     if variant_id:
@@ -2865,32 +2878,32 @@ def print_barcodes():
                         variant_result = db.execute_query(variant_query, (variant_id,))
                         if variant_result:
                             variant_details = variant_result[0]
-                    
+
                     # Construir información del producto para el generador
                     product_info = {
-                        'name': product["product_name"],
-                        'barcode': print_job["barcode"],
-                        'price': product["sale_price"],
-                        'size_name': variant_details.get('size_name'),
-                        'color_name': variant_details.get('color_name')
+                        "name": product["product_name"],
+                        "barcode": print_job["barcode"],
+                        "price": product["sale_price"],
+                        "size_name": variant_details.get("size_name"),
+                        "color_name": variant_details.get("color_name"),
                     }
-                    
+
                     # Generar archivos de códigos de barras
                     generated_files = barcode_generator.generate_barcode_with_text(
-                        print_job["barcode"], 
-                        product_info, 
-                        options, 
-                        print_job["quantity"]
+                        print_job["barcode"],
+                        product_info,
+                        options,
+                        print_job["quantity"],
                     )
                     all_generated_files.extend(generated_files)
-                
+
                 # Imprimir todos los archivos
                 print_result = barcode_generator.print_barcodes(all_generated_files)
-                
+
                 # Limpiar archivos temporales
                 barcode_generator.cleanup_files(all_generated_files)
-                
-                if print_result['status'] == 'success':
+
+                if print_result["status"] == "success":
                     return jsonify(
                         {
                             "status": "success",
@@ -2899,16 +2912,18 @@ def print_barcodes():
                                 "product": product["product_name"],
                                 "total_variants": len(print_jobs),
                                 "total_labels": total_labels,
-                                "printed_count": print_result['printed_count']
+                                "printed_count": print_result["printed_count"],
                             },
                         }
                     ), 200
                 else:
-                    return jsonify({
-                        "status": "error", 
-                        "message": f"Error en impresión: {print_result['message']}"
-                    }), 500
-                
+                    return jsonify(
+                        {
+                            "status": "error",
+                            "message": f"Error en impresión: {print_result['message']}",
+                        }
+                    ), 500
+
             except Exception as alt_error:
                 print(f"❌ Importación alternativa también falló: {alt_error}")
                 # Fallback - solo retornar información sin imprimir
@@ -2996,29 +3011,36 @@ def generate_barcode_preview(variant_id):
             barcode_code = f"1{variant['product_id']:04d}{variant_id:04d}001"
             # Asegurar que sea EAN13 válido (12 dígitos + dígito de control)
             if len(barcode_code) < 12:
-                barcode_code = barcode_code.ljust(12, '0')
+                barcode_code = barcode_code.ljust(12, "0")
         else:
             # Si el código existe pero contiene letras, convertir a numérico
             if not barcode_code.isdigit():
                 # Convertir código alfanumérico a numérico usando hash
                 import hashlib
+
                 # Crear un hash numérico del código original
                 hash_obj = hashlib.md5(barcode_code.encode())
                 # Tomar los primeros 12 dígitos del hash hexadecimal convertido a decimal
                 hex_hash = hash_obj.hexdigest()[:8]  # 8 caracteres hex = hasta 32 bits
-                numeric_hash = str(int(hex_hash, 16))[:12]  # Convertir a decimal y tomar 12 dígitos
+                numeric_hash = str(int(hex_hash, 16))[
+                    :12
+                ]  # Convertir a decimal y tomar 12 dígitos
                 # Asegurar que tenga exactamente 12 dígitos
-                barcode_code = numeric_hash.ljust(12, '0')[:12]
-                print(f"🔄 Código original '{variant['variant_barcode']}' convertido a numérico: '{barcode_code}'")
+                barcode_code = numeric_hash.ljust(12, "0")[:12]
+                print(
+                    f"🔄 Código original '{variant['variant_barcode']}' convertido a numérico: '{barcode_code}'"
+                )
 
         # Construir información del producto para el generador
         product_info = {
-            'name': variant["product_name"],
-            'barcode': barcode_code,
-            'original_barcode': variant["variant_barcode"],  # Código original para mostrar
-            'price': variant["sale_price"],
-            'size_name': variant["size_name"],
-            'color_name': variant["color_name"]
+            "name": variant["product_name"],
+            "barcode": barcode_code,
+            "original_barcode": variant[
+                "variant_barcode"
+            ],  # Código original para mostrar
+            "price": variant["sale_price"],
+            "size_name": variant["size_name"],
+            "color_name": variant["color_name"],
         }
 
         # Construir texto según las opciones
@@ -3038,11 +3060,12 @@ def generate_barcode_preview(variant_id):
         try:
             import sys
             import os
+
             # Agregar el directorio padre al path para importación
             backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             if backend_dir not in sys.path:
                 sys.path.insert(0, backend_dir)
-            
+
             from barcode_generator import BarcodeGenerator
             import base64
 
@@ -3050,29 +3073,29 @@ def generate_barcode_preview(variant_id):
             print(f"📝 Líneas de texto a incluir: {text_lines}")
 
             barcode_generator = BarcodeGenerator()
-            
+
             # Generar el archivo PNG con texto
             generated_files = barcode_generator.generate_barcode_with_text(
-                barcode_code, 
-                product_info, 
-                options, 
-                1  # Solo una imagen para vista previa
+                barcode_code,
+                product_info,
+                options,
+                1,  # Solo una imagen para vista previa
             )
-            
+
             if generated_files:
                 # Leer el archivo PNG generado
                 png_path = generated_files[0]
-                
+
                 # Convertir a base64 para envío al frontend
-                with open(png_path, 'rb') as img_file:
+                with open(png_path, "rb") as img_file:
                     png_data = img_file.read()
-                    png_base64 = base64.b64encode(png_data).decode('utf-8')
-                
+                    png_base64 = base64.b64encode(png_data).decode("utf-8")
+
                 # Limpiar archivo temporal
                 barcode_generator.cleanup_files(generated_files)
-                
+
                 print(f"✅ Código de barras PNG generado para variante {variant_id}")
-                
+
                 return jsonify(
                     {
                         "status": "success",
@@ -3092,27 +3115,30 @@ def generate_barcode_preview(variant_id):
                     }
                 ), 200
             else:
-                return jsonify({
-                    "status": "error",
-                    "message": "Error generando el código de barras PNG"
-                }), 500
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Error generando el código de barras PNG",
+                    }
+                ), 500
 
         except ImportError as e:
             print(f"❌ Error importando BarcodeGenerator: {e}")
             print("🔍 Intentando importación alternativa...")
-            
+
             # Método alternativo de importación
             try:
                 import importlib.util
+
                 spec = importlib.util.spec_from_file_location(
-                    "barcode_generator", 
-                    os.path.join(backend_dir, "barcode_generator.py")
+                    "barcode_generator",
+                    os.path.join(backend_dir, "barcode_generator.py"),
                 )
                 barcode_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(barcode_module)
                 BarcodeGenerator = barcode_module.BarcodeGenerator
                 print("✅ Importación alternativa exitosa")
-                
+
             except Exception as alt_error:
                 print(f"❌ Importación alternativa también falló: {alt_error}")
                 return jsonify(
@@ -3134,5 +3160,6 @@ def generate_barcode_preview(variant_id):
     except Exception as e:
         print(f"❌ Error en generate_barcode_preview: {e}")
         import traceback
+
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
