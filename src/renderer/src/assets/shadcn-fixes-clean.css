@@ -644,7 +644,6 @@
 /* Modals mejorados */
 .modal,
 .modal-box {
-  background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
   color: #374151 !important;
   border-radius: 16px !important;
   box-shadow:

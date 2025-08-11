@@ -33,13 +33,13 @@ export default function Settings() {
 
   return (
     <div>
-      <button className="btn btn-icon" onClick={() => dialogRef.current.showModal()}>
+      <button className="btn-icon btn" onClick={() => dialogRef.current.showModal()}>
         <Cog size={64} className="transition-transform hover:rotate-180" />
       </button>
       <dialog
         ref={dialogRef}
         id="settings"
-        className="modal animate-fade-in backdrop-blur-sm backdrop:bg-black/50"
+        className="animate-fade-in modal backdrop-blur-sm backdrop:bg-black/50"
         onClick={handleOutsideClick}
       >
         <div className="modal-box max-w-sm rounded-2xl p-6 md:max-w-lg">
@@ -47,7 +47,7 @@ export default function Settings() {
             <h3 className="text-2xl font-bold">Configuraciones</h3>
           </div>
 
-          <div className="text-base-content flex flex-col gap-6">
+          <div className="flex flex-col gap-6 text-base-content">
             {/* Configuración de tema */}
             <div className="card bg-base-200 p-4">
               <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold">
