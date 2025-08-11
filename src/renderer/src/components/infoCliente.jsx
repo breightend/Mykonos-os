@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Trash2, Package, RotateCcw, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Package, RotateCcw, RefreshCw, Shirt } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
 import AgregarCompraModal from '../modals/modalsCliente/agregarCompraModal'
@@ -441,9 +441,9 @@ export default function InfoClientes() {
       {/* Sales History Section */}
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
-          <h3 className="card-title flex items-center gap-2 text-xl text-slate-700 dark:text-slate-200">
-            <Package className="h-5 w-5" />
-            Historial de Ventas
+          <h3 className="card-title  flex items-center gap-2 text-xl text-primary dark:text-slate-200">
+            <Shirt className="h-5 w-5" />
+            Historial de productos vendidos
           </h3>
 
           {loadingSales ? (

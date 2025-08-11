@@ -605,7 +605,7 @@ export default function InfoProvider() {
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => openEditBrandModal(brand)}
-                                    className="tooltip tooltip-bottom btn btn-ghost btn-sm text-blue-600 hover:bg-blue-50"
+                                    className="tooltip tooltip-top btn btn-ghost btn-sm text-blue-600 hover:bg-blue-50"
                                     data-tip="Editar Marca"
                                     disabled={loading}
                                   >
@@ -613,7 +613,7 @@ export default function InfoProvider() {
                                   </button>
                                   <button
                                     onClick={() => handleRemoveBrand(brand.id)}
-                                    className="tooltip tooltip-bottom btn btn-ghost btn-sm text-orange-600 hover:bg-orange-50"
+                                    className="tooltip tooltip-top btn btn-ghost btn-sm text-orange-600 hover:bg-orange-50"
                                     data-tip="Remover Marca"
                                     disabled={loading}
                                   >
@@ -621,7 +621,7 @@ export default function InfoProvider() {
                                   </button>
                                   <button
                                     onClick={() => handleDeleteBrand(brand.id)}
-                                    className="tooltip tooltip-bottom btn btn-ghost btn-sm text-red-600 hover:bg-red-50"
+                                    className="tooltip tooltip-top btn btn-ghost btn-sm text-red-600 hover:bg-red-50"
                                     data-tip="Eliminar Marca"
                                     disabled={loading}
                                   >

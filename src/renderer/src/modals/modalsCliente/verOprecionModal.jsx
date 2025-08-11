@@ -30,9 +30,9 @@ export default function VerOprecionModal({ cliente, operacion }) {
   const getOperationIcon = (movement) => {
     if (!movement) return '📝'
     if (movement.debe > 0) {
-      return '🛒' // Shopping cart for sales
+      return '🛒'
     } else if (movement.haber > 0) {
-      return '💰' // Money bag for payments
+      return '💰'
     }
     return '📝'
   }
@@ -40,35 +40,32 @@ export default function VerOprecionModal({ cliente, operacion }) {
   return (
     <div>
       <dialog id="verOprecionModal" className="modal">
-        <div className="modal-box w-11/12 max-w-5xl">
+        <div className="modal-box w-11/12 max-w-6xl">
           <div className="mb-6 flex items-center gap-3">
             <span className="text-3xl">{getOperationIcon(operacion)}</span>
             <div>
-              <h3 className="text-2xl font-bold">Detalles de la Operación</h3>
+              <h3 className="text-2xl font-bold text-accent">Detalles de la Operación</h3>
               <p className="text-sm text-gray-600">Cliente: {cliente?.entity_name}</p>
             </div>
           </div>
 
           {operacion ? (
             <div className="space-y-6">
-              {/* Operation Type and Status */}
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                  <h4 className="mb-3 font-semibold text-gray-700 dark:text-gray-300">
-                    Información General
-                  </h4>
+              <div className="gap-6 md:grid-cols-2">
+                <div className="rounded-lg bg-primary/10 p-4">
+                  <h4 className="mb-3 font-semibold">Información General</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Tipo de operación:</span>
+                      <span className="">Tipo de operación:</span>
                       <span
-                        className={`badge ${operacion.debe > 0 ? 'badge-error' : 'badge-success'}`}
+                        className={`badge p-2 ${operacion.debe > 0 ? 'badge-error' : 'badge-success'}`}
                       >
                         {getOperationType(operacion)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Fecha:</span>
-                      <span className="font-medium">{formatDate(operacion.created_at)}</span>
+                      <span className="text-gray-600 dark:text-gray-400">Fecha: </span>
+                      <span className="font-medium"> {formatDate(operacion.created_at)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-gray-400">Número de operación:</span>
@@ -80,11 +77,9 @@ export default function VerOprecionModal({ cliente, operacion }) {
                     </div>
                   </div>
                 </div>
-
-                <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-                  <h4 className="mb-3 font-semibold text-blue-700 dark:text-blue-300">
-                    Información Financiera
-                  </h4>
+                <br />
+                <div className="rounded-lg bg-secondary/10 p-4">
+                  <h4 className="mb-3 font-semibold">Información Financiera</h4>
                   <div className="space-y-2">
                     {operacion.debe > 0 && (
                       <div className="flex justify-between">
@@ -116,21 +111,17 @@ export default function VerOprecionModal({ cliente, operacion }) {
 
               {/* Description */}
               {operacion.descripcion && (
-                <div className="rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
-                  <h4 className="mb-2 font-semibold text-yellow-700 dark:text-yellow-300">
-                    Descripción
-                  </h4>
-                  <p className="text-gray-700 dark:text-gray-300">{operacion.descripcion}</p>
+                <div className="rounded-lg bg-accent/10 p-4">
+                  <h4 className="mb-2 font-semibold">Descripción</h4>
+                  <p className="">{operacion.descripcion}</p>
                 </div>
               )}
 
               {/* Purchase ID if available */}
               {operacion.purchase_id && (
-                <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-                  <h4 className="mb-2 font-semibold text-green-700 dark:text-green-300">
-                    Información de Venta
-                  </h4>
-                  <p className="text-gray-700 dark:text-gray-300">
+                <div className="rounded-lg p-4">
+                  <h4 className="mb-2 font-semibold">Información de Venta</h4>
+                  <p className="">
                     ID de Venta: <span className="font-mono">{operacion.purchase_id}</span>
                   </p>
                 </div>
@@ -149,8 +140,8 @@ export default function VerOprecionModal({ cliente, operacion }) {
               )}
 
               {/* Update information */}
-              <div className="rounded-lg bg-gray-100 p-3 dark:bg-gray-700">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+              <div className="rounded-lg bg-primary/20 p-3 ">
+                <div className="flex justify-between text-sm ">
                   <span>Creado: {formatDate(operacion.created_at)}</span>
                   {operacion.updated_at && operacion.updated_at !== operacion.created_at && (
                     <span>Actualizado: {formatDate(operacion.updated_at)}</span>
