@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DollarSign, CreditCard, HandCoins, Landmark, CheckCircle, AlertCircle } from 'lucide-react'
 import { accountMovementsService } from '../../services/accountMovements/accountMovementsService'
+import { paymentMethodsService } from '../../services/paymentMethodsService'
 import toast from 'react-hot-toast'
 
 export default function AgregarPagoModal({ cliente, onPaymentAdded }) {
@@ -9,18 +10,72 @@ export default function AgregarPagoModal({ cliente, onPaymentAdded }) {
   const [description, setDescription] = useState('')
   const [receiptNumber, setReceiptNumber] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentMethods, setPaymentMethods] = useState([])
+  const [, setLoadingMethods] = useState(false)
 
-  const paymentMethods = [
-    { id: 'efectivo', label: 'Efectivo', icon: <HandCoins className="h-5 w-5" /> },
-    { id: 'transferencia', label: 'Transferencia', icon: <Landmark className="h-5 w-5" /> },
-    { id: 'tarjeta_debito', label: 'Tarjeta de Débito', icon: <CreditCard className="h-5 w-5" /> },
-    {
-      id: 'tarjeta_credito',
-      label: 'Tarjeta de Crédito',
-      icon: <CreditCard className="h-5 w-5" />
-    },
-    { id: 'cheque', label: 'Cheque', icon: <CheckCircle className="h-5 w-5" /> }
-  ]
+  useEffect(() => {
+    loadPaymentMethods()
+  }, [])
+
+  const loadPaymentMethods = async () => {
+    try {
+      setLoadingMethods(true)
+      const response = await paymentMethodsService.getAllPaymentMethods(true)
+      if (response.success) {
+        const formattedMethods = paymentMethodsService.formatPaymentMethodsForUI(
+          response.payment_methods
+        )
+        setPaymentMethods(formattedMethods)
+        // Set first method as default if available
+        if (formattedMethods.length > 0) {
+          setPaymentMethod(formattedMethods[0].id)
+        }
+      } else {
+        // Use fallback methods
+        const fallbackMethods = [
+          { id: 'efectivo', label: 'Efectivo', icon: 'HandCoins' },
+          { id: 'transferencia', label: 'Transferencia', icon: 'Landmark' },
+          { id: 'tarjeta_debito', label: 'Tarjeta de Débito', icon: 'CreditCard' },
+          { id: 'tarjeta_credito', label: 'Tarjeta de Crédito', icon: 'CreditCard' },
+          { id: 'cheque', label: 'Cheque', icon: 'CheckCircle' }
+        ]
+        setPaymentMethods(fallbackMethods)
+      }
+    } catch (error) {
+      console.error('Error loading payment methods:', error)
+      // Use fallback methods
+      const fallbackMethods = [
+        { id: 'efectivo', label: 'Efectivo', icon: 'HandCoins' },
+        { id: 'transferencia', label: 'Transferencia', icon: 'Landmark' },
+        { id: 'tarjeta_debito', label: 'Tarjeta de Débito', icon: 'CreditCard' },
+        { id: 'tarjeta_credito', label: 'Tarjeta de Crédito', icon: 'CreditCard' },
+        { id: 'cheque', label: 'Cheque', icon: 'CheckCircle' }
+      ]
+      setPaymentMethods(fallbackMethods)
+    } finally {
+      setLoadingMethods(false)
+    }
+  }
+
+  // Remove the old hardcoded paymentMethods array since we're loading it dynamically
+
+  // Helper function to render icons
+  const renderPaymentIcon = (iconName) => {
+    const iconProps = { className: 'h-5 w-5' }
+
+    switch (iconName) {
+      case 'HandCoins':
+        return <HandCoins {...iconProps} />
+      case 'Landmark':
+        return <Landmark {...iconProps} />
+      case 'CreditCard':
+        return <CreditCard {...iconProps} />
+      case 'CheckCircle':
+        return <CheckCircle {...iconProps} />
+      default:
+        return <DollarSign {...iconProps} />
+    }
+  }
 
   const getPaymentMethodName = (method) => {
     const methodObj = paymentMethods.find((m) => m.id === method)
@@ -32,6 +87,22 @@ export default function AgregarPagoModal({ cliente, onPaymentAdded }) {
       style: 'currency',
       currency: 'ARS'
     }).format(amount || 0)
+  }
+
+  // Handle numeric input with validation for payment amount
+  const handlePaymentAmountChange = (e) => {
+    const value = e.target.value
+    // Allow empty value, numbers, and one decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '')
+
+    // Ensure only one decimal point
+    const parts = numericValue.split('.')
+    let finalValue = parts[0]
+    if (parts.length > 1) {
+      finalValue += '.' + parts.slice(1).join('').slice(0, 2) // Limit to 2 decimal places
+    }
+
+    setPaymentAmount(finalValue)
   }
 
   const handleSubmit = async (e) => {
@@ -126,12 +197,12 @@ export default function AgregarPagoModal({ cliente, onPaymentAdded }) {
               <div className="flex items-center space-x-3">
                 <span className="text-2xl font-bold text-blue-800 dark:text-blue-300">$</span>
                 <input
-                  type="number"
+                  type="text"
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="flex-1 rounded-lg border-2 border-blue-300 p-4 text-center text-2xl font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  onChange={handlePaymentAmountChange}
+                  className="flex-1 rounded-lg border-2 border-blue-300 p-4 text-center text-2xl font-bold focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
-                  min="0"
+                  inputMode="decimal"
                   step="0.01"
                   required
                 />
@@ -167,7 +238,7 @@ export default function AgregarPagoModal({ cliente, onPaymentAdded }) {
                     <div
                       className={`${paymentMethod === method.id ? 'text-purple-600' : 'text-gray-500'}`}
                     >
-                      {method.icon}
+                      {renderPaymentIcon(method.icon)}
                     </div>
                     <span
                       className={`font-medium ${paymentMethod === method.id ? 'text-purple-800 dark:text-purple-200' : 'text-gray-700 dark:text-gray-300'}`}
@@ -189,7 +260,7 @@ export default function AgregarPagoModal({ cliente, onPaymentAdded }) {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full resize-none rounded-lg border-2 border-yellow-300 p-3 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+                  className="w-full resize-none rounded-lg border-2 border-yellow-300 p-3 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   rows="3"
                   placeholder="Concepto del pago, observaciones, etc."
                 />
@@ -204,7 +275,7 @@ export default function AgregarPagoModal({ cliente, onPaymentAdded }) {
                   type="text"
                   value={receiptNumber}
                   onChange={(e) => setReceiptNumber(e.target.value)}
-                  className="w-full rounded-lg border-2 border-orange-300 p-3 font-mono focus:border-orange-500 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="w-full rounded-lg border-2 border-orange-300 p-3 font-mono focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   placeholder="REC-001, CHQ-123, etc."
                 />
                 <div className="mt-2 text-sm text-orange-700 dark:text-orange-300">

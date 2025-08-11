@@ -477,14 +477,24 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
   return (
     <div className="print-modal-container">
       <div className="print-modal-box">
-        {/* Header fijo */}
-        <div className="print-modal-header">
+        {/* Header mejorado con gradiente */}
+        <div className="print-modal-header bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10">
           <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Printer className="h-5 w-5 text-primary" />
-              Imprimir Códigos de Barras
-            </h3>
-            <button onClick={handleClose} className="btn btn-ghost btn-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
+                <Printer className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-primary">Imprimir Códigos de Barras</h3>
+                <p className="text-xs text-gray-500">
+                  Genera etiquetas personalizadas para tus productos
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="hover:bg-error/10 btn btn-ghost btn-sm px-3 py-2 transition-all duration-200 hover:text-error"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -510,143 +520,248 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
           {/* Contenido principal */}
           {!loading && !error && product && (
             <div className="space-y-6">
-              {/* Información del producto */}
-              <div className="rounded-lg bg-base-200 p-4">
-                <h4 className="text-md mb-2 flex items-center gap-2 font-semibold">
-                  <Package className="h-4 w-4" />
-                  Producto Seleccionado
-                </h4>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-gray-600">Marca: {product.brand || 'Sin marca'}</p>
-                    <p className="text-sm text-gray-600">
-                      Precio: $
-                      {product.sale_price ? parseFloat(product.sale_price).toFixed(2) : '0.00'}
-                    </p>
-                    {variants.length > 0 && variants[0].branch_name && (
-                      <p className="text-sm font-semibold text-blue-600">
-                        🏪 Sucursal: {variants[0].branch_name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">
-                      Variantes en sucursal: {variants.length}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Total seleccionadas: {Object.values(quantities).filter((q) => q > 0).length}
-                    </p>
-                    {currentStorageId && (
-                      <p className="mt-1 text-xs text-blue-500">
-                        ℹ️ Solo variantes con stock local
-                      </p>
-                    )}
+              {/* Información del producto mejorada */}
+              <div className="overflow-hidden rounded-xl border border-base-300 bg-gradient-to-br from-base-100 to-base-200 shadow-lg">
+                <div className="border-b border-base-300 bg-primary/5 px-6 py-4">
+                  <h4 className="flex items-center gap-3 text-lg font-bold text-primary">
+                    <div className="rounded-full bg-primary/20 p-2">
+                      <Package className="h-5 w-5 text-primary" />
+                    </div>
+                    Producto Seleccionado
+                  </h4>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    {/* Info principal */}
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <h5 className="text-xl font-bold text-base-content">{product.name}</h5>
+                        <div className="mt-2 flex flex-wrap gap-3">
+                          <div className="badge badge-outline gap-2">
+                            <span className="text-xs">🏷️</span>
+                            Marca: {product.brand || 'Sin marca'}
+                          </div>
+                          <div className="badge badge-success gap-2">
+                            <span className="text-xs">💰</span>$
+                            {product.sale_price
+                              ? parseFloat(product.sale_price).toFixed(2)
+                              : '0.00'}
+                          </div>
+                          {variants.length > 0 && variants[0].branch_name && (
+                            <div className="badge badge-primary gap-2">
+                              <span className="text-xs">🏪</span>
+                              {variants[0].branch_name}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats del lado derecho */}
+                    <div className="bg-base-100/50 rounded-lg p-4 lg:min-w-[200px]">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600">
+                            Variantes disponibles
+                          </span>
+                          <span className="badge badge-info">{variants.length}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600">Seleccionadas</span>
+                          <span className="badge badge-warning">
+                            {Object.values(quantities).filter((q) => q > 0).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600">Total etiquetas</span>
+                          <span className="badge badge-accent">
+                            {Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {currentStorageId && (
+                        <div className="bg-info/10 mt-3 rounded-md p-2">
+                          <p className="text-xs text-info">ℹ️ Solo variantes con stock local</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Opciones de impresión */}
-              <div className="rounded-lg bg-base-200 p-4">
-                <h4 className="text-md mb-3 flex items-center gap-2 font-semibold">
-                  <Tag className="h-4 w-4" />
-                  Opciones de Impresión
-                </h4>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary checkbox-sm"
-                      checked={printOptions.includeProductName}
-                      onChange={(e) =>
-                        handlePrintOptionChange('includeProductName', e.target.checked)
-                      }
-                    />
-                    <span className="flex items-center gap-1 text-sm">
-                      <Package className="h-3 w-3" />
-                      Nombre del producto
-                    </span>
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary checkbox-sm"
-                      checked={printOptions.includeColor}
-                      onChange={(e) => handlePrintOptionChange('includeColor', e.target.checked)}
-                    />
-                    <span className="flex items-center gap-1 text-sm">
-                      <Palette className="h-3 w-3" />
-                      Color
-                    </span>
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary checkbox-sm"
-                      checked={printOptions.includeSize}
-                      onChange={(e) => handlePrintOptionChange('includeSize', e.target.checked)}
-                    />
-                    <span className="flex items-center gap-1 text-sm">
-                      <Ruler className="h-3 w-3" />
-                      Talle
-                    </span>
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary checkbox-sm"
-                      checked={printOptions.includePrice}
-                      onChange={(e) => handlePrintOptionChange('includePrice', e.target.checked)}
-                    />
-                    <span className="flex items-center gap-1 text-sm">
-                      <DollarSign className="h-3 w-3" />
-                      Precio
-                    </span>
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary checkbox-sm"
-                      checked={printOptions.includeCode}
-                      onChange={(e) => handlePrintOptionChange('includeCode', e.target.checked)}
-                    />
-                    <span className="flex items-center gap-1 text-sm">
-                      <Tag className="h-3 w-3" />
-                      Código alfanumérico
-                    </span>
-                  </label>
+              {/* Opciones de impresión mejoradas */}
+              <div className="overflow-hidden rounded-xl border border-base-300 bg-gradient-to-br from-base-100 to-base-200 shadow-lg">
+                <div className="border-b border-base-300 bg-secondary/5 px-6 py-4">
+                  <h4 className="flex items-center gap-3 text-lg font-bold text-secondary">
+                    <div className="rounded-full bg-secondary/20 p-2">
+                      <Tag className="h-5 w-5 text-secondary" />
+                    </div>
+                    Configuración de Etiquetas
+                  </h4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Personaliza qué información incluir en tus códigos de barras
+                  </p>
                 </div>
 
-                {/* Botón para aplicar configuraciones */}
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {configurationChanged && (
-                      <span className="text-xs text-warning">⚠️ Configuración modificada</span>
-                    )}
+                <div className="p-6">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Nombre del producto */}
+                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-primary hover:shadow-md">
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-primary mt-1"
+                          checked={printOptions.includeProductName}
+                          onChange={(e) =>
+                            handlePrintOptionChange('includeProductName', e.target.checked)
+                          }
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div className="rounded-full bg-primary/20 p-1">
+                              <Package className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="font-semibold text-primary">Nombre del producto</span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Incluye el nombre completo del producto
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Color */}
+                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-secondary hover:shadow-md">
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-secondary mt-1"
+                          checked={printOptions.includeColor}
+                          onChange={(e) =>
+                            handlePrintOptionChange('includeColor', e.target.checked)
+                          }
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div className="rounded-full bg-secondary/20 p-1">
+                              <Palette className="h-4 w-4 text-secondary" />
+                            </div>
+                            <span className="font-semibold text-secondary">Color</span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Muestra el color de la variante
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Talle */}
+                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-accent hover:shadow-md">
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-accent mt-1"
+                          checked={printOptions.includeSize}
+                          onChange={(e) => handlePrintOptionChange('includeSize', e.target.checked)}
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div className="rounded-full bg-accent/20 p-1">
+                              <Ruler className="h-4 w-4 text-accent" />
+                            </div>
+                            <span className="font-semibold text-accent">Talle</span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Incluye el talle del producto
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Precio */}
+                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-success hover:shadow-md">
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-success mt-1"
+                          checked={printOptions.includePrice}
+                          onChange={(e) =>
+                            handlePrintOptionChange('includePrice', e.target.checked)
+                          }
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div className="bg-success/20 rounded-full p-1">
+                              <DollarSign className="h-4 w-4 text-success" />
+                            </div>
+                            <span className="font-semibold text-success">Precio</span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">Muestra el precio de venta</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Código */}
+                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-info hover:shadow-md sm:col-span-2 lg:col-span-1">
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-info mt-1"
+                          checked={printOptions.includeCode}
+                          onChange={(e) => handlePrintOptionChange('includeCode', e.target.checked)}
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div className="bg-info/20 rounded-full p-1">
+                              <Tag className="h-4 w-4 text-info" />
+                            </div>
+                            <span className="font-semibold text-info">Código alfanumérico</span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Incluye el código de barras en texto
+                          </p>
+                        </div>
+                      </label>
+                    </div>
                   </div>
-                  <button
-                    className={`btn btn-sm ${settingsSaving ? 'loading btn-disabled' : configurationChanged ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={savePrintSettings}
-                    disabled={settingsSaving}
-                  >
-                    {settingsSaving ? (
-                      <>
-                        <l-pinwheel size="14" stroke="2" speed="0.9" color="currentColor" />
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-3 w-3" />
-                        {configurationChanged ? 'Guardar cambios' : 'Configuración guardada'}
-                      </>
-                    )}
-                  </button>
+
+                  {/* Botón para aplicar configuraciones */}
+                  <div className="mt-6 flex flex-col gap-4 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2">
+                      {configurationChanged && (
+                        <div className="flex items-center gap-2 text-warning">
+                          <div className="h-2 w-2 animate-pulse rounded-full bg-warning"></div>
+                          <span className="text-sm font-medium">Configuración modificada</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={savePrintSettings}
+                        disabled={settingsSaving || !configurationChanged}
+                        className="btn btn-secondary btn-sm gap-2"
+                      >
+                        {settingsSaving ? (
+                          <l-pinwheel
+                            size="16"
+                            stroke="2"
+                            speed="0.9"
+                            color="currentColor"
+                          ></l-pinwheel>
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        {settingsSaving ? 'Guardando...' : 'Guardar configuración'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Lista de variantes mejorada */}
 
               {/* Vista previa del código de barras */}
               {variants.length > 0 && (
