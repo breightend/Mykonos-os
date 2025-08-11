@@ -212,6 +212,7 @@
   border: 1px solid transparent !important;
   color: inherit !important;
   transition: all 0.2s ease !important;
+  
 }
 
 .btn-ghost:hover {

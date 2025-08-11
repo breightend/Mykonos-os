@@ -29,10 +29,10 @@ export default function MenuVertical({ currentPath }) {
       onMouseEnter={() => setIsMenuOpen(true)}
       onMouseLeave={() => setIsMenuOpen(false)}
     >
-      <label className="swap swap-rotate btn btn-warning btn-circle m-2 border-none hover:bg-orange-500">
+      <label className="btn-icon swap swap-rotate btn m-2 border-none">
         <input type="checkbox" checked={isMenuOpen} onChange={toggleMenu} />
-        <Menu size={20} className="swap-off fill-current text-white" />
-        <X size={20} className="swap-on fill-current text-white" />
+        <Menu className="swap-off h-5 w-5 fill-current text-white" />
+        <X className="swap-on h-5 w-5 fill-current text-white" />
       </label>
 
       <ul className="mt-2 flex flex-col space-y-1 p-2">
