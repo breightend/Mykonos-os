@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { paymentMethodsService } from '../paymentMethodsService'
+import { paymentMethodsService } from '../paymentsServices/paymentMethodsService'
 
 const API_BASE_URL = 'http://localhost:5000/api/account'
 

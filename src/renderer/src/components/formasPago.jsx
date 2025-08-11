@@ -17,15 +17,12 @@ export default function FormasPago() {
   const [metodoPagoInicial, setMetodoPagoInicial] = useState('efectivo')
   const { saleData, setSaleData } = useSellContext()
 
-  // Función helper para validar entrada numérica
   const handleNumericInput = (value) => {
     const cleanValue = value.replace(/[^0-9.]/g, '')
     return cleanValue === '' || /^\d*\.?\d*$/.test(cleanValue) ? cleanValue : null
   }
 
-  // Función helper para manejar keyDown en inputs numéricos
   const handleNumericKeyDown = (e) => {
-    // Permitir: backspace, delete, tab, escape, enter, punto decimal
     if (
       [46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
       // Permitir: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
@@ -44,7 +41,6 @@ export default function FormasPago() {
     }
   }
 
-  // Helper function to get payment method display name
   const getPaymentMethodName = (method) => {
     const methods = {
       efectivo: 'Efectivo',
@@ -71,7 +67,6 @@ export default function FormasPago() {
     }
   ]
 
-  // Función corregida para alternar métodos
   const toggleMetodo = (metodo) => {
     setMetodosSeleccionados((prev) => {
       const existe = prev.some((m) => m.id === metodo.id)
@@ -113,24 +108,20 @@ export default function FormasPago() {
     try {
       setCargandoPago(true)
 
-      // Calcular la deuda real (total menos pago inicial)
       const deudaReal = totalVenta - pagoInicial
 
-      // Crear el movimiento de débito en la cuenta corriente
       const result = await accountMovementsService.createDebitMovement({
         entity_id: clienteCuentaCorriente.id,
         amount: totalVenta,
         description: `Venta a cuenta corriente - Total: $${totalVenta}${pagoInicial > 0 ? ` - Pago inicial (${metodoPagoInicial}): $${pagoInicial}` : ''}`,
-        purchase_id: null, // Se puede agregar un ID de venta si existe
+        purchase_id: null,
         partial_payment: pagoInicial,
         partial_payment_method: metodoPagoInicial
       })
 
       if (result.success) {
-        // Crear los datos de pago para el contexto
         const paymentData = []
 
-        // Si hay pago inicial, agregarlo como pago separado
         if (pagoInicial > 0) {
           paymentData.push({
             method: metodoPagoInicial,
@@ -214,7 +205,6 @@ export default function FormasPago() {
       setLocation('/confirmacionDatosDeCompra')
     }
   }
-
   const totalVenta = saleData.exchange?.hasExchange ? saleData.exchange.finalAmount : saleData.total
 
   return (
@@ -257,6 +247,26 @@ export default function FormasPago() {
           </p>
           <p className="text-sm text-green-600 dark:text-green-400">
             DNI/CUIT: {clienteCuentaCorriente.dni}
+          </p>
+        </div>
+      )}
+      
+      {metodosSeleccionados.some((m) => m.id === 'tarjeta') && (
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+          <p className="font-medium text-blue-700 dark:text-blue-300">
+            Elije:{' '}
+            <select>
+              <option value="tarjeta_credito">Tarjeta de Crédito</option>
+              <option value="tarjeta_debito">Tarjeta de Débito</option>
+            </select>
+          </p>
+          <p>
+            Elige el banco:{' '}
+            <select>
+              <option value="banco1">Banco 1</option>
+              <option value="banco2">Banco 2</option>
+              <option value="banco3">Banco 3</option>
+            </select>
           </p>
         </div>
       )}

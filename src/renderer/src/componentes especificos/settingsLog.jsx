@@ -78,11 +78,13 @@ export default function Settings({ isMenuOpen = true }) {
             </div>
 
             <div className="flex flex-col items-center gap-4 text-base-content">
-              <button
-                className="btn btn-ghost w-full rounded-xl dark:text-white"
-                onClick={() => setLocation('/createUser')}
-              >
+              <button className="btn w-full rounded-xl" onClick={() => setLocation('/createUser')}>
                 Crear usuario
+              </button>
+            </div>
+            <div className="flex flex-col items-center gap-4 text-base-content">
+              <button className="btn w-full rounded-xl" onClick={() => setLocation('/formasDePagoGestion')}>
+                Gestionar formas de pago
               </button>
             </div>
 

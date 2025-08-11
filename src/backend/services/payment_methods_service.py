@@ -305,6 +305,7 @@ class PaymentMethodsService:
                 "icon_name": "FileText",
             },
         ]
+        
 
         results = []
         for method in default_methods:

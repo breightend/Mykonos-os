@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DollarSign, CreditCard, HandCoins, Landmark, CheckCircle, AlertCircle } from 'lucide-react'
 import { accountMovementsService } from '../../services/accountMovements/accountMovementsService'
-import { paymentMethodsService } from '../../services/paymentMethodsService'
+import { paymentMethodsService } from '../../services/paymentsServices/paymentMethodsService'
 import toast from 'react-hot-toast'
 
 export default function AgregarPagoModal({ cliente, onPaymentAdded }) {

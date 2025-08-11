@@ -21,7 +21,6 @@ class TABLES(Enum):
     SIZE_CATEGORIES = "size_categories"  # Categorias de los talles
     SIZES = "sizes"  # talles de los productos
     COLORS = "colors"  # colores que pueden ser los productos
-    PAYMENT_METHODS = "payment_methods" 
     STORAGE = "storage"
     PRODUCTS = "products"
     PRODUCT_SIZES = "product_sizes"  # Relacion muchos a muchos entre productos y talles
@@ -44,6 +43,9 @@ class TABLES(Enum):
     PROVEEDORXMARCA = "proveedorxmarca"
     USERSXSTORAGE = "usersxstorage"
     SESSIONS = "sessions"
+    PAYMENT_METHODS = "payment_methods"
+    BANKS = "banks"
+    BANK_PAYMENT_METHODS = "bank_payment_methods"  # Relación muchos a muchos entre bancos y métodos de pago
 
 
 DATABASE_TABLES = {
@@ -196,19 +198,6 @@ DATABASE_TABLES = {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada color, se incrementa automáticamente.
             "color_name": "TEXT NOT NULL",  # Nombre del color, requerido.
             "color_hex": "TEXT NOT NULL",  # Código hexadecimal del color, requerido.
-        }
-    },
-        TABLES.PAYMENT_METHODS: {
-        "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada método de pago
-            "method_name": "TEXT NOT NULL UNIQUE",  # Nombre del método de pago (efectivo, tarjeta_credito, etc.)
-            "display_name": "TEXT NOT NULL",  # Nombre a mostrar en la interfaz (Efectivo, Tarjeta de Crédito, etc.)
-            "description": "TEXT",  # Descripción opcional del método de pago
-            "is_active": "BOOLEAN NOT NULL DEFAULT 1",  # Si el método está activo o no
-            "requires_reference": "BOOLEAN NOT NULL DEFAULT 0",  # Si requiere número de referencia/comprobante
-            "icon_name": "TEXT",  # Nombre del icono para mostrar en la UI
-            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de creación
-            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de última actualización
         }
     },
     TABLES.STORAGE: {
@@ -675,6 +664,52 @@ DATABASE_TABLES = {
             },
         ],
     },
+    TABLES.PAYMENT_METHODS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
+            "method_name": "TEXT NOT NULL UNIQUE",  
+            "display_name": "TEXT NOT NULL",  
+            "description": "TEXT",  
+            "is_active": "BOOLEAN NOT NULL DEFAULT 1",  
+            "requires_reference": "BOOLEAN NOT NULL DEFAULT 0",  
+            "icon_name": "TEXT",  
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  
+            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  
+        },
+        "foreign_keys": []
+    },
+
+    TABLES.BANKS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
+            "name": "TEXT NOT NULL",  
+            "swift_code": "TEXT NOT NULL",  
+        },
+        "foreign_keys": []
+    },
+
+    # Tabla puente: relación muchos-a-muchos entre bancos y métodos de pago
+    TABLES.BANK_PAYMENT_METHODS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
+            "bank_id": "INTEGER NOT NULL",  
+            "payment_method_id": "INTEGER NOT NULL",  
+        },
+        "foreign_keys": [
+            {
+                "column": "bank_id",
+                "reference_table": TABLES.BANKS,
+                "reference_column": "id",
+                "export_column_name": "name",
+            },
+            {
+                "column": "payment_method_id",
+                "reference_table": TABLES.PAYMENT_METHODS,
+                "reference_column": "id",
+                "export_column_name": "method_name",
+            }
+        ]
+    }
 }
 
 # PostgreSQL Database Configuration from Config
@@ -692,7 +727,7 @@ class Database:
 
         Args:
             use_postgres (bool): If True, use PostgreSQL. If False, use SQLite.
-                               If None, use Config.USE_POSTGRES setting.
+            If None, use Config.USE_POSTGRES setting.
         """
         if use_postgres is None:
             use_postgres = Config.USE_POSTGRES

@@ -17,6 +17,7 @@ from routes.account_movements_router import account_movements_router
 from routes.client_sales_router import client_sales_router
 from routes.exchange_router import exchange_router
 from routes.payment_methods_router import payment_methods_router
+from routes.banks_router import banks_router
 
 app = Flask(__name__)
 # Comprehensive CORS configuration to handle all preflight requests
@@ -43,6 +44,7 @@ app.register_blueprint(account_movements_router, url_prefix="/api/account")
 app.register_blueprint(client_sales_router, url_prefix="/api/client-sales")
 app.register_blueprint(exchange_router, url_prefix="/api/exchange")
 app.register_blueprint(payment_methods_router, url_prefix="/api/payment-methods")
+app.register_blueprint(banks_router, url_prefix="/api/banks")
 
 @app.route("/")
 def index():
