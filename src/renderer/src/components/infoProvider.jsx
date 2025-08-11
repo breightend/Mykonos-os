@@ -8,7 +8,9 @@ import {
   Users,
   Package,
   HandCoins,
-  ShoppingBasket
+  ShoppingBasket,
+  Handshake,
+  Receipt
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
@@ -445,7 +447,7 @@ export default function InfoProvider() {
             <div className="card-body">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-700 dark:text-slate-200">
+                  <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
                     <Package className="h-6 w-6" />
                     Marcas del Proveedor
                   </h2>
@@ -604,9 +606,9 @@ export default function InfoProvider() {
           <div className="card-body">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-700 dark:text-slate-200">
-                  <ShoppingBasket className="h-6 w-6" />
-                  Compras y Operaciones
+                <h2 className="flex items-center gap-2 text-2xl font-bold text-primary dark:text-slate-200">
+                  <Handshake className="h-6 w-6" />
+                  Operaciones
                 </h2>
                 <button
                   className="btn btn-circle btn-sm btn-ghost"
