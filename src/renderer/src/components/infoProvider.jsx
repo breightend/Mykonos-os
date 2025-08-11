@@ -9,8 +9,9 @@ import {
   Package,
   HandCoins,
   ShoppingBasket,
-  Handshake,
-  Receipt
+  Receipt,
+  TrendingUp,
+  TrendingDown
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
@@ -25,11 +26,17 @@ import {
   removeBrandFromProvider
 } from '../services/proveedores/brandService'
 import { fetchPurchasesByProvider } from '../services/proveedores/purchaseService'
+import {
+  accountMovementsService,
+  formatCurrency,
+  formatMovementType
+} from '../services/proveedores/accountMovementsService'
 import EditarProveedorModal from '../modals/modalsProveedor/editarProveedorModal'
 import AgregarPagoModal from '../modals/modalsProveedor/agregarPagoModal'
 import EliminarProveedorModal from '../modals/modalsProveedor/eliminarProveedorModal'
 import AgregarCompraModal from '../modals/modalsProveedor/agregarCompraModal'
 import PurchaseDetailsModal from './PurchaseDetailsModal'
+import OperationDetailsModal from './OperationDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function InfoProvider() {
@@ -50,9 +57,18 @@ export default function InfoProvider() {
   const [providerBalance, setProviderBalance] = useState(0)
   const [showBrands, setShowBrands] = useState(true)
 
+  // Account movements state
+  const [movements, setMovements] = useState([])
+  const [loadingMovements, setLoadingMovements] = useState(false)
+  const [showMovements, setShowMovements] = useState(true)
+
   // Purchase details modal
   const [selectedPurchaseId, setSelectedPurchaseId] = useState(null)
   const [showPurchaseDetails, setShowPurchaseDetails] = useState(false)
+
+  // Operation details modal
+  const [selectedOperation, setSelectedOperation] = useState(null)
+  const [showOperationDetails, setShowOperationDetails] = useState(false)
 
   // Modal states
   const [showCreateBrandModal, setShowCreateBrandModal] = useState(false)
@@ -70,6 +86,7 @@ export default function InfoProvider() {
       try {
         setLoading(true)
         setLoadingPurchases(true)
+        setLoadingMovements(true)
 
         // Cargar información del proveedor
         const data = await fetchProviderById(providerId)
@@ -91,6 +108,16 @@ export default function InfoProvider() {
         console.log('Fetched provider purchases:', purchasesData)
         setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
 
+        // Cargar movimientos de cuenta del proveedor
+        try {
+          const movementsData = await accountMovementsService.getProviderMovements(providerId)
+          console.log('Fetched provider movements:', movementsData)
+          setMovements(Array.isArray(movementsData.movements) ? movementsData.movements : [])
+        } catch (movementsError) {
+          console.warn('Error loading movements:', movementsError)
+          setMovements([])
+        }
+
         // Calculate provider balance (total pending payments)
         if (Array.isArray(purchasesData)) {
           const pendingAmount = purchasesData
@@ -107,6 +134,7 @@ export default function InfoProvider() {
       } finally {
         setLoading(false)
         setLoadingPurchases(false)
+        setLoadingMovements(false)
       }
     }
     if (providerId) {
@@ -181,7 +209,6 @@ export default function InfoProvider() {
             })
           }
 
-          // Refresh the brands list anyway
           const brands = await fetchBrandByProviders(providerId)
           setProviderBrands(Array.isArray(brands) ? brands : [])
         }
@@ -197,7 +224,6 @@ export default function InfoProvider() {
     } catch (error) {
       console.error('Error creating brand:', error)
 
-      // Handle specific error types
       if (error.response?.data?.error_type === 'duplicate_brand_name') {
         toast.error(`Ya existe una marca con el nombre "${brandFormData.brand_name}"`)
       } else if (error.response?.data?.mensaje) {
@@ -231,7 +257,6 @@ export default function InfoProvider() {
       setBrandFormData({ brand_name: '', description: '' })
       setSelectedBrand(null)
 
-      // Refresh brands
       const brands = await fetchBrandByProviders(providerId)
       setProviderBrands(Array.isArray(brands) ? brands : [])
       const allBrandsData = await fetchBrand()
@@ -314,7 +339,6 @@ export default function InfoProvider() {
     setShowEditBrandModal(true)
   }
 
-  // Purchase related functions
   const handleViewPurchaseDetails = (purchaseId) => {
     setSelectedPurchaseId(purchaseId)
     setShowPurchaseDetails(true)
@@ -326,11 +350,19 @@ export default function InfoProvider() {
   }
 
   const handlePurchaseUpdate = async () => {
-    // Recargar las compras cuando se actualice una
     try {
       setLoadingPurchases(true)
+      setLoadingMovements(true)
       const purchasesData = await fetchPurchasesByProvider(providerId)
       setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
+
+      // Reload movements as well
+      try {
+        const movementsData = await accountMovementsService.getProviderMovements(providerId)
+        setMovements(Array.isArray(movementsData.movements) ? movementsData.movements : [])
+      } catch (movementsError) {
+        console.warn('Error reloading movements:', movementsError)
+      }
 
       // Recalculate provider balance
       if (Array.isArray(purchasesData)) {
@@ -345,7 +377,18 @@ export default function InfoProvider() {
       console.error('Error reloading purchases:', error)
     } finally {
       setLoadingPurchases(false)
+      setLoadingMovements(false)
     }
+  }
+
+  const handleOperationDoubleClick = (operation) => {
+    setSelectedOperation(operation)
+    setShowOperationDetails(true)
+  }
+
+  const handleCloseOperationDetails = () => {
+    setShowOperationDetails(false)
+    setSelectedOperation(null)
   }
 
   const getUnassignedBrands = () => {
@@ -369,11 +412,11 @@ export default function InfoProvider() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-base-200">
       <div className="container mx-auto max-w-7xl p-6">
-        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
+        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 text-white shadow-lg">
           <button
-            className="btn btn-circle btn-ghost tooltip tooltip-bottom hover:bg-white/20"
+            className="tooltip tooltip-bottom btn btn-ghost btn-sm px-3 py-2 hover:bg-white/20"
             data-tip="Volver"
             onClick={() => setLocation('/proveedores')}
           >
@@ -384,23 +427,25 @@ export default function InfoProvider() {
             <p className="mt-1 text-blue-100">Información del proveedor</p>
           </div>
         </div>
-        <div className="card bg-base-100 mb-6 shadow-xl">
+        <div className="card mb-6 bg-base-100 shadow-xl">
           <div className="card-body">
-            <div className="mb-4 flex flex-wrap gap-3">
-              <button
-                className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
-                onClick={() => document.getElementById('editandoProvider').showModal()}
-              >
-                <Pencil className="h-4 w-4" />
-                Editar Proveedor
-              </button>
-              <button
-                className="btn btn-error gap-2 shadow-md transition-all hover:shadow-lg"
-                onClick={() => document.getElementById('eliminandoProvider').showModal()}
-              >
-                <Trash2 className="h-4 w-4" />
-                Eliminar Proveedor
-              </button>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
+                  onClick={() => document.getElementById('editandoProvider').showModal()}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar Proveedor
+                </button>
+                <button
+                  className="btn btn-error gap-2 shadow-md transition-all hover:shadow-lg"
+                  onClick={() => document.getElementById('eliminandoProvider').showModal()}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar Proveedor
+                </button>
+              </div>
             </div>
 
             {provider && (
@@ -443,16 +488,16 @@ export default function InfoProvider() {
           <hr className="my-6 border-slate-200 dark:border-slate-600" />
 
           {/* Brands Section - Slideable */}
-          <div className="card bg-base-100 mb-6 shadow-xl">
+          <div className="card mb-6 bg-base-100 shadow-xl">
             <div className="card-body">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
-                    <Package className="h-6 w-6" />
+                    <Package className="h-6 w-6 text-primary" />
                     Marcas del Proveedor
                   </h2>
                   <button
-                    className="btn btn-circle btn-sm btn-ghost"
+                    className="btn btn-ghost btn-sm px-3 py-2 hover:bg-primary/10"
                     onClick={() => setShowBrands(!showBrands)}
                   >
                     {showBrands ? (
@@ -486,7 +531,7 @@ export default function InfoProvider() {
                     )}
                   </button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     className="btn btn-success btn-sm gap-2 shadow-md transition-all hover:shadow-lg"
                     onClick={() => setShowCreateBrandModal(true)}
@@ -520,7 +565,7 @@ export default function InfoProvider() {
                       </div>
                     </div>
                   ) : (
-                    <table className="table-zebra table w-full">
+                    <table className="table table-zebra w-full">
                       <thead>
                         <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
                           <th className="text-slate-700 dark:text-slate-200">ID</th>
@@ -557,7 +602,7 @@ export default function InfoProvider() {
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => openEditBrandModal(brand)}
-                                    className="btn btn-ghost btn-sm tooltip tooltip-bottom text-blue-600 hover:bg-blue-50"
+                                    className="tooltip tooltip-bottom btn btn-ghost btn-sm text-blue-600 hover:bg-blue-50"
                                     data-tip="Editar Marca"
                                     disabled={loading}
                                   >
@@ -565,7 +610,7 @@ export default function InfoProvider() {
                                   </button>
                                   <button
                                     onClick={() => handleRemoveBrand(brand.id)}
-                                    className="btn btn-ghost btn-sm tooltip tooltip-bottom text-orange-600 hover:bg-orange-50"
+                                    className="tooltip tooltip-bottom btn btn-ghost btn-sm text-orange-600 hover:bg-orange-50"
                                     data-tip="Remover Marca"
                                     disabled={loading}
                                   >
@@ -573,7 +618,7 @@ export default function InfoProvider() {
                                   </button>
                                   <button
                                     onClick={() => handleDeleteBrand(brand.id)}
-                                    className="btn btn-ghost btn-sm tooltip tooltip-bottom text-red-600 hover:bg-red-50"
+                                    className="tooltip tooltip-bottom btn btn-ghost btn-sm text-red-600 hover:bg-red-50"
                                     data-tip="Eliminar Marca"
                                     disabled={loading}
                                   >
@@ -601,17 +646,17 @@ export default function InfoProvider() {
             </div>
           </div>
         </div>
-        {/* Purchases and Operations Section - Slideable */}
-        <div className="card bg-base-100 mb-6 shadow-xl">
+        {/*  */}
+        <div className="card mb-6 bg-base-100 shadow-xl">
           <div className="card-body">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h2 className="flex items-center gap-2 text-2xl font-bold text-primary dark:text-slate-200">
-                  <Handshake className="h-6 w-6" />
-                  Operaciones
+                <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
+                  <ShoppingBasket className="h-6 w-6 text-primary" />
+                  Compras y Operaciones
                 </h2>
                 <button
-                  className="btn btn-circle btn-sm btn-ghost"
+                  className="btn btn-ghost btn-sm px-3 py-2 hover:bg-primary/10"
                   onClick={() => setShowPurchases(!showPurchases)}
                 >
                   {showPurchases ? (
@@ -635,19 +680,21 @@ export default function InfoProvider() {
                   )}
                 </button>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
-                <div
-                  className={`text-2xl font-bold ${providerBalance > 0 ? 'text-red-600' : providerBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
-                >
-                  ${Number(providerBalance || 0).toFixed(2)}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {providerBalance > 0
-                    ? 'Debemos'
-                    : providerBalance < 0
-                      ? 'A nuestro favor'
-                      : 'Sin deuda'}
+              <div className="flex flex-col items-end gap-2">
+                <div className="text-right">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
+                  <div
+                    className={`text-2xl font-bold ${providerBalance > 0 ? 'text-red-600' : providerBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                  >
+                    ${Number(providerBalance || 0).toFixed(2)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {providerBalance > 0
+                      ? 'Debemos'
+                      : providerBalance < 0
+                        ? 'A nuestro favor'
+                        : 'Sin deuda'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -655,7 +702,7 @@ export default function InfoProvider() {
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${showPurchases ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
             >
-              <div className="mb-4 flex justify-end gap-4">
+              <div className="mb-4 flex flex-wrap justify-end gap-2">
                 <button
                   className="btn btn-accent gap-2 shadow-md transition-all hover:shadow-lg"
                   onClick={() => document.getElementById('agregandoCompra').showModal()}
@@ -673,9 +720,7 @@ export default function InfoProvider() {
               </div>
 
               <div className="overflow-x-auto rounded-lg">
-                <h3 className="mb-4 text-lg font-semibold text-slate-700 dark:text-slate-200">
-                  Historial de Compras
-                </h3>
+                <h3 className="mb-4 text-lg font-semibold text-primary">Historial de Compras</h3>
                 {loadingPurchases ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="flex items-center gap-3">
@@ -686,7 +731,7 @@ export default function InfoProvider() {
                     </div>
                   </div>
                 ) : (
-                  <table className="table-zebra table w-full">
+                  <table className="table table-zebra w-full">
                     <thead>
                       <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
                         <th className="text-slate-700 dark:text-slate-200">ID</th>
@@ -728,13 +773,13 @@ export default function InfoProvider() {
                               </span>
                             </td>
                             <td className="font-mono">
-                              ${purchase.subtotal?.toFixed(2) || '0.00'}
+                              ${purchase.subtotal ? purchase.subtotal.toFixed(2) : '0.00'}
                             </td>
                             <td className="font-mono">
-                              ${purchase.discount?.toFixed(2) || '0.00'}
+                              ${purchase.discount ? purchase.discount.toFixed(2) : '0.00'}
                             </td>
                             <td className="font-mono font-bold">
-                              ${purchase.total?.toFixed(2) || '0.00'}
+                              ${purchase.total ? purchase.total.toFixed(2) : '0.00'}
                             </td>
                             <td>{purchase.payment_method || 'N/A'}</td>
                             <td>{purchase.invoice_number || 'N/A'}</td>
@@ -781,6 +826,159 @@ export default function InfoProvider() {
           </div>
         </div>
 
+        {/* Account Movements Section */}
+        <div className="card mb-6 bg-base-100 shadow-xl">
+          <div className="card-body">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
+                  <Receipt className="h-6 w-6 text-primary" />
+                  Movimientos de Cuenta Corriente
+                </h2>
+                <button
+                  className="btn btn-ghost btn-sm px-3 py-2 hover:bg-primary/10"
+                  onClick={() => setShowMovements(!showMovements)}
+                >
+                  {showMovements ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Doble click para ver detalles
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${showMovements ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+            >
+              <div className="overflow-x-auto rounded-lg">
+                {loadingMovements ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-3">
+                      <div className="loading loading-spinner loading-md"></div>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Cargando movimientos...
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <table className="table table-zebra w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                        <th className="text-slate-700 dark:text-slate-200">N° Op.</th>
+                        <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                        <th className="text-slate-700 dark:text-slate-200">Tipo</th>
+                        <th className="text-slate-700 dark:text-slate-200">Descripción</th>
+                        <th className="text-slate-700 dark:text-slate-200">Debe</th>
+                        <th className="text-slate-700 dark:text-slate-200">Haber</th>
+                        <th className="text-slate-700 dark:text-slate-200">Saldo</th>
+                        <th className="text-slate-700 dark:text-slate-200">Método Pago</th>
+                        <th className="text-slate-700 dark:text-slate-200">Comprobante</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.isArray(movements) && movements.length > 0 ? (
+                        movements.map((movement) => {
+                          const movementType = formatMovementType(movement)
+                          return (
+                            <tr
+                              key={movement.id}
+                              className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                              onDoubleClick={() => handleOperationDoubleClick(movement)}
+                            >
+                              <td className="font-mono font-medium">
+                                #{movement.numero_operacion}
+                              </td>
+                              <td>
+                                {movement.created_at
+                                  ? new Date(movement.created_at).toLocaleDateString('es-AR')
+                                  : 'N/A'}
+                              </td>
+                              <td>
+                                <span className={`badge ${movementType.badge} badge-sm`}>
+                                  {movementType.label}
+                                </span>
+                              </td>
+                              <td className="max-w-xs truncate">
+                                {movement.descripcion || 'Sin descripción'}
+                              </td>
+                              <td className="text-right font-mono">
+                                <span
+                                  className={
+                                    movement.debe > 0 ? 'font-bold text-red-600' : 'text-gray-400'
+                                  }
+                                >
+                                  {formatCurrency(movement.debe)}
+                                </span>
+                              </td>
+                              <td className="text-right font-mono">
+                                <span
+                                  className={
+                                    movement.haber > 0
+                                      ? 'font-bold text-green-600'
+                                      : 'text-gray-400'
+                                  }
+                                >
+                                  {formatCurrency(movement.haber)}
+                                </span>
+                              </td>
+                              <td className="text-right font-mono font-bold">
+                                <span
+                                  className={
+                                    movement.saldo > 0
+                                      ? 'text-red-600'
+                                      : movement.saldo < 0
+                                        ? 'text-green-600'
+                                        : 'text-gray-600'
+                                  }
+                                >
+                                  {formatCurrency(movement.saldo)}
+                                </span>
+                              </td>
+                              <td className="capitalize">{movement.medio_pago || 'N/A'}</td>
+                              <td className="font-mono text-sm">
+                                {movement.numero_de_comprobante || '-'}
+                              </td>
+                            </tr>
+                          )
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="9" className="py-8 text-center">
+                            <div className="text-slate-500 dark:text-slate-400">
+                              <Receipt className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                              No hay movimientos registrados
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mb-6 flex justify-center">
           <button
             className="btn btn-primary btn-wide gap-2 shadow-lg transition-all hover:shadow-xl"
@@ -793,11 +991,11 @@ export default function InfoProvider() {
 
         {/* Modals */}
         <EditarProveedorModal provider={provider} />
-        <AgregarPagoModal provider={provider} />
+        <AgregarPagoModal provider={provider} onPaymentAdded={handlePurchaseUpdate} />
         <EliminarProveedorModal provider={provider} />
         <AgregarCompraModal provider={provider} />
 
-        {/* Create Brand Modal */}
+        {/* Crear Marca */}
         {showCreateBrandModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
@@ -812,7 +1010,7 @@ export default function InfoProvider() {
                     name="brand_name"
                     value={brandFormData.brand_name}
                     onChange={handleBrandInputChange}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                     placeholder="Nombre de la marca"
                     required
                   />
@@ -825,7 +1023,7 @@ export default function InfoProvider() {
                     name="description"
                     value={brandFormData.description}
                     onChange={handleBrandInputChange}
-                    className="textarea textarea-bordered w-full"
+                    className="textarea-bordered textarea w-full"
                     placeholder="Descripción de la marca"
                     rows="3"
                   />
@@ -851,7 +1049,7 @@ export default function InfoProvider() {
           </div>
         )}
 
-        {/* Edit Brand Modal */}
+        {/* Editar marca */}
         {showEditBrandModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
@@ -866,7 +1064,7 @@ export default function InfoProvider() {
                     name="brand_name"
                     value={brandFormData.brand_name}
                     onChange={handleBrandInputChange}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                     placeholder="Nombre de la marca"
                     required
                   />
@@ -879,7 +1077,7 @@ export default function InfoProvider() {
                     name="description"
                     value={brandFormData.description}
                     onChange={handleBrandInputChange}
-                    className="textarea textarea-bordered w-full"
+                    className="textarea-bordered textarea w-full"
                     placeholder="Descripción de la marca"
                     rows="3"
                   />
@@ -906,7 +1104,7 @@ export default function InfoProvider() {
           </div>
         )}
 
-        {/* Assign Brand Modal */}
+        {/* Modal de marca*/}
         {showAssignBrandModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="w-3/4 max-w-2xl rounded-lg bg-white p-6 shadow-2xl">
@@ -920,7 +1118,7 @@ export default function InfoProvider() {
                       placeholder="Buscar marca por nombre o descripción..."
                       value={brandSearchTerm}
                       onChange={(e) => setBrandSearchTerm(e.target.value)}
-                      className="input input-bordered w-full"
+                      className="input-bordered input w-full"
                     />
                   </div>
 
@@ -978,6 +1176,12 @@ export default function InfoProvider() {
           isOpen={showPurchaseDetails}
           onClose={handleClosePurchaseDetails}
           onUpdate={handlePurchaseUpdate}
+        />
+
+        <OperationDetailsModal
+          operation={selectedOperation}
+          isOpen={showOperationDetails}
+          onClose={handleCloseOperationDetails}
         />
 
         <Toaster position="bottom-right" />

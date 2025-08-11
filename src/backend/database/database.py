@@ -21,7 +21,7 @@ class TABLES(Enum):
     SIZE_CATEGORIES = "size_categories"  # Categorias de los talles
     SIZES = "sizes"  # talles de los productos
     COLORS = "colors"  # colores que pueden ser los productos
-
+    PAYMENT_METHODS = "payment_methods" 
     STORAGE = "storage"
     PRODUCTS = "products"
     PRODUCT_SIZES = "product_sizes"  # Relacion muchos a muchos entre productos y talles
@@ -196,6 +196,19 @@ DATABASE_TABLES = {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada color, se incrementa automáticamente.
             "color_name": "TEXT NOT NULL",  # Nombre del color, requerido.
             "color_hex": "TEXT NOT NULL",  # Código hexadecimal del color, requerido.
+        }
+    },
+        TABLES.PAYMENT_METHODS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada método de pago
+            "method_name": "TEXT NOT NULL UNIQUE",  # Nombre del método de pago (efectivo, tarjeta_credito, etc.)
+            "display_name": "TEXT NOT NULL",  # Nombre a mostrar en la interfaz (Efectivo, Tarjeta de Crédito, etc.)
+            "description": "TEXT",  # Descripción opcional del método de pago
+            "is_active": "BOOLEAN NOT NULL DEFAULT 1",  # Si el método está activo o no
+            "requires_reference": "BOOLEAN NOT NULL DEFAULT 0",  # Si requiere número de referencia/comprobante
+            "icon_name": "TEXT",  # Nombre del icono para mostrar en la UI
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de creación
+            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de última actualización
         }
     },
     TABLES.STORAGE: {
