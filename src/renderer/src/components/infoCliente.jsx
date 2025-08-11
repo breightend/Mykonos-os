@@ -195,11 +195,11 @@ export default function InfoClientes() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-base-200">
       <div className="container mx-auto max-w-7xl p-6">
-        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
+        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 text-white shadow-lg">
           <button
-            className="btn btn-circle btn-ghost tooltip tooltip-bottom hover:bg-white/20"
+            className="tooltip tooltip-bottom rounded-full bg-orange-600 px-3 py-2 hover:bg-orange-500"
             data-tip="Volver"
             onClick={() => setLocation('/clientes')}
           >
@@ -210,18 +210,18 @@ export default function InfoClientes() {
             <p className="mt-1 text-blue-100">Información del cliente</p>
           </div>
         </div>
-        <div className="card bg-base-100 mb-6 shadow-xl">
+        <div className="card mb-6 bg-base-100 shadow-xl">
           <div className="card-body">
             <div className="mb-4 flex flex-wrap gap-3">
               <button
-                className="btn btn-primary gap-2 shadow-md hover:shadow-lg transition-all"
+                className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
                 onClick={() => document.getElementById('editandoCliente').showModal()}
               >
                 <Pencil className="h-4 w-4" />
                 Editar cliente
               </button>
               <button
-                className="btn btn-error gap-2 shadow-md hover:shadow-lg transition-all"
+                className="btn btn-error gap-2 shadow-md transition-all hover:shadow-lg"
                 onClick={() => document.getElementById('eliminandoCliente').showModal()}
               >
                 <Trash2 className="h-4 w-4" />
@@ -245,7 +245,10 @@ export default function InfoClientes() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" onClick={() => handleRowClick(cliente)}>
+                    <tr
+                      className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                      onClick={() => handleRowClick(cliente)}
+                    >
                       <th>1</th>
                       <td className="font-medium">{cliente?.entity_name}</td>
                       <td>{cliente?.cuit}</td>
@@ -261,247 +264,280 @@ export default function InfoClientes() {
             )}
           </div>
         </div>
-          <div>
-            <hr className="my-6 border-slate-200 dark:border-slate-600" />
-            
-            {/* Operations Section - Slideable */}
-            <div className="card bg-base-100 mb-6 shadow-xl">
-              <div className="card-body">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-200">
-                      Registro de operaciones
-                    </h2>
-                    <button
-                      className="btn btn-circle btn-sm btn-ghost"
-                      onClick={() => setShowOperations(!showOperations)}
-                    >
-                      {showOperations ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </button>
+        <div>
+          <hr className="my-6 border-slate-200 dark:border-slate-600" />
+
+          {/* Operations Section - Slideable */}
+          <div className="card mb-6 bg-base-100 shadow-xl">
+            <div className="card-body">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-primary">
+                    Registro de operaciones
+                  </h2>
+                  <button
+                    className="btn btn-ghost btn-sm btn-circle"
+                    onClick={() => setShowOperations(!showOperations)}
+                  >
+                    {showOperations ? (
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
+                  <div
+                    className={`text-2xl font-bold ${clientBalance > 0 ? 'text-red-600' : clientBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                  >
+                    {formatCurrency(clientBalance)}
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
-                    <div
-                      className={`text-2xl font-bold ${clientBalance > 0 ? 'text-red-600' : clientBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
-                    >
-                      {formatCurrency(clientBalance)}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {clientBalance > 0 ? 'Debe' : clientBalance < 0 ? 'A favor' : 'Sin deuda'}
-                    </div>
+                  <div className="text-xs text-gray-500">
+                    {clientBalance > 0 ? 'Debe' : clientBalance < 0 ? 'A favor' : 'Sin deuda'}
                   </div>
                 </div>
+              </div>
 
-                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showOperations ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                  <div className="mb-4 flex justify-end">
-                    <button
-                      className="btn btn-primary gap-2 shadow-md hover:shadow-lg transition-all"
-                      onClick={() => document.getElementById('agregandoPago').showModal()}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Agregar pago
-                    </button>
-                  </div>
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${showOperations ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+              >
+                <div className="mb-4 flex justify-end">
+                  <button
+                    className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
+                    onClick={() => document.getElementById('agregandoPago').showModal()}
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    Agregar pago
+                  </button>
+                </div>
 
-                  <div className="overflow-x-auto rounded-lg">
-                    <table className="table table-zebra w-full">
-                      <thead>
-                        <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
-                          <th className="text-slate-700 dark:text-slate-200">#</th>
-                          <th className="text-slate-700 dark:text-slate-200">Fecha</th>
-                          <th className="text-slate-700 dark:text-slate-200">Operación</th>
-                          <th className="text-slate-700 dark:text-slate-200">Método de Pago</th>
-                          <th className="text-slate-700 dark:text-slate-200">Debe</th>
-                          <th className="text-slate-700 dark:text-slate-200">Haber</th>
-                          <th className="text-slate-700 dark:text-slate-200">Saldo</th>
-                          <th className="text-slate-700 dark:text-slate-200">Descripción</th>
+                <div className="overflow-x-auto rounded-lg">
+                  <table className="table table-zebra w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                        <th className="text-slate-700 dark:text-slate-200">#</th>
+                        <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                        <th className="text-slate-700 dark:text-slate-200">Operación</th>
+                        <th className="text-slate-700 dark:text-slate-200">Método de Pago</th>
+                        <th className="text-slate-700 dark:text-slate-200">Debe</th>
+                        <th className="text-slate-700 dark:text-slate-200">Haber</th>
+                        <th className="text-slate-700 dark:text-slate-200">Saldo</th>
+                        <th className="text-slate-700 dark:text-slate-200">Descripción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingMovements ? (
+                        <tr>
+                          <td colSpan="8" className="py-8 text-center">
+                            <div className="flex items-center justify-center">
+                              <div className="loading loading-spinner loading-md mr-2"></div>
+                              <span className="text-slate-600 dark:text-slate-300">
+                                Cargando movimientos...
+                              </span>
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {loadingMovements ? (
-                          <tr>
-                            <td colSpan="8" className="py-8 text-center">
-                              <div className="flex items-center justify-center">
-                                <div className="loading loading-spinner loading-md mr-2"></div>
-                                <span className="text-slate-600 dark:text-slate-300">Cargando movimientos...</span>
-                              </div>
-                            </td>
-                          </tr>
-                        ) : movements.length === 0 ? (
-                          <tr>
-                            <td colSpan="8" className="py-8 text-center">
-                              <div className="text-slate-500 dark:text-slate-400">
-                                <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                No hay movimientos registrados
-                              </div>
-                            </td>
-                          </tr>
-                        ) : (
-                          movements.map((movement, index) => (
-                            <tr
-                              key={movement.id || index}
-                              className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                              onClick={() => handleRowClick(movement)}
-                              onDoubleClick={() => handleRowDoubleClick(movement)}
-                            >
-                              <th className="font-medium">{index + 1}</th>
-                              <td className="font-medium">{formatDate(movement.created_at)}</td>
-                              <td>
-                                <span
-                                  className={`badge ${movement.debe > 0 ? 'badge-error' : 'badge-success'} shadow-sm`}
-                                >
-                                  {getOperationType(movement)}
-                                </span>
-                              </td>
-                              <td>{movement.medio_pago || 'N/A'}</td>
-                              <td className={movement.debe > 0 ? 'font-bold text-red-600' : ''}>
-                                {movement.debe > 0 ? formatCurrency(movement.debe) : '-'}
-                              </td>
-                              <td className={movement.haber > 0 ? 'font-bold text-green-600' : ''}>
-                                {movement.haber > 0 ? formatCurrency(movement.haber) : '-'}
-                              </td>
-                              <td
-                                className={`font-bold ${movement.saldo > 0 ? 'text-red-600' : movement.saldo < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                      ) : movements.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="py-8 text-center">
+                            <div className="text-slate-500 dark:text-slate-400">
+                              <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                              No hay movimientos registrados
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        movements.map((movement, index) => (
+                          <tr
+                            key={movement.id || index}
+                            className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                            onClick={() => handleRowClick(movement)}
+                            onDoubleClick={() => handleRowDoubleClick(movement)}
+                          >
+                            <th className="font-medium">{index + 1}</th>
+                            <td className="font-medium">{formatDate(movement.created_at)}</td>
+                            <td>
+                              <span
+                                className={`badge ${movement.debe > 0 ? 'badge-error' : 'badge-success'} shadow-sm`}
                               >
-                                {formatCurrency(movement.saldo)}
-                              </td>
-                              <td className="max-w-xs truncate" title={movement.descripcion}>
-                                {movement.descripcion || 'Sin descripción'}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                                {getOperationType(movement)}
+                              </span>
+                            </td>
+                            <td>{movement.medio_pago || 'N/A'}</td>
+                            <td className={movement.debe > 0 ? 'font-bold text-red-600' : ''}>
+                              {movement.debe > 0 ? formatCurrency(movement.debe) : '-'}
+                            </td>
+                            <td className={movement.haber > 0 ? 'font-bold text-green-600' : ''}>
+                              {movement.haber > 0 ? formatCurrency(movement.haber) : '-'}
+                            </td>
+                            <td
+                              className={`font-bold ${movement.saldo > 0 ? 'text-red-600' : movement.saldo < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                            >
+                              {formatCurrency(movement.saldo)}
+                            </td>
+                            <td className="max-w-xs truncate" title={movement.descripcion}>
+                              {movement.descripcion || 'Sin descripción'}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
 
-                    {movements.length > 0 && (
-                      <div className="mt-4 text-center text-sm text-slate-600 dark:text-slate-400">
-                        💡 Haz doble clic en una operación para ver los detalles completos
-                      </div>
-                    )}
-                  </div>
+                  {movements.length > 0 && (
+                    <div className="mt-4 text-center text-sm text-slate-600 dark:text-slate-400">
+                      💡 Haz doble clic en una operación para ver los detalles completos
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
-        <div className="flex justify-center mb-6">
-          <button 
-            className="btn btn-primary btn-wide gap-2 shadow-lg hover:shadow-xl transition-all" 
-            onClick={() => setLocation('/clientes')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver a Clientes
-          </button>
-        </div>
-
-        {/* Sales History Section */}
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h3 className="card-title text-xl flex items-center gap-2 text-slate-700 dark:text-slate-200">
-              <Package className="h-5 w-5" />
-              Historial de Ventas
-            </h3>
-
-            {loadingSales ? (
-              <div className="flex justify-center py-8">
-                <div className="flex items-center gap-3">
-                  <span className="loading loading-spinner loading-md"></span>
-                  <span className="text-slate-600 dark:text-slate-300">Cargando historial...</span>
-                </div>
-              </div>
-            ) : salesHistory.length === 0 ? (
-              <div className="py-8 text-center">
-                <Package className="w-16 h-16 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-                <div className="text-slate-500 dark:text-slate-400">
-                  No hay ventas registradas para este cliente
-                </div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto rounded-lg">
-                <table className="table table-zebra w-full">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
-                      <th className="text-slate-700 dark:text-slate-200">Fecha</th>
-                      <th className="text-slate-700 dark:text-slate-200">Producto</th>
-                      <th className="text-slate-700 dark:text-slate-200">Cantidad</th>
-                      <th className="text-slate-700 dark:text-slate-200">Precio Unit.</th>
-                      <th className="text-slate-700 dark:text-slate-200">Total</th>
-                      <th className="text-slate-700 dark:text-slate-200">Estado</th>
-                      <th className="text-slate-700 dark:text-slate-200">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salesHistory.map((sale) => (
-                      <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                        <td className="font-medium">{new Date(sale.sale_date).toLocaleDateString()}</td>
-                        <td className="font-medium">{sale.product_name || 'Producto N/A'}</td>
-                        <td>{sale.quantity}</td>
-                        <td className="font-mono">${Number(sale.unit_price || 0).toFixed(2)}</td>
-                        <td className="font-mono font-bold">${Number(sale.total_amount || 0).toFixed(2)}</td>
-                        <td>
-                          <span
-                            className={`badge shadow-sm ${
-                              sale.status === 'vendido'
-                                ? 'badge-success'
-                                : sale.status === 'devuelto'
-                                  ? 'badge-error'
-                                  : sale.status === 'cambiado'
-                                    ? 'badge-warning'
-                                    : 'badge-neutral'
-                            }`}
-                          >
-                            {sale.status || 'vendido'}
-                          </span>
-                        </td>
-                        <td>
-                          {sale.status === 'vendido' && (
-                            <div className="flex gap-2">
-                              <button
-                                className="btn btn-xs btn-warning gap-1 shadow-sm hover:shadow-md transition-all"
-                                onClick={() => handleReturn(sale)}
-                              >
-                                <RotateCcw className="h-3 w-3" />
-                                Devolución
-                              </button>
-                              <button
-                                className="btn btn-xs btn-info gap-1 shadow-sm hover:shadow-md transition-all"
-                                onClick={() => handleExchange(sale)}
-                              >
-                                <RefreshCw className="h-3 w-3" />
-                                Cambio
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-        {/* Modals */}
-        <EditarClienteModal cliente={cliente} />
-        <AgregarCompraModal cliente={cliente} />
-        <AgregarPagoModal cliente={cliente} onPaymentAdded={refreshMovements} />
-        <VerOprecionModal cliente={cliente} operacion={operacionSeleccionada} />
-        <EliminarClienteModal cliente={cliente} />
-        
-
       </div>
-    
+
+      <div className="mb-6 flex justify-center">
+        <button
+          className="btn btn-primary btn-wide gap-2 shadow-lg transition-all hover:shadow-xl"
+          onClick={() => setLocation('/clientes')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver a Clientes
+        </button>
+      </div>
+
+      {/* Sales History Section */}
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h3 className="card-title flex items-center gap-2 text-xl text-slate-700 dark:text-slate-200">
+            <Package className="h-5 w-5" />
+            Historial de Ventas
+          </h3>
+
+          {loadingSales ? (
+            <div className="flex justify-center py-8">
+              <div className="flex items-center gap-3">
+                <span className="loading loading-spinner loading-md"></span>
+                <span className="text-slate-600 dark:text-slate-300">Cargando historial...</span>
+              </div>
+            </div>
+          ) : salesHistory.length === 0 ? (
+            <div className="py-8 text-center">
+              <Package className="mx-auto mb-4 h-16 w-16 text-slate-300 dark:text-slate-600" />
+              <div className="text-slate-500 dark:text-slate-400">
+                No hay ventas registradas para este cliente
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg">
+              <table className="table table-zebra w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                    <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                    <th className="text-slate-700 dark:text-slate-200">Producto</th>
+                    <th className="text-slate-700 dark:text-slate-200">Cantidad</th>
+                    <th className="text-slate-700 dark:text-slate-200">Precio Unit.</th>
+                    <th className="text-slate-700 dark:text-slate-200">Total</th>
+                    <th className="text-slate-700 dark:text-slate-200">Estado</th>
+                    <th className="text-slate-700 dark:text-slate-200">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesHistory.map((sale) => (
+                    <tr
+                      key={sale.id}
+                      className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                    >
+                      <td className="font-medium">
+                        {new Date(sale.sale_date).toLocaleDateString()}
+                      </td>
+                      <td className="font-medium">{sale.product_name || 'Producto N/A'}</td>
+                      <td>{sale.quantity}</td>
+                      <td className="font-mono">${Number(sale.unit_price || 0).toFixed(2)}</td>
+                      <td className="font-mono font-bold">
+                        ${Number(sale.total_amount || 0).toFixed(2)}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge shadow-sm ${
+                            sale.status === 'vendido'
+                              ? 'badge-success'
+                              : sale.status === 'devuelto'
+                                ? 'badge-error'
+                                : sale.status === 'cambiado'
+                                  ? 'badge-warning'
+                                  : 'badge-neutral'
+                          }`}
+                        >
+                          {sale.status || 'vendido'}
+                        </span>
+                      </td>
+                      <td>
+                        {sale.status === 'vendido' && (
+                          <div className="flex gap-2">
+                            <button
+                              className="btn btn-warning btn-xs gap-1 shadow-sm transition-all hover:shadow-md"
+                              onClick={() => handleReturn(sale)}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Devolución
+                            </button>
+                            <button
+                              className="btn btn-info btn-xs gap-1 shadow-sm transition-all hover:shadow-md"
+                              onClick={() => handleExchange(sale)}
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              Cambio
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Modals */}
+      <EditarClienteModal cliente={cliente} />
+      <AgregarCompraModal cliente={cliente} />
+      <AgregarPagoModal cliente={cliente} onPaymentAdded={refreshMovements} />
+      <VerOprecionModal cliente={cliente} operacion={operacionSeleccionada} />
+      <EliminarClienteModal cliente={cliente} />
+    </div>
   )
 }

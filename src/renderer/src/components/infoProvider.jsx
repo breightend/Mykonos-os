@@ -81,7 +81,6 @@ export default function InfoProvider() {
     description: ''
   })
   const [brandSearchTerm, setBrandSearchTerm] = useState('')
-
   useEffect(() => {
     async function fetchData() {
       try {
@@ -120,14 +119,17 @@ export default function InfoProvider() {
         }
 
         // Calculate provider balance (total pending payments)
-        if (Array.isArray(purchasesData)) {
-          const pendingAmount = purchasesData
-            .filter(
-              (purchase) =>
-                purchase.status === 'Pendiente de pago' || purchase.status === 'Pendiente'
-            )
-            .reduce((total, purchase) => total + (purchase.total || 0), 0)
-          setProviderBalance(pendingAmount)
+        const [movementsResponse, balanceResponse] = await Promise.all([
+          accountMovementsService.getProviderMovements(providerId),
+          accountMovementsService.getProviderBalance(providerId)
+        ])
+
+        if (movementsResponse.success) {
+          setMovements(movementsResponse.movements || [])
+        }
+
+        if (balanceResponse.success) {
+          setProviderBalance(balanceResponse.balance || 0)
         }
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -417,7 +419,7 @@ export default function InfoProvider() {
       <div className="container mx-auto max-w-7xl p-6">
         <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 text-white shadow-lg">
           <button
-            className="tooltip tooltip-bottom  px-3 py-2 bg-orange-600 rounded-full  hover:bg-orange-500"
+            className="tooltip tooltip-bottom rounded-full bg-orange-600 px-3 py-2 hover:bg-orange-500"
             data-tip="Volver"
             onClick={() => setLocation('/proveedores')}
           >
@@ -831,7 +833,6 @@ export default function InfoProvider() {
         </div>
 
         {/* Account Movements Section */}
-
 
         <div className="mb-6 flex justify-center">
           <button
