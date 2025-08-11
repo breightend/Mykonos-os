@@ -33,7 +33,7 @@ export default function Settings() {
 
   return (
     <div>
-      <button className="btn btn-circle" onClick={() => dialogRef.current.showModal()}>
+      <button className="btn btn-icon" onClick={() => dialogRef.current.showModal()}>
         <Cog size={64} className="transition-transform hover:rotate-180" />
       </button>
       <dialog

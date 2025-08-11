@@ -43,7 +43,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
     try {
       setSettingsLoading(true)
       const response = await printSettingsService.getPrintSettings()
-      
+
       if (response.status === 'success' && response.settings) {
         const settings = response.settings
         setPrintOptions({
@@ -66,7 +66,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
   const savePrintSettings = async () => {
     try {
       setSettingsSaving(true)
-      
+
       const settings = {
         showProductName: printOptions.includeProductName,
         showColor: printOptions.includeColor,
@@ -80,9 +80,9 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
         backgroundColor: '#FFFFFF',
         textColor: '#000000'
       }
-      
+
       const response = await printSettingsService.savePrintSettings(settings)
-      
+
       if (response.status === 'success') {
         toast.success('✅ Configuraciones guardadas')
         setConfigurationChanged(false)
@@ -185,13 +185,16 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
       }
 
       // Cargar variantes del producto filtradas por sucursal actual
-      const variantsResponse = await inventoryService.getProductVariants(productId, currentStorageId)
+      const variantsResponse = await inventoryService.getProductVariants(
+        productId,
+        currentStorageId
+      )
       if (variantsResponse.status === 'success') {
         const variantsList = variantsResponse.data
         setVariants(variantsList)
 
         console.log(`✅ Cargadas ${variantsList.length} variantes de la sucursal actual`)
-        
+
         if (variantsList.length === 0) {
           setError('No hay variantes con stock disponible en esta sucursal')
         }
@@ -255,7 +258,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
     }))
     // Marcar que hubo cambios en la configuración
     setConfigurationChanged(true)
-    
+
     // Recargar vista previa con nuevas opciones
     if (previewVariant) {
       loadBarcodePreview(previewVariant)
@@ -481,7 +484,7 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
               <Printer className="h-5 w-5 text-primary" />
               Imprimir Códigos de Barras
             </h3>
-            <button onClick={handleClose} className="btn btn-ghost btn-sm btn-circle">
+            <button onClick={handleClose} className="btn btn-ghost btn-sm">
               <X className="h-4 w-4" />
             </button>
           </div>

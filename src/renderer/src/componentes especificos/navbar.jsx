@@ -24,7 +24,7 @@ export default function Navbar() {
           </div>
 
           {/* Sucursal Section */}
-          <div className="navbar-end mb-2">
+          <div className="navbar-end mb-2 flex w-full">
             <div
               className={`card-compact card shadow-lg ${
                 hasSucursal
