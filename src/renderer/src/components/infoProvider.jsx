@@ -417,7 +417,7 @@ export default function InfoProvider() {
       <div className="container mx-auto max-w-7xl p-6">
         <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 text-white shadow-lg">
           <button
-            className="tooltip tooltip-bottom btn btn-ghost btn-sm px-3 py-2 hover:bg-white/20"
+            className="tooltip tooltip-bottom  px-3 py-2 bg-orange-600 rounded-full  hover:bg-orange-500"
             data-tip="Volver"
             onClick={() => setLocation('/proveedores')}
           >

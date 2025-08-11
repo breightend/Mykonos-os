@@ -165,7 +165,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
           onRefresh()
         }
 
-        setError('') 
+        setError('')
       } catch (error) {
         console.error('Error:', error)
         if (error.response?.data?.mensaje) {
@@ -195,7 +195,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
           onRefresh()
         }
 
-        setError('') 
+        setError('')
       } catch (error) {
         console.error('Error:', error)
         if (error.response?.data?.mensaje) {
@@ -234,12 +234,12 @@ export default function ModalColoresYTalles({ onRefresh }) {
   }, [category])
   return (
     <>
-      <dialog id="sizeColorModal" className="modal ">
-        <div className="modal-box w-11/12 max-w-5xl">
+      <dialog id="sizeColorModal" className="modal">
+        <div className="w-8/12 rounded-xl bg-white p-6 backdrop:blur-sm">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-warning text-2xl font-bold">Gestión de Colores y Talles</h2>
+            <h2 className="text-2xl font-bold text-warning">Gestión de Colores y Talles</h2>
             <button
-              className="btn btn-sm btn-circle btn-ghost"
+              className="btn btn-ghost btn-sm btn-circle"
               onClick={() => document.getElementById('sizeColorModal').close()}
             >
               ✕
@@ -250,28 +250,28 @@ export default function ModalColoresYTalles({ onRefresh }) {
           {error && (
             <div className="alert alert-error mb-4">
               <span>{error}</span>
-              <button className="btn btn-sm btn-outline btn-error" onClick={() => setError('')}>
+              <button className="btn btn-error btn-outline btn-sm" onClick={() => setError('')}>
                 ✕
               </button>
             </div>
           )}
 
           {/* Tabs */}
-          <div className="tabs tabs-boxed mb-6">
+          <div className="tabs-boxed tabs mb-6">
             <button
-              className={`tab tab-lg ${activeTab === 'colors' ? 'tab-active' : ''}`}
+              className={`tab-lg tab ${activeTab === 'colors' ? 'tab-active' : ''}`}
               onClick={() => setActiveTab('colors')}
             >
               🎨 Colores
             </button>
             <button
-              className={`tab tab-lg ${activeTab === 'categories' ? 'tab-active' : ''}`}
+              className={`tab-lg tab ${activeTab === 'categories' ? 'tab-active' : ''}`}
               onClick={() => setActiveTab('categories')}
             >
               📂 Categorías
             </button>
             <button
-              className={`tab tab-lg ${activeTab === 'sizes' ? 'tab-active' : ''}`}
+              className={`tab-lg tab ${activeTab === 'sizes' ? 'tab-active' : ''}`}
               onClick={() => setActiveTab('sizes')}
             >
               📏 Talles
@@ -286,7 +286,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                 <div>
                   <h3 className="mb-4 text-lg font-semibold">Colores Disponibles</h3>
                   <div className="max-h-80 overflow-x-auto">
-                    <table className="table-zebra table w-full">
+                    <table className="table table-zebra w-full">
                       <thead>
                         <tr>
                           <th>Nombre</th>
@@ -308,7 +308,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                               </td>
                               <td>
                                 <button
-                                  className="btn btn-sm btn-error text-white"
+                                  className="btn btn-error btn-sm text-white"
                                   onClick={() => handleDeleteColor(color.id, color.color_name)}
                                   title="Eliminar color"
                                 >
@@ -343,7 +343,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                         value={formDataColor.color_name}
                         onChange={handleChangeColor}
                         placeholder="Ej: Rojo Ferrari"
-                        className="input input-bordered w-full"
+                        className="input-bordered input w-full"
                         required
                       />
                     </div>
@@ -365,7 +365,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                           onChange={(e) =>
                             setFormDataColor({ ...formDataColor, color_hex: e.target.value })
                           }
-                          className="input input-bordered flex-1"
+                          className="input-bordered input flex-1"
                           placeholder="#000000"
                         />
                       </div>
@@ -388,7 +388,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                 <div>
                   <h3 className="mb-4 text-lg font-semibold">Categorías Disponibles</h3>
                   <div className="max-h-80 overflow-x-auto">
-                    <table className="table-zebra table w-full">
+                    <table className="table table-zebra w-full">
                       <thead>
                         <tr>
                           <th>Nombre</th>
@@ -406,7 +406,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                               </td>
                               <td>
                                 <button
-                                  className="btn btn-sm btn-error text-white"
+                                  className="btn btn-error btn-sm text-white"
                                   onClick={() => handleDeleteCategory(cat.id, cat.category_name)}
                                   title="Eliminar categoría"
                                 >
@@ -441,7 +441,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                         value={formDataCategory.category_name}
                         onChange={handleChangeCategory}
                         placeholder="Ej: Remeras"
-                        className="input input-bordered w-full"
+                        className="input-bordered input w-full"
                         required
                       />
                     </div>
@@ -454,7 +454,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                         value={formDataCategory.description}
                         onChange={handleChangeCategory}
                         placeholder="Descripción de la categoría"
-                        className="textarea textarea-bordered w-full"
+                        className="textarea-bordered textarea w-full"
                         rows={3}
                       />
                     </div>
@@ -476,7 +476,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                 <div>
                   <h3 className="mb-4 text-lg font-semibold">Talles Disponibles</h3>
                   <div className="max-h-80 overflow-x-auto">
-                    <table className="table-zebra table w-full">
+                    <table className="table table-zebra w-full">
                       <thead>
                         <tr>
                           <th>Talle</th>
@@ -501,7 +501,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                               </td>
                               <td>
                                 <button
-                                  className="btn btn-sm btn-error text-white"
+                                  className="btn btn-error btn-sm text-white"
                                   onClick={() => handleDeleteSize(size.id, size.size_name)}
                                   title="Eliminar talle"
                                 >
@@ -536,7 +536,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                         value={formDataSize.size_name}
                         onChange={handleChangeSize}
                         placeholder="Ej: XL, 42, L"
-                        className="input input-bordered w-full"
+                        className="input-bordered input w-full"
                         required
                       />
                     </div>
@@ -548,7 +548,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                         name="category_id"
                         value={formDataSize.category_id}
                         onChange={handleChangeSize}
-                        className="select select-bordered w-full"
+                        className="select-bordered select w-full"
                         required
                       >
                         <option value="">Seleccionar categoría</option>
@@ -575,7 +575,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
                         value={formDataSize.description}
                         onChange={handleChangeSize}
                         placeholder="Descripción del talle"
-                        className="textarea textarea-bordered w-full"
+                        className="textarea-bordered textarea w-full"
                         rows={3}
                       />
                     </div>
