@@ -11,7 +11,8 @@ import {
   ShoppingBasket,
   Receipt,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Handshake
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
@@ -652,8 +653,8 @@ export default function InfoProvider() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
-                  <ShoppingBasket className="h-6 w-6 text-primary" />
-                  Compras y Operaciones
+                  <Handshake className="h-6 w-6 text-primary" />
+                  Operaciones
                 </h2>
                 <button
                   className="btn btn-ghost btn-sm px-3 py-2 hover:bg-primary/10"
@@ -727,156 +728,6 @@ export default function InfoProvider() {
                       <div className="loading loading-spinner loading-md"></div>
                       <span className="text-slate-600 dark:text-slate-300">
                         Cargando compras...
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <table className="table table-zebra w-full">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
-                        <th className="text-slate-700 dark:text-slate-200">ID</th>
-                        <th className="text-slate-700 dark:text-slate-200">Fecha</th>
-                        <th className="text-slate-700 dark:text-slate-200">Estado</th>
-                        <th className="text-slate-700 dark:text-slate-200">Subtotal</th>
-                        <th className="text-slate-700 dark:text-slate-200">Descuento</th>
-                        <th className="text-slate-700 dark:text-slate-200">Total</th>
-                        <th className="text-slate-700 dark:text-slate-200">Método de Pago</th>
-                        <th className="text-slate-700 dark:text-slate-200">N° Factura</th>
-                        <th className="text-slate-700 dark:text-slate-200">Fecha Entrega</th>
-                        <th className="text-slate-700 dark:text-slate-200">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.isArray(purchases) && purchases.length > 0 ? (
-                        purchases.map((purchase) => (
-                          <tr
-                            key={purchase.id}
-                            className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
-                          >
-                            <td className="font-medium">{purchase.id}</td>
-                            <td className="font-medium">
-                              {purchase.purchase_date
-                                ? new Date(purchase.purchase_date).toLocaleDateString()
-                                : 'N/A'}
-                            </td>
-                            <td>
-                              <span
-                                className={`badge shadow-sm ${
-                                  purchase.status === 'Recibido'
-                                    ? 'badge-success'
-                                    : purchase.status === 'Pendiente de entrega'
-                                      ? 'badge-warning'
-                                      : 'badge-error'
-                                }`}
-                              >
-                                {purchase.status || 'Pendiente'}
-                              </span>
-                            </td>
-                            <td className="font-mono">
-                              ${purchase.subtotal ? purchase.subtotal.toFixed(2) : '0.00'}
-                            </td>
-                            <td className="font-mono">
-                              ${purchase.discount ? purchase.discount.toFixed(2) : '0.00'}
-                            </td>
-                            <td className="font-mono font-bold">
-                              ${purchase.total ? purchase.total.toFixed(2) : '0.00'}
-                            </td>
-                            <td>{purchase.payment_method || 'N/A'}</td>
-                            <td>{purchase.invoice_number || 'N/A'}</td>
-                            <td>
-                              {purchase.delivery_date
-                                ? new Date(purchase.delivery_date).toLocaleDateString()
-                                : 'Pendiente'}
-                            </td>
-                            <td>
-                              <div className="flex gap-1">
-                                <button
-                                  className="btn btn-ghost btn-xs text-blue-600"
-                                  onClick={() => handleViewPurchaseDetails(purchase.id)}
-                                >
-                                  Ver
-                                </button>
-                                {purchase.status === 'Pendiente de entrega' && (
-                                  <button
-                                    className="btn btn-ghost btn-xs text-green-600"
-                                    onClick={() => handleViewPurchaseDetails(purchase.id)}
-                                  >
-                                    Recibir
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="10" className="py-8 text-center">
-                            <div className="text-slate-500 dark:text-slate-400">
-                              <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                              No hay compras registradas
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Account Movements Section */}
-        <div className="card mb-6 bg-base-100 shadow-xl">
-          <div className="card-body">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
-                  <Receipt className="h-6 w-6 text-primary" />
-                  Movimientos de Cuenta Corriente
-                </h2>
-                <button
-                  className="btn btn-ghost btn-sm px-3 py-2 hover:bg-primary/10"
-                  onClick={() => setShowMovements(!showMovements)}
-                >
-                  {showMovements ? (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 15l7-7 7 7"
-                      />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Doble click para ver detalles
-                </div>
-              </div>
-            </div>
-
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${showMovements ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
-            >
-              <div className="overflow-x-auto rounded-lg">
-                {loadingMovements ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="flex items-center gap-3">
-                      <div className="loading loading-spinner loading-md"></div>
-                      <span className="text-slate-600 dark:text-slate-300">
-                        Cargando movimientos...
                       </span>
                     </div>
                   </div>
@@ -978,6 +829,9 @@ export default function InfoProvider() {
             </div>
           </div>
         </div>
+
+        {/* Account Movements Section */}
+
 
         <div className="mb-6 flex justify-center">
           <button
