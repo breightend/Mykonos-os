@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2, Gift, Replace } from 'lucide-react'
+import { Trash2, Gift, Replace } from 'lucide-react'
 import { useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { useLocation } from 'wouter'
@@ -344,10 +344,8 @@ function Ventas() {
       <MenuVertical currentPath="/ventas" />
       <Navbar />
       <div className="wl-20">
-        
-
-        <div className="mr-3 ml-20 flex-1">
-          <h2 className="text-warning mb-6 text-2xl font-bold">Venta</h2>
+        <div className="ml-20 mr-3 flex-1">
+          <h2 className="mb-6 text-2xl font-bold text-warning">Venta</h2>
 
           <div className="card bg-base-200 p-5 shadow-xl">
             <div className="card-body pt-0.5">
@@ -358,7 +356,7 @@ function Ventas() {
                   placeholder="VAR-123-456-789..."
                   value={codigoInput}
                   onChange={(e) => setCodigoInput(e.target.value)}
-                  className="input input-bordered input-accent w-full max-w-xs"
+                  className="input-bordered input input-accent w-full max-w-xs"
                   onKeyDown={(e) => e.key === 'Enter' && agregarProducto()}
                   disabled={loading}
                 />
@@ -472,7 +470,7 @@ function Ventas() {
                         key={producto.variant_barcode}
                         className={
                           productoSeleccionado?.variant_barcode === producto.variant_barcode
-                            ? 'bg-secondary/20 cursor-pointer rounded-3xl'
+                            ? 'cursor-pointer rounded-3xl bg-secondary/20'
                             : 'cursor-pointer'
                         }
                         onClick={() => setProductoSeleccionado(producto)}
@@ -515,7 +513,7 @@ function Ventas() {
 
           {/* Gifts Table */}
           {saleData.gifts && saleData.gifts.length > 0 && (
-            <div className="card bg-base-300 mt-6 p-5 shadow-xl">
+            <div className="card mt-6 bg-base-300 p-5 shadow-xl">
               <div className="card-body pt-0.5">
                 <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-orange-500">
                   <Gift className="h-5 w-5" />
@@ -563,7 +561,7 @@ function Ventas() {
                             <td>
                               <div className="flex items-center gap-2">
                                 <button
-                                  className="btn btn-xs btn-circle btn-ghost"
+                                  className="btn btn-ghost btn-xs btn-circle"
                                   onClick={() => {
                                     const result = updateGiftQuantity(
                                       gift.variant_barcode,
@@ -579,7 +577,7 @@ function Ventas() {
                                 </button>
                                 <span className="badge badge-warning">{gift.quantity}</span>
                                 <button
-                                  className="btn btn-xs btn-circle btn-ghost"
+                                  className="btn btn-ghost btn-xs btn-circle"
                                   onClick={() => {
                                     const result = updateGiftQuantity(
                                       gift.variant_barcode,
@@ -605,7 +603,7 @@ function Ventas() {
                             </td>
                             <td>
                               <button
-                                className="btn btn-xs btn-error"
+                                className="btn btn-error btn-xs"
                                 onClick={() => removeFromGifts(gift.variant_barcode)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -623,7 +621,7 @@ function Ventas() {
 
           {/* Sección de Intercambio */}
           {modoIntercambio && (
-            <div className="card bg-base-300 mt-6 p-5 shadow-xl">
+            <div className="card mt-6 bg-base-300 p-5 shadow-xl">
               <div className="card-body pt-0.5">
                 <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-blue-500">
                   <Replace className="h-5 w-5" />
@@ -637,7 +635,7 @@ function Ventas() {
                       placeholder="VAR-123-456-789..."
                       value={codigoDevolucionInput}
                       onChange={(e) => setCodigoDevolucionInput(e.target.value)}
-                      className="input input-bordered input-warning w-full max-w-xs"
+                      className="input-bordered input input-warning w-full max-w-xs"
                       onKeyDown={(e) => e.key === 'Enter' && agregarProductoDevolucion()}
                       disabled={loadingDevolucion}
                     />
@@ -687,7 +685,7 @@ function Ventas() {
                             <td>
                               <div className="flex items-center gap-2">
                                 <button
-                                  className="btn btn-xs btn-circle btn-ghost"
+                                  className="btn btn-ghost btn-xs btn-circle"
                                   onClick={() => {
                                     if (producto.cantidad > 1) {
                                       const nuevosProductos = productosDevolucion.map((p) =>
@@ -704,7 +702,7 @@ function Ventas() {
                                 </button>
                                 <span className="badge badge-error">{producto.cantidad}</span>
                                 <button
-                                  className="btn btn-xs btn-circle btn-ghost"
+                                  className="btn btn-ghost btn-xs btn-circle"
                                   onClick={() => {
                                     const nuevosProductos = productosDevolucion.map((p) =>
                                       p.variant_barcode === producto.variant_barcode
@@ -722,7 +720,7 @@ function Ventas() {
                             <td>{producto.marca}</td>
                             <td>
                               <button
-                                className="btn btn-xs btn-error"
+                                className="btn btn-error btn-xs"
                                 onClick={() => eliminarProductoDevolucion(producto.variant_barcode)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -732,8 +730,8 @@ function Ventas() {
                         ))}
                       </tbody>
                     </table>
-                    <div className="bg-base-100 mt-4 rounded-lg p-4">
-                      <p className="text-error text-lg font-semibold">
+                    <div className="mt-4 rounded-lg bg-base-100 p-4">
+                      <p className="text-lg font-semibold text-error">
                         Total productos devueltos: ${totalDevolucion.toLocaleString()}
                       </p>
                     </div>
@@ -744,13 +742,13 @@ function Ventas() {
           )}
 
           <div className="mt-4">
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="rounded-lg bg-base-200 p-4">
               <p className="text-xl font-bold">
                 Total productos a llevar: ${total.toLocaleString()}
               </p>
               {modoIntercambio && totalDevolucion > 0 && (
                 <>
-                  <p className="text-error text-lg font-semibold">
+                  <p className="text-lg font-semibold text-error">
                     Total productos devueltos: -${totalDevolucion.toLocaleString()}
                   </p>
                   <hr className="my-2" />
@@ -760,7 +758,7 @@ function Ventas() {
                 </>
               )}
               {!modoIntercambio && (
-                <p className="text-primary text-2xl font-bold">Total: ${total.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-primary">Total: ${total.toLocaleString()}</p>
               )}
             </div>
             <div className="flex justify-end gap-4">

@@ -39,7 +39,6 @@ export default function RegistroVentas() {
   const { getCurrentStorage } = useSession()
   const currentStorage = getCurrentStorage()
 
-  // Obtener el texto que se mostrará en el botón del calendario
   const getLabel = () => {
     if (!range) return 'Seleccionar rango de fechas'
     if (range.from && !range.to) return `Desde: ${range.from.toLocaleDateString()}`
@@ -48,7 +47,6 @@ export default function RegistroVentas() {
     return 'Seleccionar rango de fechas'
   }
 
-  // Obtener texto descriptivo para las stats según el período
   const getStatsDescription = () => {
     if (!range) return 'Total histórico'
     if (range.from && !range.to) return `desde ${range.from.toLocaleDateString()}`
@@ -60,7 +58,6 @@ export default function RegistroVentas() {
     return 'período seleccionado'
   }
 
-  // Limpiar filtros
   const clearFilters = () => {
     setRange(null)
     setSearchTerm('')
@@ -87,13 +84,10 @@ export default function RegistroVentas() {
 
       const filters = {}
 
-      // Solo aplicar filtro de sucursal si hay una seleccionada
       if (currentStorage?.id) {
         filters.storage_id = currentStorage.id
       }
 
-      // Solo aplicar filtros de fecha si hay un rango seleccionado
-      // Si no hay rango, mostrar estadísticas generales (sin filtro de fecha)
       if (range?.from) {
         filters.start_date = range.from.toISOString().split('T')[0]
         console.log('📅 Aplicando filtro desde:', filters.start_date)
@@ -205,7 +199,6 @@ export default function RegistroVentas() {
     setSelectedSale(null)
   }
 
-  // Cargar datos al montar el componente
   useEffect(() => {
     if (currentStorage?.id) {
       loadSales()
@@ -213,7 +206,6 @@ export default function RegistroVentas() {
     }
   }, [currentStorage?.id, loadSales, loadStats])
 
-  // Cerrar calendar al hacer click fuera y atajos de teclado
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
@@ -243,14 +235,12 @@ export default function RegistroVentas() {
     return () => clearTimeout(timeoutId)
   }, [searchTerm, range, loadSales])
 
-  // Formatear fecha para mostrar
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     const date = new Date(dateString)
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
   }
 
-  // Formatear precio
   const formatPrice = (price) => {
     return parseFloat(price || 0).toFixed(2)
   }
@@ -565,14 +555,14 @@ export default function RegistroVentas() {
           {/* Modal de Detalles de Venta */}
           {showModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
-              <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-gray-200 shadow-2xl">
+              <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-gray-100 shadow-2xl">
                 <div className="p-6">
                   <div className="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
                     <h3 className="text-2xl font-bold text-warning">
                       Detalles de Venta #{selectedSale?.id}
                     </h3>
                     <button
-                      className="hover:bg-warning/10 btn btn-ghost btn-sm btn-circle"
+                      className="hover:bg-warning/10 btn btn-ghost btn-sm "
                       onClick={closeModal}
                     >
                       <X className="h-5 w-5" />
