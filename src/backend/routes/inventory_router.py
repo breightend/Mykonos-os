@@ -36,7 +36,6 @@ def get_products_summary():
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
             GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price
-            HAVING SUM(ws.quantity) > 0
             ORDER BY p.product_name
             """
             products = db.execute_query(query, (storage_id,))

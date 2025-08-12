@@ -25,6 +25,16 @@ export const inventoryService = {
         }
     },
 
+    async getAllProducts() {
+        try {
+            const response = await axios.get(`${API_URL}/products`)
+            return response.data
+        } catch (error) {
+            console.error('Error al obtener todos los productos:', error)
+            throw error
+        }
+    },
+
     /**
      * Obtiene la lista de sucursales desde el endpoint de inventario
      * @returns {Promise} Lista de sucursales
