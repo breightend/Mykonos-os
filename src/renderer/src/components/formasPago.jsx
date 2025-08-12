@@ -4,6 +4,7 @@ import { useState } from 'react'
 import CuentaCorrienteClientesFP from '../componentes especificos/CuentaCorrienteClientesFP'
 import { useSellContext } from '../contexts/sellContext'
 import { accountMovementsService } from '../services/accountMovements/accountMovementsService'
+import { getBancos } from '../services/paymentsServices/banksService'
 
 export default function FormasPago() {
   const [, setLocation] = useLocation()
@@ -15,6 +16,9 @@ export default function FormasPago() {
   const [pagoInicial, setPagoInicial] = useState(0)
   const [mostrarPagoInicial, setMostrarPagoInicial] = useState(false)
   const [metodoPagoInicial, setMetodoPagoInicial] = useState('efectivo')
+  const [bancos, setBancos] = useState([])
+  const [bancoSeleccionado, setBancoSeleccionado] = useState(null)
+  const [tarjetaSeleccionada, setTarjetaSeleccionada] = useState('tarjeta')
   const { saleData, setSaleData } = useSellContext()
 
   const handleNumericInput = (value) => {
@@ -80,16 +84,28 @@ export default function FormasPago() {
         if (metodo.id === 'cuenta_corriente') {
           setMostrarModalCliente(true)
         }
+        if (metodo.id === 'tarjeta') {
+          fetchBancos()
+        }
         if (metodosSeleccionados.length > 0) {
           return [...prev, { ...metodo, monto: 0 }]
         } else {
-          return [...prev, { ...metodo, monto: totalVenta }] // Inicializa con el totalVenta
+          return [...prev, { ...metodo, monto: totalVenta }]
         }
       }
     })
   }
+  console.log(metodosSeleccionados)
 
-  // Función para manejar cambios en los montos
+  const fetchBancos = async () => {
+    try {
+      const data = await getBancos()
+      setBancos(data)
+    } catch (error) {
+      console.error('Error al obtener bancos:', error)
+    }
+  }
+
   const handlePaymentAmountChange = (methodId, amount) => {
     setMetodosSeleccionados((prev) =>
       prev.map((metodo) =>
@@ -98,7 +114,6 @@ export default function FormasPago() {
     )
   }
 
-  // Función para agregar pago a cuenta corriente
   const handleAgregarPagoCuentaCorriente = async () => {
     if (!clienteCuentaCorriente) {
       alert('Debe seleccionar un cliente primero')
@@ -190,15 +205,25 @@ export default function FormasPago() {
           type: 'cuenta_corriente'
         }
       }
+      const payments = metodosSeleccionados.map((m) => {
+        if (m.id === 'tarjeta') {
+          return {
+            method: tarjetaSeleccionada,
+            amount: m.monto,
+            bank_id: bancoSeleccionado
+          }
+        }
+        return {
+          method: m.id,
+          amount: m.monto,
+          costumer: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
+        }
+      })
 
       // Guardar en el contexto
       setSaleData((prev) => ({
         ...prev,
-        payments: metodosSeleccionados.map((m) => ({
-          method: m.id,
-          amount: m.monto,
-          costumer: m.id === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
-        })),
+        payments: payments,
         customer: customerForSale
       }))
 
@@ -206,7 +231,6 @@ export default function FormasPago() {
     }
   }
   const totalVenta = saleData.exchange?.hasExchange ? saleData.exchange.finalAmount : saleData.total
-
   return (
     <div className="formas-pago mx-auto max-w-4xl p-6">
       {/* Encabezado */}
@@ -221,7 +245,7 @@ export default function FormasPago() {
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Formas de Pago</h1>
       </div>
 
-      {/* Opciones de pago - CORREGIDO: pasar el objeto completo */}
+      {/* Opciones de pago  */}
       <div className="mb-12 grid gap-4 sm:grid-cols-4">
         {metodos.map((metodo) => (
           <button
@@ -250,24 +274,51 @@ export default function FormasPago() {
           </p>
         </div>
       )}
-      
+      {/* Discriminando en el pago de la tarjeta */}
       {metodosSeleccionados.some((m) => m.id === 'tarjeta') && (
-        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
-          <p className="font-medium text-blue-700 dark:text-blue-300">
-            Elije:{' '}
-            <select>
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-blue-800 dark:bg-blue-950">
+          {/* Tipo de tarjeta */}
+          <div className="mb-4">
+            <label
+              htmlFor="tipo-tarjeta"
+              className="mb-1 block font-medium text-blue-700 dark:text-blue-300"
+            >
+              Elige tipo de tarjeta:
+            </label>
+            <select
+              id="tipo-tarjeta"
+              value={tarjetaSeleccionada}
+              onChange={(e) => setTarjetaSeleccionada(e.target.value)}
+              className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 dark:border-blue-700 dark:bg-blue-900 dark:text-white"
+            >
               <option value="tarjeta_credito">Tarjeta de Crédito</option>
               <option value="tarjeta_debito">Tarjeta de Débito</option>
             </select>
-          </p>
-          <p>
-            Elige el banco:{' '}
-            <select>
-              <option value="banco1">Banco 1</option>
-              <option value="banco2">Banco 2</option>
-              <option value="banco3">Banco 3</option>
-            </select>
-          </p>
+          </div>
+          <div>
+            <label
+              htmlFor="banco"
+              className="mb-1 block font-medium text-blue-700 dark:text-blue-300"
+            >
+              Elige el banco:
+            </label>
+            {Array.isArray(bancos) && bancos.length > 0 ? (
+              <select
+                id="banco"
+                value={bancoSeleccionado}
+                onChange={(e) => setBancoSeleccionado(e.target.value)}
+                className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 dark:border-blue-700 dark:bg-blue-900 dark:text-white"
+              >
+                {bancos.map((banco) => (
+                  <option key={banco.id} value={banco.id}>
+                    {banco.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="italic text-gray-500">No hay bancos disponibles</p>
+            )}
+          </div>
         </div>
       )}
 

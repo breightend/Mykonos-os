@@ -64,14 +64,11 @@ export default function Inventario() {
       setLoading(true)
       setError(null)
 
-      // Primero cargar las sucursales
       try {
         const storagesResponse = await fetchSucursales()
 
-        // Verificar si la respuesta es un array directamente o un objeto con status
         let storageArray = []
         if (Array.isArray(storagesResponse)) {
-          // Si es un array directamente
           storageArray = storagesResponse
         } else if (
           storagesResponse &&
@@ -129,13 +126,11 @@ export default function Inventario() {
     }
   }, [selectedStorage, loadInventoryData, currentStorage?.id, storageList.length])
 
-  // Función para obtener todos los IDs de un grupo y sus hijos recursivamente
   const getAllGroupIds = (groupData, targetGroupId) => {
     if (!groupData) return [targetGroupId]
 
     let allIds = [targetGroupId]
 
-    // Función recursiva para recolectar IDs de hijos
     const collectChildrenIds = (children) => {
       if (!children || !Array.isArray(children)) return
 
@@ -147,17 +142,14 @@ export default function Inventario() {
       })
     }
 
-    // Si tenemos datos del grupo, recolectar sus hijos
     if (groupData.children && groupData.children.length > 0) {
       collectChildrenIds(groupData.children)
     }
 
-    return [...new Set(allIds)] // Eliminar duplicados
+    return [...new Set(allIds)]
   }
 
-  // Función para filtrar los datos
   const filteredData = inventoryData.filter((row) => {
-    // Filtro por término de búsqueda
     let matchesSearch = true
     if (searchTerm) {
       matchesSearch =
@@ -167,15 +159,12 @@ export default function Inventario() {
         (row.grupo && row.grupo.toLowerCase().includes(searchTerm.toLowerCase()))
     }
 
-    // Filtro por grupo de producto (incluyendo hijos)
     let matchesGroup = true
     if (selectedGroup && selectedGroup !== '') {
       if (selectedGroupData) {
-        // Filtro jerárquico: incluir grupo seleccionado y todos sus hijos
         const allGroupIds = getAllGroupIds(selectedGroupData, selectedGroup)
         matchesGroup = allGroupIds.includes(row.group_id?.toString())
       } else {
-        // Filtro simple por group_id directo
         matchesGroup = row.group_id?.toString() === selectedGroup
       }
     }
@@ -183,7 +172,6 @@ export default function Inventario() {
     return matchesSearch && matchesGroup
   })
 
-  // Nueva función para manejar doble clic en una fila
   const handleRowDoubleClick = (row) => {
     setSelectedProductId(row.id)
     setProductDetailModalOpen(true)
@@ -202,9 +190,7 @@ export default function Inventario() {
 
   const handleSaveChanges = async () => {
     try {
-      // Aquí puedes implementar la lógica para guardar cambios
       setIsModalOpen(false)
-      // Recargar datos después de guardar
       await loadInventoryData(selectedStorage)
     } catch (err) {
       console.error('Error al guardar cambios:', err)
@@ -219,17 +205,15 @@ export default function Inventario() {
     setSelectedStorage(e.target.value)
   }
 
-  // Nueva función para manejar la selección de grupos desde el modal ProductsFamily
   const handleGroupSelect = (groupId, groupName, groupData = null) => {
     setSelectedGroup(groupId ? groupId.toString() : '')
-    setSelectedGroupData(groupData) // Almacenar información completa del grupo
+    setSelectedGroupData(groupData)
   }
 
   const handleMoveInventoryClick = () => {
     setLocation('/moveInventory')
   }
 
-  // Nueva función para manejar la impresión de códigos de barras
   const handlePrintBarcodeClick = () => {
     if (selectedRow) {
       setSelectedProductForPrint(selectedRow)
@@ -244,6 +228,18 @@ export default function Inventario() {
       maximumFractionDigits: 2
     }).format(value)
   }
+  const sortedData = [...filteredData].sort((a, b) => {
+    if (
+      (a.cantidad_total > 0 && b.cantidad_total > 0) ||
+      (a.cantidad_total === 0 && b.cantidad_total === 0)
+    ) {
+      return 0
+    }
+    if (a.cantidad_total === 0) return 1
+    if (b.cantidad_total === 0) return -1
+    return 0
+  })
+
   return (
     <div className="min-h-screen bg-base-100">
       <MenuVertical currentPath="/inventario" />
@@ -466,7 +462,7 @@ export default function Inventario() {
                 </tr>
               </thead>
               <tbody>
-                {filteredData.length === 0 && !loading ? (
+                {sortedData.length === 0 && !loading ? (
                   <tr>
                     <td colSpan={selectedStorage ? 6 : 7} className="p-8 text-center">
                       <div className="flex flex-col items-center gap-4">
@@ -493,10 +489,10 @@ export default function Inventario() {
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((row) => (
+                  sortedData.map((row) => (
                     <tr
                       key={row.id}
-                      className={`cursor-pointer ${selectedRow === row.id ? 'selected' : ''}`}
+                      className={`cursor-pointer ${selectedRow === row.id ? 'selected' : ''} ${row.cantidad_total === 0 ? 'row-out-of-stock' : ''}`}
                       onClick={() => handleRowClick(row)}
                       onDoubleClick={() => handleRowDoubleClick(row)}
                       title="Doble clic para ver detalles completos"

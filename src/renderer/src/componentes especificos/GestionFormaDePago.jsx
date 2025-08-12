@@ -1,7 +1,7 @@
-import { ArrowLeft, Landmark } from 'lucide-react'
+import { ArrowLeft, Landmark, Trash2 } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useEffect, useState } from 'react'
-import { postNuevoBanco, getBancos } from '../services/paymentsServices/banksService'
+import { postNuevoBanco, getBancos, deleteBanco } from '../services/paymentsServices/banksService'
 import toast from 'react-hot-toast'
 
 export default function GestionFormaDePago() {
@@ -20,6 +20,18 @@ export default function GestionFormaDePago() {
       console.error('Error al crear nuevo banco:', error)
     }
   }
+
+  const handleDeleteBank = async (id) => {
+    try {
+      await deleteBanco(id)
+      setBancos(bancos.filter((banco) => banco.id !== id))
+      toast.success('Banco eliminado exitosamente')
+    } catch (error) {
+      toast.error('Error al eliminar banco')
+      console.error('Error al eliminar banco:', error)
+    }
+  }
+
   useEffect(() => {
     const fetchBancos = async () => {
       setIsLoading(true)
@@ -43,7 +55,7 @@ export default function GestionFormaDePago() {
       <div className="mb-6 flex items-center gap-3">
         <button
           className="rounded-full p-2 transition hover:bg-gray-100"
-          onClick={() => setLocation('/formasDePagoGestion')}
+          onClick={() => setLocation('/home')}
         >
           <ArrowLeft className="h-5 w-5 text-gray-600" />
         </button>
@@ -80,19 +92,26 @@ export default function GestionFormaDePago() {
       {/* Lista de bancos */}
       <div className="mt-8">
         <h2 className="mb-3 text-lg font-semibold text-gray-800">Bancos Disponibles</h2>
+
         {isLoading ? (
           <p className="italic text-gray-500">Cargando bancos...</p>
-        ) : bancos.length > 0 ? (
+        ) : Array.isArray(bancos) && bancos.length > 0 ? (
           <ul className="divide-y divide-gray-200">
-            {bancos &&
-              bancos.map((banco) => (
-                <li key={banco.id} className="rounded-lg px-2 py-3 transition hover:bg-gray-50">
-                  {banco.name}
-                </li>
-              ))}
+            {bancos.map((banco) => (
+              <li
+                key={banco.id}
+                className="flex items-center justify-between rounded-lg px-3 py-3 transition hover:bg-gray-50"
+              >
+                <span className="text-gray-700">{banco.name}</span>
+                <Trash2
+                  className="h-5 w-5 cursor-pointer text-red-500 transition hover:scale-110 hover:text-red-600"
+                  onClick={() => handleDeleteBank(banco.id)}
+                />
+              </li>
+            ))}
           </ul>
         ) : (
-          <p className="italic">No hay bancos disponibles</p>
+          <p className="italic text-gray-500">No hay bancos disponibles</p>
         )}
       </div>
     </div>
