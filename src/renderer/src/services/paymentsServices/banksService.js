@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:5000/api/payment-methods/banks'
+const API_BASE_URL = 'http://localhost:5000/api/banks'
 
 export const postNuevoBanco = async (bancoData) => {
   try {
