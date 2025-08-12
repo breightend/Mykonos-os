@@ -32,7 +32,7 @@ def get_products_summary():
                 p.group_id,
                 p.sale_price
             FROM products p
-            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = %s
+            INNER JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = %s
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
             GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price
