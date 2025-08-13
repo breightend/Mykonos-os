@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { X, Package, Check, Printer, Calendar } from 'lucide-react'
 import {
   fetchPurchaseById,
-  updatePurchaseStatus,
   receivePurchase,
   generateBarcodes
 } from '../services/proveedores/purchaseService'
@@ -114,7 +113,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
         ) : purchase ? (
           <div className="space-y-6">
             {/* Información general */}
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="rounded-lg bg-base-200 p-4">
               <h4 className="mb-4 font-semibold">Información General</h4>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div>
@@ -194,7 +193,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
             </div>
 
             {/* Productos */}
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="rounded-lg bg-base-200 p-4">
               <h4 className="mb-4 font-semibold">Productos</h4>
               {purchase.products && purchase.products.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -229,7 +228,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
             </div>
 
             {/* Totales */}
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="rounded-lg bg-base-200 p-4">
               <h4 className="mb-4 font-semibold">Totales</h4>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
@@ -252,7 +251,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                   <label className="label">
                     <span className="label-text font-bold">Total</span>
                   </label>
-                  <p className="text-primary text-xl font-bold">${purchase.total?.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-primary">${purchase.total?.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -295,7 +294,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
 
       {/* Modal para recibir compra */}
       {showReceiveModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+        <div className="z-60 fixed inset-0 flex items-center justify-center bg-black/50">
           <div className="w-96 rounded-lg bg-white p-6 shadow-2xl">
             <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800">
               <Calendar className="h-5 w-5" />
@@ -310,7 +309,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                 <select
                   value={selectedStorage}
                   onChange={(e) => setSelectedStorage(e.target.value)}
-                  className="select select-bordered w-full"
+                  className="select-bordered select w-full"
                   required
                 >
                   <option value="">Seleccionar sucursal...</option>
