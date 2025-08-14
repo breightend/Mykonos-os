@@ -1,4 +1,4 @@
-import { PackagePlus, Search, Edit, Boxes, Truck, ListPlus, Printer } from 'lucide-react'
+import { PackagePlus, Search, Edit, Boxes, Truck, ListPlus, Printer, Loader } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useState, useEffect, useCallback } from 'react'
 import { pinwheel } from 'ldrs'
@@ -437,7 +437,17 @@ export default function Inventario() {
             </div>
           </div>
         </div>
+        {/* boton para recargar solo la tabla*/}
 
+        <div>
+          <button
+            onClick={loadInitialData}
+            className="ml-10 transition-transform duration-500 hover:rotate-180"
+            title='Recargar tabla'
+          >
+            <Loader />
+          </button>
+        </div>
         {/* Tabla de inventario */}
         <div className="overflow-x-auto rounded-lg shadow-lg">
           {loading ? (

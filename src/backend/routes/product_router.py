@@ -1045,6 +1045,37 @@ def get_all_stock_by_branch(branch_id):
             }
         ), 500
 
+@product_router.route("/<int:product_id>/remove-from-storage/<int:branch_id>", methods=["DELETE"])
+def remove_product_from_storage(product_id, branch_id):
+    """
+    Elimina la relación de un producto con una sucursal (warehouse_stock) solo si la cantidad es 0.
+    """
+    db = Database()
+    # Verificar cantidad actual
+    stock_result = db.execute_query(
+        "SELECT quantity FROM warehouse_stock WHERE product_id = %s AND branch_id = %s",
+        (product_id, branch_id)
+    )
+    if not stock_result or stock_result[0].get("quantity", 0) != 0:
+        return jsonify({
+            "success": False,
+            "message": "Solo se puede eliminar si la cantidad es 0"
+        }), 400
+
+    # Eliminar la relación
+    delete_result = db.delete_record(
+        "warehouse_stock", "product_id = %s AND branch_id = %s", (product_id, branch_id)
+    )
+    if delete_result.get("success"):
+        return jsonify({
+            "success": True,
+            "message": "Relación eliminada correctamente"
+        }), 200
+    else:
+        return jsonify({
+            "success": False,
+            "message": "Error al eliminar la relación"
+        }), 500
 
 # Global OPTIONS handler for all routes
 @product_router.route("/<path:path>", methods=["OPTIONS"])

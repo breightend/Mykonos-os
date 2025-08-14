@@ -9,12 +9,14 @@ import {
   Edit,
   QrCode,
   HandCoins,
-  PackageOpen
+  PackageOpen,
+  Trash2
 } from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
+import { desvincularProductoDeTienda } from '../../services/products/productService'
 import BarcodeService from '../../services/barcodeService'
 import { useLocation } from 'wouter'
-import toast from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
 import { getCurrentBranchId } from '../../utils/posUtils'
 //BUG: stock_total muestra un valor erroneo
 //Promp: the conections with the var stock_total are wrong made because they doesnt update when a variant is added or removed but I also Need to make the conection in order to show the name of the privider and the name of the group, for that i need
@@ -32,7 +34,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
   // Estado para la URL de la imagen del producto
   const [productImageUrl, setProductImageUrl] = useState(null)
-
+  const branchId = getCurrentBranchId()
   useEffect(() => {
     const loadProductDetails = async () => {
       try {
@@ -173,54 +175,30 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
     }
   }
 
-  // Función para arreglar automáticamente los IDs inconsistentes
-  const fixVariantIds = async () => {
+  const handleDeleteFromStore = async (storeId, productId) => {
     try {
-      console.log('🔧 Iniciando reparación automática de variant IDs...')
-      toast.loading('Reparando inconsistencias de datos...', { id: 'fix-variants' })
-
-      const response = await fetch('http://localhost:5000/api/fix/variant-ids', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      const result = await response.json()
-
-      if (result.status === 'success') {
-        console.log('✅ Reparación completada:', result)
-        toast.success(`¡Reparación exitosa! Se corrigieron ${result.fixed_count} variantes.`, {
-          id: 'fix-variants',
-          duration: 4000
-        })
-
-        // Recargar los datos del producto después de la reparación
-        if (productId) {
-          console.log('🔄 Recargando datos del producto después de la reparación...')
-          const updatedResponse = await inventoryService.getProductDetails(productId)
-          if (updatedResponse.status === 'success') {
-            setProductDetails(updatedResponse.data)
-            console.log('✅ Datos del producto actualizados después de la reparación')
-          }
-        }
+      const response = await desvincularProductoDeTienda(productId, storeId)
+      if (response.success) {
+        console.log(' Producto desvinculado de la tienda:', response)
+        toast.success('¡Producto desvinculado de la tienda!', { duration: 4000 })
+        onClose()
       } else {
-        console.error('❌ Error en la reparación:', result)
-        toast.error(`Error: ${result.message}`, { id: 'fix-variants' })
+        console.error('❌ Error al desvincular producto de la tienda', response)
+        toast.error(`Error: ${response.message}`)
       }
     } catch (error) {
-      console.error('❌ Error llamando endpoint de reparación:', error)
-      toast.error('Error al ejecutar la reparación automática', { id: 'fix-variants' })
+      console.error('❌ Error llamando a la API:', error)
+      toast.error('Error, asegurate que no haya mas productos en la sucursal')
     }
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 p-4 backdrop-blur-md">
       <div className="max-h-[100vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
         {/* Header */}
-        <div className="to-primary/60 from-primary flex items-center justify-between border-b border-gray-200 bg-gradient-to-r p-6 text-black">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-primary to-primary/60 p-6 text-black">
           <div className="flex items-center space-x-3">
             <Package className="h-6 w-6" />
             <h2 className="text-xl font-bold">
@@ -683,19 +661,37 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
         </div>
 
         {/* Footer */}
-        <div className="footer border-base-300 bg-base-100 border-t p-4">
-          <div className="flex w-full justify-between gap-3">
-            <div className="flex gap-3">
+        <div className="footer border-t border-base-300 bg-base-100 p-4">
+          <div className="flex flex-wrap justify-between gap-4">
+            <div className="flex flex-wrap gap-6">
+              {/* Delete Button - Destructive */}
+              <button
+                onClick={() => handleDeleteFromStore(branchId, productId)}
+                type="button"
+                className="btn btn-error h-12 gap-2 rounded-lg px-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+                disabled={!productDetails}
+              >
+                <Trash2 className="h-5 w-5" />
+                <span>Eliminar</span>
+              </button>
+
+              {/* Edit Button - Primary */}
               <button
                 onClick={() => setLocation(`/editarProducto?id=${productId}`)}
                 type="button"
-                className="btn btn-primary h-12 gap-2 rounded-lg"
+                className="btn btn-primary h-12 gap-2 rounded-lg px-5 shadow-sm transition hover:scale-105 hover:shadow-md"
                 disabled={!productDetails}
               >
-                <Edit className="h-4 w-4" />
-                Editar Producto
+                <Edit className="h-5 w-5" />
+                <span>Editar</span>
               </button>
-              <button onClick={onClose} type="button" className="btn btn-neutral h-12 rounded-lg">
+
+              {/* Close Button - Neutral */}
+              <button
+                onClick={onClose}
+                type="button"
+                className="btn btn-outline h-12 rounded-lg px-5 transition hover:scale-105 hover:bg-base-200"
+              >
                 Cerrar
               </button>
             </div>
@@ -705,7 +701,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
       {/* Modal para mostrar código de barras */}
       {showBarcodeModal && barcodePreview && (
-        <div className="bg-opacity-50 fixed inset-0 z-60 flex items-center justify-center bg-black p-4">
+        <div className="z-60 fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="max-w-md rounded-lg bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Código de Barras</h3>
@@ -735,6 +731,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
           </div>
         </div>
       )}
+      <Toaster position="top-center" />
     </div>
   )
 }

@@ -35,6 +35,17 @@ export async function fetchProductoCompleto(productId) {
     }
 }
 
+//Desvincular un producto a una tienda en especifico
+export async function desvincularProductoDeTienda(productId, storeId) {
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/${productId}/remove-from-storage/${storeId}`)
+        return response.data
+    } catch (error) {
+        console.error('Error desvinculating product from store:', error)
+        throw error
+    }
+}
+
 // ============== GESTIÓN DE TALLES POR PRODUCTO ==============
 
 // Agregar un talle a un producto
