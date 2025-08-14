@@ -68,6 +68,39 @@
   color: #9ca3af !important; /* texto gris */
   opacity: 0.7;
 }
+.input {
+  flex-shrink: 1;
+  height: 3rem;
+  padding: 0 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-width: 2px;
+  border-color: hsl(var(--bc) / 0.6); /* Borde más visible */
+  background-color: hsl(var(--b1) / 0.95); /* Fondo más claro para contraste */
+  border-radius: var(--rounded-btn, 0.5rem);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.input-bordered {
+  border-color: hsl(var(--bc) / 0.8); /* Aún más marcado */
+}
+
+.input:hover {
+  background-color: hsl(var(--b1) / 1); /* Un poco más blanco al pasar el mouse */
+  border-color: hsl(var(--bc) / 1);
+}
+
+.input:focus {
+  outline: none;
+  border-color: hsl(var(--p) / 0.9); /* Color principal fuerte */
+  box-shadow: 0 0 0 3px hsl(var(--p) / 0.3); /* Halo notorio */
+}
+
+.input::placeholder {
+  color: hsl(var(--bc) / 0.6); /* Placeholder más visible */
+}
+
+
 
 /* DaisyUI Botones con colores personalizados */
 .btn-primary {
