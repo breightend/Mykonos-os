@@ -476,15 +476,15 @@ export default function NuevoProducto() {
 
     return {
       provider_code: providerCode,
-      product_name: productName, // Changed from empty string to use productName state
-      group_id: parseInt(tipo), // Usar el grupo seleccionado
+      product_name: productName,
+      group_id: parseInt(tipo),
       provider_id: parseInt(selectedProvider),
-      description: '', // Keep as empty for now, or add a separate description field if needed
+      description: '',
       cost: cost && !isNaN(parseFloat(cost)) ? parseFloat(cost) : null,
       sale_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null,
-      original_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null, // Set original price to initial sale price
-      tax: 0, // Por defecto
-      discount: 0, // Por defecto
+      original_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null,
+      tax: 0,
+      discount: 0,
       comments: comments || null,
       user_id: currentUser?.id || 1,
       images_ids: null,
@@ -494,10 +494,8 @@ export default function NuevoProducto() {
       size_ids: sizeIds,
       color_ids: colorIds,
       product_image: imageToSend,
-      // Datos para el stock inicial
       storage_id: currentStorage?.id || null,
-      initial_quantity: cantidadTotal, // Cantidad total para el stock inicial
-      // 🆕 VARIANTES CON CANTIDADES ESPECÍFICAS
+      initial_quantity: cantidadTotal,
       stock_variants: talles.flatMap((talle) => {
         const sizeData = tallesBD.find((s) => s.size_name === talle.talle)
         if (!sizeData) return []
@@ -519,7 +517,6 @@ export default function NuevoProducto() {
     }
   }
 
-  // Función para validar el formulario
   const validateForm = () => {
     const newErrors = {}
 
@@ -558,7 +555,7 @@ export default function NuevoProducto() {
     setComments('')
     setProviderCode('')
     setProductImage('')
-    setUseAutoCalculation(settings.autoCalculatePrice) // Resetear al valor por defecto
+    setUseAutoCalculation(settings.autoCalculatePrice)
     setTalles([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
     setCantidadTotal(0)
     setErrors({})
@@ -588,7 +585,6 @@ export default function NuevoProducto() {
 
       console.log('Producto guardado exitosamente:', response)
 
-      // Generar códigos de barras para las variantes después de crear el producto
       if (response.product_id && productData.stock_variants.length > 0) {
         try {
           const barcodeService = new BarcodeService()
@@ -607,11 +603,9 @@ export default function NuevoProducto() {
           console.log('✅ Códigos de barras generados:', barcodeResult)
         } catch (barcodeError) {
           console.error('⚠️ Error generando códigos de barras:', barcodeError)
-          // No fallar toda la operación por esto
         }
       }
 
-      // Mostrar mensaje de éxito si hay imagen
       if (productImage && response.image_id) {
         console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
       }
@@ -637,7 +631,6 @@ export default function NuevoProducto() {
 
       console.log('Producto agregado exitosamente:', response)
 
-      // Generar códigos de barras para las variantes después de crear el producto
       if (response.product_id && productData.stock_variants.length > 0) {
         try {
           const barcodeService = new BarcodeService()
@@ -656,7 +649,6 @@ export default function NuevoProducto() {
           console.log('✅ Códigos de barras generados:', barcodeResult)
         } catch (barcodeError) {
           console.error('⚠️ Error generando códigos de barras:', barcodeError)
-          // No fallar toda la operación por esto
         }
       }
 
@@ -666,7 +658,6 @@ export default function NuevoProducto() {
 
       clearForm()
 
-      // Mostrar mensaje de éxito temporal
       const successMessage = productImage
         ? 'Producto e imagen agregados exitosamente. Puede agregar otro.'
         : 'Producto agregado exitosamente. Puede agregar otro.'
@@ -684,7 +675,7 @@ export default function NuevoProducto() {
   if (loadingData) {
     return (
       <>
-        <div className="bg-base-100 flex min-h-screen items-center justify-center p-6">
+        <div className="flex min-h-screen items-center justify-center bg-base-100 p-6">
           <div className="flex items-center space-x-4 p-4">
             <div className="">
               <l-pinwheel size="35" stroke="3.5" speed="0.9" color="black"></l-pinwheel>
@@ -696,27 +687,23 @@ export default function NuevoProducto() {
     )
   }
 
-  /*   if (errorData) {
-    return <div>Error al cargar los datos: {errorData.message}</div>
-  } */
-
   return (
-    <div className="from-base-100 to-base-200 min-h-screen bg-gradient-to-br">
+    <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
       {/* Header con gradiente y sombra */}
-      <div className="bg-base-100/95 border-base-300 top-0 z-10 border-b shadow-lg backdrop-blur-sm">
+      <div className="bg-base-100/95 top-0 z-10 border-b border-base-300 shadow-lg backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="tooltip" data-tip="Volver al inventario">
+              <div className="tooltip tooltip-bottom" data-tip="Volver al inventario">
                 <button
-                  className="btn btn-circle btn-outline hover:btn-primary transition-all duration-300 hover:scale-110"
+                  className="btn btn-outline hover:scale-110"
                   onClick={() => setLocation('/inventario')}
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
               </div>
               <div>
-                <h1 className="from-primary to-accent bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent">
+                <h1 className="bg-gradient-to-r from-primary to-accent bg-clip-text text-3xl font-bold text-transparent">
                   Agregar Artículo
                 </h1>
                 <p className="text-base-content/70 text-sm">
@@ -733,7 +720,7 @@ export default function NuevoProducto() {
       <div className="container mx-auto px-6 py-8">
         {/* Información de la sesión actual */}
         {currentStorage && (
-          <div className="alert bg-accent mb-6">
+          <div className="alert mb-6 bg-accent">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="font-semibold">📍 Sucursal:</span>
@@ -752,11 +739,11 @@ export default function NuevoProducto() {
 
         <form className="mx-auto max-w-6xl space-y-8">
           {/* Sección: Información Básica */}
-          <div className="card bg-base-100 border-base-300 border shadow-xl">
+          <div className="card border border-base-300 bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <span className="text-primary font-bold">1</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <span className="font-bold text-primary">1</span>
                 </div>
                 Información Básica
               </h2>
@@ -771,7 +758,7 @@ export default function NuevoProducto() {
                   <input
                     type="text"
                     placeholder="Ej: Remera básica algodón"
-                    className={`input input-bordered focus:border-primary w-full ${
+                    className={`input-bordered input w-full focus:border-primary ${
                       errors.productName ? 'input-error' : ''
                     }`}
                     value={productName}
@@ -795,7 +782,7 @@ export default function NuevoProducto() {
                   {productImage && (
                     <div className="mb-4 flex justify-center">
                       <div className="avatar">
-                        <div className="ring-primary ring-offset-base-100 h-32 w-32 rounded-xl ring ring-offset-2">
+                        <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
                           <img
                             src={base64ToObjectUrl(productImage)}
                             alt="Preview del producto"
@@ -808,22 +795,22 @@ export default function NuevoProducto() {
 
                   <div
                     {...getRootProps()}
-                    className={`hover:border-primary/50 cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 ${
+                    className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 hover:border-primary/50 ${
                       isDragActive
                         ? 'border-primary bg-primary/5'
                         : errors.productImage
-                          ? 'border-error bg-error/5'
-                          : 'border-base-300 hover:bg-base-200/50'
+                          ? 'bg-error/5 border-error'
+                          : 'hover:bg-base-200/50 border-base-300'
                     } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
                   >
                     <input {...getInputProps()} />
                     <div className="space-y-2">
-                      <div className="bg-primary/10 mx-auto flex h-12 w-12 items-center justify-center rounded-full">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                         {isUploadingImage ? (
-                          <LoaderCircle className="text-primary h-6 w-6 animate-spin" />
+                          <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
                         ) : (
                           <svg
-                            className="text-primary h-6 w-6"
+                            className="h-6 w-6 text-primary"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -857,11 +844,11 @@ export default function NuevoProducto() {
             </div>
           </div>
           {/* Sección: Categorización */}
-          <div className="card bg-base-100 border-base-300 border shadow-xl">
+          <div className="card border border-base-300 bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="bg-secondary/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <span className="text-secondary font-bold">2</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
+                  <span className="font-bold text-secondary">2</span>
                 </div>
                 Categorización y Origen
               </h2>
@@ -884,7 +871,7 @@ export default function NuevoProducto() {
                   <div className="tooltip" data-tip="Ver estructura de grupos">
                     <button
                       type="button"
-                      className="btn btn-outline btn-secondary"
+                      className="btn btn-secondary btn-outline"
                       onClick={() => setShowGroupTreeModal(true)}
                     >
                       <Menu className="h-4 w-4" />
@@ -907,7 +894,7 @@ export default function NuevoProducto() {
                   <select
                     value={selectedProvider}
                     onChange={handleProviderChange}
-                    className={`select select-bordered focus:border-secondary w-full ${
+                    className={`select-bordered select w-full focus:border-secondary ${
                       errors.provider ? 'select-error' : ''
                     }`}
                     required
@@ -937,7 +924,7 @@ export default function NuevoProducto() {
                   <select
                     value={marca}
                     onChange={(e) => setMarca(e.target.value)}
-                    className={`select select-bordered focus:border-secondary w-full ${
+                    className={`select-bordered select w-full focus:border-secondary ${
                       errors.marca ? 'select-error' : ''
                     } ${!selectedProvider ? 'select-disabled' : ''}`}
                     required
@@ -980,7 +967,7 @@ export default function NuevoProducto() {
                     placeholder="Código interno del proveedor"
                     value={providerCode}
                     onChange={(e) => setProviderCode(e.target.value)}
-                    className="input input-bordered focus:border-secondary w-full"
+                    className="input-bordered input w-full focus:border-secondary"
                   />
                 </div>
               </div>
@@ -988,21 +975,21 @@ export default function NuevoProducto() {
           </div>
 
           {/* Sección: Precios */}
-          <div className="card bg-base-100 border-base-300 border shadow-xl">
+          <div className="card border border-base-300 bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="bg-accent/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <span className="text-accent font-bold">3</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                  <span className="font-bold text-accent">3</span>
                 </div>
                 Precios y Costos
               </h2>
 
               {/* Control de cálculo automático */}
               {settings.autoCalculatePrice && (
-                <div className="alert bg-accent mb-6">
+                <div className="alert mb-6 bg-accent">
                   <div className="flex w-full items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-info text-2xl">🧮</span>
+                      <span className="text-2xl text-info">🧮</span>
                       <div>
                         <div className="font-semibold">Cálculo Automático de Precios</div>
                         <div className="text-sm opacity-75">
@@ -1045,8 +1032,8 @@ export default function NuevoProducto() {
                     <span className="label-text font-semibold">Costo del producto</span>
                     <span className="label-text-alt text-error">*</span>
                   </label>
-                  <div className="join w-full">
-                    <span className="join-item btn btn-outline btn-disabled">$</span>
+                  <div className="w-full join">
+                    <span className="btn btn-disabled btn-outline join-item">$</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -1068,7 +1055,7 @@ export default function NuevoProducto() {
                           }
                         }
                       }}
-                      className={`input input-bordered join-item focus:border-accent flex-1 ${
+                      className={`input-bordered input flex-1 join-item focus:border-accent ${
                         errors.cost ? 'input-error' : ''
                       }`}
                       required
@@ -1087,18 +1074,18 @@ export default function NuevoProducto() {
                     <span className="label-text font-semibold">Precio de venta</span>
                     <span className="label-text-alt text-error">*</span>
                     {settings.autoCalculatePrice && useAutoCalculation && (
-                      <span className="label-text-alt text-success text-xs">
+                      <span className="label-text-alt text-xs text-success">
                         📊 Cálculo automático activo
                       </span>
                     )}
                     {settings.autoCalculatePrice && !useAutoCalculation && (
-                      <span className="label-text-alt text-warning text-xs">
+                      <span className="label-text-alt text-xs text-warning">
                         ✏️ Modo manual activo
                       </span>
                     )}
                   </label>
-                  <div className="join w-full">
-                    <span className="join-item btn btn-outline btn-disabled">$</span>
+                  <div className="w-full join">
+                    <span className="btn btn-disabled btn-outline join-item">$</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -1115,7 +1102,7 @@ export default function NuevoProducto() {
                           setSalePrice(newSalePrice)
                         }
                       }}
-                      className={`input input-bordered join-item focus:border-accent flex-1 ${
+                      className={`input-bordered input flex-1 join-item focus:border-accent ${
                         errors.salePrice ? 'input-error' : ''
                       } ${
                         settings.autoCalculatePrice && useAutoCalculation && cost
@@ -1138,7 +1125,7 @@ export default function NuevoProducto() {
                   )}
                   {settings.autoCalculatePrice && useAutoCalculation && (
                     <div className="label">
-                      <span className="label-text-alt text-info text-xs">
+                      <span className="label-text-alt text-xs text-info">
                         💡{' '}
                         {settings.markupType === 'percentage'
                           ? `Ganancia: ${settings.priceMarkupPercentage}%`
@@ -1163,7 +1150,7 @@ export default function NuevoProducto() {
               </div>
 
               {/* Información adicional */}
-              <div className="bg-base-200 mt-4 rounded-lg p-4">
+              <div className="mt-4 rounded-lg bg-base-200 p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span>Impuestos aplicables:</span>
                   <span className="font-semibold">$0.00</span>
@@ -1173,11 +1160,11 @@ export default function NuevoProducto() {
           </div>
 
           {/* Sección: Talles, Colores y Cantidades */}
-          <div className="card bg-base-100 border-base-300 border shadow-xl">
+          <div className="card border border-base-300 bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
                 <div className="bg-success/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <span className="text-success font-bold">4</span>
+                  <span className="font-bold text-success">4</span>
                 </div>
                 Talles, Colores y Cantidades
               </h2>
@@ -1215,14 +1202,14 @@ export default function NuevoProducto() {
                 {talles.map((talle, talleIndex) => (
                   <div
                     key={talleIndex}
-                    className="card from-primary/5 to-secondary/5 border-primary/20 border bg-gradient-to-br shadow-md"
+                    className="card border border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md"
                   >
                     <div className="card-body">
                       {/* Header del talle */}
                       <div className="mb-4 flex items-center justify-between">
                         <h3 className="flex items-center gap-2 text-lg font-semibold">
-                          <div className="bg-primary/20 flex h-6 w-6 items-center justify-center rounded-full">
-                            <span className="text-primary text-xs font-bold">{talleIndex + 1}</span>
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                            <span className="text-xs font-bold text-primary">{talleIndex + 1}</span>
                           </div>
                           Talle {talleIndex + 1}
                         </h3>
@@ -1230,10 +1217,10 @@ export default function NuevoProducto() {
                           <div className="tooltip" data-tip="Eliminar este talle">
                             <button
                               type="button"
-                              className="btn btn-circle btn-sm btn-error btn-outline hover:btn-error"
+                              className="btn btn-error"
                               onClick={() => handleDeleteTalle(talleIndex)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-5 w-5" />
                             </button>
                           </div>
                         )}
@@ -1250,7 +1237,7 @@ export default function NuevoProducto() {
                             <select
                               value={talle.talle}
                               onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
-                              className="select select-bordered focus:border-primary flex-1"
+                              className="select-bordered select flex-1 focus:border-primary"
                               required
                             >
                               <option value="" disabled>
@@ -1277,7 +1264,7 @@ export default function NuevoProducto() {
                           <button
                             type="button"
                             onClick={() => agregarColor(talleIndex)}
-                            className="btn btn-sm btn-outline btn-primary"
+                            className="btn btn-secondary"
                             disabled={!talle.talle}
                           >
                             + Agregar color
@@ -1288,7 +1275,7 @@ export default function NuevoProducto() {
                           {talle.colores.map((color, colorIndex) => (
                             <div
                               key={colorIndex}
-                              className="bg-base-100 border-base-300 flex items-center gap-3 rounded-lg border p-3"
+                              className="flex items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3"
                             >
                               <div className="flex-1">
                                 <ColorSelect
@@ -1340,7 +1327,7 @@ export default function NuevoProducto() {
                                       )
                                     }
                                   }}
-                                  className="input input-bordered input-sm w-full text-center"
+                                  className="input-bordered input input-sm w-full text-center"
                                   required
                                 />
                               </div>
@@ -1348,10 +1335,10 @@ export default function NuevoProducto() {
                                 <div className="tooltip" data-tip="Eliminar color">
                                   <button
                                     type="button"
-                                    className="btn btn-circle btn-sm btn-error btn-outline"
+                                    className="btn btn-error "
                                     onClick={() => handleDeleteColor(talleIndex, colorIndex)}
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-4 w-4" />
                                   </button>
                                 </div>
                               )}
@@ -1369,7 +1356,7 @@ export default function NuevoProducto() {
                 <button
                   type="button"
                   onClick={agregarTalle}
-                  className="btn btn-outline btn-primary gap-2"
+                  className="btn btn-primary btn-outline gap-2"
                   disabled={loadingData || tallesBD.length === 0}
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1387,11 +1374,11 @@ export default function NuevoProducto() {
           </div>
 
           {/* Sección: Observaciones */}
-          <div className="card bg-base-100 border-base-300 border shadow-xl">
+          <div className="card border border-base-300 bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
                 <div className="bg-info/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <span className="text-info font-bold">5</span>
+                  <span className="font-bold text-info">5</span>
                 </div>
                 Observaciones Adicionales
               </h2>
@@ -1406,7 +1393,7 @@ export default function NuevoProducto() {
                   placeholder="Ingrese observaciones, notas especiales, o cualquier información adicional sobre el producto..."
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  className="textarea textarea-bordered focus:border-info h-24 w-full resize-none"
+                  className="textarea-bordered textarea h-24 w-full resize-none focus:border-info"
                   rows="3"
                 ></textarea>
               </div>
@@ -1414,12 +1401,12 @@ export default function NuevoProducto() {
           </div>
 
           {/* Sección: Resumen y Acciones */}
-          <div className="card from-primary/5 to-secondary/5 border-primary/20 border bg-gradient-to-r shadow-xl">
+          <div className="card border border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 shadow-xl">
             <div className="card-body">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 {/* Resumen */}
                 <div className="space-y-4">
-                  <h3 className="text-primary text-xl font-bold">Resumen del Producto</h3>
+                  <h3 className="text-xl font-bold text-primary">Resumen del Producto</h3>
                   <div className="stats shadow">
                     <div className="stat">
                       <div className="stat-title">Cantidad Total</div>

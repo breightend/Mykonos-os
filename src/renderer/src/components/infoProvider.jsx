@@ -10,8 +10,6 @@ import {
   HandCoins,
   ShoppingBasket,
   Receipt,
-  TrendingUp,
-  TrendingDown,
   Handshake
 } from 'lucide-react'
 import { useEffect, useState } from 'react'

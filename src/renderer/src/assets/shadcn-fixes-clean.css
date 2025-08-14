@@ -69,36 +69,60 @@
   opacity: 0.7;
 }
 
-
 /* DaisyUI Botones con colores personalizados */
 .btn-primary {
   background-color: #ff8c42 !important;
   color: #ffffff !important;
   border-color: #ff8c42 !important;
+
+  &:hover {
+    background-color: #e76d3c !important;
+    border-color: #e76d3c !important;
+  }
 }
 
 .btn-secondary {
   background-color: #6366f1 !important;
   color: #ffffff !important;
   border-color: #6366f1 !important;
+  &:hover {
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+  }
 }
 
 .btn-accent {
   background-color: #06b6d4 !important;
   color: #ffffff !important;
   border-color: #06b6d4 !important;
+  &:hover {
+    background-color: #05b0c4 !important;
+    border-color: #05b0c4 !important;
+  }
 }
 
 .btn-warning {
   background-color: #f59e0b !important;
   color: #ffffff !important;
   border-color: #f59e0b !important;
+  &:hover {
+    background-color: #f59e0b !important;
+    border-color: #f59e0b !important;
+  }
 }
 
 .btn-error {
-  background-color: #ef4444 !important;
-  color: #ffffff !important;
+  background-color: transparent !important;
+  color: #ef4444 !important;
   border-color: #ef4444 !important;
+
+  &:hover {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(255, 140, 66, 0.2) !important;
+  }
 }
 
 .btn-info {
@@ -111,6 +135,11 @@
   background-color: #10b981 !important;
   color: #ffffff !important;
   border-color: #10b981 !important;
+
+  &:hover {
+    background-color: #0f9f70 !important;
+    border-color: #0f9f70 !important;
+  }
 }
 
 /* Asegurar que las cards mantengan su fondo */
@@ -219,7 +248,6 @@
   border: 1px solid transparent !important;
   color: inherit !important;
   transition: all 0.2s ease !important;
-  
 }
 
 .btn-ghost:hover {
@@ -673,19 +701,21 @@
 }
 
 /* Botones outline mejorados */
+/* Botón outline base */
 .btn-outline {
   background-color: transparent !important;
-  border: 1px solid rgba(255, 140, 66, 0.3) !important;
-  color: #ff8c42 !important;
+  color: inherit !important; /* toma el color de texto del btn base */
+  border-color: currentColor !important; /* usa el color del texto como borde */
   transition: all 0.2s ease !important;
 }
 
+/* Hover adaptativo */
 .btn-outline:hover {
-  background-color: #ff8c42 !important;
+  background-color: #5e5e5e !important;
   color: #ffffff !important;
-  border-color: #ff8c42 !important;
+  border-color: #5e5e5e !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 8px rgba(255, 140, 66, 0.2) !important;
+  box-shadow: 0 4px 8px rgba(255, 140, 66, 0.2) !important; /* sombra neutra */
 }
 
 [data-theme='night'] .modal,

@@ -115,7 +115,6 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
     if (isOpen && productId) {
       loadProductDetails()
     } else if (!isOpen) {
-      // Limpiar estados cuando se cierra el modal
       setProductDetails(null)
       setProductImageUrl(null)
       setError(null)
