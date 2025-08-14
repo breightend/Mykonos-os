@@ -1,11 +1,6 @@
-import { ChevronsUp, Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import {
-  fetchColor,
-  postData,
-  deleteColor,
-  checkColorInUse
-} from '../../services/products/colorService'
+import { fetchColor, postData, deleteColor } from '../../services/products/colorService'
 import {
   fetchCategorySize,
   postDataSize,
@@ -70,9 +65,9 @@ export default function ModalColoresYTalles({ onRefresh }) {
   const handleSubmitColor = async (e) => {
     e.preventDefault()
     try {
-      const response = await postData(formDataColor)
-      console.log('Color agregado:', response)
-      setColors([...colors, response])
+      await postData(formDataColor)
+      const updatedColors = await fetchColor()
+      setColors(updatedColors)
       setFormDataColor({
         color_name: '',
         color_hex: '#000000'

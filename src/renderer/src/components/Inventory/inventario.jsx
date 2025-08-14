@@ -443,7 +443,7 @@ export default function Inventario() {
           <button
             onClick={loadInitialData}
             className="ml-10 transition-transform duration-500 hover:rotate-180"
-            title='Recargar tabla'
+            title="Recargar tabla"
           >
             <Loader />
           </button>
