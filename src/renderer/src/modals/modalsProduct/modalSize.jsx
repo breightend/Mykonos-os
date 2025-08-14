@@ -217,25 +217,25 @@ export default function ModalSize({ onRefresh }) {
   return (
     <div>
       <button
-        className="btn btn-ghost btn-sm rounded-btn tooltip tooltip-bottom"
+        className="rounded-btn tooltip tooltip-bottom btn btn-ghost btn-sm"
         data-tip="Agregar nuevo talle"
         onClick={() => document.getElementById('sizeModal').showModal()}
       >
-        <Ruler className="text-secondary h-6 w-6" />
+        <Ruler className="h-6 w-6 text-secondary" />
       </button>
       <dialog id="sizeModal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
           <form method="dialog">
-            <button className="btn btn-sm btn-circle btn-ghost absolute top-2 right-2">✕</button>
+            <button className="btn btn-ghost btn-sm btn-circle absolute right-2 top-2">✕</button>
           </form>
           <h3 className="mb-4 text-lg font-bold">Talles Existentes</h3>
-          <div className="border-base-300 mb-4 max-h-96 overflow-y-auto rounded-lg border-2 p-2">
+          <div className="mb-4 max-h-96 overflow-y-auto rounded-lg border-2 border-base-300 p-2">
             {category && category.length > 0 ? (
               <table className="table w-full">
                 {category.map((cat) => (
                   <div
                     key={cat.id}
-                    className="rounded-box border-base-300 bg-base-100 relative mb-2 border"
+                    className="relative mb-2 rounded-box border border-base-300 bg-base-100"
                     style={{
                       background: 'var(--fallback-b1,oklch(var(--b1)/var(--tw-bg-opacity)))',
                       borderColor: 'var(--fallback-bc,oklch(var(--bc)/0.2))'
@@ -279,7 +279,7 @@ export default function ModalSize({ onRefresh }) {
                               </li>
                             ))}
                           {sizes.filter((size) => size.category_id === cat.id).length === 0 && (
-                            <li className="px-2 py-2 text-sm text-gray-500 italic">
+                            <li className="px-2 py-2 text-sm italic text-gray-500">
                               No hay talles para esta categoría
                             </li>
                           )}
@@ -297,7 +297,7 @@ export default function ModalSize({ onRefresh }) {
             )}
           </div>
 
-          <h3 className="mt-6 mb-2 text-lg font-bold">Agregar Nuevo Talle</h3>
+          <h3 className="mb-2 mt-6 text-lg font-bold">Agregar Nuevo Talle</h3>
           {error && (
             <div className="alert alert-error mb-4">
               <svg
@@ -325,7 +325,7 @@ export default function ModalSize({ onRefresh }) {
                 type="text"
                 name="size_name"
                 placeholder="Ej: S, M, L, 38, 40"
-                className="input input-bordered w-full max-w-xs"
+                className="input-bordered input w-full max-w-xs"
                 value={formData.size_name}
                 onChange={handleChange}
               />
@@ -336,7 +336,7 @@ export default function ModalSize({ onRefresh }) {
               </label>
               <select
                 name="category_id"
-                className="select select-bordered w-full max-w-xs"
+                className="select-bordered select w-full max-w-xs"
                 value={formData.category_id}
                 onChange={handleChange}
                 disabled={category.length === 0}
@@ -360,7 +360,7 @@ export default function ModalSize({ onRefresh }) {
                   type="text"
                   name="description"
                   placeholder="Ej: Talle de ropa, calzado, etc."
-                  className="input input-bordered w-full max-w-xs"
+                  className="input-bordered input w-full max-w-xs"
                   value={formData.description}
                   onChange={handleChange}
                 />
@@ -369,7 +369,7 @@ export default function ModalSize({ onRefresh }) {
 
             <div className="mt-4 border-t pt-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Agregar Categoría</h4>
+                <h4 className="text-lg font-semibold">Agregar Categoría</h4>
                 <button className="btn btn-xs" onClick={handleMostrarAgregarCategoria}>
                   {mostrarAgregarCategoria ? (
                     <ChevronsUp className="h-4 w-4" />
@@ -388,13 +388,13 @@ export default function ModalSize({ onRefresh }) {
                       type="text"
                       name="category_name"
                       placeholder="Ej: Ropa, Calzado, Accesorios"
-                      className="input input-bordered w-full max-w-xs"
+                      className="input-bordered input w-full max-w-xs"
                       value={formData.category_name}
                       onChange={handleChange}
                     />
                   </div>
                   <button
-                    className="btn btn-sm btn-primary"
+                    className="btn btn-primary btn-sm"
                     type="button"
                     onClick={handleSubmitCategorySize}
                   >

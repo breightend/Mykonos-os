@@ -4,19 +4,19 @@ import toast, { Toaster } from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { Replace, RotateCcw } from 'lucide-react'
 import { salesService } from '../services/salesService'
+import { getCurrentBranchId } from '../utils/posUtils'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
   const [, setLocation] = useLocation()
   const [isProcessing, setIsProcessing] = useState(false)
-
+  const branchId = getCurrentBranchId()
   const handleSubmit = async () => {
     if (isProcessing) return
 
     setIsProcessing(true)
 
     try {
-      // Preparar datos para el backend
       const saleDataForBackend = {
         customer: saleData.customer || null,
         products: saleData.products.map((product) => ({
@@ -61,7 +61,7 @@ export default function ConfirmacionDatosDeCompra() {
         total: saleData.exchange?.hasExchange
           ? parseFloat(saleData.exchange.finalAmount)
           : parseFloat(saleData.total),
-        storage_id: 1, // TODO: Obtener de la configuración del usuario
+        storage_id: branchId,
         employee_id: 1, // TODO: Obtener del usuario logueado
         cashier_user_id: 1 // TODO: Obtener del usuario logueado
       }
@@ -272,6 +272,47 @@ export default function ConfirmacionDatosDeCompra() {
             </table>
           </div>
         </div>
+
+        {/* Productos Regalo */}
+        {saleData.gifts && saleData.gifts.length > 0 && (
+          <div className="mb-6">
+            <h2 className="mb-2 text-xl font-semibold text-green-700">
+              Regalos ({saleData.gifts.length})
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Marca</th>
+                    <th>Cantidad</th>
+                    <th>Talle</th>
+                    <th>Color</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {saleData.gifts.map((gift, index) => (
+                    <tr key={index}>
+                      <td>{gift.product_name}</td>
+                      <td>{gift.brand}</td>
+                      <td>{gift.quantity}</td>
+                      <td>{gift.size_name}</td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full border"
+                            style={{ backgroundColor: gift.color_hex }}
+                          ></div>
+                          <span className="text-xs">{gift.color_name}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Detalles del Intercambio - Solo mostrar si hubo intercambio */}
         {saleData.exchange?.hasExchange && (

@@ -17,7 +17,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
   const [category, setCategory] = useState([])
   const [, setSizeXcategory] = useState([])
   const [loading, setLoading] = useState(false)
-  const [mostrarAgregarCategoria, setMostrarAgregarCategoria] = useState(false)
+  const [, setMostrarAgregarCategoria] = useState(false)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('colors') // 'colors', 'sizes', 'categories'
 

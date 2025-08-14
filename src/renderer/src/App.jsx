@@ -30,7 +30,6 @@ import TestDaisyUI from './test/TestDaisyUI'
 import StyleTest from './components/StyleTest'
 import ResumenProveedores from './components/stadistics/resumenProveedores'
 import EditarProducto from './components/Inventory/editarProducto'
-import MultiProductExchangeTestPage from './components/MultiProductExchangeTestPage'
 import GestionFormaDePago from './componentes especificos/GestionFormaDePago'
 
 function App() {

@@ -9,7 +9,7 @@ export const SellProvider = ({ children }) => {
     customer: null,
     total: 0,
     discount: 0,
-    gifts: [] // Array for gift products
+    gifts: [] 
   })
 
   // Métodos para productos (se mantienen igual)
@@ -20,6 +20,7 @@ export const SellProvider = ({ children }) => {
       total: prev.total + product.price * product.quantity
     }))
   }
+
 
   // Método mejorado para pagos
   const addPaymentMethod = (method) => {
