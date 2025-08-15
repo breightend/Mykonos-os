@@ -10,12 +10,11 @@ import { useSession } from '../contexts/SessionContext'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
-  
   const [, setLocation] = useLocation()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [saleDetailIds, setSaleDetailIds] = useState([])
   const branchId = getCurrentBranchId()
   const userId = useSession().session.user_id
-  console.log('User ID:', userId)
 
   const handleSubmit = async () => {
     if (isProcessing) return
@@ -72,9 +71,83 @@ export default function ConfirmacionDatosDeCompra() {
         cashier_user_id: userId
       }
 
-      console.log('📋 Enviando venta al backend:', saleDataForBackend)
+      const result = await salesService.createSale(saleDataForBackend)
 
-      // Enviar venta al backend
+      if (result.status === 'success') {
+        toast.success(
+          `Venta finalizada con éxito${saleData.exchange?.hasExchange ? ' con intercambio' : ''}`,
+          { duration: 3000 }
+        )
+        setTimeout(() => {
+          setLocation('/ventas')
+        }, 2000)
+      } else {
+        throw new Error(result.message || 'Error desconocido al procesar la venta')
+      }
+    } catch (error) {
+      console.error('❌ Error al finalizar venta:', error)
+      toast.error(`Error al finalizar la venta: ${error.message}`, { duration: 4000 })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handlePrint = async () => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+
+    try {
+      const saleDataForBackend = {
+        customer: saleData.customer || null,
+        products: saleData.products.map((product) => ({
+          product_id: product.product_id,
+          variant_id: product.variant_id,
+          product_name:
+            product.description || product.descripcion || product.product_name || 'Producto',
+          description: product.description || product.descripcion || '',
+          brand: product.brand || product.marca || '',
+          size_name: product.size_name || product.talle || '',
+          color_name: product.color_name || product.color || '',
+          price: parseFloat(product.price || product.precio || 0),
+          quantity: parseInt(product.quantity || product.cantidad || 1),
+          variant_barcode: product.variant_barcode || ''
+        })),
+        exchange: saleData.exchange?.hasExchange
+          ? {
+              hasExchange: true,
+              returnedProducts: saleData.exchange.returnedProducts.map((product) => ({
+                product_id: product.product_id,
+                variant_id: product.variant_id,
+                product_name:
+                  product.description || product.descripcion || product.product_name || 'Producto',
+                description: product.description || product.descripcion || '',
+                brand: product.brand || product.marca || '',
+                size_name: product.size_name || product.talle || '',
+                color_name: product.color_name || product.color || '',
+                price: parseFloat(product.price || product.precio || 0),
+                quantity: parseInt(product.quantity || product.cantidad || 1),
+                variant_barcode: product.variant_barcode || ''
+              })),
+              totalProductsValue: parseFloat(saleData.exchange.totalProductsValue),
+              totalReturnedValue: parseFloat(saleData.exchange.totalReturnedValue),
+              finalAmount: parseFloat(saleData.exchange.finalAmount)
+            }
+          : null,
+        payments: saleData.payments.map((payment) => ({
+          method: payment.method,
+          amount: parseFloat(payment.amount),
+          reference: payment.reference || ''
+        })),
+        total: saleData.exchange?.hasExchange
+          ? parseFloat(saleData.exchange.finalAmount)
+          : parseFloat(saleData.total),
+        storage_id: branchId,
+        employee_id: 1, // TODO: Obtener del usuario logueado
+        cashier_user_id: userId
+      }
+
+      console.log('📋 Enviando venta al backend:', saleDataForBackend)
       const result = await salesService.createSale(saleDataForBackend)
 
       if (result.status === 'success') {
@@ -95,7 +168,7 @@ export default function ConfirmacionDatosDeCompra() {
             }
           }
         }
-        // Esperar un poco para que el usuario vea el mensaje
+
         setTimeout(() => {
           setLocation('/ventas')
         }, 2000)
@@ -109,15 +182,6 @@ export default function ConfirmacionDatosDeCompra() {
       setIsProcessing(false)
     }
   }
-
-  console.log('Productos')
-  console.log(saleData.products)
-  console.log('🔍 Debug - saleData completo:')
-  console.log(saleData)
-  console.log('🔍 Debug - Cliente:')
-  console.log(saleData.customer)
-  console.log('🔍 Debug - Pagos:')
-  console.log(saleData.payments)
 
   // Calcular total abonado excluyendo cuenta corriente (solo pagos reales)
   const totalAbonado = saleData.payments.reduce((sum, payment) => {
@@ -487,20 +551,28 @@ export default function ConfirmacionDatosDeCompra() {
           Cancelar
         </button>
       </div>
-      <div className="flex justify-center">
-        <button
-          className={`btn btn-success ${isProcessing ? 'loading' : ''}`}
-          onClick={handleSubmit}
-          disabled={isProcessing}
-        >
-          {isProcessing ? 'Procesando...' : 'Finalizar Venta'}
-        </button>
-      </div>
-      <div className="flex justify-center">
-        <button className="btn btn-accent">
-          <Printer className="mr-2" />
-          Imprimir
-        </button>
+      <div className="mb-6 flex items-center justify-end gap-8">
+        <div className="flex justify-end">
+          <button
+            className={`btn btn-success ${isProcessing ? 'loading' : ''}`}
+            onClick={handleSubmit}
+            disabled={isProcessing}
+          >
+            {isProcessing ? 'Procesando...' : 'Finalizar venta'}
+          </button>
+        </div>
+        {saleData.gifts && saleData.gifts.length > 0 && (
+          <div className="flex justify-end">
+            <button
+              className={`btn ${isProcessing ? 'loading' : ''} btn-accent`}
+              onClick={handlePrint}
+              disabled={isProcessing}
+            >
+              <Printer className="mr-2" />
+              {isProcessing ? 'Procesando...' : 'Imprimir y finalizar'}
+            </button>
+          </div>
+        )}
       </div>
       <Toaster />
     </div>
