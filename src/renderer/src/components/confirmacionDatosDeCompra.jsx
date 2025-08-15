@@ -12,9 +12,59 @@ export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
   const [, setLocation] = useLocation()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [saleDetailIds, setSaleDetailIds] = useState([])
   const branchId = getCurrentBranchId()
   const userId = useSession().session.user_id
+
+
+  const [printOptions] = useState({
+    includeColor: false,
+    includePrice: false,
+    includeCode: true,
+    includeSize: true,
+    includeProductName: false,
+    printWidth: 450,
+    printHeight: 200,
+    fontSize: 12,
+    backgroundColor: '#FFFFFF',
+    textColor: '#000000'
+  })
+
+  function printGiftBarcodesFromFrontend(images) {
+    const printContent = `
+    <html>
+      <head>
+        <title>Impresión de Códigos de Regalo</title>
+        <style>
+          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          .barcode-label { page-break-inside: avoid; margin-bottom: 24px; text-align: center; }
+          .barcode-img { max-width: 300px; margin-bottom: 8px; }
+          .barcode-text { font-size: 12px; color: #333; }
+        </style>
+      </head>
+      <body>
+        ${images
+          .map((img) =>
+            `<div class="barcode-label">
+            <img class="barcode-img" src="data:image/png;base64,${img.png_base64}" />
+            <div class="barcode-text">
+              ${(img.text_lines || []).map((line) => `<div>${line}</div>`).join('')}
+            </div>
+          </div>`.repeat(img.quantity || 1)
+          )
+          .join('')}
+      </body>
+    </html>
+  `
+    console.log('Contenido de impresión:', printContent)
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(printContent)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+      printWindow.close()
+    }, 1500)
+  }
 
   const handleSubmit = async () => {
     if (isProcessing) return
@@ -72,7 +122,6 @@ export default function ConfirmacionDatosDeCompra() {
       }
 
       const result = await salesService.createSale(saleDataForBackend)
-
       if (result.status === 'success') {
         toast.success(
           `Venta finalizada con éxito${saleData.exchange?.hasExchange ? ' con intercambio' : ''}`,
@@ -143,11 +192,9 @@ export default function ConfirmacionDatosDeCompra() {
           ? parseFloat(saleData.exchange.finalAmount)
           : parseFloat(saleData.total),
         storage_id: branchId,
-        employee_id: 1, // TODO: Obtener del usuario logueado
+        employee_id: 1, // TODO: Se puede agregar despues un selector de empleados
         cashier_user_id: userId
       }
-
-      console.log('📋 Enviando venta al backend:', saleDataForBackend)
       const result = await salesService.createSale(saleDataForBackend)
 
       if (result.status === 'success') {
@@ -155,16 +202,46 @@ export default function ConfirmacionDatosDeCompra() {
           `Venta finalizada con éxito${saleData.exchange?.hasExchange ? ' con intercambio' : ''}`,
           { duration: 3000 }
         )
-        if (saleData.gifts && saleData.gifts.length > 0 && result.data?.gift_sales_details) {
-          // result.data.gift_sales_details debe ser un array de objetos con sales_detail_id
-          for (const giftDetail of result.data.gift_sales_details) {
+        if (
+          saleData.gifts &&
+          saleData.gifts.length > 0 &&
+          Array.isArray(result.data?.gift_sales_details)
+        ) {
+          const giftDetails = saleData.gifts
+            .map((gift, idx) => ({
+              salesDetail: {
+                id: result.data.gift_sales_details[idx]?.sales_detail_id,
+                quantity: gift.quantity
+              }
+            }))
+            .filter((g) => g.salesDetail.id)
+
+          if (giftDetails.length > 0) {
             try {
-              await barcodePrintService.printGiftBarcode(
-                giftDetail.sales_detail_id,
-                giftDetail.quantity || 1
+              // 1. Pedir al backend las imágenes de los códigos de barra
+              const response = await fetch(
+                'http://localhost:5000/api/barcode/gift-barcodes-images',
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    sales_details: giftDetails.map((g) => ({
+                      sales_detail_id: g.salesDetail.id,
+                      quantity: g.salesDetail.quantity
+                    })),
+                    options: printOptions
+                  })
+                }
               )
+              const data = await response.json()
+              if (!response.ok || !data.images)
+                throw new Error(data.error || 'No se pudieron generar las imágenes')
+
+              // 2. Imprimir desde el frontend usando un iframe oculto
+              console.log('Contenido de impresión:', data.images)
+              printGiftBarcodesFromFrontend(data.images)
             } catch (err) {
-              toast.error('No se pudo imprimir el código de barras del regalo', err)
+              toast.error('No se pudo imprimir los códigos de barras de los regalos')
             }
           }
         }
@@ -224,7 +301,6 @@ export default function ConfirmacionDatosDeCompra() {
     handleChange()
     handleDiscount()
   }, [totalAbonado, totalVenta])
-
   return (
     <div className="container mx-auto max-w-4xl p-4">
       <h1 className="mb-6 text-center text-3xl font-bold">Resumen de Venta</h1>

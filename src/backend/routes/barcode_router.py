@@ -1,3 +1,4 @@
+
 from flask import Blueprint, jsonify, request
 from services.barcode_service import BarcodeService
 from barcode_generator import BarcodeGenerator
@@ -6,6 +7,88 @@ barcode_router = Blueprint("barcode", __name__)
 barcode_service = BarcodeService()
 barcode_generator = BarcodeGenerator()
 
+@barcode_router.route("/gift-barcodes-images", methods=["POST"])
+def gift_barcodes_images():
+    """
+    Devuelve imágenes base64 y textos de códigos de barras de regalos para imprimir desde el frontend.
+    Body: {
+        "sales_details": [
+            { "sales_detail_id": 101, "quantity": 2 },
+            { "sales_detail_id": 105, "quantity": 3 }
+        ],
+        "options": { ... }
+    }
+    Response: {
+        "images": [
+            { "png_base64": "...", "text_lines": [...], "sales_detail_id": 101, "quantity": 2 },
+            ...
+        ]
+    }
+    """
+    try:
+        from barcode_generator import BarcodeGenerator
+        data = request.get_json()
+        sales_details = data.get("sales_details", [])
+        options = data.get("options", {})
+        if not sales_details or not isinstance(sales_details, list):
+            return jsonify({"error": "sales_details debe ser un array no vacío"}), 400
+        print_options = options or {}
+        barcode_generator = BarcodeGenerator()
+        images = []
+        for detail in sales_details:
+            sales_detail_id = detail.get("sales_detail_id")
+            quantity = detail.get("quantity", 1)
+            if not sales_detail_id:
+                continue
+            from database.database import Database
+            db = Database()
+            query = """
+                SELECT sd.id as sales_detail_id, sd.product_id, sd.variant_id, p.product_name, b.brand_name, p.sale_price,
+                v.variant_barcode, s.size_name, c.color_name, c.color_hex
+                FROM sales_detail sd
+                LEFT JOIN products p ON sd.product_id = p.id
+                LEFT JOIN brands b ON p.brand_id = b.id
+                LEFT JOIN warehouse_stock_variants v ON sd.variant_id = v.id
+                LEFT JOIN sizes s ON v.size_id = s.id
+                LEFT JOIN colors c ON v.color_id = c.id
+                WHERE sd.id = %s
+            """
+            result = db.execute_query(query, (sales_detail_id,))
+            if not result:
+                continue
+            info = result[0]
+            text_lines = []
+            if print_options.get("includeProductName", True):
+                text_lines.append(info.get("product_name", ""))
+            if print_options.get("includeSize", True) and info.get("size_name"):
+                text_lines.append(f"Talle: {info['size_name']}")
+            if print_options.get("includeColor", True) and info.get("color_name"):
+                text_lines.append(f"Color: {info['color_name']}")
+            if print_options.get("includePrice", True) and info.get("sale_price"):
+                text_lines.append(f"${float(info['sale_price']):.2f}")
+            if print_options.get("includeCode", True) and info.get("variant_barcode"):
+                text_lines.append(info["variant_barcode"])
+            barcode_code = info.get("variant_barcode") or str(sales_detail_id)
+            if len(barcode_code) < 12:
+                barcode_code = barcode_code.zfill(12)
+            elif len(barcode_code) > 13:
+                barcode_code = barcode_code[:13]
+            # Generar PNG base64 (sin imprimir)
+            png_base64 = barcode_generator.generate_barcode_image(barcode_code, barcode_type="code128", format="PNG")
+            # Quitar el prefijo data:image/png;base64, si lo tiene
+            if png_base64.startswith("data:image/png;base64,"):
+                png_base64 = png_base64.split(",", 1)[1]
+            images.append({
+                "png_base64": png_base64,
+                "text_lines": text_lines,
+                "sales_detail_id": sales_detail_id,
+                "quantity": quantity
+            })
+        if not images:
+            return jsonify({"error": "No se pudieron generar imágenes de códigos de barras"}), 400
+        return jsonify({"images": images}), 200
+    except Exception as e:
+        return jsonify({"error": f"Error generando imágenes de códigos de barras: {str(e)}"}), 500
 
 @barcode_router.route("/generate", methods=["POST"])
 def generate_barcode():
@@ -146,38 +229,144 @@ def parse_variant_barcode(barcode):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @barcode_router.route("/generate-gift-barcode", methods=["POST"])
 def generate_gift_barcode():
     """
-    Genera un código de barras simple para un regalo (solo el código, sin texto).
+    Imprime códigos de barras para regalos, recibiendo un array de sales_details y opciones de impresión.
     Body: {
-        "sales_detail_id": 12345,
-        "type": "code128",   // opcional, por defecto code128
-        "format": "PNG"      // opcional, por defecto PNG
+        "sales_details": [
+            { "sales_detail_id": 101, "quantity": 2 },
+            { "sales_detail_id": 105, "quantity": 3 }
+        ],
+        "options": { ... }
     }
     """
     try:
+        import os, sys, importlib.util
+        from barcode_generator import BarcodeGenerator
+
         data = request.get_json()
-        if not data or "sales_detail_id" not in data:
-            return jsonify({"error": "sales_detail_id es requerido"}), 400
+        sales_details = data.get("sales_details", [])
+        options = data.get("options", {})
 
-        sales_detail_id = data["sales_detail_id"]
-        barcode_type = data.get("type", "code128")
-        format_type = data.get("format", "PNG")
+        if not sales_details or not isinstance(sales_details, list):
+            return jsonify({"error": "sales_details debe ser un array no vacío"}), 400
 
-        image_base64 = barcode_service.generate_gift_barcode(
-            sales_detail_id, barcode_type=barcode_type, format=format_type
-        )
+        # Opciones de impresión
+        print_options = options or {}
 
-        return jsonify({
-            "success": True,
-            "barcode": image_base64,
-            "format": format_type,
-            "sales_detail_id": sales_detail_id
-        })
+        # Instanciar generador
+        barcode_generator = BarcodeGenerator()
+        all_generated_files = []
+        total_labels = 0
+
+        # Para cada sales_detail, obtener info y preparar impresión
+        for detail in sales_details:
+            sales_detail_id = detail.get("sales_detail_id")
+            quantity = detail.get("quantity", 1)
+            if not sales_detail_id:
+                continue
+
+            # Buscar info del detalle de venta (ejemplo: producto, variante, etc)
+            # Aquí deberías ajustar según tu modelo de datos
+            from database.database import Database
+
+            db = Database()
+            query = """
+                SELECT sd.id as sales_detail_id, sd.product_id, sd.variant_id, p.product_name, b.brand_name, p.sale_price,
+                v.variant_barcode, s.size_name, c.color_name, c.color_hex
+                FROM sales_detail sd
+                LEFT JOIN products p ON sd.product_id = p.id
+                LEFT JOIN brands b ON p.brand_id = b.id
+                LEFT JOIN warehouse_stock_variants v ON sd.variant_id = v.id
+                LEFT JOIN sizes s ON v.size_id = s.id
+                LEFT JOIN colors c ON v.color_id = c.id
+                WHERE sd.id = %s
+            """
+            result = db.execute_query(query, (sales_detail_id,))
+            if not result:
+                continue
+            info = result[0]
+
+            # Construir texto para el código de barras según las opciones
+            text_lines = []
+            if print_options.get("includeProductName", True):
+                text_lines.append(info.get("product_name", ""))
+            if print_options.get("includeSize", True) and info.get("size_name"):
+                text_lines.append(f"Talle: {info['size_name']}")
+            if print_options.get("includeColor", True) and info.get("color_name"):
+                text_lines.append(f"Color: {info['color_name']}")
+            if print_options.get("includePrice", True) and info.get("sale_price"):
+                text_lines.append(f"${float(info['sale_price']):.2f}")
+            if print_options.get("includeCode", True) and info.get("variant_barcode"):
+                text_lines.append(info["variant_barcode"])
+
+            # Generar código de barras (usar variant_barcode o sales_detail_id como fallback)
+            barcode_code = info.get("variant_barcode") or str(sales_detail_id)
+            # Asegurar que sea de 12 dígitos para EAN13
+            if len(barcode_code) < 12:
+                barcode_code = barcode_code.zfill(12)
+            elif len(barcode_code) > 13:
+                barcode_code = barcode_code[:13]
+
+            print_job = {
+                "barcode": barcode_code,
+                "text": text_lines,
+                "quantity": quantity,
+            }
+            all_generated_files.extend(
+                barcode_generator.generate_barcode_with_text(
+                    barcode_code,
+                    {
+                        "name": info.get("product_name", ""),
+                        "barcode": barcode_code,
+                        "original_barcode": info.get("variant_barcode"),
+                        "price": info.get("sale_price"),
+                        "size_name": info.get("size_name"),
+                        "color_name": info.get("color_name"),
+                    },
+                    print_options,
+                    quantity,
+                )
+            )
+            total_labels += quantity
+
+        if not all_generated_files:
+            return jsonify(
+                {"error": "No se pudieron generar códigos de barras de regalos"}
+            ), 400
+
+        # Imprimir todos los archivos
+        print_result = barcode_generator.print_barcodes(all_generated_files)
+        barcode_generator.cleanup_files(all_generated_files)
+
+        if print_result.get("status") == "success":
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": f"Se imprimieron {print_result['printed_count']} códigos de barras de regalos exitosamente",
+                    "data": {
+                        "total_details": len(sales_details),
+                        "total_labels": total_labels,
+                        "printed_count": print_result["printed_count"],
+                    },
+                }
+            ), 200
+        else:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": f"Error en impresión: {print_result.get('message', 'desconocido')}",
+                }
+            ), 500
 
     except Exception as e:
-        return jsonify({"error": f"Error generando código de barras de regalo: {str(e)}"}), 500
+        return jsonify(
+            {
+                "error": f"Error generando/imprimiendo códigos de barras de regalos: {str(e)}"
+            }
+        ), 500
 
 
 @barcode_router.route("/test", methods=["GET"])
@@ -316,5 +505,3 @@ def print_barcodes():
             barcode_generator.cleanup_files(all_generated_files)
 
         return jsonify({"error": f"Error al imprimir códigos de barras: {str(e)}"}), 500
-
-

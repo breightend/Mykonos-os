@@ -1,11 +1,42 @@
 /**
  * Servicio para impresión de códigos de barras
  * Maneja la comunicación con el backend para generar e imprimir códigos
- */
+*/
 
 const API_BASE_URL = 'http://localhost:5000/api'
 
 export class BarcodePrintService {
+    /**
+     * Obtiene imágenes base64 y textos de códigos de barras de regalos para imprimir desde el frontend
+     * @param {Array} giftDetails - Array de objetos { salesDetail: { id, quantity } }
+     * @param {Object} printOptions - Opciones de impresión
+     * @returns {Promise<Array>} - Array de objetos { png_base64, text_lines, sales_detail_id, quantity }
+     */
+    async getGiftBarcodesImages(giftDetails, printOptions) {
+        try {
+            const validatedOptions = this.validatePrintOptions(printOptions)
+            const requestData = {
+                sales_details: giftDetails.map(item => ({
+                    sales_detail_id: item.salesDetail.id,
+                    quantity: item.salesDetail.quantity
+                })),
+                options: validatedOptions
+            }
+            const response = await fetch(`${API_BASE_URL}/barcode/gift-barcodes-images`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData)
+            })
+            const data = await response.json()
+            if (!response.ok || !data.images) {
+                throw new Error(data.error || 'No se pudieron generar las imágenes de los códigos de barras')
+            }
+            return data.images
+        } catch (error) {
+            console.error('Error obteniendo imágenes de códigos de regalo:', error)
+            throw error
+        }
+    }
     /**
      * Envía una solicitud de impresión de códigos de barras al backend
      * @param {Array} variants - Array de variantes con información del producto
@@ -39,44 +70,51 @@ export class BarcodePrintService {
     }
 
     /**
- * Imprime un código de barras simple para un regalo (solo el código, sin texto)
- * @param {number|string} salesDetailId - ID único del detalle de venta (sales_detail)
- * @param {number} quantity - Cantidad de etiquetas a imprimir
- * @param {string} type - Tipo de código de barras (opcional, por defecto 'code128')
- * @param {string} format - Formato de imagen (opcional, por defecto 'PNG')
- * @returns {Promise<Object>} - Resultado de la impresión
- */
-    async printGiftBarcode(salesDetailId, quantity = 1, type = 'code128', format = 'PNG') {
+     * Imprime códigos de barras para regalos, recibiendo un array de objetos { salesDetail: { id, quantity } }
+     * @param {Array} giftDetails - Array de objetos { salesDetail: { id, quantity } }
+     * @param {Object} printOptions - Opciones de impresión
+     * @returns {Promise<Object>} - Resultado de la impresión
+     */
+    async printGiftBarcodes(giftDetails, printOptions) {
         try {
-            const response = await fetch(`${API_BASE_URL}/barcode/print-gift-barcode`, {
+            // Validar opciones de impresión
+            const validatedOptions = this.validatePrintOptions(printOptions)
+
+            // Formatear datos para el backend
+            const printData = {
+                sales_details: giftDetails.map(item => ({
+                    sales_detail_id: item.salesDetail.id,
+                    quantity: item.salesDetail.quantity
+                })),
+                options: validatedOptions
+            }
+
+            // Enviar solicitud al backend
+            const response = await fetch(`${API_BASE_URL}/barcode/print-gift-barcodes`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    sales_detail_id: salesDetailId,
-                    quantity,
-                    type,
-                    format
-                })
-            });
+                body: JSON.stringify(printData)
+            })
 
-            const data = await response.json();
+            const data = await response.json()
 
             if (!response.ok) {
-                throw new Error(data.error || 'Error al imprimir código de barras de regalo');
+                throw new Error(data.message || 'Error al imprimir códigos de barras de regalos')
             }
 
             return {
                 success: true,
-                message: data.message || 'Código de barras de regalo enviado a impresión',
-                ...data
-            };
+                message: data.message || 'Códigos de barras de regalos enviados a impresión',
+                totalPrinted: data.data?.total_labels || 0,
+                totalDetails: data.data?.total_details || 0
+            }
         } catch (error) {
             return {
                 success: false,
-                message: error.message || 'Error desconocido al imprimir código de barras de regalo'
-            };
+                message: error.message || 'Error desconocido al imprimir códigos de barras de regalos'
+            }
         }
     }
 
