@@ -146,6 +146,39 @@ def parse_variant_barcode(barcode):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@barcode_router.route("/generate-gift-barcode", methods=["POST"])
+def generate_gift_barcode():
+    """
+    Genera un código de barras simple para un regalo (solo el código, sin texto).
+    Body: {
+        "sales_detail_id": 12345,
+        "type": "code128",   // opcional, por defecto code128
+        "format": "PNG"      // opcional, por defecto PNG
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or "sales_detail_id" not in data:
+            return jsonify({"error": "sales_detail_id es requerido"}), 400
+
+        sales_detail_id = data["sales_detail_id"]
+        barcode_type = data.get("type", "code128")
+        format_type = data.get("format", "PNG")
+
+        image_base64 = barcode_service.generate_gift_barcode(
+            sales_detail_id, barcode_type=barcode_type, format=format_type
+        )
+
+        return jsonify({
+            "success": True,
+            "barcode": image_base64,
+            "format": format_type,
+            "sales_detail_id": sales_detail_id
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Error generando código de barras de regalo: {str(e)}"}), 500
+
 
 @barcode_router.route("/test", methods=["GET"])
 def test_barcode():
@@ -283,3 +316,5 @@ def print_barcodes():
             barcode_generator.cleanup_files(all_generated_files)
 
         return jsonify({"error": f"Error al imprimir códigos de barras: {str(e)}"}), 500
+
+

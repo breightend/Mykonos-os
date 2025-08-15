@@ -39,6 +39,48 @@ export class BarcodePrintService {
     }
 
     /**
+ * Imprime un código de barras simple para un regalo (solo el código, sin texto)
+ * @param {number|string} salesDetailId - ID único del detalle de venta (sales_detail)
+ * @param {number} quantity - Cantidad de etiquetas a imprimir
+ * @param {string} type - Tipo de código de barras (opcional, por defecto 'code128')
+ * @param {string} format - Formato de imagen (opcional, por defecto 'PNG')
+ * @returns {Promise<Object>} - Resultado de la impresión
+ */
+    async printGiftBarcode(salesDetailId, quantity = 1, type = 'code128', format = 'PNG') {
+        try {
+            const response = await fetch(`${API_BASE_URL}/barcode/print-gift-barcode`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sales_detail_id: salesDetailId,
+                    quantity,
+                    type,
+                    format
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error al imprimir código de barras de regalo');
+            }
+
+            return {
+                success: true,
+                message: data.message || 'Código de barras de regalo enviado a impresión',
+                ...data
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || 'Error desconocido al imprimir código de barras de regalo'
+            };
+        }
+    }
+
+    /**
      * Formatea la información de una variante para el backend
      * @param {Object} variant - Variante del producto
      * @param {Object} product - Información del producto

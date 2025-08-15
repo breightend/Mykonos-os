@@ -2,15 +2,21 @@ import { useLocation } from 'wouter'
 import { useSellContext } from '../contexts/sellContext'
 import toast, { Toaster } from 'react-hot-toast'
 import { useEffect, useState } from 'react'
-import { Replace, RotateCcw } from 'lucide-react'
+import { Printer, Replace, RotateCcw } from 'lucide-react'
 import { salesService } from '../services/salesService'
 import { getCurrentBranchId } from '../utils/posUtils'
+import { barcodePrintService } from '../services/barcodePrintService'
+import { useSession } from '../contexts/SessionContext'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
+  
   const [, setLocation] = useLocation()
   const [isProcessing, setIsProcessing] = useState(false)
   const branchId = getCurrentBranchId()
+  const userId = useSession().session.user_id
+  console.log('User ID:', userId)
+
   const handleSubmit = async () => {
     if (isProcessing) return
 
@@ -63,7 +69,7 @@ export default function ConfirmacionDatosDeCompra() {
           : parseFloat(saleData.total),
         storage_id: branchId,
         employee_id: 1, // TODO: Obtener del usuario logueado
-        cashier_user_id: 1 // TODO: Obtener del usuario logueado
+        cashier_user_id: userId
       }
 
       console.log('📋 Enviando venta al backend:', saleDataForBackend)
@@ -76,7 +82,19 @@ export default function ConfirmacionDatosDeCompra() {
           `Venta finalizada con éxito${saleData.exchange?.hasExchange ? ' con intercambio' : ''}`,
           { duration: 3000 }
         )
-
+        if (saleData.gifts && saleData.gifts.length > 0 && result.data?.gift_sales_details) {
+          // result.data.gift_sales_details debe ser un array de objetos con sales_detail_id
+          for (const giftDetail of result.data.gift_sales_details) {
+            try {
+              await barcodePrintService.printGiftBarcode(
+                giftDetail.sales_detail_id,
+                giftDetail.quantity || 1
+              )
+            } catch (err) {
+              toast.error('No se pudo imprimir el código de barras del regalo', err)
+            }
+          }
+        }
         // Esperar un poco para que el usuario vea el mensaje
         setTimeout(() => {
           setLocation('/ventas')
@@ -476,6 +494,12 @@ export default function ConfirmacionDatosDeCompra() {
           disabled={isProcessing}
         >
           {isProcessing ? 'Procesando...' : 'Finalizar Venta'}
+        </button>
+      </div>
+      <div className="flex justify-center">
+        <button className="btn btn-accent">
+          <Printer className="mr-2" />
+          Imprimir
         </button>
       </div>
       <Toaster />

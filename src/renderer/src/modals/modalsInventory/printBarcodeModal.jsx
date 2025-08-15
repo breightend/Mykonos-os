@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Printer, X, Package, Palette, Tag, Ruler, DollarSign, Save, RefreshCw } from 'lucide-react'
+import { Printer, X, Package, Palette, Tag, Ruler, DollarSign, Save } from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { barcodePrintService } from '../../services/barcodePrintService'
 import printSettingsService from '../../services/printSettingsService'

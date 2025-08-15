@@ -286,3 +286,68 @@ class BarcodeGenerator:
                     os.unlink(file_path)
             except Exception:
                 pass  # Ignorar errores de limpieza
+
+    def generate_simple_barcode(
+        self,
+        barcode_data: str,
+        quantity: int = 1,
+        barcode_type: str = "ean13",
+    ) -> list:
+        """
+        Genera códigos de barras simples (sin texto adicional).
+
+        Args:
+            barcode_data: El dato a codificar (idealmente el sales_detail.id o el identificador único que decidas).
+            quantity: Cuántos códigos generar.
+            barcode_type: Tipo de código (por defecto EAN13).
+
+        Returns:
+            Lista de rutas de archivos PNG generados.
+        """
+        generated_files = []
+        try:
+            BARCODE_CLASS = barcode.get_barcode_class(barcode_type)
+
+            for i in range(quantity):
+                clean_barcode_data = barcode_data
+
+                # Si no es numérico, convertir a hash numérico (igual que en tu otro método)
+                if not barcode_data.isdigit():
+                    import hashlib
+
+                    hash_obj = hashlib.md5(barcode_data.encode())
+                    hex_hash = hash_obj.hexdigest()[:8]
+                    clean_barcode_data = str(int(hex_hash, 16))[:12]
+
+                # EAN13 necesita 12 dígitos
+                if len(clean_barcode_data) < 12:
+                    clean_barcode_data = clean_barcode_data.ljust(12, "0")
+                elif len(clean_barcode_data) > 12:
+                    clean_barcode_data = clean_barcode_data[:12]
+
+                barcode_instance = BARCODE_CLASS(clean_barcode_data, writer=ImageWriter())
+
+                options = {
+                    "module_width": 0.4,
+                    "module_height": 15.0,
+                    "font_size": 0,  # Sin texto
+                    "text_distance": 0,
+                    "background": "white",
+                    "foreground": "black",
+                    "write_text": False,  # No texto
+                    "quiet_zone": 6.5,
+                }
+
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_barcode:
+                    barcode_instance.write(tmp_barcode, options=options)
+                    barcode_path = tmp_barcode.name
+
+                generated_files.append(barcode_path)
+
+        except Exception as e:
+            for file_path in generated_files:
+                if os.path.exists(file_path):
+                    os.unlink(file_path)
+            raise Exception(f"Error generando código de barras simple: {str(e)}")
+
+        return generated_files

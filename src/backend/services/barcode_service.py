@@ -108,6 +108,21 @@ class BarcodeService:
         except Exception as e:
             raise Exception(f"Error parseando código de barras: {str(e)}")
 
+    
+    def generate_gift_barcode(self, sales_detail_id, barcode_type="code128", format="PNG"):
+        """
+        Genera un código de barras simple para un regalo, usando el sales_detail.id.
+        Args:
+            sales_detail_id (int or str): ID único del detalle de venta (sales_detail)
+            barcode_type (str): Tipo de código de barras (por defecto code128)
+            format (str): Formato de imagen (por defecto PNG)
+        Returns:
+            str: Imagen en base64 (para imprimir o mostrar)
+        """
+        code = str(sales_detail_id)
+        return self.generate_barcode_image(code, barcode_type=barcode_type, format=format)
+
+
     def generate_variant_barcodes_batch(self, product_id, variants):
         """
         Genera códigos de barras para múltiples variantes de un producto

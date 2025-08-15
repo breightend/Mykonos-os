@@ -589,7 +589,7 @@ DATABASE_TABLES = {
             "subtotal": "REAL NOT NULL",  # Subtotal para el producto (precio * cantidad)
             "total": "REAL NOT NULL",  # Total final después de aplicar descuentos e impuestos
             "profit_margin": "REAL",  # Margen de ganancia (sale_price - cost_price)
-            "barcode_scanned": "TEXT",  # Código de barras escaneado si se usó
+            "barcode_scanned": "TEXT",  # Código de barras si es un regalo
             "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de creación del registro
         },
         "foreign_keys": [

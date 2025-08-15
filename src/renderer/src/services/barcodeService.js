@@ -126,6 +126,40 @@ class BarcodeService {
     }
 
     /**
+     * Genera un código de barras simple para un regalo (solo el código, sin texto)
+     * @param {number|string} salesDetailId - ID único del detalle de venta (sales_detail)
+     * @param {string} type - Tipo de código de barras (opcional, por defecto 'code128')
+     * @param {string} format - Formato de imagen (opcional, por defecto 'PNG')
+     * @returns {Promise<Object>} - Objeto con el código de barras en base64
+     */
+    async generateGiftBarcode(salesDetailId, type = 'code128', format = 'PNG') {
+        try {
+            const response = await fetch(`${this.baseUrl}/generate-gift-barcode`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sales_detail_id: salesDetailId,
+                    type: type,
+                    format: format
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error generando código de barras de regalo');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error generando código de barras de regalo:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Prueba el servicio de códigos de barras
      * @returns {Promise<Object>} - Resultado de la prueba
      */
