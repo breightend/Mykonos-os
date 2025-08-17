@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash
 from database.database import Database
 
-usuario_router = Blueprint("usuario_router", __name__)  # Creás un Blueprint
+usuario_router = Blueprint("usuario_router", __name__) 
 
 
 @usuario_router.route("/employees", methods=["POST"])
@@ -10,7 +10,7 @@ def recibir_datos_empleados():
     db = Database()
     data = request.json
 
-    print(f"Received data: {data}")  # Debug log
+    print(f"Received data: {data}") 
 
     # Required fields
     username = data.get("username")

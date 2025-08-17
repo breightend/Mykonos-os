@@ -19,6 +19,7 @@ import { useSession } from '../contexts/SessionContext'
 import { salesService } from '../services/salesService'
 import toast, { Toaster } from 'react-hot-toast'
 import '../assets/modal-improvements.css'
+import StatCard from '../componentes especificos/statRegistro'
 
 export default function RegistroVentas() {
   const [range, setRange] = useState(null)
@@ -64,12 +65,10 @@ export default function RegistroVentas() {
     setShowCalendar(false)
   }
 
-  // Toggle calendario
   const toggleCalendar = () => {
     setShowCalendar(!showCalendar)
   }
 
-  // Funciones de acceso rápido para rangos de fechas
   const setQuickRange = (days) => {
     const today = new Date()
     const from = new Date(today)
@@ -77,7 +76,6 @@ export default function RegistroVentas() {
     setRange({ from, to: today })
   }
 
-  // Cargar estadísticas
   const loadStats = useCallback(async () => {
     try {
       console.log('🔍 Cargando stats para storage:', currentStorage?.id)
@@ -137,7 +135,6 @@ export default function RegistroVentas() {
         limit: 100
       }
 
-      // Agregar filtros de fecha si están definidos
       if (range?.from) {
         filters.start_date = range.from.toISOString().split('T')[0]
       }
@@ -145,7 +142,6 @@ export default function RegistroVentas() {
         filters.end_date = range.to.toISOString().split('T')[0]
       }
 
-      // Agregar filtro de búsqueda
       if (searchTerm.trim()) {
         filters.search = searchTerm.trim()
       }
@@ -165,7 +161,6 @@ export default function RegistroVentas() {
     }
   }, [currentStorage?.id, range, searchTerm])
 
-  // Cargar detalles de una venta
   const loadSaleDetails = async (saleId) => {
     try {
       setLoadingDetails(true)
@@ -185,14 +180,12 @@ export default function RegistroVentas() {
     }
   }
 
-  // Manejar doble click en una fila
   const handleRowDoubleClick = (sale) => {
     setSelectedSale(sale)
-    setShowModal(true) // Agregar esta línea para abrir el modal
+    setShowModal(true)
     loadSaleDetails(sale.id)
   }
 
-  // Cerrar modal
   const closeModal = () => {
     setShowModal(false)
     setSaleDetails(null)
@@ -224,7 +217,6 @@ export default function RegistroVentas() {
     }
   }, [showCalendar])
 
-  // Buscar automáticamente después de que el usuario deje de escribir
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchTerm !== '' || range) {
@@ -245,6 +237,30 @@ export default function RegistroVentas() {
     return parseFloat(price || 0).toFixed(2)
   }
 
+  const statsData = [
+    {
+      iconName: 'dollar',
+      title: 'Total vendido',
+      value: `$${formatPrice(stats.total_revenue)}`,
+      description: getStatsDescription(),
+      color: 'primary'
+    },
+    {
+      iconName: 'package',
+      title: 'Productos vendidos',
+      value: stats.total_products_sold,
+      description: `Unidades ${getStatsDescription()}`,
+      color: 'secondary'
+    },
+    {
+      iconName: 'archive',
+      title: 'Ventas realizadas',
+      value: stats.total_sales,
+      description: `Transacciones ${getStatsDescription()}`,
+      color: 'accent'
+    }
+  ]
+
   return (
     <>
       {/* Menú lateral */}
@@ -253,40 +269,18 @@ export default function RegistroVentas() {
       <div className={`transition-all duration-300 ease-in-out`}>
         <div className="ml-20 flex-1">
           {/* Stats con fondo blanco y bordes de color */}
-          <div className="mr-4 flex justify-end">
-            <div className="stats stats-horizontal shadow">
-              <div className="stat border-l-4 border-primary bg-base-100">
-                <div className="stat-figure text-primary">
-                  <DollarSign className="h-8 w-8" />
-                </div>
-                <div className="stat-title font-semibold text-primary">Total vendido</div>
-                <div className="stat-value text-base-content">
-                  ${formatPrice(stats.total_revenue)}
-                </div>
-                <div className="text-base-content/70 stat-desc">{getStatsDescription()}</div>
-              </div>
-
-              <div className="stat border-l-4 border-secondary bg-base-100">
-                <div className="stat-figure text-secondary">
-                  <Package className="h-8 w-8" />
-                </div>
-                <div className="stat-title font-semibold text-secondary">Productos vendidos</div>
-                <div className="stat-value text-base-content">{stats.total_products_sold}</div>
-                <div className="text-base-content/70 stat-desc">
-                  Unidades {getStatsDescription()}
-                </div>
-              </div>
-
-              <div className="stat border-l-4 border-accent bg-base-100">
-                <div className="stat-figure text-accent">
-                  <Archive className="h-8 w-8" />
-                </div>
-                <div className="stat-title font-semibold text-accent">Ventas realizadas</div>
-                <div className="stat-value text-base-content">{stats.total_sales}</div>
-                <div className="text-base-content/70 stat-desc">
-                  Transacciones {getStatsDescription()}
-                </div>
-              </div>
+          <div className="w-full p-4">
+            <div className="stats stats-vertical w-full shadow-lg lg:stats-horizontal">
+              {statsData.map((stat) => (
+                <StatCard
+                  key={stat.title}
+                  iconName={stat.iconName}
+                  title={stat.title}
+                  value={stat.value}
+                  description={stat.description}
+                  color={stat.color}
+                />
+              ))}
             </div>
           </div>
           <h2 className="mb-6 mt-4 text-3xl font-bold text-warning">
@@ -562,7 +556,7 @@ export default function RegistroVentas() {
                       Detalles de Venta #{selectedSale?.id}
                     </h3>
                     <button
-                      className="hover:bg-warning/10 btn btn-ghost btn-sm "
+                      className="hover:bg-warning/10 btn btn-ghost btn-sm"
                       onClick={closeModal}
                     >
                       <X className="h-5 w-5" />
