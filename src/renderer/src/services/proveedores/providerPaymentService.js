@@ -12,6 +12,8 @@ export const providerPaymentService = {
      * @param {string} data.description - Description of the payment
      * @param {string} data.medio_pago - Payment method
      * @param {string} data.numero_de_comprobante - Receipt number (optional)
+     * @param {string} data.fecha - Payment date (optional)
+     * @param {File} data.comprobante_image - Payment receipt image (optional)
      * @returns {Promise<Object>} API response
      */
     async createProviderPayment(data) {
