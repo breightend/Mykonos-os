@@ -34,7 +34,8 @@ function CreateUser() {
       setLoadingSucursales(true)
       try {
         const data = await fetchSucursales()
-        setSucursales(data)
+        setSucursales(data.data)
+        console.log('Sucursales cargadas:', data.data)
       } catch (error) {
         console.error('Error loading sucursales:', error)
         toast.error('Error al cargar las sucursales', error.message)

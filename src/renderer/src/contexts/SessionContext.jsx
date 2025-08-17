@@ -148,6 +148,16 @@ export const SessionProvider = ({ children }) => {
     return session?.role === 'administrator'
   }
 
+  const setCurrentStorage = (storage) => {
+    if (session) {
+      setSession((prevSession) => ({
+        ...prevSession,
+        storage_id: storage.id,
+        storage_name: storage.name
+      }))
+    }
+  }
+
   const getCurrentStorage = () => {
     // Si no hay sesión, devolver null
     if (!session) {
@@ -232,7 +242,8 @@ export const SessionProvider = ({ children }) => {
     getCurrentStorage,
     getCurrentUser,
     checkExistingSession,
-    changeBranchStorage
+    changeBranchStorage,
+    setCurrentStorage
   }
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

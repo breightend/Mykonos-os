@@ -36,7 +36,6 @@ function InfoEmpleado() {
       try {
         setLoading(true)
         const employeeData = await fetchEmployeeById(empleadoId)
-        console.log('Employee data:', employeeData)
         setEmpleado(employeeData.record)
 
         // Initialize edit form data

@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, request
 from services.barcode_service import BarcodeService
 from barcode_generator import BarcodeGenerator
@@ -6,6 +5,7 @@ from barcode_generator import BarcodeGenerator
 barcode_router = Blueprint("barcode", __name__)
 barcode_service = BarcodeService()
 barcode_generator = BarcodeGenerator()
+
 
 @barcode_router.route("/gift-barcodes-images", methods=["POST"])
 def gift_barcodes_images():
@@ -27,6 +27,7 @@ def gift_barcodes_images():
     """
     try:
         from barcode_generator import BarcodeGenerator
+
         data = request.get_json()
         sales_details = data.get("sales_details", [])
         options = data.get("options", {})
@@ -41,6 +42,7 @@ def gift_barcodes_images():
             if not sales_detail_id:
                 continue
             from database.database import Database
+
             db = Database()
             query = """
                 SELECT sd.id as sales_detail_id, sd.product_id, sd.variant_id, p.product_name, b.brand_name, p.sale_price,
@@ -74,21 +76,30 @@ def gift_barcodes_images():
             elif len(barcode_code) > 13:
                 barcode_code = barcode_code[:13]
             # Generar PNG base64 (sin imprimir)
-            png_base64 = barcode_generator.generate_barcode_image(barcode_code, barcode_type="code128", format="PNG")
+            png_base64 = barcode_generator.generate_barcode_image(
+                barcode_code, barcode_type="code128", format="PNG"
+            )
             # Quitar el prefijo data:image/png;base64, si lo tiene
             if png_base64.startswith("data:image/png;base64,"):
                 png_base64 = png_base64.split(",", 1)[1]
-            images.append({
-                "png_base64": png_base64,
-                "text_lines": text_lines,
-                "sales_detail_id": sales_detail_id,
-                "quantity": quantity
-            })
+            images.append(
+                {
+                    "png_base64": png_base64,
+                    "text_lines": text_lines,
+                    "sales_detail_id": sales_detail_id,
+                    "quantity": quantity,
+                }
+            )
         if not images:
-            return jsonify({"error": "No se pudieron generar imágenes de códigos de barras"}), 400
+            return jsonify(
+                {"error": "No se pudieron generar imágenes de códigos de barras"}
+            ), 400
         return jsonify({"images": images}), 200
     except Exception as e:
-        return jsonify({"error": f"Error generando imágenes de códigos de barras: {str(e)}"}), 500
+        return jsonify(
+            {"error": f"Error generando imágenes de códigos de barras: {str(e)}"}
+        ), 500
+
 
 @barcode_router.route("/generate", methods=["POST"])
 def generate_barcode():

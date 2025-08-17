@@ -15,7 +15,6 @@ export default function ConfirmacionDatosDeCompra() {
   const branchId = getCurrentBranchId()
   const userId = useSession().session.user_id
 
-
   const [printOptions] = useState({
     includeColor: false,
     includePrice: false,
@@ -29,41 +28,194 @@ export default function ConfirmacionDatosDeCompra() {
     textColor: '#000000'
   })
 
-  function printGiftBarcodesFromFrontend(images) {
+  const handlePrintPreview = () => {
+    if (!barcodePreview?.png_data) {
+      alert('No hay vista previa PNG para imprimir')
+      return
+    }
+
+        // Crear canvas para imprimir la imagen PNG
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+
+        img.onload = function () {
+      // Configurar canvas con el tamaño de la imagen
+      canvas.width = img.width
+      canvas.height = img.height
+
+      // Dibujar la imagen en el canvas
+      ctx.drawImage(img, 0, 0)
     const printContent = `
-    <html>
-      <head>
-        <title>Impresión de Códigos de Regalo</title>
-        <style>
-          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-          .barcode-label { page-break-inside: avoid; margin-bottom: 24px; text-align: center; }
-          .barcode-img { max-width: 300px; margin-bottom: 8px; }
-          .barcode-text { font-size: 12px; color: #333; }
-        </style>
-      </head>
-      <body>
-        ${images
-          .map((img) =>
-            `<div class="barcode-label">
-            <img class="barcode-img" src="data:image/png;base64,${img.png_base64}" />
-            <div class="barcode-text">
-              ${(img.text_lines || []).map((line) => `<div>${line}</div>`).join('')}
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Vista Previa - Codigo regalos</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: white;
+              }
+              .barcode-container {
+                text-align: center;
+                border: 2px dashed #ccc;
+                padding: 20px;
+                border-radius: 8px;
+                background: white;
+              }
+              .preview-title {
+                margin-bottom: 15px;
+                color: #666;
+                font-size: 12px;
+              }
+              @media print {
+                body { margin: 0; padding: 10px; }
+                .preview-title { display: none; }
+                .barcode-container { border: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="barcode-container">
+              <div class="preview-title">Vista Previa del Código de Barras</div>
+              <img src="${canvas.toDataURL('image/png')}" alt="Código de barras" style="max-width: 100%; height: auto;"/>
             </div>
-          </div>`.repeat(img.quantity || 1)
-          )
-          .join('')}
-      </body>
-    </html>
+          </body>
+        </html>
   `
-    console.log('Contenido de impresión:', printContent)
-    const printWindow = window.open('', '_blank')
-    printWindow.document.write(printContent)
-    printWindow.document.close()
-    printWindow.focus()
-    setTimeout(() => {
-      printWindow.print()
-      printWindow.close()
-    }, 1500)
+  
+      // Crear iframe oculto para imprimir
+      const iframe = document.createElement('iframe')
+      iframe.style.position = 'absolute'
+      iframe.style.width = '0px'
+      iframe.style.height = '0px'
+      iframe.style.border = 'none'
+      iframe.style.visibility = 'hidden'
+      document.body.appendChild(iframe)
+
+  try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
+        iframeDoc.open()
+        iframeDoc.write(printContent)
+        iframeDoc.close()
+
+        // Esperar un momento para que cargue el contenido
+        setTimeout(() => {
+          iframe.contentWindow.focus()
+          iframe.contentWindow.print()
+
+          // Limpiar el iframe después de imprimir
+          setTimeout(() => {
+            if (iframe.parentNode) {
+              document.body.removeChild(iframe)
+            }
+          }, 1000)
+        }, 500)
+      } catch (error) {
+        console.error('Error al preparar la impresión:', error)
+        alert('Error al preparar la impresión. Intenta nuevamente.')
+        if (iframe.parentNode) {
+          document.body.removeChild(iframe)
+        }
+      }
+  } 
+  img.onerror = function () {
+      alert('Error al cargar la imagen PNG para imprimir')
+    }
+
+    // Cargar la imagen base64
+    img.src = `data:image/png;base64,${barcodePreview.png_data}`
+  }
+
+  // Función alternativa para descargar la vista previa como PNG
+  const handleDownloadPreview = () => {
+    if (!barcodePreview?.png_data) {
+      alert('No hay vista previa PNG para descargar')
+      return
+    }
+
+    try {
+      // Crear blob de la imagen PNG
+      const byteCharacters = atob(barcodePreview.png_data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: 'image/png' })
+
+      // Crear enlace de descarga
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `codigo-barras-.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success('Imagen PNG descargada correctamente')
+    } catch (error) {
+      console.error('Error al descargar PNG:', error)
+      toast.error('Error al descargar la imagen PNG')
+    }
+  }
+  
+
+  const handlePrintBarcodes = async () => {
+    try {
+      setLoading(true)
+
+      // Preparar variantes seleccionadas con sus cantidades
+      const selectedVariants = Object.entries(quantities)
+        .filter(([, quantity]) => quantity > 0)
+        .map(([variantId, quantity]) => {
+          const variant = variants.find((v) => v.id.toString() === variantId)
+          return {
+            variant: variant,
+            quantity: quantity
+          }
+        })
+
+      if (selectedVariants.length === 0) {
+        toast.error('Por favor selecciona al menos una variante para imprimir')
+        return
+      }
+
+      // Mostrar mensaje de progreso
+      toast.loading('Generando códigos de barras...', { duration: 2000 })
+
+      // Usar el servicio de impresión de códigos de barras
+      const result = await barcodePrintService.processPrintRequest(
+        selectedVariants,
+        product,
+        printOptions
+      )
+
+      if (result.success) {
+        toast.success(result.message, { duration: 4000 })
+        console.log('📊 Impresión exitosa:', result)
+
+        // Cerrar el modal después de una impresión exitosa
+        setTimeout(() => {
+          onClose()
+        }, 1000)
+      } else {
+        toast.error(result.message, { duration: 4000 })
+        console.error('❌ Error en impresión:', result.message)
+      }
+    } catch (err) {
+      console.error('Error imprimiendo códigos:', err)
+      toast.error('Error inesperado al imprimir códigos de barras', { duration: 4000 })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -301,6 +453,7 @@ export default function ConfirmacionDatosDeCompra() {
     handleChange()
     handleDiscount()
   }, [totalAbonado, totalVenta])
+
   return (
     <div className="container mx-auto max-w-4xl p-4">
       <h1 className="mb-6 text-center text-3xl font-bold">Resumen de Venta</h1>

@@ -5,17 +5,71 @@ import { useSession } from '../contexts/SessionContext'
 import { useState, useEffect } from 'react'
 import { toast, Toaster } from 'react-hot-toast'
 import { pinwheel } from 'ldrs'
+import { fetchEmployeeById, fetchEmployeeStorages } from '../services/employee/employeeService'
+import { fetchSucursalById } from '../services/sucursales/sucursalesService'
 
 export default function Usuario() {
   pinwheel.register()
   const [, setLocation] = useLocation()
-  const { session, logout, changeBranchStorage } = useSession()
+  const { session, logout, setCurrentStorage } = useSession()
 
   const [currentUser, setCurrentUser] = useState(null)
-  const [currentStorage, setCurrentStorage] = useState(null)
+  const [localActual, setLocalActual] = useState(null)
   const [availableStorages, setAvailableStorages] = useState([])
   const [selectedStorageId, setSelectedStorageId] = useState('')
   const [isChangingStorage, setIsChangingStorage] = useState(false)
+  const [userBd, setUserDd] = useState(null)
+
+  const getEmployeeData = async () => {
+    try {
+      const response = await fetchEmployeeById(session.user_id)
+      const data = await response.json()
+
+      if (data.success) {
+        setUserDd(data.record)
+      } else {
+        console.error('❌ Error al cargar datos del usuario:', data.message)
+        toast.error('Error al cargar datos del usuario')
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión cargando datos del usuario:', error)
+      toast.error('Error de conexión al cargar datos del usuario')
+    }
+  }
+
+  const getStorageData = async () => {
+    try {
+      const response = await fetchSucursalById(session.storage_id)
+      const data = await response.json()
+      console.log('Datos de la sucursal:', data)
+      if (data.success) {
+        setLocalActual(data.record)
+      } else {
+        console.error('❌ Error al cargar datos de la sucursal:', data.message)
+        toast.error('Error al cargar datos de la sucursal')
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión cargando datos de la sucursal:', error)
+      toast.error('Error de conexión al cargar datos de la sucursal')
+    }
+  }
+
+  const getStorageAllow = async () => {
+    try {
+      const response = await fetchEmployeeStorages(session.user_id)
+      const data = await response.json()
+
+      if (data) {
+        setAvailableStorages(data)
+      } else {
+        console.error('❌ Error al cargar datos de la sucursal:', data.message)
+        toast.error('Error al cargar datos de la sucursal')
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión cargando datos de la sucursal:', error)
+      toast.error('Error de conexión al cargar datos de la sucursal')
+    }
+  }
 
   // Actualizar datos del usuario y sucursal cuando cambie la sesión
   useEffect(() => {
@@ -39,65 +93,36 @@ export default function Usuario() {
           name: 'Sin sucursal'
         }
       }
+      getEmployeeData()
+      getStorageData()
 
       setCurrentUser(user)
-      setCurrentStorage(storage)
+      setLocalActual(storage)
     } else {
       setCurrentUser(null)
-      setCurrentStorage(null)
+      setLocalActual(null)
     }
   }, [session]) // Solo depende del estado session del contexto
 
   // Cargar sucursales disponibles para el usuario
   useEffect(() => {
-    const loadUserStorages = async () => {
-      try {
-        const sessionToken = localStorage.getItem('session_token')
-        if (!sessionToken) return
-
-        console.log('🏪 Cargando sucursales disponibles para el usuario...')
-        const response = await fetch('http://localhost:5000/api/auth/user-storages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ session_token: sessionToken })
-        })
-
-        const data = await response.json()
-
-        if (data.success) {
-          console.log('✅ Sucursales cargadas:', data.storages)
-          setAvailableStorages(data.storages || [])
-        } else {
-          console.error('❌ Error cargando sucursales:', data.message)
-          toast.error('Error al cargar las sucursales disponibles')
-        }
-      } catch (error) {
-        console.error('❌ Error de conexión cargando sucursales:', error)
-        toast.error('Error de conexión al cargar sucursales')
-      }
-    }
-
-    if (currentUser) {
-      loadUserStorages()
-    }
+    getStorageAllow()
   }, [currentUser]) // Ahora depende del estado local
 
   // Establecer sucursal seleccionada cuando cambie la sucursal actual
   useEffect(() => {
-    if (currentStorage?.id) {
-      setSelectedStorageId(currentStorage.id.toString())
+    if (localActual?.id) {
+      setSelectedStorageId(localActual.id.toString())
     } else {
       setSelectedStorageId('')
     }
-  }, [currentStorage])
+  }, [localActual])
 
   const handleStorageChange = async (e) => {
     const newStorageId = e.target.value
     setSelectedStorageId(newStorageId)
 
-    if (newStorageId === currentStorage?.id?.toString()) {
+    if (newStorageId === localActual?.id?.toString()) {
       // No cambio realmente
       return
     }
@@ -106,25 +131,23 @@ export default function Usuario() {
       setIsChangingStorage(true)
       console.log('🔄 Cambiando a sucursal:', newStorageId)
 
-      const result = await changeBranchStorage(newStorageId === '' ? null : parseInt(newStorageId))
-
-      if (result.success) {
-        toast.success(`Sucursal cambiada exitosamente`)
-        console.log('✅ Sucursal cambiada exitosamente')
-
-        // Los estados se actualizarán automáticamente cuando el SessionContext se actualice
-        // No necesitamos actualizar manualmente porque el useEffect con [session] se encargará
-      } else {
-        console.error('❌ Error en cambio de sucursal:', result.message)
-        toast.error(result.message || 'Error al cambiar sucursal')
-        // Revertir selección si falla
-        setSelectedStorageId(currentStorage?.id?.toString() || '')
-      }
+      setCurrentStorage({
+        id: newStorageId === '' ? null : parseInt(newStorageId),
+        name:
+          availableStorages.find((s) => s.id === parseInt(newStorageId))?.name ||
+          'Sucursal desconocida'
+      })
+      setLocalActual({
+        id: newStorageId === '' ? null : parseInt(newStorageId),
+        name:
+          availableStorages.find((s) => s.id === parseInt(newStorageId))?.name ||
+          'Sucursal desconocida'
+      })
     } catch (error) {
       console.error('❌ Error cambiando sucursal:', error)
       toast.error('Error de conexión al cambiar sucursal')
       // Revertir selección si falla
-      setSelectedStorageId(currentStorage?.id?.toString() || '')
+      setSelectedStorageId(localActual?.id?.toString() || '')
     } finally {
       setIsChangingStorage(false)
     }
@@ -147,11 +170,19 @@ export default function Usuario() {
       <div className="flex h-screen w-full flex-col items-center justify-center">
         <div className="card w-96 transform bg-base-100 bg-gradient-to-br from-base-200 to-base-300 p-6 shadow-xl transition-all hover:scale-105">
           <figure className="px-10 pt-6">
-            <img
-              src="/src/images/user_icon.webp"
-              alt="Usuario"
-              className="h-40 w-40 rounded-full border-4 border-primary object-cover shadow-lg"
-            />
+            {userBd ? (
+              <img
+                src={userBd.profile_image}
+                alt="Usuario"
+                className="h-40 w-40 rounded-full border-4 border-primary object-cover shadow-lg"
+              />
+            ) : (
+              <img
+                src="/src/images/user_icon.webp"
+                alt="Usuario"
+                className="h-40 w-40 rounded-full border-4 border-primary object-cover shadow-lg"
+              />
+            )}
           </figure>
           <div className="card-body items-center space-y-4 text-center">
             <h2 className="card-title text-2xl font-bold">{currentUser?.fullname}</h2>
@@ -163,7 +194,7 @@ export default function Usuario() {
             <div className="w-full rounded-lg bg-base-200 p-3">
               <p className="text-sm font-medium text-gray-600">Sucursal Actual:</p>
               <p className="text-lg font-bold text-primary">
-                {currentStorage?.name || 'Sin sucursal asignada'}
+                {localActual?.name || 'Sin sucursal asignada'}
               </p>
             </div>
 
@@ -183,7 +214,7 @@ export default function Usuario() {
                   {availableStorages.map((storage) => (
                     <option key={storage.id} value={storage.id}>
                       {storage.name}
-                      {storage.id === currentStorage?.id ? ' (Actual)' : ''}
+                      {storage.id === localActual?.id ? ' (Actual)' : ''}
                     </option>
                   ))}
                 </select>

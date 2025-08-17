@@ -30,7 +30,7 @@ python main.py
 **Opción A: Usuario por defecto**
 
 ```bash
-cd src/backend
+cd src/backend/services
 python admin_manager.py
 ```
 
@@ -40,14 +40,14 @@ python admin_manager.py
 **Opción B: Usuario personalizado**
 
 ```bash
-cd src/backend
+cd src/backend/services
 python admin_manager.py create-custom
 ```
 
 **Opción C: Listar administradores existentes**
 
 ```bash
-cd src/backend
+cd src/backend/services
 python admin_manager.py list
 ```
 
