@@ -9,13 +9,12 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
     forma_pago: '',
     descripcion: '',
     numero_comprobante: '',
-    comprobante: null
+    comprobante_image: null,
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethods, setPaymentMethods] = useState([])
   const [loadingMethods, setLoadingMethods] = useState(false)
 
-  // Load payment methods when component mounts
   useEffect(() => {
     loadPaymentMethods()
   }, [])
@@ -42,14 +41,12 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
     }))
   }
 
-  // Handle numeric input with validation and formatting
   const handleNumericInputChange = (e) => {
     const { name, value } = e.target
 
     // Remove all non-numeric characters except comma (for decimal separator)
     let numericValue = value.replace(/[^0-9,]/g, '')
 
-    // Handle comma as decimal separator (convert to dot for processing)
     const parts = numericValue.split(',')
     let integerPart = parts[0] || ''
     let decimalPart = parts.length > 1 ? parts[1].slice(0, 2) : '' // Limit to 2 decimal places
@@ -83,7 +80,7 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
   const handleFileChange = (e) => {
     setFormData((prev) => ({
       ...prev,
-      comprobante: e.target.files[0]
+      comprobante_image: e.target.files[0]
     }))
   }
 
@@ -93,7 +90,7 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
       forma_pago: '',
       descripcion: '',
       numero_comprobante: '',
-      comprobante: null
+      comprobante_image: null
     })
   }
 
@@ -134,7 +131,8 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
         amount: amount,
         description: paymentDescription,
         medio_pago: formData.forma_pago,
-        numero_de_comprobante: formData.numero_comprobante || undefined
+        numero_de_comprobante: formData.numero_comprobante || undefined,
+        comprobante_image: formData.comprobante_image || undefined
       })
 
       if (result.success) {
@@ -305,14 +303,15 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
                       <span className="font-semibold">Clic para subir</span> o arrastra y suelta
                     </p>
                     <p className="text-base-content/50 text-xs">PDF, PNG, JPG (MAX. 10MB)</p>
-                    {formData.comprobante && (
+                    {formData.comprobante_image && (
                       <p className="mt-2 text-xs font-medium text-primary">
-                        Archivo: {formData.comprobante.name}
+                        Archivo: {formData.comprobante_image.name}
                       </p>
                     )}
                   </div>
                   <input
-                    id="comprobante"
+                    id="comprobante_image"
+                    name="comprobante_image"
                     type="file"
                     className="hidden"
                     accept=".pdf,.png,.jpg,.jpeg"
