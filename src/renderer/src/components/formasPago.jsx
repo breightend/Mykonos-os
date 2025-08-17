@@ -100,7 +100,7 @@ export default function FormasPago() {
   const fetchBancos = async () => {
     try {
       const data = await getBancos()
-      setBancos(data)
+      setBancos(data.banks)
     } catch (error) {
       console.error('Error al obtener bancos:', error)
     }
