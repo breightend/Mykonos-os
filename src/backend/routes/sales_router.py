@@ -1149,26 +1149,26 @@ def get_sales_stats():
 
         # Filter for completed/successful sales - Use exact status from database
         if where_conditions:
-            where_clause += " AND s.status = 'Completed'"
+            where_clause += " AND s.status = 'Completada'"
         else:
-            where_clause = "WHERE s.status = 'Completed'"
+            where_clause = "WHERE s.status = 'Completada'"
 
         # Query para obtener estadísticas generales
         stats_query = f"""
-        SELECT 
-            COUNT(s.id) as total_sales,
-            COALESCE(SUM(s.total), 0) as total_revenue,
-            COALESCE(SUM(sd_positive.quantity), 0) as total_products_sold,
-            COUNT(DISTINCT s.customer_id) as unique_customers,
-            COUNT(CASE WHEN s.notes LIKE '%intercambio%' THEN 1 END) as exchange_sales
-        FROM sales s
-        LEFT JOIN (
-            SELECT sale_id, SUM(quantity) as quantity
-            FROM sales_detail 
-            WHERE quantity > 0
-            GROUP BY sale_id
-        ) sd_positive ON s.id = sd_positive.sale_id
-        {where_clause}
+            SELECT 
+                COUNT(s.id) as total_sales,
+                COALESCE(SUM(s.total), 0) as total_revenue,
+                COALESCE(SUM(sd_positive.quantity), 0) as total_products_sold,
+                COUNT(DISTINCT s.customer_id) as unique_customers,
+                COUNT(CASE WHEN s.notes LIKE '%intercambio%' THEN 1 END) as exchange_sales
+            FROM sales s
+            LEFT JOIN (
+                SELECT sale_id, SUM(quantity) as quantity
+                FROM sales_detail 
+                GROUP BY sale_id
+            ) sd_positive ON s.id = sd_positive.sale_id
+            {where_clause}
+
         """
 
         print(f"🔍 DEBUG Stats query: {stats_query}")
@@ -1186,6 +1186,7 @@ def get_sales_stats():
                     "unique_customers": stats_data.get("unique_customers", 0),
                     "exchange_sales": stats_data.get("exchange_sales", 0),
                 }
+                print(f"📊 DEBUG Stats yo soy el problema")
             else:
                 stats = {
                     "total_sales": stats_data[0] or 0,
@@ -1202,6 +1203,7 @@ def get_sales_stats():
                 "unique_customers": 0,
                 "exchange_sales": 0,
             }
+            print('Nunca entre')
 
         return jsonify({"status": "success", "data": stats})
 

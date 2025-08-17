@@ -683,7 +683,7 @@ DATABASE_TABLES = {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
             "name": "TEXT NOT NULL",  
-            "swift_code": "TEXT NOT NULL",  
+            "swift_code": "NULL",  
         },
         "foreign_keys": []
     },

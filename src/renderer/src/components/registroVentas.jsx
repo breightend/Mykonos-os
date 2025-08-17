@@ -1,15 +1,4 @@
-import {
-  Archive,
-  DollarSign,
-  Package,
-  Search,
-  X,
-  Replace,
-  RotateCcw,
-  Calendar,
-  Filter,
-  FilterX
-} from 'lucide-react'
+import { Package, Search, X, Replace, RotateCcw, Calendar, Filter, FilterX } from 'lucide-react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useState, useEffect, useCallback } from 'react'
@@ -22,7 +11,7 @@ import '../assets/modal-improvements.css'
 import StatCard from '../componentes especificos/statRegistro'
 
 export default function RegistroVentas() {
-  const [range, setRange] = useState(null)
+  const [range, setRange] = useState({ from: new Date(), to: new Date() })
   const [searchTerm, setSearchTerm] = useState('')
   const [salesList, setSalesList] = useState([])
   const [loading, setLoading] = useState(false)
@@ -49,7 +38,7 @@ export default function RegistroVentas() {
   }
 
   const getStatsDescription = () => {
-    if (!range) return 'Total histórico'
+    if (!range) return 'Hoy'
     if (range.from && !range.to) return `desde ${range.from.toLocaleDateString()}`
     if (range.from && range.to) {
       const isSameDay = range.from.toDateString() === range.to.toDateString()
@@ -193,13 +182,6 @@ export default function RegistroVentas() {
   }
 
   useEffect(() => {
-    if (currentStorage?.id) {
-      loadSales()
-      loadStats()
-    }
-  }, [currentStorage?.id, loadSales, loadStats])
-
-  useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setShowCalendar(false)
@@ -260,6 +242,85 @@ export default function RegistroVentas() {
       color: 'accent'
     }
   ]
+
+  useEffect(() => {
+    // Solo ejecutar si tenemos el ID del depósito.
+    if (!currentStorage?.id) {
+      return
+    }
+
+    // Función para cargar todo (stats y lista de ventas)
+    const fetchData = async () => {
+      // Definimos los filtros una sola vez
+      const filters = {
+        storage_id: currentStorage.id,
+        limit: 100 // Para la lista de ventas
+      }
+
+      if (range?.from) {
+        filters.start_date = range.from.toISOString().split('T')[0]
+        console.log('📅 Aplicando filtro desde:', filters.start_date)
+      }
+
+      if (range?.to) {
+        filters.end_date = range.to.toISOString().split('T')[0]
+        console.log('📅 Aplicando filtro hasta:', filters.end_date)
+      }
+
+
+      if (searchTerm.trim()) {
+        filters.search = searchTerm.trim()
+      }
+
+      // Cargar stats y ventas en paralelo para mayor eficiencia
+      setLoading(true)
+      try {
+        const [statsResponse, salesResponse] = await Promise.all([
+          salesService.getSalesStats(filters),
+          salesService.getSalesList(filters)
+        ])
+        console.log('🔍 DEBUG: Filtros utilizados para la búsqueda:', filters)
+        console.log('📊 DEBUG: Respuesta range:', range)
+
+        // Manejar respuesta de stats
+        if (statsResponse.status === 'success') {
+          setStats(statsResponse.data)
+        } else {
+          console.warn('⚠️ Fallo al cargar stats:', statsResponse)
+          // Opcional: mostrar un toast de error para las stats
+          setStats({ total_revenue: 0, total_products_sold: 0, total_sales: 0 })
+        }
+
+        // Manejar respuesta de la lista de ventas
+        if (salesResponse.status === 'success') {
+          setSalesList(salesResponse.data)
+        } else {
+          toast.error('Error al cargar las ventas')
+          setSalesList([])
+        }
+      } catch (error) {
+        console.error('❌ Error general al cargar datos:', error)
+        toast.error('Ocurrió un error al cargar los datos.')
+        // Reseteamos ambos estados en caso de error
+        setStats({ total_revenue: 0, total_products_sold: 0, total_sales: 0 })
+        setSalesList([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // Usamos un debounce para no llamar a la API en cada tecla presionada
+    const debounceTimer = setTimeout(() => {
+      fetchData()
+    }, 500) // Espera 500ms antes de ejecutar la búsqueda
+
+    // Limpiamos el timer si el usuario sigue escribiendo o cambiando filtros
+    return () => clearTimeout(debounceTimer)
+  }, [currentStorage?.id, range, searchTerm])
+
+  const handleMasCienFilas = () => {
+    setSalesList((prev) => [...prev, ...Array(100).fill(null)])
+  }
 
   return (
     <>
@@ -545,6 +606,16 @@ export default function RegistroVentas() {
               </tbody>
             </table>
           </div>
+          <div className="flex w-full justify-end">
+            {salesList.length > 0 && (
+              <button
+                className="btn btn-outline mb-2 mt-4 justify-end p-4"
+                onClick={handleMasCienFilas}
+              >
+                + 100
+              </button>
+            )}
+          </div>
 
           {/* Modal de Detalles de Venta */}
           {showModal && (
@@ -774,7 +845,9 @@ export default function RegistroVentas() {
             </div>
           )}
         </div>
+        <div></div>
       </div>
+
       <Toaster />
     </>
   )

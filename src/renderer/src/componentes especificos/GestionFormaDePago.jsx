@@ -2,7 +2,7 @@ import { ArrowLeft, Landmark, Trash2 } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useEffect, useState } from 'react'
 import { postNuevoBanco, getBancos, deleteBanco } from '../services/paymentsServices/banksService'
-import toast from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function GestionFormaDePago() {
   const [isLoading, setIsLoading] = useState(false)
@@ -15,6 +15,8 @@ export default function GestionFormaDePago() {
     try {
       const newBank = await postNuevoBanco(formData)
       toast.success(`El banco: ${newBank.name} fue creado exitosamente`)
+      setBancos([...bancos, newBank])
+      setFormData({ name: '' })
     } catch (error) {
       toast.error('Error al crear nuevo banco')
       console.error('Error al crear nuevo banco:', error)
@@ -37,7 +39,7 @@ export default function GestionFormaDePago() {
       setIsLoading(true)
       try {
         const data = await getBancos()
-        setBancos(data)
+        setBancos(data.banks)
       } catch (error) {
         toast.error('Error al obtener bancos')
         console.error('Error al obtener bancos:', error)
@@ -114,6 +116,7 @@ export default function GestionFormaDePago() {
           <p className="italic text-gray-500">No hay bancos disponibles</p>
         )}
       </div>
+      <Toaster position="center" />
     </div>
   )
 }
