@@ -531,7 +531,7 @@ DATABASE_TABLES = {
             "tax_amount": "REAL DEFAULT 0.0",  # Monto total de impuestos
             "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
             "total": "REAL NOT NULL",  # Total final después de aplicar descuentos e impuestos
-            "payment_method": "TEXT NOT NULL",  # Medio de pago (efectivo, tarjeta_credito, tarjeta_debito, transferencia, etc.)
+            "payment_method": "INTEGER NOT NULL",  # Medio de pago (efectivo, tarjeta_credito, tarjeta_debito, transferencia, etc.)
             "payment_reference": "TEXT",  # Referencia del pago (número de transacción, comprobante, etc.)
             "invoice_number": "TEXT",  # Número de factura si se emitió
             "receipt_number": "TEXT",  # Número de ticket/recibo
@@ -543,6 +543,12 @@ DATABASE_TABLES = {
             "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de última actualización
         },
         "foreign_keys": [
+            {  # Relación con tabla de métodos de pago
+                "column": "payment_method",
+                "reference_table": TABLES.BANK_PAYMENT_METHODS,
+                "reference_column": "id",
+                "export_column_name": "payment_method_id",
+            },
             {  # Relación con tabla de clientes (entidades)
                 "column": "customer_id",
                 "reference_table": TABLES.ENTITIES,
