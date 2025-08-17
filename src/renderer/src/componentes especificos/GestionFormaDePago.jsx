@@ -116,6 +116,11 @@ export default function GestionFormaDePago() {
           <p className="italic text-gray-500">No hay bancos disponibles</p>
         )}
       </div>
+      <div className="mt-4 flex justify-end">
+        <button className="btn btn-neutral" onClick={() => setLocation('/home')}>
+          Volver
+        </button>
+      </div>
       <Toaster position="center" />
     </div>
   )
