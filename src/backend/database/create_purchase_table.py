@@ -30,32 +30,33 @@ def create_purchases_table():
         cursor = connection.cursor()
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS "purchases" (
-            id SERIAL PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             entity_id INTEGER NOT NULL, 
             purchase_date TEXT DEFAULT CURRENT_TIMESTAMP,
             subtotal REAL NOT NULL CHECK (subtotal >= 0),
             discount REAL DEFAULT 0.0,
             total REAL NOT NULL,
-            payment_method TEXT,
+            payment_method INTEGER NOT NULL,
             transaction_number TEXT,
             invoice_number TEXT,
             notes TEXT,
-            file_id INTEGER,
             status TEXT DEFAULT 'Pendiente de entrega',
             delivery_date TEXT,
             file_id INTEGER,
 
             FOREIGN KEY (entity_id) REFERENCES entities (id) ON DELETE CASCADE,
             FOREIGN KEY (payment_method) REFERENCES banks_payment_methods (id) ON DELETE CASCADE,
-            FOREIGN KEY (purchase_id) REFERENCES purchases (id) ON DELETE CASCADE,
             FOREIGN KEY (file_id) REFERENCES file_attachments (id) ON DELETE CASCADE
         );
         """
         cursor.execute(create_table_sql)
         connection.commit()
-
+        print("Tabla de compras creada exitosamente.")
     except Exception as e:
         print("Error al crear la tabla de movimientos de cuenta:", e)
     finally:
         cursor.close()
         connection.close()
+
+if __name__ == "__main__":
+    create_purchases_table()

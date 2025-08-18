@@ -30,7 +30,7 @@ def create_account_movements_table():
         cursor = connection.cursor()
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS "account_movements" (
-            id SERIAL PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             numero_operacion INTEGER NOT NULL CHECK (numero_operacion > 0),
             entity_id INTEGER NOT NULL, 
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -52,7 +52,7 @@ def create_account_movements_table():
         """
         cursor.execute(create_table_sql)
         connection.commit()
-
+        print("Tabla de movimientos de cuenta creada exitosamente.")
     except Exception as e:
         print("Error al crear la tabla de movimientos de cuenta:", e)
     finally:
