@@ -10,6 +10,7 @@ import { useSession } from '../contexts/SessionContext'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
+  console.log('Información del contexto:', saleData)
   const [, setLocation] = useLocation()
   const [isProcessing, setIsProcessing] = useState(false)
   const branchId = getCurrentBranchId()

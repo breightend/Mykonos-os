@@ -208,16 +208,26 @@ export default function FormasPago() {
       }
       // Build payments array using new structure
       const payments = metodosSeleccionados.map((m) => {
+        // Find the real method info from metodosPago if possible
+        let methodInfo = null
+        if (m.id && metodosPago.length > 0) {
+          methodInfo = metodosPago.find((mp) => mp.id == m.id || mp.method_name === m.method_name)
+        }
+        // Card payment
         if (m.method_name && m.method_name.toLowerCase().includes('tarjeta')) {
           return {
-            method: m.id,
+            id: methodInfo?.id || m.id,
+            method_name: methodInfo?.method_name || m.method_name,
+            label: methodInfo?.display_name || m.label,
             amount: m.monto,
-            bank_id: m.banco_id || bancoSeleccionado || null,
-            tipo: m.tipo || null
+            bank_id: m.banco_id || bancoSeleccionado || null
           }
         }
+        // Other payment (efectivo, transferencia, etc)
         return {
-          method: m.id,
+          id: methodInfo?.id || m.id,
+          method_name: methodInfo?.method_name || m.method_name,
+          label: methodInfo?.display_name || m.label,
           amount: m.monto,
           costumer:
             m.method_name === 'cuenta_corriente' ? { cliente: clienteCuentaCorriente } : null
@@ -337,7 +347,8 @@ export default function FormasPago() {
               Selecciona tarjetas y bancos:
             </label>
             {metodosSeleccionados.map((tarjeta, idx) =>
-              tarjeta.id === 'tarjeta' ? (
+              tarjeta.id === 'tarjeta' ||
+              (tarjeta.method_name && tarjeta.method_name.toLowerCase().includes('tarjeta')) ? (
                 <div
                   key={tarjeta._uuid || idx}
                   className="mb-4 rounded-lg border border-blue-200 bg-blue-100 p-4"
@@ -346,24 +357,36 @@ export default function FormasPago() {
                   <div className="mb-2 flex items-center gap-2">
                     <label className="font-medium text-blue-700">Tipo de tarjeta:</label>
                     <select
-                      value={tarjeta.tipo || 'tarjeta_credito'}
+                      value={tarjeta.id || tarjeta.tipo || ''}
                       onChange={(e) => {
-                        const tipo = e.target.value
+                        const selectedId = e.target.value
+                        const selected = metodosPago.find((m) => m.id == selectedId)
                         setMetodosSeleccionados((prev) => {
                           // Check for duplicate (same tipo and banco_id)
                           const banco_id = prev[idx]?.banco_id || ''
                           const isDuplicate = prev.some(
                             (m, i) =>
                               i !== idx &&
-                              m.id === 'tarjeta' &&
-                              m.tipo === tipo &&
+                              (m.id === selectedId || m.method_name === selected?.method_name) &&
                               m.banco_id === banco_id
                           )
                           if (isDuplicate) {
-                            toast.error('Ya seleccionaste esa combinación de tipo de tarjeta y banco.')
+                            toast.error(
+                              'Ya seleccionaste esa combinación de tipo de tarjeta y banco.'
+                            )
                             return prev
                           }
-                          return prev.map((m, i) => (i === idx ? { ...m, tipo } : m))
+                          return prev.map((m, i) =>
+                            i === idx
+                              ? {
+                                  ...m,
+                                  id: selected?.id,
+                                  method_name: selected?.method_name,
+                                  label: selected?.display_name,
+                                  tipo: selected?.method_name
+                                }
+                              : m
+                          )
                         })
                       }}
                       className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400"
@@ -457,15 +480,19 @@ export default function FormasPago() {
               type="button"
               className="flex items-center gap-2 rounded-lg bg-blue-200 px-3 py-2 text-blue-800 hover:bg-blue-300"
               onClick={() => {
+                // Find first card method as default
+                const defaultCard = metodosPago.find(
+                  (m) => m.method_name && m.method_name.toLowerCase().includes('tarjeta')
+                )
                 setMetodosSeleccionados((prev) => [
                   ...prev,
                   {
-                    id: 'tarjeta',
-                    label: 'Tarjeta',
-                    tipo: 'tarjeta_credito',
+                    id: defaultCard?.id,
+                    method_name: defaultCard?.method_name,
+                    label: defaultCard?.display_name || 'Tarjeta',
                     banco_id: '',
                     monto: '',
-                    _uuid: Date.now() + Math.random() // unique key for React
+                    _uuid: Date.now() + Math.random()
                   }
                 ])
               }}
@@ -734,7 +761,7 @@ export default function FormasPago() {
           </button>
         </div>
       )}
-      <Toaster position='center'/>
+      <Toaster position="center" />
     </div>
   )
 }
