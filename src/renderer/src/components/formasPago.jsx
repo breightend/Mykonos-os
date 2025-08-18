@@ -18,11 +18,9 @@ export default function FormasPago() {
   const [pagoInicial, setPagoInicial] = useState(0)
   const [mostrarPagoInicial, setMostrarPagoInicial] = useState(false)
   const [metodoPagoInicial, setMetodoPagoInicial] = useState('efectivo')
-  // metodosPago: [{ id, method_name, display_name, icon_name, ... }]
   const [metodosPago, setMetodosPago] = useState([])
   const [bancos, setBancos] = useState([])
   const [bancoSeleccionado, setBancoSeleccionado] = useState(null)
-  const [tarjetaSeleccionada, setTarjetaSeleccionada] = useState('tarjeta')
   const { saleData, setSaleData } = useSellContext()
 
   const handleNumericInput = (value) => {
@@ -66,7 +64,6 @@ export default function FormasPago() {
     fetchPaymentMethods()
   }, [])
 
-  // Toggle payment method selection, using new structure
   const toggleMetodo = (metodo) => {
     setMetodosSeleccionados((prev) => {
       const existe = prev.some((m) => m.id === metodo.id)
@@ -82,7 +79,6 @@ export default function FormasPago() {
         if (metodo.method_name && metodo.method_name.toLowerCase().includes('tarjeta')) {
           fetchBancos()
         }
-        // Default: if first method, set monto to totalVenta, else 0
         if (prev.length > 0) {
           return [...prev, { ...metodo, monto: 0 }]
         } else {
@@ -102,7 +98,6 @@ export default function FormasPago() {
     }
   }
 
-  // Update amount for a selected payment method
   const handlePaymentAmountChange = (methodId, amount) => {
     setMetodosSeleccionados((prev) =>
       prev.map((metodo) =>
@@ -110,7 +105,7 @@ export default function FormasPago() {
       )
     )
   }
-  // Helper: get display name for a payment method id (for pago inicial)
+  //Esto es para la cuenta corriente
   const getPaymentMethodName = (id) => {
     const metodo = metodosPago.find((m) => m.id === id || m.method_name === id)
     return metodo ? metodo.display_name : id
@@ -214,7 +209,7 @@ export default function FormasPago() {
       const payments = metodosSeleccionados.map((m) => {
         if (m.method_name && m.method_name.toLowerCase().includes('tarjeta')) {
           return {
-            method: m.id, // Use id for backend
+            method: m.id,
             amount: m.monto,
             bank_id: m.banco_id || bancoSeleccionado || null,
             tipo: m.tipo || null
@@ -296,7 +291,7 @@ export default function FormasPago() {
               return null
             }
           }
-          // Render other payment methods
+
           return (
             <button
               key={metodo.id}
@@ -330,7 +325,9 @@ export default function FormasPago() {
             </p>
           </div>
         )}
-      {/* Discriminando en el pago de la tarjeta */}
+
+      {/* Tarjetas y bancos */}
+
       {metodosSeleccionados.some((m) => m.id === 'tarjeta') && (
         <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-5 shadow-sm">
           {/* Selección de tarjetas y bancos */}
@@ -338,10 +335,12 @@ export default function FormasPago() {
             <label className="mb-1 block font-medium text-blue-700 dark:text-blue-300">
               Selecciona tarjetas y bancos:
             </label>
-            {metodosSeleccionados
-              .filter((m) => m.id === 'tarjeta')
-              .map((tarjeta, idx) => (
-                <div key={idx} className="mb-4 rounded-lg border border-blue-200 bg-blue-100 p-4">
+            {metodosSeleccionados.map((tarjeta, idx) =>
+              tarjeta.id === 'tarjeta' ? (
+                <div
+                  key={tarjeta._uuid || idx}
+                  className="mb-4 rounded-lg border border-blue-200 bg-blue-100 p-4"
+                >
                   {/* Tipo de tarjeta */}
                   <div className="mb-2 flex items-center gap-2">
                     <label className="font-medium text-blue-700">Tipo de tarjeta:</label>
@@ -350,7 +349,7 @@ export default function FormasPago() {
                       onChange={(e) => {
                         const tipo = e.target.value
                         setMetodosSeleccionados((prev) =>
-                          prev.map((m, i) => (i === idx && m.id === 'tarjeta' ? { ...m, tipo } : m))
+                          prev.map((m, i) => (i === idx ? { ...m, tipo } : m))
                         )
                       }}
                       className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400"
@@ -375,9 +374,7 @@ export default function FormasPago() {
                         onChange={(e) => {
                           const banco_id = e.target.value
                           setMetodosSeleccionados((prev) =>
-                            prev.map((m, i) =>
-                              i === idx && m.id === 'tarjeta' ? { ...m, banco_id } : m
-                            )
+                            prev.map((m, i) => (i === idx ? { ...m, banco_id } : m))
                           )
                         }}
                         className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400"
@@ -393,7 +390,6 @@ export default function FormasPago() {
                       <span className="italic text-gray-500">No hay bancos disponibles</span>
                     )}
                   </div>
-                  {/* Monto */}
                   <div className="mb-2 flex items-center gap-2">
                     <label className="font-medium text-blue-700 dark:text-blue-300">Monto:</label>
                     <input
@@ -404,7 +400,7 @@ export default function FormasPago() {
                         if (cleanValue !== null) {
                           setMetodosSeleccionados((prev) =>
                             prev.map((m, i) =>
-                              i === idx && m.id === 'tarjeta' ? { ...m, monto: cleanValue } : m
+                              i === idx ? { ...m, monto: parseFloat(cleanValue) || 0 } : m
                             )
                           )
                         }
@@ -420,16 +416,15 @@ export default function FormasPago() {
                       type="button"
                       className="mt-2 text-red-600 hover:underline"
                       onClick={() => {
-                        setMetodosSeleccionados((prev) =>
-                          prev.filter((_, i) => !(i === idx && tarjeta.id === 'tarjeta'))
-                        )
+                        setMetodosSeleccionados((prev) => prev.filter((_, i) => i !== idx))
                       }}
                     >
                       Quitar tarjeta
                     </button>
                   )}
                 </div>
-              ))}
+              ) : null
+            )}
             {/* Botón para agregar otra tarjeta */}
             <button
               type="button"
@@ -442,7 +437,8 @@ export default function FormasPago() {
                     label: 'Tarjeta',
                     tipo: 'tarjeta_credito',
                     banco_id: '',
-                    monto: ''
+                    monto: '',
+                    _uuid: Date.now() + Math.random() // unique key for React
                   }
                 ])
               }}

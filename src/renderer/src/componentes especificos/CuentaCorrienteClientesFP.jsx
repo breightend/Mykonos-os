@@ -61,10 +61,10 @@ const CuentaCorrienteClientesFP = ({ isOpen, onClose, onSelectClient }) => {
   }
 
   return (
-    <dialog id="cuentaCorriente" className="modal w-5/12">
-      <div className="modal-box max-w-2xl border-0 bg-white shadow-2xl dark:bg-gray-800">
-        <div className="modal-header mb-4 flex items-center justify-between rounded-2xl bg-orange-600 p-4">
-          <h3 className="text-2xl font-bold text-white">Seleccionar Cliente</h3>
+    <dialog id="cuentaCorriente" className="modal">
+      <div className="modal-box max-w-2xl border-0 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between rounded-2xl bg-primary/60 p-4">
+          <h3 className="text-2xl font-bold text-black">Seleccionar Cliente</h3>
           <button onClick={onClose} className="text-xl text-white hover:text-gray-200">
             ✖
           </button>
@@ -126,7 +126,7 @@ const CuentaCorrienteClientesFP = ({ isOpen, onClose, onSelectClient }) => {
 
         {/* Modal Actions */}
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose}>
+          <button className="btn btn-outline" onClick={onClose}>
             Cancelar
           </button>
         </div>
