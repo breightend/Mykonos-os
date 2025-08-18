@@ -13,7 +13,8 @@ def create_debit_movement():
         "entity_id": int,
         "amount": float,
         "description": str (optional),
-        "purchase_id": int (optional),
+        "purchase_id": int,
+        "payment_method": int,
         "partial_payment": float (optional),
         "partial_payment_method": str (optional)
     }

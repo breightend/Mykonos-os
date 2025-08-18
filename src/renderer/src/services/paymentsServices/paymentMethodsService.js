@@ -8,7 +8,7 @@ export const paymentMethodsService = {
      * @param {boolean} activeOnly - If true, only returns active payment methods
      * @returns {Promise<Object>} API response with payment methods
      */
-    async getAllPaymentMethods(activeOnly = false) {
+    async getAllPaymentMethods(activeOnly = true) {
         try {
             const response = await axios.get(`${API_BASE_URL}/`, {
                 params: { active_only: activeOnly }
