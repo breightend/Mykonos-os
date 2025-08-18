@@ -7,6 +7,7 @@ import { salesService } from '../services/salesService'
 import { getCurrentBranchId } from '../utils/posUtils'
 import { barcodePrintService } from '../services/barcodePrintService'
 import { useSession } from '../contexts/SessionContext'
+import { id } from 'react-day-picker/locale'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
@@ -263,7 +264,10 @@ export default function ConfirmacionDatosDeCompra() {
           : null,
         payments: saleData.payments.map((payment) => ({
           method: payment.method,
+          id: payment.id || null,
           amount: parseFloat(payment.amount),
+          method_name: payment.method_name || payment.label || payment.type,
+          bank_id: payment.bank_id || null,
           reference: payment.reference || ''
         })),
         total: saleData.exchange?.hasExchange
@@ -720,7 +724,7 @@ export default function ConfirmacionDatosDeCompra() {
             {saleData.payments.map((method, index) => (
               <div key={index} className="card bg-base-200">
                 <div className="card-body p-4">
-                  <h3 className="card-title capitalize">{method.method}</h3>
+                  <h3 className="card-title capitalize">{method.label}</h3>
                   <p className="text-lg font-bold">${method.amount.toFixed(2)}</p>
                 </div>
               </div>
