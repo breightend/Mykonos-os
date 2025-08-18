@@ -342,7 +342,10 @@ export default function ConfirmacionDatosDeCompra() {
           : null,
         payments: saleData.payments.map((payment) => ({
           method: payment.method,
+          id: payment.id || null,
           amount: parseFloat(payment.amount),
+          method_name: payment.method_name || payment.label || payment.type,
+          bank_id: payment.bank_id || null,
           reference: payment.reference || ''
         })),
         total: saleData.exchange?.hasExchange
