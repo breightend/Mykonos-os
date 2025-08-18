@@ -7,6 +7,7 @@ import { accountMovementsService } from '../services/accountMovements/accountMov
 import { getBancos } from '../services/paymentsServices/banksService'
 import paymentMethodsService from '../services/paymentsServices/paymentMethodsService'
 import * as icon from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function FormasPago() {
   const [, setLocation] = useLocation()
@@ -348,9 +349,22 @@ export default function FormasPago() {
                       value={tarjeta.tipo || 'tarjeta_credito'}
                       onChange={(e) => {
                         const tipo = e.target.value
-                        setMetodosSeleccionados((prev) =>
-                          prev.map((m, i) => (i === idx ? { ...m, tipo } : m))
-                        )
+                        setMetodosSeleccionados((prev) => {
+                          // Check for duplicate (same tipo and banco_id)
+                          const banco_id = prev[idx]?.banco_id || ''
+                          const isDuplicate = prev.some(
+                            (m, i) =>
+                              i !== idx &&
+                              m.id === 'tarjeta' &&
+                              m.tipo === tipo &&
+                              m.banco_id === banco_id
+                          )
+                          if (isDuplicate) {
+                            toast.error('Ya seleccionaste esa combinación de tipo de tarjeta y banco.')
+                            return prev
+                          }
+                          return prev.map((m, i) => (i === idx ? { ...m, tipo } : m))
+                        })
                       }}
                       className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400"
                     >
@@ -373,9 +387,22 @@ export default function FormasPago() {
                         value={tarjeta.banco_id || ''}
                         onChange={(e) => {
                           const banco_id = e.target.value
-                          setMetodosSeleccionados((prev) =>
-                            prev.map((m, i) => (i === idx ? { ...m, banco_id } : m))
-                          )
+                          setMetodosSeleccionados((prev) => {
+                            // Check for duplicate (same tipo and banco_id)
+                            const tipo = prev[idx]?.tipo || 'tarjeta_credito'
+                            const isDuplicate = prev.some(
+                              (m, i) =>
+                                i !== idx &&
+                                m.id === 'tarjeta' &&
+                                m.tipo === tipo &&
+                                m.banco_id === banco_id
+                            )
+                            if (isDuplicate) {
+                              alert('Ya seleccionaste esa combinación de tipo de tarjeta y banco.')
+                              return prev
+                            }
+                            return prev.map((m, i) => (i === idx ? { ...m, banco_id } : m))
+                          })
                         }}
                         className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400"
                       >
@@ -707,6 +734,7 @@ export default function FormasPago() {
           </button>
         </div>
       )}
+      <Toaster position='center'/>
     </div>
   )
 }
