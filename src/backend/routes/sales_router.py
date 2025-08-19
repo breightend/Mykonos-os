@@ -399,6 +399,9 @@ def create_sale():
         "payments": [
             {
                 "method": str,
+                "reference": str (optional),
+                "payment_method_id": int,
+                "bank_id": int (optional),
                 "amount": float
             }
         ],
@@ -474,7 +477,7 @@ def create_sale():
         cashier_user_id = data.get("cashier_user_id", 1)  # Cajero por defecto
 
         db = Database()
-
+        conn = None
         try:
             # 1. Calcular valores necesarios
             exchange_data = data.get("exchange")
@@ -530,13 +533,22 @@ def create_sale():
             # Formatear métodos de pago
             payment_methods = []
             payment_references = []
+            payment_method_ids = []
+            bank_ids = []
+            amounts = []
+
             for payment in data["payments"]:
-                payment_methods.append(payment["method"])
+                payment_methods.append(payment.get("method", ""))
                 payment_references.append(payment.get("reference", ""))
+                payment_method_ids.append(payment.get("payment_method_id"))
+                bank_ids.append(payment.get("bank_id"))
+                amounts.append(payment.get("amount"))
 
-            payment_method_str = ", ".join(payment_methods)
-            payment_reference_str = ", ".join(payment_references)
-
+            payment_method_str = ", ".join(str(m) for m in payment_methods)
+            payment_reference_str = ", ".join(str(r) for r in payment_references)
+            payment_method_ids_str = ", ".join(str(pid) for pid in payment_method_ids if pid is not None)
+            bank_ids_str = ", ".join(str(bid) for bid in bank_ids if bid is not None)
+            amounts_str = ", ".join(str(a) for a in amounts if a is not None)
             # Nota sobre el intercambio si aplica
             notes = ""
             if has_exchange and exchange_data:
@@ -555,9 +567,9 @@ def create_sale():
             sales_query = """
             INSERT INTO sales (
                 customer_id, employee_id, cashier_user_id, storage_id,
-                subtotal, total, payment_method, payment_reference,
+                subtotal, total, payment_reference,
                 notes, status
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'Completada')
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Completada')
             RETURNING id
             """
 
@@ -568,7 +580,6 @@ def create_sale():
                 storage_id,
                 total_sale,  # subtotal
                 total_sale,  # total
-                payment_method_str,
                 payment_reference_str,
                 notes,
             )
@@ -580,6 +591,42 @@ def create_sale():
             sale_id = sale_result[0]
 
             print(f"✅ DEBUG: Venta creada con ID: {sale_id}")
+
+            # Relacionar cada pago con su venta y banco
+            for payment in data["payments"]:
+                # Insertar en banks_payment_methods
+                payment_bank_query = """
+                INSERT INTO banks_payment_methods (
+                    amount, payment_method_id, bank_id
+                ) VALUES (%s, %s, %s)
+                RETURNING id
+                """
+                payment_bank_params = (
+                    payment.get("amount"),
+                    payment.get("payment_method_id"),
+                    payment.get("bank_id"),
+                )
+                cursor.execute(payment_bank_query, payment_bank_params)
+                banks_payment_methods_id = cursor.fetchone()[0]
+
+                print(
+                    f"✅ DEBUG: Relación creada en payment_methods_bank para pago: {payment.get('id')}"
+                )
+
+                # Insertar en sales_payments usando el id recién creado
+                sales_payment_query = """
+                INSERT INTO sales_payments (
+                    sales_id, payment_method_id
+                ) VALUES (%s, %s)
+                """
+                sales_payment_params = (
+                    sale_id,
+                    banks_payment_methods_id,
+                )
+                cursor.execute(sales_payment_query, sales_payment_params)
+                print(
+                    f"✅ DEBUG: Relación creada en sales_payments para pago: {payment.get('id')}"
+                )
 
             # 4. Procesar productos vendidos (productos que se lleva el cliente)
             for i, product in enumerate(data["products"]):
@@ -725,27 +772,24 @@ def create_sale():
                     },
                 }
             )
-
         except Exception as e:
             # Rollback en caso de error
-            conn.rollback()
+            if conn and not conn.closed:
+                conn.rollback()
             raise e
-
         finally:
-            conn.close()
+            if conn and not conn.closed:
+                conn.close()
 
     except Exception as e:
-        print(f"❌ ERROR creating sale: {str(e)}")
-        import traceback
+        # Rollback en caso de error
+        if conn and not conn.closed:
+            conn.rollback()
+        raise e
 
-        traceback.print_exc()
-        return jsonify(
-            {
-                "status": "error",
-                "message": "Error interno del servidor",
-                "error": str(e),
-            }
-        ), 500
+    finally:
+        if conn and not conn.closed:
+            conn.close()
 
 
 @sales_router.route("/list", methods=["GET"])
@@ -1203,7 +1247,7 @@ def get_sales_stats():
                 "unique_customers": 0,
                 "exchange_sales": 0,
             }
-            print('Nunca entre')
+            print("Nunca entre")
 
         return jsonify({"status": "success", "data": stats})
 

@@ -45,7 +45,8 @@ class TABLES(Enum):
     SESSIONS = "sessions"
     PAYMENT_METHODS = "payment_methods"
     BANKS = "banks"
-    BANK_PAYMENT_METHODS = "bank_payment_methods"  # Relación muchos a muchos entre bancos y métodos de pago
+    BANKS_PAYMENT_METHODS = "bank_payment_methods"
+    SALES_PAYMENTS = "sales_payments"  # Relación muchos a muchos entre bancos y métodos de pago
 
 
 DATABASE_TABLES = {
@@ -107,7 +108,7 @@ DATABASE_TABLES = {
             "entity_id": "INTEGER NOT NULL",  # ID de la entidad relacionada (cliente o proveedor).
             "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora en que se creó el movimiento.
             "descripcion": "TEXT",  # Descripción del movimiento para un seguimiento más detallado.
-            "medio_pago": "TEXT",  # Medio de pago utilizado (efectivo, tarjeta de crédito, transferencia, etc.).
+            "payment_method": "INTEGER",  # Medio de pago utilizado (efectivo, tarjeta de crédito, transferencia, etc.).
             "numero_de_comprobante": "TEXT",  # Número de comprobante asociado al movimiento, si aplica.
             "purchase_id": "INTEGER",  # ID de la compra asociada a este movimiento
             "debe": "REAL",  # Monto que se debe (cargos).
@@ -135,6 +136,12 @@ DATABASE_TABLES = {
                 "reference_column": "id",
                 "export_column_name": "id",
             },
+            {
+                "column": "payment_method",
+                "reference_table": TABLES.PAYMENT_METHODS,
+                "reference_column": "id",
+                "export_column_name": "payment_method_name",
+            }
         ],
     },
     TABLES.GROUP: {
@@ -531,7 +538,6 @@ DATABASE_TABLES = {
             "tax_amount": "REAL DEFAULT 0.0",  # Monto total de impuestos
             "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
             "total": "REAL NOT NULL",  # Total final después de aplicar descuentos e impuestos
-            "payment_method": "INTEGER NOT NULL",  # Medio de pago (efectivo, tarjeta_credito, tarjeta_debito, transferencia, etc.)
             "payment_reference": "TEXT",  # Referencia del pago (número de transacción, comprobante, etc.)
             "invoice_number": "TEXT",  # Número de factura si se emitió
             "receipt_number": "TEXT",  # Número de ticket/recibo
@@ -543,12 +549,6 @@ DATABASE_TABLES = {
             "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de última actualización
         },
         "foreign_keys": [
-            {  # Relación con tabla de métodos de pago
-                "column": "payment_method",
-                "reference_table": TABLES.BANK_PAYMENT_METHODS,
-                "reference_column": "id",
-                "export_column_name": "payment_method_id",
-            },
             {  # Relación con tabla de clientes (entidades)
                 "column": "customer_id",
                 "reference_table": TABLES.ENTITIES,
@@ -695,11 +695,12 @@ DATABASE_TABLES = {
     },
 
     # Tabla puente: relación muchos-a-muchos entre bancos y métodos de pago
-    TABLES.BANK_PAYMENT_METHODS: {
+    TABLES.BANKS_PAYMENT_METHODS: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
             "bank_id": "INTEGER NOT NULL",  
-            "payment_method_id": "INTEGER NOT NULL",  
+            "payment_method_id": "INTEGER NOT NULL",
+            "amount": "numeric(12,2) [0.00] NOT NULL"  
         },
         "foreign_keys": [
             {
@@ -715,7 +716,30 @@ DATABASE_TABLES = {
                 "export_column_name": "method_name",
             }
         ]
+    },
+    TABLES.SALES_PAYMENTS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+            "sale_id": "INTEGER NOT NULL",
+            "payment_method_id": "INTEGER NOT NULL",
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP"
+        },
+        "foreign_keys": [
+            {
+                "column": "sale_id",
+                "reference_table": TABLES.SALES,
+                "reference_column": "id",
+                "export_column_name": "sale_id",
+            },
+            {
+                "column": "payment_method",
+                "reference_table": TABLES.BANKS_PAYMENT_METHODS,
+                "reference_column": "id",
+                "export_column_name": "method_name",
+            }
+        ]
     }
+
 }
 
 # PostgreSQL Database Configuration from Config

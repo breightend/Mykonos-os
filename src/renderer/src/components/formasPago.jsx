@@ -339,7 +339,16 @@ export default function FormasPago() {
 
       {/* Tarjetas y bancos */}
 
-      {metodosSeleccionados.some((m) => m.id === 'tarjeta') && (
+      {metodosSeleccionados.some((m) => {
+        if (m.id === 'tarjeta') return true
+        if (m.method_name && m.method_name.toLowerCase().includes('tarjeta')) return true
+        const cardMethod = metodosPago.find((mp) => mp.id == m.id)
+        return (
+          cardMethod &&
+          cardMethod.method_name &&
+          cardMethod.method_name.toLowerCase().includes('tarjeta')
+        )
+      }) && (
         <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-5 shadow-sm">
           {/* Selección de tarjetas y bancos */}
           <div className="mb-4">
@@ -347,8 +356,27 @@ export default function FormasPago() {
               Selecciona tarjetas y bancos:
             </label>
             {metodosSeleccionados.map((tarjeta, idx) =>
-              tarjeta.id === 'tarjeta' ||
-              (tarjeta.method_name && tarjeta.method_name.toLowerCase().includes('tarjeta')) ? (
+              // Always show if the method is a card (by id or method_name) or if the method is in metodosPago and is a card
+              (() => {
+                // After changing card type, tarjeta.id may become the real card id (e.g. '2' for debito)
+                const isCard = (() => {
+                  if (tarjeta.id === 'tarjeta') return true
+                  if (
+                    tarjeta.method_name &&
+                    tarjeta.method_name.toLowerCase().includes('tarjeta')
+                  ) {
+                    return true
+                  }
+                  // If id is a number, check if it matches a card in metodosPago
+                  const cardMethod = metodosPago.find((m) => m.id == tarjeta.id)
+                  return (
+                    cardMethod &&
+                    cardMethod.method_name &&
+                    cardMethod.method_name.toLowerCase().includes('tarjeta')
+                  )
+                })()
+                return isCard
+              })() ? (
                 <div
                   key={tarjeta._uuid || idx}
                   className="mb-4 rounded-lg border border-blue-200 bg-blue-100 p-4"
@@ -461,7 +489,17 @@ export default function FormasPago() {
                     />
                   </div>
                   {/* Eliminar tarjeta si hay más de una */}
-                  {metodosSeleccionados.filter((m) => m.id === 'tarjeta').length > 1 && (
+                  {metodosSeleccionados.filter((m) => {
+                    if (m.id === 'tarjeta') return true
+                    if (m.method_name && m.method_name.toLowerCase().includes('tarjeta'))
+                      return true
+                    const cardMethod = metodosPago.find((mp) => mp.id == m.id)
+                    return (
+                      cardMethod &&
+                      cardMethod.method_name &&
+                      cardMethod.method_name.toLowerCase().includes('tarjeta')
+                    )
+                  }).length > 1 && (
                     <button
                       type="button"
                       className="mt-2 text-red-600 hover:underline"
