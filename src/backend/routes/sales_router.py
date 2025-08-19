@@ -546,7 +546,9 @@ def create_sale():
 
             payment_method_str = ", ".join(str(m) for m in payment_methods)
             payment_reference_str = ", ".join(str(r) for r in payment_references)
-            payment_method_ids_str = ", ".join(str(pid) for pid in payment_method_ids if pid is not None)
+            payment_method_ids_str = ", ".join(
+                str(pid) for pid in payment_method_ids if pid is not None
+            )
             bank_ids_str = ", ".join(str(bid) for bid in bank_ids if bid is not None)
             amounts_str = ", ".join(str(a) for a in amounts if a is not None)
             # Nota sobre el intercambio si aplica
@@ -852,7 +854,6 @@ def list_sales():
             s.id,
             s.sale_date,
             s.total,
-            s.payment_method,
             s.notes,
             s.status,
             s.invoice_number,
@@ -868,7 +869,7 @@ def list_sales():
         LEFT JOIN users u ON s.cashier_user_id = u.id
         LEFT JOIN sales_detail sd ON s.id = sd.sale_id AND sd.quantity > 0
         {where_clause}
-        GROUP BY s.id, s.sale_date, s.total, s.payment_method, s.notes, s.status, 
+        GROUP BY s.id, s.sale_date, s.total, s.notes, s.status, 
                  s.invoice_number, s.receipt_number, st.name, e.entity_name, u.username
         ORDER BY s.sale_date DESC
         LIMIT %s OFFSET %s
@@ -960,24 +961,10 @@ def get_sale_details(sale_id):
         # Query para obtener información general de la venta
         sale_query = """
         SELECT 
-            s.id,
-            s.sale_date,
-            s.subtotal,
-            s.total,
-            s.payment_method,
-            s.payment_reference,
-            s.notes,
-            s.status,
-            s.invoice_number,
-            s.receipt_number,
-            s.tax_amount,
-            s.discount,
-            st.name as storage_name,
-            e.entity_name as customer_name,
-            e.phone_number as customer_phone,
-            e.email as customer_email,
-            u.username as cashier_name,
-            emp.entity_name as employee_name
+            s.id, s.sale_date, s.subtotal, s.total, s.payment_reference, s.notes, s.status,
+            s.invoice_number, s.receipt_number, s.tax_amount, s.discount,
+            st.name as storage_name, e.entity_name as customer_name, e.phone_number as customer_phone,
+            e.email as customer_email, u.username as cashier_name, emp.entity_name as employee_name
         FROM sales s
         LEFT JOIN storage st ON s.storage_id = st.id
         LEFT JOIN entities e ON s.customer_id = e.id
@@ -991,30 +978,45 @@ def get_sale_details(sale_id):
         if not sale_result:
             return jsonify({"status": "error", "message": "Venta no encontrada"}), 404
 
+        # 2. Get all payments for this sale
+        payments_query = """
+        SELECT
+            sp.id as sales_payment_id,
+            bpm.id as banks_payment_method_id,
+            pm.method_name,
+            b.name as bank_name,
+            bpm.amount
+        FROM sales_payments sp
+        JOIN banks_payment_methods bpm ON sp.payment_method_id = bpm.id
+        JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+        LEFT JOIN banks b ON bpm.bank_id = b.id
+        WHERE sp.sale_id = %s
+        """
+        payments_result = db.execute_query(payments_query, (sale_id,))
+        payments = []
+        for row in payments_result:
+            payments.append({
+                "sales_payment_id": row["sales_payment_id"],
+                "banks_payment_method_id": row["banks_payment_method_id"],
+                "method_name": row["method_name"],
+                "bank_name": row["bank_name"],
+                "amount": row["amount"],
+            })
+
+        
+        
         # Query para obtener los detalles de productos
         details_query = """
         SELECT 
-            sd.id,
-            sd.product_name,
-            sd.size_name,
-            sd.color_name,
-            sd.cost_price,
-            sd.sale_price,
-            sd.quantity,
-            sd.discount_amount,
-            sd.tax_amount,
-            sd.subtotal,
-            sd.total,
-            sd.barcode_scanned,
-            p.product_name as current_product_name,
-            b.brand_name,
-            g.group_name
+            sd.id, sd.product_name, sd.size_name, sd.color_name, sd.cost_price, sd.sale_price,
+            sd.quantity, sd.discount_amount, sd.tax_amount, sd.subtotal, sd.total, sd.barcode_scanned,
+            p.product_name as current_product_name, b.brand_name, g.group_name
         FROM sales_detail sd
         LEFT JOIN products p ON sd.product_id = p.id
         LEFT JOIN brands b ON p.brand_id = b.id
         LEFT JOIN groups g ON p.group_id = g.id
         WHERE sd.sale_id = %s
-        ORDER BY sd.id
+        ORDER BY sd.id 
         """
 
         details_result = db.execute_query(details_query, (sale_id,))
@@ -1027,7 +1029,6 @@ def get_sale_details(sale_id):
                 "sale_date": sale_data.get("sale_date"),
                 "subtotal": sale_data.get("subtotal"),
                 "total": sale_data.get("total"),
-                "payment_method": sale_data.get("payment_method"),
                 "payment_reference": sale_data.get("payment_reference"),
                 "notes": sale_data.get("notes"),
                 "status": sale_data.get("status"),
@@ -1041,6 +1042,7 @@ def get_sale_details(sale_id):
                 "customer_email": sale_data.get("customer_email"),
                 "cashier_name": sale_data.get("cashier_name"),
                 "employee_name": sale_data.get("employee_name"),
+                "payment_method_id": sale_data.get("payment_method_id"),
             }
         else:
             sale_info = {
@@ -1062,6 +1064,7 @@ def get_sale_details(sale_id):
                 "customer_email": sale_data[15],
                 "cashier_name": sale_data[16],
                 "employee_name": sale_data[17],
+                "payment_method_id": sale_data[18],
             }
 
         # Formatear detalles de productos
@@ -1117,6 +1120,7 @@ def get_sale_details(sale_id):
 
         result = {
             "sale": sale_info,
+            "payments": payments,
             "products_sold": products_sold,
             "products_returned": products_returned,
             "has_exchange": has_exchange,

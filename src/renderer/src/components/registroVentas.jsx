@@ -25,7 +25,6 @@ export default function RegistroVentas() {
     total_sales: 0
   })
   const [showCalendar, setShowCalendar] = useState(false)
-
   const { getCurrentStorage } = useSession()
   const currentStorage = getCurrentStorage()
 
@@ -157,6 +156,7 @@ export default function RegistroVentas() {
 
       if (response.status === 'success') {
         setSaleDetails(response.data)
+        console.log('Detalles de venta: ', response.data)
         setShowModal(true)
       } else {
         toast.error('Error al cargar detalles de la venta')
@@ -204,7 +204,7 @@ export default function RegistroVentas() {
       if (searchTerm !== '' || range) {
         loadSales()
       }
-    }, 500) // Esperar 500ms después de que deje de escribir
+    }, 500)
 
     return () => clearTimeout(timeoutId)
   }, [searchTerm, range, loadSales])
@@ -266,7 +266,6 @@ export default function RegistroVentas() {
         filters.end_date = range.to.toISOString().split('T')[0]
         console.log('📅 Aplicando filtro hasta:', filters.end_date)
       }
-
 
       if (searchTerm.trim()) {
         filters.search = searchTerm.trim()
@@ -542,7 +541,6 @@ export default function RegistroVentas() {
                   <th className="text-warning">Fecha</th>
                   <th className="text-warning">Cliente</th>
                   <th className="text-warning">Productos</th>
-                  <th className="text-warning">Método de Pago</th>
                   <th className="text-warning">Total</th>
                   <th className="text-warning">Estado</th>
                 </tr>
@@ -585,7 +583,6 @@ export default function RegistroVentas() {
                           )}
                         </div>
                       </td>
-                      <td>{sale.payment_method}</td>
                       <td className="font-semibold">${formatPrice(sale.total)}</td>
                       <td>
                         <div
@@ -620,7 +617,7 @@ export default function RegistroVentas() {
           {/* Modal de Detalles de Venta */}
           {showModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
-              <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-gray-100 shadow-2xl">
+              <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-white shadow-2xl">
                 <div className="p-6">
                   <div className="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
                     <h3 className="text-2xl font-bold text-warning">
@@ -643,7 +640,7 @@ export default function RegistroVentas() {
                     <div className="space-y-6">
                       {/* Información General */}
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <div className="rounded-lg bg-base-200 p-4">
+                        <div className="rounded-lg bg-base-300 p-4">
                           <h4 className="mb-2 font-semibold">Información de Venta</h4>
                           <p>
                             <strong>Fecha:</strong> {formatDate(saleDetails.sale.sale_date)}
@@ -670,7 +667,7 @@ export default function RegistroVentas() {
                           )}
                         </div>
 
-                        <div className="rounded-lg bg-base-200 p-4">
+                        <div className="rounded-lg bg-base-300 p-4">
                           <h4 className="mb-2 font-semibold">Cliente</h4>
                           <p>
                             <strong>Nombre:</strong>{' '}
@@ -688,7 +685,7 @@ export default function RegistroVentas() {
                           )}
                         </div>
 
-                        <div className="rounded-lg bg-base-200 p-4">
+                        <div className="rounded-lg bg-base-300 p-4">
                           <h4 className="mb-2 font-semibold">Totales</h4>
                           <p>
                             <strong>Subtotal:</strong> ${formatPrice(saleDetails.sale.subtotal)}
@@ -700,10 +697,21 @@ export default function RegistroVentas() {
                           )}
                           <p>
                             <strong>Total:</strong>{' '}
-                            <span className="text-lg font-bold text-warning">
+                            <span className="text-lg font-bold text-primary">
                               ${formatPrice(saleDetails.sale.total)}
                             </span>
                           </p>
+                        </div>
+                        <div className="flex w-full rounded-lg bg-base-300 p-4">
+                          <h2 className="text-lg font-semibold">Detalles del pago: </h2>
+                          <ul>
+                            {saleDetails.payments.map((payment, index) => (
+                              <li key={index}>
+                                <strong>Método:</strong> {payment.method_name} -{' '}
+                                <strong>Referencia:</strong> {payment.bank_name}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
 
