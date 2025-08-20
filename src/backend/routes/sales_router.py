@@ -983,14 +983,14 @@ def get_sale_details(sale_id):
         SELECT
             sp.id as sales_payment_id,
             bpm.id as banks_payment_method_id,
-            pm.method_name,
+            pm.display_name as method_name,
             b.name as bank_name,
             bpm.amount
         FROM sales_payments sp
-        JOIN banks_payment_methods bpm ON sp.payment_method_id = bpm.id
-        JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+        LEFT JOIN banks_payment_methods bpm ON sp.payment_method_id = bpm.id
+        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
         LEFT JOIN banks b ON bpm.bank_id = b.id
-        WHERE sp.sale_id = %s
+        WHERE sp.sales_id = %s
         """
         payments_result = db.execute_query(payments_query, (sale_id,))
         payments = []
@@ -1002,9 +1002,8 @@ def get_sale_details(sale_id):
                 "bank_name": row["bank_name"],
                 "amount": row["amount"],
             })
+        print("DEBUG payments_result:", payments_result)
 
-        
-        
         # Query para obtener los detalles de productos
         details_query = """
         SELECT 
