@@ -5,6 +5,78 @@ from datetime import datetime
 sales_router = Blueprint("sales_router", __name__)
 
 
+@sales_router.route("/stats-debug", methods=["GET"])
+def get_sales_stats_debug():
+    """
+    Dev/debug endpoint: Returns counts for each filter step to help debug why /stats returns zeros.
+    """
+    try:
+        db = Database()
+        storage_id = request.args.get("storage_id", type=int)
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        today = datetime.now().date()
+
+        debug_counts = {}
+
+        def get_count(result):
+            row = result[0]
+            if isinstance(row, dict):
+                # Return the first value (COUNT(*))
+                return list(row.values())[0]
+            return row[0]
+
+        # 1. Total sales
+        q1 = "SELECT COUNT(*) FROM sales"
+        debug_counts["total_sales"] = get_count(db.execute_query(q1))
+
+        # 2. Sales with storage_id
+        if storage_id:
+            q2 = "SELECT COUNT(*) FROM sales WHERE storage_id = %s"
+            debug_counts["sales_with_storage_id"] = get_count(
+                db.execute_query(q2, (storage_id,))
+            )
+        else:
+            debug_counts["sales_with_storage_id"] = None
+
+        # 3. Sales with status = 'Completada'
+        q3 = "SELECT COUNT(*) FROM sales WHERE status = 'Completada'"
+        debug_counts["sales_with_status_completada"] = get_count(db.execute_query(q3))
+
+        # 4. Sales with today's date
+        q4 = "SELECT COUNT(*) FROM sales WHERE DATE(sale_date) = %s"
+        debug_counts["sales_with_today_date"] = get_count(
+            db.execute_query(q4, (str(today),))
+        )
+
+        # 5. Sales matching all filters
+        filters = []
+        params = []
+        if storage_id:
+            filters.append("storage_id = %s")
+            params.append(storage_id)
+        if start_date:
+            filters.append("DATE(sale_date) >= %s")
+            params.append(start_date)
+        if end_date:
+            filters.append("DATE(sale_date) <= %s")
+            params.append(end_date)
+        filters.append("status = 'Completada'")
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        q5 = f"SELECT COUNT(*) FROM sales {where_clause}"
+        debug_counts["sales_matching_all_filters"] = get_count(
+            db.execute_query(q5, params)
+        )
+
+        return jsonify({"status": "success", "debug_counts": debug_counts})
+    except Exception as e:
+        import traceback
+
+        tb = traceback.format_exc()
+        print(tb)
+        return jsonify({"status": "error", "error": str(e), "traceback": tb})
+
+
 @sales_router.route("/product-by-variant-barcode/<variant_barcode>", methods=["GET"])
 def get_product_by_variant_barcode(variant_barcode):
     """
@@ -995,13 +1067,15 @@ def get_sale_details(sale_id):
         payments_result = db.execute_query(payments_query, (sale_id,))
         payments = []
         for row in payments_result:
-            payments.append({
-                "sales_payment_id": row["sales_payment_id"],
-                "banks_payment_method_id": row["banks_payment_method_id"],
-                "method_name": row["method_name"],
-                "bank_name": row["bank_name"],
-                "amount": row["amount"],
-            })
+            payments.append(
+                {
+                    "sales_payment_id": row["sales_payment_id"],
+                    "banks_payment_method_id": row["banks_payment_method_id"],
+                    "method_name": row["method_name"],
+                    "bank_name": row["bank_name"],
+                    "amount": row["amount"],
+                }
+            )
         print("DEBUG payments_result:", payments_result)
 
         # Query para obtener los detalles de productos
@@ -1190,24 +1264,20 @@ def get_sales_stats():
         print(f"📅 DEBUG Stats: where_conditions={where_conditions}")
         print(f"📅 DEBUG Stats: params={params}")
 
+        # Always filter for completed sales
+        where_conditions.append("s.status = 'Completada'")
         where_clause = (
             f"WHERE {' AND '.join(where_conditions)}" if where_conditions else ""
         )
 
-        # Filter for completed/successful sales - Use exact status from database
-        if where_conditions:
-            where_clause += " AND s.status = 'Completada'"
-        else:
-            where_clause = "WHERE s.status = 'Completada'"
-
         # Query para obtener estadísticas generales
         stats_query = f"""
             SELECT 
-                COUNT(s.id) as total_sales,
+                COALESCE(COUNT(s.id), 0) as total_sales,
                 COALESCE(SUM(s.total), 0) as total_revenue,
                 COALESCE(SUM(sd_positive.quantity), 0) as total_products_sold,
-                COUNT(DISTINCT s.customer_id) as unique_customers,
-                COUNT(CASE WHEN s.notes LIKE '%intercambio%' THEN 1 END) as exchange_sales
+                COALESCE(COUNT(DISTINCT s.customer_id), 0) as unique_customers,
+                COALESCE(COUNT(CASE WHEN s.notes LIKE '%intercambio%' THEN 1 END), 0) as exchange_sales
             FROM sales s
             LEFT JOIN (
                 SELECT sale_id, SUM(quantity) as quantity
@@ -1215,25 +1285,42 @@ def get_sales_stats():
                 GROUP BY sale_id
             ) sd_positive ON s.id = sd_positive.sale_id
             {where_clause}
-
         """
 
-        print(f"🔍 DEBUG Stats query: {stats_query}")
-        print(f"🔍 DEBUG Stats params: {params}")
+        print(f"🔍 DEBUG Stats FINAL QUERY: {stats_query}")
+        print(f"🔍 DEBUG Stats FINAL PARAMS: {params}")
 
         result = db.execute_query(stats_query, params)
 
+        # Always return a row, even if result is empty
         if result and len(result) > 0:
             stats_data = result[0]
+            # Handle both dict and tuple/row results robustly
             if isinstance(stats_data, dict):
+                # If dict, try to get by key, fallback to first value
                 stats = {
-                    "total_sales": stats_data.get("total_sales", 0),
-                    "total_revenue": float(stats_data.get("total_revenue", 0)),
-                    "total_products_sold": stats_data.get("total_products_sold", 0),
-                    "unique_customers": stats_data.get("unique_customers", 0),
-                    "exchange_sales": stats_data.get("exchange_sales", 0),
+                    "total_sales": stats_data.get(
+                        "total_sales", list(stats_data.values())[0] if stats_data else 0
+                    ),
+                    "total_revenue": float(
+                        stats_data.get(
+                            "total_revenue",
+                            list(stats_data.values())[1] if len(stats_data) > 1 else 0,
+                        )
+                    ),
+                    "total_products_sold": stats_data.get(
+                        "total_products_sold",
+                        list(stats_data.values())[2] if len(stats_data) > 2 else 0,
+                    ),
+                    "unique_customers": stats_data.get(
+                        "unique_customers",
+                        list(stats_data.values())[3] if len(stats_data) > 3 else 0,
+                    ),
+                    "exchange_sales": stats_data.get(
+                        "exchange_sales",
+                        list(stats_data.values())[4] if len(stats_data) > 4 else 0,
+                    ),
                 }
-                print(f"📊 DEBUG Stats yo soy el problema")
             else:
                 stats = {
                     "total_sales": stats_data[0] or 0,
@@ -1243,6 +1330,7 @@ def get_sales_stats():
                     "exchange_sales": stats_data[4] or 0,
                 }
         else:
+            # Defensive: if no row returned, return zeros
             stats = {
                 "total_sales": 0,
                 "total_revenue": 0.0,
@@ -1250,7 +1338,7 @@ def get_sales_stats():
                 "unique_customers": 0,
                 "exchange_sales": 0,
             }
-            print("Nunca entre")
+            print("DEBUG: No rows returned from stats query, returning zeros.")
 
         return jsonify({"status": "success", "data": stats})
 
