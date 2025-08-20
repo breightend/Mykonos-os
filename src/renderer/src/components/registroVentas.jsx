@@ -670,8 +670,8 @@ export default function RegistroVentas() {
                         <div className="rounded-lg bg-base-300 p-4">
                           <h4 className="mb-2 font-semibold">Cliente</h4>
                           <p>
-                            <strong>Nombre:</strong>{' '}
-                            {saleDetails.sale.customer_name || 'Cliente Anónimo'}
+                            <strong>Nombre:</strong>
+                            {saleDetails.sale.customer_name || 'Cliente ocasional'}
                           </p>
                           {saleDetails.sale.customer_phone && (
                             <p>
@@ -702,13 +702,38 @@ export default function RegistroVentas() {
                             </span>
                           </p>
                         </div>
-                        <div className="flex w-full rounded-lg bg-base-300 p-4">
-                          <h2 className="text-lg font-semibold">Detalles del pago: </h2>
-                          <ul>
+                      </div>
+                      <div className="flex w-full rounded-lg bg-base-300 p-4">
+                        <div className="flex w-56 items-start pr-4">
+                          <h2 className="mt-1 text-lg font-semibold">Detalles del pago:</h2>
+                        </div>
+                        <div className="flex-grow">
+                          <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             {saleDetails.payments.map((payment, index) => (
-                              <li key={index}>
-                                <strong>Método:</strong> {payment.method_name} -{' '}
-                                <strong>Referencia:</strong> {payment.bank_name}
+                              <li
+                                key={index}
+                                className="flex flex-col gap-4 rounded-lg border border-base-200 bg-base-100 p-4 shadow"
+                              >
+                                <div className="mb-1 flex items-center gap-2">
+                                  <span className="badge badge-primary badge-sm p-2">{`#${index + 1}`}</span>
+                                  <span className="font-semibold text-secondary">
+                                    {payment.method_name}
+                                  </span>
+                                </div>
+                                {payment.bank_name && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">Banco:</span>
+                                    <span className="badge badge-outline badge-sm text-sm">
+                                      {payment.bank_name}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Monto:</span>
+                                  <span className="font-bold text-primary">
+                                    ${parseFloat(payment.amount || 0).toFixed(2)}
+                                  </span>
+                                </div>
                               </li>
                             ))}
                           </ul>
