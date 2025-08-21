@@ -1,5 +1,5 @@
 import { Trash2, Gift, Replace } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
@@ -8,7 +8,6 @@ import { useSellContext } from '../contexts/sellContext'
 import salesService from '../services/salesService'
 
 //TODO agregar el vendedor a la venta
-//TODO agregar logica de regalos en base al boolean de la bd
 
 function Ventas() {
   const [, setLocation] = useLocation()
@@ -24,8 +23,18 @@ function Ventas() {
   const [productosDevolucion, setProductosDevolucion] = useState([])
   const [loadingDevolucion, setLoadingDevolucion] = useState(false)
 
-  const { setSaleData, saleData, addProductToGifts, removeGiftProduct, updateGiftQuantity } =
-    useSellContext()
+  const {
+    setSaleData,
+    saleData,
+    addProductToGifts,
+    removeGiftProduct,
+    updateGiftQuantity,
+    resetSale
+  } = useSellContext()
+
+  useEffect(() => {
+    resetSale()
+  }, [])
 
   const agregarProductoDevolucion = async () => {
     const codigo = codigoDevolucionInput.trim()

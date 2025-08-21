@@ -1,5 +1,4 @@
 import {
-  Package,
   Search,
   X,
   Replace,
@@ -8,7 +7,8 @@ import {
   Filter,
   FilterX,
   Gift,
-  Shirt
+  Shirt,
+  ShoppingBag
 } from 'lucide-react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
@@ -755,7 +755,7 @@ export default function RegistroVentas() {
                       {saleDetails.products_sold.length > 0 && (
                         <div>
                           <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                            <Package className="h-5 w-5 text-warning" />
+                            <ShoppingBag className="h-5 w-5 text-warning" />
                             Productos Vendidos ({saleDetails.products_sold.length})
                           </h4>
                           <div className="overflow-x-auto rounded-lg">
@@ -782,7 +782,9 @@ export default function RegistroVentas() {
                                       </td>
                                     ) : (
                                       <td>
-                                        <Shirt className="h-4 w-4" />
+                                        <span className="badge badge-info">
+                                          <Shirt className="h-4 w-4" />
+                                        </span>
                                       </td>
                                     )}
                                     <td>
