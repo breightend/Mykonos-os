@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'wouter'
-import { fetchProviderById } from '../services/proveedores/proveedorService'
+import { fetchProviderById } from '../../services/proveedores/proveedorService'
 import {
   fetchBrandByProviders,
   fetchBrand,
@@ -23,19 +23,19 @@ import {
   deleteDataBrand,
   assignBrandToProvider,
   removeBrandFromProvider
-} from '../services/proveedores/brandService'
-import { fetchPurchasesByProvider } from '../services/proveedores/purchaseService'
+} from '../../services/proveedores/brandService'
+import { fetchPurchasesByProvider } from '../../services/proveedores/purchaseService'
 import {
   accountMovementsService,
   formatCurrency,
   formatMovementType
-} from '../services/proveedores/accountMovementsService'
-import EditarProveedorModal from '../modals/modalsProveedor/editarProveedorModal'
-import AgregarPagoModal from '../modals/modalsProveedor/agregarPagoModal'
-import EliminarProveedorModal from '../modals/modalsProveedor/eliminarProveedorModal'
-import AgregarCompraModal from '../modals/modalsProveedor/agregarCompraModal'
-import PurchaseDetailsModal from './PurchaseDetailsModal'
-import OperationDetailsModal from './OperationDetailsModal'
+} from '../../services/proveedores/accountMovementsService'
+import EditarProveedorModal from '../../modals/modalsProveedor/editarProveedorModal'
+import AgregarPagoModal from '../../modals/modalsProveedor/agregarPagoModal'
+import EliminarProveedorModal from '../../modals/modalsProveedor/eliminarProveedorModal'
+import AgregarCompraProveedor from './agregarCompraProveedor'
+import PurchaseDetailsModal from '../PurchaseDetailsModal'
+import OperationDetailsModal from '../OperationDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function InfoProvider() {
@@ -706,7 +706,7 @@ export default function InfoProvider() {
               <div className="mb-4 flex flex-wrap justify-end gap-2">
                 <button
                   className="btn btn-accent gap-2 shadow-md transition-all hover:shadow-lg"
-                  onClick={() => document.getElementById('agregandoCompra').showModal()}
+                  onClick={() => setLocation('agregandoCompraProveedor')}
                 >
                   <ShoppingBasket className="h-4 w-4" />
                   Agregar compra
@@ -846,7 +846,7 @@ export default function InfoProvider() {
         <EditarProveedorModal provider={provider} />
         <AgregarPagoModal provider={provider} onPaymentAdded={handlePurchaseUpdate} />
         <EliminarProveedorModal provider={provider} />
-        <AgregarCompraModal provider={provider} />
+        <AgregarCompraProveedor provider={provider} />
 
         {/* Crear Marca */}
         {showCreateBrandModal && (

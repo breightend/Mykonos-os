@@ -1,13 +1,13 @@
 import { Search, Package, FileChartPie, HousePlus } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { pinwheel } from 'ldrs'
-import MenuVertical from '../componentes especificos/menuVertical'
-import Navbar from '../componentes especificos/navbar'
+import MenuVertical from '../../componentes especificos/menuVertical'
+import Navbar from '../../componentes especificos/navbar'
 import { useEffect, useState } from 'react'
-import { fetchProvider } from '../services/proveedores/proveedorService'
-import { fetchProviderJoinBrand } from '../services/proveedores/brandService'
+import { fetchProvider } from '../../services/proveedores/proveedorService'
+import { fetchProviderJoinBrand } from '../../services/proveedores/brandService'
 import toast, { Toaster } from 'react-hot-toast'
-import '../assets/modal-improvements.css'
+import '../../assets/modal-improvements.css'
 
 pinwheel.register()
 

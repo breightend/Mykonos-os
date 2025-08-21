@@ -3,14 +3,19 @@ import { Plus, Trash2, Package, ShoppingCart, X } from 'lucide-react'
 import { fetchProductos } from '../../services/products/productService'
 import { createPurchase, addProductToPurchase } from '../../services/proveedores/purchaseService'
 import toast from 'react-hot-toast'
+import { getBancos } from '../../services/paymentsServices/banksService'
+import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService'
+import { useLocation, useSearchParams  } from 'wouter'
 
-export default function AgregarCompraModal({ provider }) {
+
+export default function AgregarCompraProveedor({ provider }) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
-
-  // Datos de la compra principal
+  const [, setLocation] = useLocation()
+  const [searchParams] = useSearchParams()
+  const providerId = searchParams.get('id')
   const [purchaseData, setPurchaseData] = useState({
     subtotal: 0,
     discount: 0,
@@ -21,10 +26,12 @@ export default function AgregarCompraModal({ provider }) {
     notes: ''
   })
 
-  // Productos agregados a la compra
+  const handleCerrar = () => {
+    setLocation(`/infoProvider?id=${providerId}`)
+  }
+
   const [purchaseProducts, setPurchaseProducts] = useState([])
 
-  // Modal para agregar/editar producto
   const [showProductModal, setShowProductModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [productFormData, setProductFormData] = useState({
@@ -33,6 +40,8 @@ export default function AgregarCompraModal({ provider }) {
     quantity: 1,
     discount: 0
   })
+  const [banks, setBanks] = useState([])
+  const [paymentMethods, setPaymentMethods] = useState([])
 
   useEffect(() => {
     const modal = document.getElementById('agregandoCompra')
@@ -62,6 +71,12 @@ export default function AgregarCompraModal({ provider }) {
   useEffect(() => {
     calculateTotals()
   }, [purchaseProducts])
+
+  useEffect(() => {
+    if (isOpen) {
+      console.log('Modal de agregar compra abierto')
+    }
+  }, [isOpen])
 
   const loadProducts = async () => {
     try {
@@ -259,225 +274,223 @@ export default function AgregarCompraModal({ provider }) {
 
   return (
     <div>
-      <dialog id="agregandoCompra" className="modal">
-        <div className="modal-box max-h-[90vh] w-11/12 max-w-6xl overflow-y-auto">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-xl font-bold">
-              <ShoppingCart className="h-6 w-6" />
-              Nueva Compra - {provider?.entity_name}
-            </h3>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => document.getElementById('agregandoCompra').close()}
-            >
-              <X className="h-4 w-4" />
-            </button>
+      <div className="">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-xl font-bold">
+            <ShoppingCart className="h-6 w-6" />
+            Nueva Compra - {provider?.entity_name}
+          </h3>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => document.getElementById('agregandoCompra').close()}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Información de la compra */}
+          <div className="rounded-lg bg-base-200 p-4">
+            <h4 className="mb-4 font-semibold">Información de la Compra</h4>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <label className="label">
+                  <span className="label-text">Método de Pago</span>
+                </label>
+                <select
+                  name="payment_method"
+                  value={purchaseData.payment_method}
+                  onChange={handlePurchaseInputChange}
+                  className="select-bordered select w-full"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                  <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                  <option value="Cuenta Corriente">Cuenta Corriente</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="label">
+                  <span className="label-text">Número de Transacción</span>
+                </label>
+                <input
+                  type="text"
+                  name="transaction_number"
+                  value={purchaseData.transaction_number}
+                  onChange={handlePurchaseInputChange}
+                  className="input-bordered input w-full"
+                  placeholder="Número de comprobante"
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  <span className="label-text">Número de Factura</span>
+                </label>
+                <input
+                  type="text"
+                  name="invoice_number"
+                  value={purchaseData.invoice_number}
+                  onChange={handlePurchaseInputChange}
+                  className="input-bordered input w-full"
+                  placeholder="Número de factura"
+                />
+              </div>
+
+              <div className="lg:col-span-3">
+                <label className="label">
+                  <span className="label-text">Notas</span>
+                </label>
+                <textarea
+                  name="notes"
+                  value={purchaseData.notes}
+                  onChange={handlePurchaseInputChange}
+                  className="textarea-bordered textarea w-full"
+                  placeholder="Notas adicionales sobre la compra"
+                  rows="2"
+                />
+              </div>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Información de la compra */}
-            <div className="bg-base-200 rounded-lg p-4">
-              <h4 className="mb-4 font-semibold">Información de la Compra</h4>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <label className="label">
-                    <span className="label-text">Método de Pago</span>
-                  </label>
-                  <select
-                    name="payment_method"
-                    value={purchaseData.payment_method}
-                    onChange={handlePurchaseInputChange}
-                    className="select select-bordered w-full"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Cheque">Cheque</option>
-                    <option value="Tarjeta de Débito">Tarjeta de Débito</option>
-                    <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                    <option value="Cuenta Corriente">Cuenta Corriente</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="label">
-                    <span className="label-text">Número de Transacción</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="transaction_number"
-                    value={purchaseData.transaction_number}
-                    onChange={handlePurchaseInputChange}
-                    className="input input-bordered w-full"
-                    placeholder="Número de comprobante"
-                  />
-                </div>
-
-                <div>
-                  <label className="label">
-                    <span className="label-text">Número de Factura</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="invoice_number"
-                    value={purchaseData.invoice_number}
-                    onChange={handlePurchaseInputChange}
-                    className="input input-bordered w-full"
-                    placeholder="Número de factura"
-                  />
-                </div>
-
-                <div className="lg:col-span-3">
-                  <label className="label">
-                    <span className="label-text">Notas</span>
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={purchaseData.notes}
-                    onChange={handlePurchaseInputChange}
-                    className="textarea textarea-bordered w-full"
-                    placeholder="Notas adicionales sobre la compra"
-                    rows="2"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Productos */}
-            <div className="bg-base-200 rounded-lg p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <h4 className="flex items-center gap-2 font-semibold">
-                  <Package className="h-5 w-5" />
-                  Productos de la Compra
-                </h4>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setShowProductModal(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Agregar Producto
-                </button>
-              </div>
-
-              {purchaseProducts.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="table-zebra table w-full">
-                    <thead>
-                      <tr>
-                        <th>Producto</th>
-                        <th>Código</th>
-                        <th>Precio Costo</th>
-                        <th>Cantidad</th>
-                        <th>Descuento</th>
-                        <th>Subtotal</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {purchaseProducts.map((product) => (
-                        <tr key={product.id}>
-                          <td className="font-medium">{product.product_name}</td>
-                          <td>{product.barcode}</td>
-                          <td>${product.cost_price.toFixed(2)}</td>
-                          <td>{product.quantity}</td>
-                          <td>${product.discount.toFixed(2)}</td>
-                          <td className="font-semibold">${product.subtotal.toFixed(2)}</td>
-                          <td>
-                            <div className="flex gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleEditProduct(product)}
-                                className="btn btn-ghost btn-xs text-blue-600"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveProduct(product.id)}
-                                className="btn btn-ghost btn-xs text-red-600"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="py-8 text-center text-gray-500">
-                  No hay productos agregados a la compra
-                </div>
-              )}
-            </div>
-
-            {/* Totales */}
-            <div className="bg-base-200 rounded-lg p-4">
-              <h4 className="mb-4 font-semibold">Totales</h4>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <label className="label">
-                    <span className="label-text">Subtotal</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={purchaseData.subtotal}
-                    className="input input-bordered w-full"
-                    readOnly
-                  />
-                </div>
-
-                <div>
-                  <label className="label">
-                    <span className="label-text">Descuento Global</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="discount"
-                    value={purchaseData.discount}
-                    onChange={handlePurchaseInputChange}
-                    className="input input-bordered w-full"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Total</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={purchaseData.total}
-                    className="input input-bordered w-full font-semibold"
-                    readOnly
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Botones de acción */}
-            <div className="modal-action">
+          {/* Productos */}
+          <div className="rounded-lg bg-base-200 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <h4 className="flex items-center gap-2 font-semibold">
+                <Package className="h-5 w-5" />
+                Productos de la Compra
+              </h4>
               <button
                 type="button"
-                className="btn"
-                onClick={() => document.getElementById('agregandoCompra').close()}
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowProductModal(true)}
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loading || purchaseProducts.length === 0}
-              >
-                {loading ? 'Creando...' : 'Crear Compra'}
+                <Plus className="h-4 w-4" />
+                Agregar Producto
               </button>
             </div>
-          </form>
-        </div>
-      </dialog>
+
+            {purchaseProducts.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Código</th>
+                      <th>Precio Costo</th>
+                      <th>Cantidad</th>
+                      <th>Descuento</th>
+                      <th>Subtotal</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {purchaseProducts.map((product) => (
+                      <tr key={product.id}>
+                        <td className="font-medium">{product.product_name}</td>
+                        <td>{product.barcode}</td>
+                        <td>${product.cost_price.toFixed(2)}</td>
+                        <td>{product.quantity}</td>
+                        <td>${product.discount.toFixed(2)}</td>
+                        <td className="font-semibold">${product.subtotal.toFixed(2)}</td>
+                        <td>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleEditProduct(product)}
+                              className="btn btn-ghost btn-xs text-blue-600"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveProduct(product.id)}
+                              className="btn btn-ghost btn-xs text-red-600"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                No hay productos agregados a la compra
+              </div>
+            )}
+          </div>
+
+          {/* Totales */}
+          <div className="rounded-lg bg-base-200 p-4">
+            <h4 className="mb-4 font-semibold">Totales</h4>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label className="label">
+                  <span className="label-text">Subtotal</span>
+                </label>
+                <input
+                  type="number"
+                  value={purchaseData.subtotal}
+                  className="input-bordered input w-full"
+                  readOnly
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  <span className="label-text">Descuento Global</span>
+                </label>
+                <input
+                  type="number"
+                  name="discount"
+                  value={purchaseData.discount}
+                  onChange={handlePurchaseInputChange}
+                  className="input-bordered input w-full"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  <span className="label-text font-semibold">Total</span>
+                </label>
+                <input
+                  type="number"
+                  value={purchaseData.total}
+                  className="input-bordered input w-full font-semibold"
+                  readOnly
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="modal-action">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => document.getElementById('agregandoCompra').close()}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading || purchaseProducts.length === 0}
+            >
+              {loading ? 'Creando...' : 'Crear Compra'}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Modal para agregar/editar producto */}
       {showProductModal && (
@@ -497,13 +510,13 @@ export default function AgregarCompraModal({ provider }) {
                   placeholder="Buscar por nombre, código de barras o código de proveedor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input input-bordered mb-2 w-full"
+                  className="input-bordered input mb-2 w-full"
                 />
                 <select
                   name="product_id"
                   value={productFormData.product_id}
                   onChange={handleProductInputChange}
-                  className="select select-bordered w-full"
+                  className="select-bordered select w-full"
                   required
                 >
                   <option value="">Seleccionar producto...</option>
@@ -525,7 +538,7 @@ export default function AgregarCompraModal({ provider }) {
                     name="cost_price"
                     value={productFormData.cost_price}
                     onChange={handleProductInputChange}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -542,7 +555,7 @@ export default function AgregarCompraModal({ provider }) {
                     name="quantity"
                     value={productFormData.quantity}
                     onChange={handleProductInputChange}
-                    className="input input-bordered w-full"
+                    className="input-bordered input w-full"
                     min="1"
                     required
                   />
@@ -558,7 +571,7 @@ export default function AgregarCompraModal({ provider }) {
                   name="discount"
                   value={productFormData.discount}
                   onChange={handleProductInputChange}
-                  className="input input-bordered w-full"
+                  className="input-bordered input w-full"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -570,16 +583,6 @@ export default function AgregarCompraModal({ provider }) {
               <button
                 type="button"
                 className="btn"
-                onClick={() => {
-                  setShowProductModal(false)
-                  setEditingProduct(null)
-                  setProductFormData({
-                    product_id: '',
-                    cost_price: '',
-                    quantity: 1,
-                    discount: 0
-                  })
-                }}
               >
                 Cancelar
               </button>

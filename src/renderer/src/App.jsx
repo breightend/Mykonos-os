@@ -6,11 +6,11 @@ import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
 import Empleados from './components/empleados'
 import FormasPago from './components/formasPago'
 import InfoClientes from './components/infoCliente'
-import InfoProvider from './components/infoProvider'
+import InfoProvider from './components/Proveedores/infoProvider'
 import Informe from './components/informe'
 import Inventario from './components/inventory/inventario'
 import Login from './components/login'
-import Proveedores from './components/proveedores'
+import Proveedores from './components/Proveedores/proveedores'
 import Home from './components/registroVentas'
 import Usuario from './components/usuario'
 import Ventas from './components/ventas'
@@ -31,6 +31,7 @@ import StyleTest from './components/StyleTest'
 import ResumenProveedores from './components/stadistics/resumenProveedores'
 import EditarProducto from './components/Inventory/editarProducto'
 import GestionFormaDePago from './componentes especificos/GestionFormaDePago'
+import AgregarCompraProveedor from './components/Proveedores/agregarCompraProveedor'
 
 function App() {
   return (
@@ -180,6 +181,11 @@ function App() {
         <Route path="/formasDePagoGestion">
           <ProtectedRoute>
             <GestionFormaDePago />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/agregandoCompraProveedor">
+          <ProtectedRoute>
+            <AgregarCompraProveedor />
           </ProtectedRoute>
         </Route>
       </Switch>
