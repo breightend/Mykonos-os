@@ -225,9 +225,39 @@ export default function ConfirmacionDatosDeCompra() {
     setIsProcessing(true)
 
     try {
+      // --- SPLIT PRODUCTS FOR GIFT LOGIC ---
+      let splitProducts = []
+      saleData.products.forEach((product) => {
+        const quantity = parseInt(product.quantity || product.cantidad || 1)
+        // Count how many gifts for this variant_id
+        let giftCount = 0
+        if (Array.isArray(saleData.gifts)) {
+          giftCount = saleData.gifts
+            .filter((g) => g.variant_id === product.variant_id)
+            .reduce((sum, g) => sum + (parseInt(g.quantity) || 1), 0)
+        }
+        const nonGiftCount = quantity - giftCount
+        // Add gift items
+        for (let i = 0; i < giftCount; i++) {
+          splitProducts.push({
+            ...product,
+            quantity: 1,
+            gift: true
+          })
+        }
+        // Add non-gift items
+        for (let i = 0; i < nonGiftCount; i++) {
+          splitProducts.push({
+            ...product,
+            quantity: 1,
+            gift: false
+          })
+        }
+      })
+
       const saleDataForBackend = {
         customer: saleData.customer || null,
-        products: saleData.products.map((product) => ({
+        products: splitProducts.map((product) => ({
           product_id: product.product_id,
           variant_id: product.variant_id,
           product_name:
@@ -239,9 +269,7 @@ export default function ConfirmacionDatosDeCompra() {
           price: parseFloat(product.price || product.precio || 0),
           quantity: parseInt(product.quantity || product.cantidad || 1),
           variant_barcode: product.variant_barcode || '',
-          gift:
-            Array.isArray(saleData.gifts) &&
-            saleData.gifts.some((g) => g.variant_id === product.variant_id)
+          gift: product.gift === true
         })),
         exchange: saleData.exchange?.hasExchange
           ? {
