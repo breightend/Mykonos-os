@@ -712,13 +712,17 @@ def create_sale():
                 if not product.get("product_id"):
                     raise Exception(f"Producto {i + 1} no tiene product_id válido")
 
-                # Insertar detalle de venta
+                # Nuevo: Leer el campo 'gift' (booleano), default False si no está
+                is_gift = bool(product.get("gift", False))
+                print(f"🎁 DEBUG: Producto gift={is_gift}")
+
+                # Insertar detalle de venta (agregar columna 'gift' si existe en la tabla)
                 sales_detail_query = """
                 INSERT INTO sales_detail (
                     sale_id, product_id, variant_id, product_name, 
                     size_name, color_name, cost_price, sale_price, 
-                    quantity, subtotal, total, barcode_scanned
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    quantity, subtotal, total, barcode_scanned, gift
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
 
                 subtotal = float(product["price"]) * int(product["quantity"])
@@ -736,13 +740,14 @@ def create_sale():
                     subtotal,
                     subtotal,
                     str(product.get("variant_barcode", "")),
+                    is_gift,
                 )
 
                 print(f"📝 DEBUG: Parámetros detalle venta: {sales_detail_params}")
 
                 cursor.execute(sales_detail_query, sales_detail_params)
                 print(
-                    f"✅ DEBUG: Detalle de venta agregado para producto: {product['product_name']}"
+                    f"✅ DEBUG: Detalle de venta agregado para producto: {product['product_name']} (gift={is_gift})"
                 )
 
                 # Reducir stock (productos que sale del inventario)
@@ -777,12 +782,16 @@ def create_sale():
             if has_exchange and exchange_data and exchange_data.get("returnedProducts"):
                 for returned_product in exchange_data["returnedProducts"]:
                     # Los productos devueltos se registran como devoluciones (cantidad negativa en el detalle)
+                    # Nuevo: Leer el campo 'gift' (booleano), default False si no está
+                    is_gift = bool(returned_product.get("gift", False))
+                    print(f"🎁 DEBUG: Returned product gift={is_gift}")
+
                     returned_detail_query = """
                     INSERT INTO sales_detail (
                         sale_id, product_id, variant_id, product_name,
                         size_name, color_name, cost_price, sale_price,
-                        quantity, subtotal, total, barcode_scanned
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        quantity, subtotal, total, barcode_scanned, gift
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
 
                     # Cantidad negativa para representar devolución
@@ -804,11 +813,12 @@ def create_sale():
                         returned_subtotal,
                         returned_subtotal,
                         returned_product["variant_barcode"],
+                        is_gift,
                     )
 
                     cursor.execute(returned_detail_query, returned_detail_params)
                     print(
-                        f"✅ DEBUG: Devolución registrada para producto: {returned_product['product_name']}"
+                        f"✅ DEBUG: Devolución registrada para producto: {returned_product['product_name']} (gift={is_gift})"
                     )
 
                     # Aumentar stock (productos que regresan al inventario)
@@ -1083,7 +1093,7 @@ def get_sale_details(sale_id):
         SELECT 
             sd.id, sd.product_name, sd.size_name, sd.color_name, sd.cost_price, sd.sale_price,
             sd.quantity, sd.discount_amount, sd.tax_amount, sd.subtotal, sd.total, sd.barcode_scanned,
-            p.product_name as current_product_name, b.brand_name, g.group_name
+            p.product_name as current_product_name, b.brand_name, g.group_name, sd.gift
         FROM sales_detail sd
         LEFT JOIN products p ON sd.product_id = p.id
         LEFT JOIN brands b ON p.brand_id = b.id
@@ -1161,6 +1171,7 @@ def get_sale_details(sale_id):
                     "barcode_scanned": row.get("barcode_scanned"),
                     "brand_name": row.get("brand_name"),
                     "group_name": row.get("group_name"),
+                    "gift": row.get("gift", False),
                 }
             else:
                 product_info = {
@@ -1178,6 +1189,7 @@ def get_sale_details(sale_id):
                     "barcode_scanned": row[11],
                     "brand_name": row[13],
                     "group_name": row[14],
+                    "gift": row[15] if len(row) > 15 else False,
                 }
 
             # Separar productos vendidos y devueltos

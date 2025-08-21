@@ -8,7 +8,7 @@ import { useSellContext } from '../contexts/sellContext'
 import salesService from '../services/salesService'
 
 //TODO agregar el vendedor a la venta
-//TODO agregar logica de regalos
+//TODO agregar logica de regalos en base al boolean de la bd
 
 function Ventas() {
   const [, setLocation] = useLocation()

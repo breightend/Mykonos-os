@@ -1,4 +1,15 @@
-import { Package, Search, X, Replace, RotateCcw, Calendar, Filter, FilterX } from 'lucide-react'
+import {
+  Package,
+  Search,
+  X,
+  Replace,
+  RotateCcw,
+  Calendar,
+  Filter,
+  FilterX,
+  Gift,
+  Shirt
+} from 'lucide-react'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useState, useEffect, useCallback } from 'react'
@@ -751,6 +762,7 @@ export default function RegistroVentas() {
                             <table className="table w-full">
                               <thead className="bg-warning/10">
                                 <tr>
+                                  <th>#</th>
                                   <th className="text-warning">Producto</th>
                                   <th className="text-warning">Talle</th>
                                   <th className="text-warning">Color</th>
@@ -762,6 +774,17 @@ export default function RegistroVentas() {
                               <tbody>
                                 {saleDetails.products_sold.map((product, index) => (
                                   <tr key={index}>
+                                    {product.gift ? (
+                                      <td>
+                                        <span className="badge badge-success">
+                                          <Gift className="h-4 w-4" />
+                                        </span>
+                                      </td>
+                                    ) : (
+                                      <td>
+                                        <Shirt className="h-4 w-4" />
+                                      </td>
+                                    )}
                                     <td>
                                       <div>
                                         <div className="font-semibold">{product.product_name}</div>

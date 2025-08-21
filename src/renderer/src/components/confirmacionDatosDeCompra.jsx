@@ -2,7 +2,7 @@ import { useLocation } from 'wouter'
 import { useSellContext } from '../contexts/sellContext'
 import toast, { Toaster } from 'react-hot-toast'
 import { useEffect, useState } from 'react'
-import { Printer, Replace, RotateCcw } from 'lucide-react'
+import { Gift, Printer, Replace, RotateCcw, Shirt } from 'lucide-react'
 import { salesService } from '../services/salesService'
 import { getCurrentBranchId } from '../utils/posUtils'
 import { barcodePrintService } from '../services/barcodePrintService'
@@ -36,19 +36,19 @@ export default function ConfirmacionDatosDeCompra() {
       return
     }
 
-        // Crear canvas para imprimir la imagen PNG
+    // Crear canvas para imprimir la imagen PNG
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     const img = new Image()
 
-        img.onload = function () {
+    img.onload = function () {
       // Configurar canvas con el tamaño de la imagen
       canvas.width = img.width
       canvas.height = img.height
 
       // Dibujar la imagen en el canvas
       ctx.drawImage(img, 0, 0)
-    const printContent = `
+      const printContent = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -91,7 +91,7 @@ export default function ConfirmacionDatosDeCompra() {
           </body>
         </html>
   `
-  
+
       // Crear iframe oculto para imprimir
       const iframe = document.createElement('iframe')
       iframe.style.position = 'absolute'
@@ -101,7 +101,7 @@ export default function ConfirmacionDatosDeCompra() {
       iframe.style.visibility = 'hidden'
       document.body.appendChild(iframe)
 
-  try {
+      try {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
         iframeDoc.open()
         iframeDoc.write(printContent)
@@ -126,8 +126,8 @@ export default function ConfirmacionDatosDeCompra() {
           document.body.removeChild(iframe)
         }
       }
-  } 
-  img.onerror = function () {
+    }
+    img.onerror = function () {
       alert('Error al cargar la imagen PNG para imprimir')
     }
 
@@ -168,7 +168,6 @@ export default function ConfirmacionDatosDeCompra() {
       toast.error('Error al descargar la imagen PNG')
     }
   }
-  
 
   const handlePrintBarcodes = async () => {
     try {
@@ -239,7 +238,10 @@ export default function ConfirmacionDatosDeCompra() {
           color_name: product.color_name || product.color || '',
           price: parseFloat(product.price || product.precio || 0),
           quantity: parseInt(product.quantity || product.cantidad || 1),
-          variant_barcode: product.variant_barcode || ''
+          variant_barcode: product.variant_barcode || '',
+          gift:
+            Array.isArray(saleData.gifts) &&
+            saleData.gifts.some((g) => g.variant_id === product.variant_id)
         })),
         exchange: saleData.exchange?.hasExchange
           ? {
@@ -317,7 +319,8 @@ export default function ConfirmacionDatosDeCompra() {
           color_name: product.color_name || product.color || '',
           price: parseFloat(product.price || product.precio || 0),
           quantity: parseInt(product.quantity || product.cantidad || 1),
-          variant_barcode: product.variant_barcode || ''
+          variant_barcode: product.variant_barcode || '',
+          gift: product.gift || null
         })),
         exchange: saleData.exchange?.hasExchange
           ? {
@@ -559,7 +562,10 @@ export default function ConfirmacionDatosDeCompra() {
 
         {/* Productos */}
         <div className="mb-6">
-          <h2 className="mb-2 text-xl font-semibold">Productos ({saleData.products.length})</h2>
+          <h2 className="mb-2 text-xl font-semibold">
+            {' '}
+            <Shirt className="mr-2 inline h-5 w-5" /> Productos ({saleData.products.length})
+          </h2>
           <div className="overflow-x-auto">
             <table className="table table-zebra">
               <thead>
@@ -596,6 +602,7 @@ export default function ConfirmacionDatosDeCompra() {
         {saleData.gifts && saleData.gifts.length > 0 && (
           <div className="mb-6">
             <h2 className="mb-2 text-xl font-semibold text-green-700">
+              <Gift className="mr-2 inline h-5 w-5" />
               Regalos ({saleData.gifts.length})
             </h2>
             <div className="overflow-x-auto">
