@@ -33,7 +33,6 @@ import {
 import EditarProveedorModal from '../../modals/modalsProveedor/editarProveedorModal'
 import AgregarPagoModal from '../../modals/modalsProveedor/agregarPagoModal'
 import EliminarProveedorModal from '../../modals/modalsProveedor/eliminarProveedorModal'
-import AgregarCompraProveedor from './agregarCompraProveedor'
 import PurchaseDetailsModal from '../PurchaseDetailsModal'
 import OperationDetailsModal from '../OperationDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
@@ -846,7 +845,6 @@ export default function InfoProvider() {
         <EditarProveedorModal provider={provider} />
         <AgregarPagoModal provider={provider} onPaymentAdded={handlePurchaseUpdate} />
         <EliminarProveedorModal provider={provider} />
-        <AgregarCompraProveedor provider={provider} />
 
         {/* Crear Marca */}
         {showCreateBrandModal && (

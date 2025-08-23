@@ -5,8 +5,7 @@ import { createPurchase, addProductToPurchase } from '../../services/proveedores
 import toast from 'react-hot-toast'
 import { getBancos } from '../../services/paymentsServices/banksService'
 import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService'
-import { useLocation, useSearchParams  } from 'wouter'
-
+import { useLocation, useSearchParams } from 'wouter'
 
 export default function AgregarCompraProveedor({ provider }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -580,10 +579,7 @@ export default function AgregarCompraProveedor({ provider }) {
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                className="btn"
-              >
+              <button type="button" className="btn">
                 Cancelar
               </button>
               <button type="button" className="btn btn-primary" onClick={handleAddProduct}>
