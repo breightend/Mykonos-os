@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash
 from database.database import Database
 
-usuario_router = Blueprint("usuario_router", __name__) 
+usuario_router = Blueprint("usuario_router", __name__)
 
 
 @usuario_router.route("/employees", methods=["POST"])
@@ -10,7 +10,7 @@ def recibir_datos_empleados():
     db = Database()
     data = request.json
 
-    print(f"Received data: {data}") 
+    print(f"Received data: {data}")
 
     # Required fields
     username = data.get("username")
@@ -142,15 +142,23 @@ def obtener_usuario_empleado():
     db = Database()
     records = db.get_all_records_by_clause("users", "role = ?", "employee")
 
-    # Process all records to handle bytes objects
+    # Process all records to handle bytes and memoryview objects
     for record in records:
+        # Convert memoryview to bytes for all fields
+        for k, v in list(record.items()):
+            if isinstance(v, memoryview):
+                record[k] = v.tobytes()
+
         # Handle profile_image conversion
         if record.get("profile_image"):
             profile_img = record["profile_image"]
-            if isinstance(profile_img, bytes):
+            if isinstance(profile_img, (bytes, memoryview)):
                 try:
                     import base64
 
+                    # Convert memoryview to bytes if needed
+                    if isinstance(profile_img, memoryview):
+                        profile_img = profile_img.tobytes()
                     if len(profile_img) > 0:  # Check if bytes data is not empty
                         record["profile_image"] = (
                             f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
@@ -169,8 +177,11 @@ def obtener_usuario_empleado():
 
         # Ensure all other fields are JSON serializable
         for key, value in record.items():
-            if isinstance(value, bytes):
+            if isinstance(value, (bytes, memoryview)):
                 try:
+                    # Convert memoryview to bytes if needed
+                    if isinstance(value, memoryview):
+                        value = value.tobytes()
                     # Try to decode as text first
                     record[key] = value.decode("utf-8")
                 except UnicodeDecodeError:
@@ -180,7 +191,7 @@ def obtener_usuario_empleado():
                     record[key] = base64.b64encode(value).decode("utf-8")
                 except Exception as e:
                     print(
-                        f"Error converting bytes field {key} for user {record.get('id', 'unknown')}: {e}"
+                        f"Error converting bytes/memoryview field {key} for user {record.get('id', 'unknown')}: {e}"
                     )
                     record[key] = ""
 
@@ -194,14 +205,21 @@ def obtener_empleado_by_id(user_id):
     if record["success"]:
         employee_data = record["record"]
 
+        # Convert memoryview to bytes for all fields
+        for k, v in list(employee_data.items()):
+            if isinstance(v, memoryview):
+                employee_data[k] = v.tobytes()
+
         # Handle profile_image conversion
         if employee_data and employee_data.get("profile_image"):
             profile_img = employee_data["profile_image"]
-            if isinstance(profile_img, bytes):
+            if isinstance(profile_img, (bytes, memoryview)):
                 try:
                     import base64
 
-                    if len(profile_img) > 0:  # Check if bytes data is not empty
+                    if isinstance(profile_img, memoryview):
+                        profile_img = profile_img.tobytes()
+                    if len(profile_img) > 0:
                         employee_data["profile_image"] = (
                             f"data:image/png;base64,{base64.b64encode(profile_img).decode('utf-8')}"
                         )
@@ -217,17 +235,19 @@ def obtener_empleado_by_id(user_id):
 
         # Ensure all other fields are JSON serializable
         for key, value in employee_data.items():
-            if isinstance(value, bytes):
+            if isinstance(value, (bytes, memoryview)):
                 try:
-                    # Try to decode as text first
+                    if isinstance(value, memoryview):
+                        value = value.tobytes()
                     employee_data[key] = value.decode("utf-8")
                 except UnicodeDecodeError:
-                    # If it's not text, convert to base64
                     import base64
 
                     employee_data[key] = base64.b64encode(value).decode("utf-8")
                 except Exception as e:
-                    print(f"Error converting bytes field {key} for user {user_id}: {e}")
+                    print(
+                        f"Error converting bytes/memoryview field {key} for user {user_id}: {e}"
+                    )
                     employee_data[key] = ""
 
         storages = db.get_storages_by_user(user_id)

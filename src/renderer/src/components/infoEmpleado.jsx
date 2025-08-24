@@ -111,6 +111,7 @@ function InfoEmpleado() {
 
   const getUnassignedSucursales = () => {
     const assignedIds = sucursales.map((s) => s.id)
+    if (!Array.isArray(availableSucursales)) return [];
     return availableSucursales.filter((s) => !assignedIds.includes(s.id))
   }
 

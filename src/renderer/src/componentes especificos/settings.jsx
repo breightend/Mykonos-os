@@ -1,4 +1,4 @@
-import { Cog, Moon, SunMedium, Calculator, Percent, DollarSign } from 'lucide-react'
+import { Cog, Moon, SunMedium} from 'lucide-react'
 import { useTheme } from '../contexts/themeContext'
 import { useSettings } from '../contexts/settingsContext'
 import { useRef, useState, useEffect } from 'react'
@@ -34,7 +34,7 @@ export default function Settings() {
   return (
     <div>
       <button className="btn-icon btn" onClick={() => dialogRef.current.showModal()}>
-        <Cog size={64} className="transition-transform hover:rotate-180" />
+        <Cog size={24} className="transition-transform hover:rotate-180" />
       </button>
       <dialog
         ref={dialogRef}

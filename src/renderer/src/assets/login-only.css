@@ -37,9 +37,16 @@
   height: 3rem;
   border-radius: 50%;                /* Hace el botón circular */
   background-color: rgba(1, 1, 1, 0.1) ;     /* Fondo transparente */
-  border: 1px solid rgba(56, 56, 56, 0.2);               /* Usa el color actual del texto */
+  border: 1px solid rgba(56, 56, 56, 0.2);   /* Usa el color actual del texto */
   cursor: pointer;                   /* Cursor de mano */
   transition: background-color 0.2s ease;
+}
+
+.btn-icon > svg {
+  width: 1.5em;
+  height: 1.5em;
+  font-size: 1.5em;
+  display: block;
 }
 
 .btn-icon:hover {

@@ -24,7 +24,6 @@ export default function Login() {
     const loadStorages = async () => {
       try {
         const storageList = await fetchSucursales()
-        // Si storageList es directamente un array, usarlo; si no, usar storageList.data
         const storagesData = Array.isArray(storageList) ? storageList : storageList.data
         console.log('Datos de sucursales a usar:', storagesData)
 

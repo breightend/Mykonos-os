@@ -40,12 +40,12 @@ export default function Usuario() {
   const getStorageData = async () => {
     try {
       const response = await fetchSucursalById(session.storage_id)
-      const data = await response.json()
+      const data = await response.record
       console.log('Datos de la sucursal:', data)
       if (data.success) {
-        setLocalActual(data.record)
+        setLocalActual(data)
       } else {
-        console.error('❌ Error al cargar datos de la sucursal:', data.message)
+        console.error('❌ Error al cargar datos de la sucursal:')
         toast.error('Error al cargar datos de la sucursal')
       }
     } catch (error) {
@@ -57,12 +57,12 @@ export default function Usuario() {
   const getStorageAllow = async () => {
     try {
       const response = await fetchEmployeeStorages(session.user_id)
-      const data = await response.json()
+      const data = await response.record
 
       if (data) {
         setAvailableStorages(data)
       } else {
-        console.error('❌ Error al cargar datos de la sucursal:', data.message)
+        console.error('❌ Error al cargar datos de la sucursal:')
         toast.error('Error al cargar datos de la sucursal')
       }
     } catch (error) {
@@ -102,14 +102,12 @@ export default function Usuario() {
       setCurrentUser(null)
       setLocalActual(null)
     }
-  }, [session]) // Solo depende del estado session del contexto
+  }, [session]) 
 
-  // Cargar sucursales disponibles para el usuario
   useEffect(() => {
     getStorageAllow()
-  }, [currentUser]) // Ahora depende del estado local
+  }, [currentUser])
 
-  // Establecer sucursal seleccionada cuando cambie la sucursal actual
   useEffect(() => {
     if (localActual?.id) {
       setSelectedStorageId(localActual.id.toString())
@@ -123,7 +121,6 @@ export default function Usuario() {
     setSelectedStorageId(newStorageId)
 
     if (newStorageId === localActual?.id?.toString()) {
-      // No cambio realmente
       return
     }
 
@@ -146,7 +143,6 @@ export default function Usuario() {
     } catch (error) {
       console.error('❌ Error cambiando sucursal:', error)
       toast.error('Error de conexión al cambiar sucursal')
-      // Revertir selección si falla
       setSelectedStorageId(localActual?.id?.toString() || '')
     } finally {
       setIsChangingStorage(false)
