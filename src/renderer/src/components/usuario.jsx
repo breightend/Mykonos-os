@@ -68,6 +68,10 @@ export default function Usuario() {
     }
   }
 
+  console.log(
+    'Sucursal actual:',
+    localActual && localActual.name ? localActual.name : 'Sin sucursal asignada'
+  )
   useEffect(() => {
     if (session) {
       const user = {
@@ -78,6 +82,11 @@ export default function Usuario() {
       }
       getEmployeeData()
       getStorageData()
+      if (localActual && localActual.id) {
+        setSelectedStorageId(localActual.id.toString())
+      } else {
+        setSelectedStorageId('')
+      }
       setCurrentUser(user)
     } else {
       setCurrentUser(null)
@@ -108,7 +117,7 @@ export default function Usuario() {
     try {
       setIsChangingStorage(true)
       console.log('🔄 Cambiando a sucursal:', newStorageId)
-
+      setSelectedStorageId(localActual && localActual.id ? localActual.id.toString() : '')
       setCurrentStorage({
         id: newStorageId === '' ? null : parseInt(newStorageId),
         name:
@@ -139,7 +148,10 @@ export default function Usuario() {
       setLocation('/')
     }
   }
-  console.log('Sucursal actual:', localActual.name)
+  console.log(
+    'Sucursal actual:',
+    localActual && localActual.name ? localActual.name : 'Sin sucursal asignada'
+  )
   return (
     <div>
       <MenuVertical currentPath="/usuario" />
@@ -171,7 +183,7 @@ export default function Usuario() {
             <div className="w-full rounded-lg bg-base-200 p-3">
               <p className="text-sm font-medium text-gray-600">Sucursal Actual:</p>
               <p className="text-lg font-bold text-primary">
-                {localActual?.name || 'Sin sucursal asignada'}
+                {localActual && localActual.name ? localActual.name : 'Sin sucursal asignada'}
               </p>
             </div>
 
@@ -190,8 +202,8 @@ export default function Usuario() {
                   <option value="">Sin sucursal</option>
                   {availableStorages.map((storage) => (
                     <option key={storage.id} value={storage.id}>
-                      {storage.name}
-                      {storage.id === localActual?.id ? ' (Actual)' : ''}
+                      {storage && storage.name ? storage.name : 'Sucursal desconocida'}
+                      {localActual && storage.id === localActual.id ? ' (Actual)' : ''}
                     </option>
                   ))}
                 </select>
