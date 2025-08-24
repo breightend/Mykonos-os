@@ -23,12 +23,10 @@ export default function Usuario() {
   const getEmployeeData = async () => {
     try {
       const response = await fetchEmployeeById(session.user_id)
-      const data = await response.json()
-
-      if (data.success) {
-        setUserDd(data.record)
+      if (response.success) {
+        setUserDd(response.record)
       } else {
-        console.error('❌ Error al cargar datos del usuario:', data.message)
+        console.error('❌ Error al cargar datos del usuario:', response.message)
         toast.error('Error al cargar datos del usuario')
       }
     } catch (error) {
@@ -40,10 +38,9 @@ export default function Usuario() {
   const getStorageData = async () => {
     try {
       const response = await fetchSucursalById(session.storage_id)
-      const data = await response.record
-      console.log('Datos de la sucursal:', data)
-      if (data.success) {
-        setLocalActual(data)
+      console.log('Datos de la sucursal:', response)
+      if (response.success) {
+        setLocalActual(response.record)
       } else {
         console.error('❌ Error al cargar datos de la sucursal:')
         toast.error('Error al cargar datos de la sucursal')
@@ -57,7 +54,7 @@ export default function Usuario() {
   const getStorageAllow = async () => {
     try {
       const response = await fetchEmployeeStorages(session.user_id)
-      const data = await response.record
+      const data = await response
 
       if (data) {
         setAvailableStorages(data)
@@ -71,7 +68,6 @@ export default function Usuario() {
     }
   }
 
-  // Actualizar datos del usuario y sucursal cuando cambie la sesión
   useEffect(() => {
     if (session) {
       const user = {
@@ -80,29 +76,14 @@ export default function Usuario() {
         fullname: session.fullname,
         role: session.role
       }
-
-      let storage = null
-      if (session.storage_id) {
-        storage = {
-          id: session.storage_id,
-          name: session.storage_name || 'Sucursal desconocida'
-        }
-      } else {
-        storage = {
-          id: null,
-          name: 'Sin sucursal'
-        }
-      }
       getEmployeeData()
       getStorageData()
-
       setCurrentUser(user)
-      setLocalActual(storage)
     } else {
       setCurrentUser(null)
       setLocalActual(null)
     }
-  }, [session]) 
+  }, [session])
 
   useEffect(() => {
     getStorageAllow()
@@ -158,7 +139,7 @@ export default function Usuario() {
       setLocation('/')
     }
   }
-
+  console.log('Sucursal actual:', localActual.name)
   return (
     <div>
       <MenuVertical currentPath="/usuario" />
