@@ -75,7 +75,6 @@ export async function assignStorageToEmployee(employeeId, storageId) {
     }
 }
 
-// Remove storage from employee
 export async function removeStorageFromEmployee(employeeId, storageId) {
     try {
         const response = await axios.delete(`http://localhost:5000/api/user/employee/${employeeId}/storages/${storageId}`);

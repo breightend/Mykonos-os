@@ -46,7 +46,9 @@ class TABLES(Enum):
     PAYMENT_METHODS = "payment_methods"
     BANKS = "banks"
     BANKS_PAYMENT_METHODS = "bank_payment_methods"
-    SALES_PAYMENTS = "sales_payments"  # Relación muchos a muchos entre bancos y métodos de pago
+    SALES_PAYMENTS = (
+        "sales_payments"  # Relación muchos a muchos entre bancos y métodos de pago
+    )
 
 
 DATABASE_TABLES = {
@@ -141,7 +143,7 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.PAYMENT_METHODS,
                 "reference_column": "id",
                 "export_column_name": "payment_method_name",
-            }
+            },
         ],
     },
     TABLES.GROUP: {
@@ -672,35 +674,33 @@ DATABASE_TABLES = {
     },
     TABLES.PAYMENT_METHODS: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
-            "method_name": "TEXT NOT NULL UNIQUE",  
-            "display_name": "TEXT NOT NULL",  
-            "description": "TEXT",  
-            "is_active": "BOOLEAN NOT NULL DEFAULT 1",  
-            "requires_reference": "BOOLEAN NOT NULL DEFAULT 0",  
-            "icon_name": "TEXT",  
-            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  
-            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",  
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+            "method_name": "TEXT NOT NULL UNIQUE",
+            "display_name": "TEXT NOT NULL",
+            "description": "TEXT",
+            "is_active": "BOOLEAN NOT NULL DEFAULT 1",
+            "requires_reference": "BOOLEAN NOT NULL DEFAULT 0",
+            "icon_name": "TEXT",
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",
+            "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",
         },
-        "foreign_keys": []
+        "foreign_keys": [],
     },
-
     TABLES.BANKS: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
-            "name": "TEXT NOT NULL",  
-            "swift_code": "NULL",  
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+            "name": "TEXT NOT NULL",
+            "swift_code": "NULL",
         },
-        "foreign_keys": []
+        "foreign_keys": [],
     },
-
     # Tabla puente: relación muchos-a-muchos entre bancos y métodos de pago
     TABLES.BANKS_PAYMENT_METHODS: {
         "columns": {
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  
-            "bank_id": "INTEGER NOT NULL",  
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+            "bank_id": "INTEGER NOT NULL",
             "payment_method_id": "INTEGER NOT NULL",
-            "amount": "numeric(12,2) [0.00] NOT NULL"  
+            "amount": "numeric(12,2) [0.00] NOT NULL",
         },
         "foreign_keys": [
             {
@@ -714,15 +714,15 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.PAYMENT_METHODS,
                 "reference_column": "id",
                 "export_column_name": "method_name",
-            }
-        ]
+            },
+        ],
     },
     TABLES.SALES_PAYMENTS: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "sale_id": "INTEGER NOT NULL",
             "payment_method_id": "INTEGER NOT NULL",
-            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP"
+            "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",
         },
         "foreign_keys": [
             {
@@ -736,10 +736,9 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.BANKS_PAYMENT_METHODS,
                 "reference_column": "id",
                 "export_column_name": "method_name",
-            }
-        ]
-    }
-
+            },
+        ],
+    },
 }
 
 # PostgreSQL Database Configuration from Config
@@ -1892,28 +1891,38 @@ class Database:
 
         Args:
             user_id (int): The ID of the user
-
-        Returns:
-            list[dict]: List of storage records accessible to the user
         """
-        sql = """
-            SELECT s.*
-            FROM storage s
-            INNER JOIN usersxstorage us ON s.id = us.id_storage
-            WHERE us.id_user = ?
-        """
+        sql = (
+            "SELECT s.* "
+            "FROM storage s "
+            "INNER JOIN usersxstorage us ON s.id = us.id_storage "
+            "WHERE us.id_user = ?"
+        )
         try:
             with self.create_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                cur.execute(sql, (user_id,))
-                rows = cur.fetchall()
-                if rows:
-                    return [dict(row) for row in rows]
+                if self.use_postgres:
+                    # Replace ? with %s for psycopg2
+                    sql_pg = sql.replace("?", "%s")
+                    import psycopg2.extras
+
+                    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                    cur.execute(sql_pg, (user_id,))
+                    rows = cur.fetchall()
+                    return list(rows) if rows else []
                 else:
-                    return []
+                    import sqlite3
+
+                    conn.row_factory = sqlite3.Row
+                    cur = conn.cursor()
+                    cur.execute(sql, (user_id,))
+                    rows = cur.fetchall()
+                    return [dict(row) for row in rows] if rows else []
         except Exception as e:
             print(f"Error getting storages by user: {e}")
+            return []
+        except Exception as e:
+            print(f"Error getting storages by user: {e}")
+            return []
             return []
 
     def get_users_by_storage(self, storage_id):

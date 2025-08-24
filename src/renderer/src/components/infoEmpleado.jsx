@@ -6,7 +6,8 @@ import {
   fetchEmployeeById,
   assignStorageToEmployee,
   removeStorageFromEmployee,
-  putData
+  putData,
+  fetchEmployeeStorages
 } from '../services/employee/employeeService'
 import { fetchSucursales } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
@@ -31,6 +32,25 @@ function InfoEmpleado() {
   })
   const [editErrors, setEditErrors] = useState({})
 
+  const handleModal = () => {
+    setShowAssignModal(!showAssignModal)
+    if (!showAssignModal) {
+      fetchSucursales()
+        .then((data) => {
+          const assignedIds = sucursales.map((s) => s.id)
+          const unassigned = (data.data || []).filter(
+            (sucursal) => !assignedIds.includes(sucursal.id)
+          )
+          setAvailableSucursales(unassigned)
+        })
+        .catch((error) => {
+          console.error('Error fetching sucursales:', error)
+          toast.error('Error al cargar las sucursales disponibles')
+        })
+        console.log('Available sucursales:', availableSucursales)
+    }
+  }
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -38,23 +58,18 @@ function InfoEmpleado() {
         const employeeData = await fetchEmployeeById(empleadoId)
         setEmpleado(employeeData.record)
 
-        // Initialize edit form data
         setEditFormData({
           fullname: employeeData.record.fullname || '',
           email: employeeData.record.email || '',
           phone: employeeData.record.phone || '',
           domicilio: employeeData.record.domicilio || '',
           cuit: employeeData.record.cuit || '',
-          status: employeeData.record.status || 'active'
+          status: employeeData.record.status || 'activo'
         })
 
-        if (employeeData.record.assigned_storages) {
-          setSucursales(employeeData.record.assigned_storages)
-          console.log('Assigned sucursales:', employeeData.record.assigned_storages)
-        }
-
-        const allSucursales = await fetchSucursales()
-        setAvailableSucursales(allSucursales)
+        const userStorage = await fetchEmployeeStorages(empleadoId)
+        setSucursales(userStorage)
+        console.log('User storage:', sucursales)
       } catch (error) {
         console.error('Error fetching data:', error)
         toast.error('Error al cargar la información del empleado')
@@ -74,9 +89,8 @@ function InfoEmpleado() {
 
       const updatedEmployee = await fetchEmployeeById(empleadoId)
       setEmpleado(updatedEmployee.record)
-      if (updatedEmployee.record.assigned_storages) {
-        setSucursales(updatedEmployee.record.assigned_storages)
-      }
+      const updatedSucursales = await fetchEmployeeStorages(empleadoId)
+      setSucursales(updatedSucursales)
 
       toast.success('Sucursal asignada correctamente')
       setShowAssignModal(false)
@@ -96,8 +110,9 @@ function InfoEmpleado() {
       // Refresh employee data to update the assigned sucursales
       const updatedEmployee = await fetchEmployeeById(empleadoId)
       setEmpleado(updatedEmployee.record)
-      if (updatedEmployee.record.assigned_storages) {
-        setSucursales(updatedEmployee.record.assigned_storages)
+      const updatedSucursales = await fetchEmployeeStorages(empleadoId)
+      if (updatedSucursales) {
+        setSucursales(updatedSucursales)
       }
 
       toast.success('Sucursal removida correctamente')
@@ -111,7 +126,7 @@ function InfoEmpleado() {
 
   const getUnassignedSucursales = () => {
     const assignedIds = sucursales.map((s) => s.id)
-    if (!Array.isArray(availableSucursales)) return [];
+    if (!Array.isArray(availableSucursales)) return []
     return availableSucursales.filter((s) => !assignedIds.includes(s.id))
   }
 
@@ -141,7 +156,6 @@ function InfoEmpleado() {
       [name]: value
     }))
 
-    // Clear error for this field when user starts typing
     if (editErrors[name]) {
       setEditErrors((prev) => ({
         ...prev,
@@ -221,7 +235,7 @@ function InfoEmpleado() {
         <div className="mb-4 flex items-center gap-4 rounded-2xl bg-gray-800 p-4 text-white dark:bg-gray-400 dark:text-black">
           <button
             onClick={() => setLocation('/empleados')}
-            className="btn btn-ghost btn-circle tooltip tooltip-bottom mb-4"
+            className="tooltip tooltip-bottom btn btn-ghost btn-circle mb-4"
             data-tip="Volver"
           >
             <ArrowLeft />
@@ -231,12 +245,12 @@ function InfoEmpleado() {
           </h1>
         </div>
         <div className="w-full rounded-lg bg-white p-6 shadow-md">
-          <div className="text-base-content flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4 text-base-content">
             <div className="verflow-x-auto">
               {empleado && (
                 <div>
                   <div className="avatar flex justify-center">
-                    <div className="ring-primary ring-offset-base-100 w-36 justify-center rounded-full ring ring-offset-2">
+                    <div className="w-36 justify-center rounded-full ring ring-primary ring-offset-2 ring-offset-base-100">
                       <img src={empleado.profile_image} />
                     </div>
                   </div>
@@ -275,7 +289,7 @@ function InfoEmpleado() {
                   </div>
                   {!isEditing ? (
                     /* View Mode */
-                    <table className="mt-8 table w-full text-sm">
+                    <table className="table mt-8 w-full text-sm">
                       <thead className="rounded-2xl bg-gray-800 text-white">
                         <tr>
                           <th>#</th>
@@ -318,11 +332,11 @@ function InfoEmpleado() {
                             name="fullname"
                             value={editFormData.fullname}
                             onChange={handleEditInputChange}
-                            className={`input input-bordered w-full ${editErrors.fullname ? 'input-error' : ''}`}
+                            className={`input-bordered input w-full ${editErrors.fullname ? 'input-error' : ''}`}
                             placeholder="Ingrese el nombre completo"
                           />
                           {editErrors.fullname && (
-                            <p className="text-error mt-1 text-sm">{editErrors.fullname}</p>
+                            <p className="mt-1 text-sm text-error">{editErrors.fullname}</p>
                           )}
                         </div>
 
@@ -335,11 +349,11 @@ function InfoEmpleado() {
                             name="email"
                             value={editFormData.email}
                             onChange={handleEditInputChange}
-                            className={`input input-bordered w-full ${editErrors.email ? 'input-error' : ''}`}
+                            className={`input-bordered input w-full ${editErrors.email ? 'input-error' : ''}`}
                             placeholder="ejemplo@correo.com"
                           />
                           {editErrors.email && (
-                            <p className="text-error mt-1 text-sm">{editErrors.email}</p>
+                            <p className="mt-1 text-sm text-error">{editErrors.email}</p>
                           )}
                         </div>
 
@@ -352,11 +366,11 @@ function InfoEmpleado() {
                             name="phone"
                             value={editFormData.phone}
                             onChange={handleEditInputChange}
-                            className={`input input-bordered w-full ${editErrors.phone ? 'input-error' : ''}`}
+                            className={`input-bordered input w-full ${editErrors.phone ? 'input-error' : ''}`}
                             placeholder="+1234567890"
                           />
                           {editErrors.phone && (
-                            <p className="text-error mt-1 text-sm">{editErrors.phone}</p>
+                            <p className="mt-1 text-sm text-error">{editErrors.phone}</p>
                           )}
                         </div>
 
@@ -369,11 +383,11 @@ function InfoEmpleado() {
                             name="domicilio"
                             value={editFormData.domicilio}
                             onChange={handleEditInputChange}
-                            className={`input input-bordered w-full ${editErrors.domicilio ? 'input-error' : ''}`}
+                            className={`input-bordered input w-full ${editErrors.domicilio ? 'input-error' : ''}`}
                             placeholder="Ingrese el domicilio"
                           />
                           {editErrors.domicilio && (
-                            <p className="text-error mt-1 text-sm">{editErrors.domicilio}</p>
+                            <p className="mt-1 text-sm text-error">{editErrors.domicilio}</p>
                           )}
                         </div>
 
@@ -386,11 +400,11 @@ function InfoEmpleado() {
                             name="cuit"
                             value={editFormData.cuit}
                             onChange={handleEditInputChange}
-                            className={`input input-bordered w-full ${editErrors.cuit ? 'input-error' : ''}`}
+                            className={`input-bordered input w-full ${editErrors.cuit ? 'input-error' : ''}`}
                             placeholder="Ingrese el CUIT"
                           />
                           {editErrors.cuit && (
-                            <p className="text-error mt-1 text-sm">{editErrors.cuit}</p>
+                            <p className="mt-1 text-sm text-error">{editErrors.cuit}</p>
                           )}
                         </div>
 
@@ -402,7 +416,7 @@ function InfoEmpleado() {
                             name="status"
                             value={editFormData.status}
                             onChange={handleEditInputChange}
-                            className="select select-bordered w-full"
+                            className="select-bordered select w-full"
                           >
                             <option value="active">Activo</option>
                             <option value="inactive">Inactivo</option>
@@ -419,7 +433,7 @@ function InfoEmpleado() {
                       <div className="mb-4 flex items-center justify-between">
                         <h3 className="text-lg font-semibold">Sucursales con acceso:</h3>
                         <button
-                          onClick={() => setShowAssignModal(true)}
+                          onClick={handleModal}
                           className="btn btn-primary btn-sm"
                           disabled={loading}
                         >
@@ -473,9 +487,9 @@ function InfoEmpleado() {
         </div>
       </div>
 
-      {/* Modal for assigning sucursales */}
+      {/* Modal de asignacion de sucursales */}
       {showAssignModal && (
-        <div className="modal modal-open">
+        <div className="modal-open modal">
           <div className="modal-box">
             <h3 className="mb-4 text-lg font-bold">Asignar Sucursal</h3>
 
