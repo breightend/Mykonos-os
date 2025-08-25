@@ -226,7 +226,10 @@ export default function RegistroVentas() {
   }
 
   const formatPrice = (price) => {
-    return parseFloat(price || 0).toFixed(2)
+    return parseFloat(price || 0).toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
   }
 
   const statsData = [
@@ -277,7 +280,7 @@ export default function RegistroVentas() {
       if (searchTerm.trim()) {
         filters.search = searchTerm.trim()
       }
-      console.log("Filtros", filters)
+      console.log('Filtros', filters)
       setLoading(true)
       try {
         const [statsResponse, salesResponse] = await Promise.all([
@@ -326,7 +329,6 @@ export default function RegistroVentas() {
   const handleMasCienFilas = () => {
     setSalesList((prev) => [...prev, ...Array(100).fill(null)])
   }
-
 
   return (
     <>
