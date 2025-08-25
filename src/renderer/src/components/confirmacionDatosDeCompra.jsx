@@ -7,7 +7,6 @@ import { salesService } from '../services/salesService'
 import { getCurrentBranchId } from '../utils/posUtils'
 import { barcodePrintService } from '../services/barcodePrintService'
 import { useSession } from '../contexts/SessionContext'
-import { id } from 'react-day-picker/locale'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
@@ -298,13 +297,20 @@ export default function ConfirmacionDatosDeCompra() {
           amount: parseFloat(payment.amount),
           method_name: payment.method_name || payment.label || payment.type,
           bank_id: payment.bank_id || null,
-          reference: payment.reference || ''
+          reference: payment.reference || '',
+          discount: payment.discount || 0
         })),
-        total: saleData.exchange?.hasExchange
-          ? parseFloat(saleData.exchange.finalAmount)
-          : parseFloat(saleData.total),
+        // Calcular el total y descuento según el pago
+        total:
+          totalAbonado > totalVenta
+            ? parseFloat(totalVenta) // Si pagó de más, el total es la suma de los productos (o el totalVenta)
+            : parseFloat(totalAbonado), // Si pagó menos o igual, el total es lo que pagó (incluye descuento)
+        discount:
+          totalAbonado < totalVenta
+            ? (parseFloat(totalVenta) - parseFloat(totalAbonado)).toFixed(2) // Descuento aplicado
+            : 0,
         storage_id: branchId,
-        employee_id: 1, // TODO: Obtener del usuario logueado
+        employee_id: 1, // TODO: Obtener empleado de la venta
         cashier_user_id: userId
       }
 
@@ -794,7 +800,7 @@ export default function ConfirmacionDatosDeCompra() {
               </>
             )}
             <div className="flex justify-between border-b pb-2">
-              <span className="font-bold">Total Pagado (Efectivo):</span>
+              <span className="font-bold">Total Pagado:</span>
               <span>${parseFloat(totalAbonado || 0).toFixed(2)}</span>
             </div>
             {totalCuentaCorriente > 0 && (

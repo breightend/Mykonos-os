@@ -106,7 +106,6 @@ export default function RegistroVentas() {
         console.log('✅ Stats actualizadas:', response.data)
       } else {
         console.warn('⚠️ Error en respuesta de stats:', response)
-        // Resetear stats en caso de error
         setStats({
           total_revenue: 0,
           total_products_sold: 0,
