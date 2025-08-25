@@ -124,7 +124,6 @@ export default function RegistroVentas() {
     }
   }, [currentStorage?.id, range])
 
-  // Cargar lista de ventas
   const loadSales = useCallback(async () => {
     try {
       setLoading(true)
@@ -255,17 +254,14 @@ export default function RegistroVentas() {
   ]
 
   useEffect(() => {
-    // Solo ejecutar si tenemos el ID del depósito.
     if (!currentStorage?.id) {
       return
     }
 
-    // Función para cargar todo (stats y lista de ventas)
     const fetchData = async () => {
-      // Definimos los filtros una sola vez
       const filters = {
         storage_id: currentStorage.id,
-        limit: 100 // Para la lista de ventas
+        limit: 100
       }
 
       if (range?.from) {
@@ -281,8 +277,7 @@ export default function RegistroVentas() {
       if (searchTerm.trim()) {
         filters.search = searchTerm.trim()
       }
-
-      // Cargar stats y ventas en paralelo para mayor eficiencia
+      console.log("Filtros", filters)
       setLoading(true)
       try {
         const [statsResponse, salesResponse] = await Promise.all([
@@ -331,6 +326,7 @@ export default function RegistroVentas() {
   const handleMasCienFilas = () => {
     setSalesList((prev) => [...prev, ...Array(100).fill(null)])
   }
+
 
   return (
     <>

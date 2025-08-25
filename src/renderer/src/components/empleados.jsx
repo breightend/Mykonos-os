@@ -7,7 +7,6 @@ import Navbar from '../componentes especificos/navbar'
 import { fetchEmployee } from '../services/employee/employeeService'
 import '../assets/modal-improvements.css'
 
-// Register the pinwheel loader
 pinwheel.register()
 
 function Empleados() {

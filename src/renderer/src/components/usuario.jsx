@@ -156,9 +156,9 @@ export default function Usuario() {
     <div>
       <MenuVertical currentPath="/usuario" />
       <Navbar />
-      <div className="flex h-screen w-full flex-col items-center justify-center">
+      <div className="mt-4 flex w-full flex-col items-center justify-center">
         <div className="card w-96 transform bg-base-100 bg-gradient-to-br from-base-200 to-base-300 p-6 shadow-xl transition-all hover:scale-105">
-          <figure className="px-10 pt-6">
+          <figure className="px-10">
             {userBd ? (
               <img
                 src={userBd.profile_image}
@@ -221,8 +221,6 @@ export default function Usuario() {
                   </p>
                 )}
               </div>
-
-              <button className="btn btn-primary btn-wide shadow-md">Editar Perfil</button>
 
               <button className="btn btn-accent btn-wide shadow-md" onClick={handleLogout}>
                 Cerrar sesión
