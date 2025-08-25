@@ -36,6 +36,7 @@ import EliminarProveedorModal from '../../modals/modalsProveedor/eliminarProveed
 import PurchaseDetailsModal from '../PurchaseDetailsModal'
 import OperationDetailsModal from '../OperationDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
+import { useSession } from '../../contexts/SessionContext'
 
 export default function InfoProvider() {
   const [, setLocation] = useLocation()
@@ -78,6 +79,9 @@ export default function InfoProvider() {
     description: ''
   })
   const [brandSearchTerm, setBrandSearchTerm] = useState('')
+
+  const { getCurrentUser } = useSession()
+  const role = getCurrentUser()?.role || 'user'
   useEffect(() => {
     async function fetchData() {
       try {
@@ -647,187 +651,199 @@ export default function InfoProvider() {
           </div>
         </div>
         {/*  */}
-        <div className="card mb-6 bg-base-100 shadow-xl">
-          <div className="card-body">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
-                  <Handshake className="h-6 w-6 text-primary" />
-                  Operaciones
-                </h2>
-                <button
-                  className="btn btn-ghost btn-sm px-3 py-2 hover:bg-primary/10"
-                  onClick={() => setShowPurchases(!showPurchases)}
-                >
-                  {showPurchases ? (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 15l7-7 7 7"
-                      />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="text-right">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
-                  <div
-                    className={`text-2xl font-bold ${providerBalance > 0 ? 'text-red-600' : providerBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
+        {role === 'administrator' && (
+          <div className="card mb-6 bg-base-100 shadow-xl">
+            <div className="card-body">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <h2 className="flex items-center gap-2 text-2xl font-bold text-primary">
+                    <Handshake className="h-6 w-6 text-primary" />
+                    Operaciones
+                  </h2>
+                  <button
+                    className="btn btn-ghost btn-sm px-3 py-2 hover:bg-primary/10"
+                    onClick={() => setShowPurchases(!showPurchases)}
                   >
-                    ${Number(providerBalance || 0).toFixed(2)}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {providerBalance > 0
-                      ? 'Debemos'
-                      : providerBalance < 0
-                        ? 'A nuestro favor'
-                        : 'Sin deuda'}
+                    {showPurchases ? (
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Saldo actual:</div>
+                    <div
+                      className={`text-2xl font-bold ${providerBalance > 0 ? 'text-red-600' : providerBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                    >
+                      ${Number(providerBalance || 0).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {providerBalance > 0
+                        ? 'Debemos'
+                        : providerBalance < 0
+                          ? 'A nuestro favor'
+                          : 'Sin deuda'}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${showPurchases ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
-            >
-              <div className="mb-4 flex flex-wrap justify-end gap-2">
-                <button
-                  className="btn btn-accent gap-2 shadow-md transition-all hover:shadow-lg"
-                  onClick={() => setLocation('agregandoCompraProveedor')}
-                >
-                  <ShoppingBasket className="h-4 w-4" />
-                  Agregar compra
-                </button>
-                <button
-                  className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
-                  onClick={() => document.getElementById('agregandoPago').showModal()}
-                >
-                  <HandCoins className="h-4 w-4" />
-                  Agregar pago
-                </button>
-              </div>
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${showPurchases ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+              >
+                <div className="mb-4 flex flex-wrap justify-end gap-2">
+                  <button
+                    className="btn btn-accent gap-2 shadow-md transition-all hover:shadow-lg"
+                    onClick={() => setLocation('agregandoCompraProveedor')}
+                  >
+                    <ShoppingBasket className="h-4 w-4" />
+                    Agregar compra
+                  </button>
+                  <button
+                    className="btn btn-primary gap-2 shadow-md transition-all hover:shadow-lg"
+                    onClick={() => document.getElementById('agregandoPago').showModal()}
+                  >
+                    <HandCoins className="h-4 w-4" />
+                    Agregar pago
+                  </button>
+                </div>
 
-              <div className="overflow-x-auto rounded-lg">
-                <h3 className="mb-4 text-lg font-semibold text-primary">Historial de Compras</h3>
-                {loadingPurchases ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="flex items-center gap-3">
-                      <div className="loading loading-spinner loading-md"></div>
-                      <span className="text-slate-600 dark:text-slate-300">
-                        Cargando compras...
-                      </span>
+                <div className="overflow-x-auto rounded-lg">
+                  <h3 className="mb-4 text-lg font-semibold text-primary">Historial de Compras</h3>
+                  {loadingPurchases ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="flex items-center gap-3">
+                        <div className="loading loading-spinner loading-md"></div>
+                        <span className="text-slate-600 dark:text-slate-300">
+                          Cargando compras...
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <table className="table table-zebra w-full">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
-                        <th className="text-slate-700 dark:text-slate-200">N° Op.</th>
-                        <th className="text-slate-700 dark:text-slate-200">Fecha</th>
-                        <th className="text-slate-700 dark:text-slate-200">Tipo</th>
-                        <th className="text-slate-700 dark:text-slate-200">Descripción</th>
-                        <th className="text-slate-700 dark:text-slate-200">Debe</th>
-                        <th className="text-slate-700 dark:text-slate-200">Haber</th>
-                        <th className="text-slate-700 dark:text-slate-200">Saldo</th>
-                        <th className="text-slate-700 dark:text-slate-200">Método Pago</th>
-                        <th className="text-slate-700 dark:text-slate-200">Comprobante</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.isArray(movements) && movements.length > 0 ? (
-                        movements.map((movement) => {
-                          const movementType = formatMovementType(movement)
-                          return (
-                            <tr
-                              key={movement.id}
-                              className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
-                              onDoubleClick={() => handleOperationDoubleClick(movement)}
-                            >
-                              <td className="font-mono font-medium">
-                                #{movement.numero_operacion}
-                              </td>
-                              <td>
-                                {movement.created_at
-                                  ? new Date(movement.created_at).toLocaleDateString('es-AR')
-                                  : 'N/A'}
-                              </td>
-                              <td>
-                                <span className={`badge ${movementType.badge} badge-sm`}>
-                                  {movementType.label}
-                                </span>
-                              </td>
-                              <td className="max-w-xs truncate">
-                                {movement.descripcion || 'Sin descripción'}
-                              </td>
-                              <td className="text-right font-mono">
-                                <span
-                                  className={
-                                    movement.debe > 0 ? 'font-bold text-red-600' : 'text-gray-400'
-                                  }
-                                >
-                                  {formatCurrency(movement.debe)}
-                                </span>
-                              </td>
-                              <td className="text-right font-mono">
-                                <span
-                                  className={
-                                    movement.haber > 0
-                                      ? 'font-bold text-green-600'
-                                      : 'text-gray-400'
-                                  }
-                                >
-                                  {formatCurrency(movement.haber)}
-                                </span>
-                              </td>
-                              <td className="text-right font-mono font-bold">
-                                <span
-                                  className={
-                                    movement.saldo > 0
-                                      ? 'text-red-600'
-                                      : movement.saldo < 0
-                                        ? 'text-green-600'
-                                        : 'text-gray-600'
-                                  }
-                                >
-                                  {formatCurrency(movement.saldo)}
-                                </span>
-                              </td>
-                              <td className="capitalize">{movement.medio_pago || 'N/A'}</td>
-                              <td className="font-mono text-sm">
-                                {movement.numero_de_comprobante || '-'}
-                              </td>
-                            </tr>
-                          )
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan="9" className="py-8 text-center">
-                            <div className="text-slate-500 dark:text-slate-400">
-                              <Receipt className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                              No hay movimientos registrados
-                            </div>
-                          </td>
+                  ) : (
+                    <table className="table table-zebra w-full">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                          <th className="text-slate-700 dark:text-slate-200">N° Op.</th>
+                          <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                          <th className="text-slate-700 dark:text-slate-200">Tipo</th>
+                          <th className="text-slate-700 dark:text-slate-200">Descripción</th>
+                          <th className="text-slate-700 dark:text-slate-200">Debe</th>
+                          <th className="text-slate-700 dark:text-slate-200">Haber</th>
+                          <th className="text-slate-700 dark:text-slate-200">Saldo</th>
+                          <th className="text-slate-700 dark:text-slate-200">Método Pago</th>
+                          <th className="text-slate-700 dark:text-slate-200">Comprobante</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                )}
+                      </thead>
+                      <tbody>
+                        {Array.isArray(movements) && movements.length > 0 ? (
+                          movements.map((movement) => {
+                            const movementType = formatMovementType(movement)
+                            return (
+                              <tr
+                                key={movement.id}
+                                className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                                onDoubleClick={() => handleOperationDoubleClick(movement)}
+                              >
+                                <td className="font-mono font-medium">
+                                  #{movement.numero_operacion}
+                                </td>
+                                <td>
+                                  {movement.created_at
+                                    ? new Date(movement.created_at).toLocaleDateString('es-AR')
+                                    : 'N/A'}
+                                </td>
+                                <td>
+                                  <span className={`badge ${movementType.badge} badge-sm`}>
+                                    {movementType.label}
+                                  </span>
+                                </td>
+                                <td className="max-w-xs truncate">
+                                  {movement.descripcion || 'Sin descripción'}
+                                </td>
+                                <td className="text-right font-mono">
+                                  <span
+                                    className={
+                                      movement.debe > 0 ? 'font-bold text-red-600' : 'text-gray-400'
+                                    }
+                                  >
+                                    {formatCurrency(movement.debe)}
+                                  </span>
+                                </td>
+                                <td className="text-right font-mono">
+                                  <span
+                                    className={
+                                      movement.haber > 0
+                                        ? 'font-bold text-green-600'
+                                        : 'text-gray-400'
+                                    }
+                                  >
+                                    {formatCurrency(movement.haber)}
+                                  </span>
+                                </td>
+                                <td className="text-right font-mono font-bold">
+                                  <span
+                                    className={
+                                      movement.saldo > 0
+                                        ? 'text-red-600'
+                                        : movement.saldo < 0
+                                          ? 'text-green-600'
+                                          : 'text-gray-600'
+                                    }
+                                  >
+                                    {formatCurrency(movement.saldo)}
+                                  </span>
+                                </td>
+                                <td className="capitalize">{movement.medio_pago || 'N/A'}</td>
+                                <td className="font-mono text-sm">
+                                  {movement.numero_de_comprobante || '-'}
+                                </td>
+                              </tr>
+                            )
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan="9" className="py-8 text-center">
+                              <div className="text-slate-500 dark:text-slate-400">
+                                <Receipt className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                                No hay movimientos registrados
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Account Movements Section */}
 

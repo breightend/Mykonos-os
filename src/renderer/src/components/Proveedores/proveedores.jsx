@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { fetchProvider } from '../../services/proveedores/proveedorService'
 import { fetchProviderJoinBrand } from '../../services/proveedores/brandService'
 import toast, { Toaster } from 'react-hot-toast'
+import { useSession } from '../../contexts/SessionContext'
 import '../../assets/modal-improvements.css'
 
 pinwheel.register()
@@ -25,6 +26,9 @@ export default function Proveedores() {
   const [providerBrandData, setProviderBrandData] = useState([])
   const [brandSearchTerm, setBrandSearchTerm] = useState('')
   const [loading, setLoading] = useState(false)
+  const { getCurrentUser } = useSession()
+  const role = getCurrentUser()?.role || 'user'
+  console.log('Rol del usuario :', role)
 
   const handleRowClick = (row) => {
     setSelectedRow(row.id)
@@ -120,15 +124,17 @@ export default function Proveedores() {
               )}
             </button>
           </li>
-          <li>
-            <button
-              className="tooltip tooltip-bottom btn btn-ghost"
-              data-tip="Resumen proveedores"
-              onClick={() => setLocation('/resumenProveedores')}
-            >
-              <FileChartPie className="h-5 w-5" />
-            </button>
-          </li>
+          {role === 'administrator' && (
+            <li>
+              <button
+                className="tooltip tooltip-bottom btn btn-ghost"
+                data-tip="Resumen proveedores"
+                onClick={() => setLocation('/resumenProveedores')}
+              >
+                <FileChartPie className="h-5 w-5" />
+              </button>
+            </li>
+          )}
         </ul>
 
         {/* Barra de búsqueda */}
