@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react'
-import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye, LogIn } from 'lucide-react'
-import Settings from '../componentes especificos/settings'
+import { useState } from 'react'
+import { useEffect } from 'react'
+import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
-import { fetchSucursales } from '../services/sucursales/sucursalesService'
+import {
+  fetchEmployeeByUsername,
+  fetchEmployeeStorages
+} from '../services/employee/employeeService'
 import '../assets/login-only.css'
 
 export default function Login() {
   const [, setLocation] = useLocation()
   const { login, loading, error } = useSession()
-
+  const [flag, setFlag] = useState(false)
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -19,29 +22,44 @@ export default function Login() {
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [userId, setUserId] = useState(null)
 
-  useEffect(() => {
-    const loadStorages = async () => {
+  const getStorage = async () => {
+    if (flag && formData.username && formData.password) {
       try {
-        const storageList = await fetchSucursales()
-        const storagesData = Array.isArray(storageList) ? storageList : storageList.data
-        console.log('Datos de sucursales a usar:', storagesData)
-
-        setStorages(storagesData || [])
+        const data_user = await fetchEmployeeByUsername(formData.username)
+        console.log('data_user', data_user)
+        setUserId(data_user.data.id)
+        const data = await fetchEmployeeStorages(userId)
+        console.log('data storages', data)
+        setStorages(data)
       } catch (err) {
-        console.error('Error cargando sucursales:', err)
+        setStorages([])
       }
+    } else {
+      setStorages([])
     }
-    loadStorages()
-  }, [])
+  }
+
+  const handleAdminAndUser = (nextForm) => {
+    if (nextForm.username !== '' && nextForm.password !== '') {
+      setFlag(true)
+    } else {
+      setFlag(false)
+    }
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
+    const nextForm = {
+      ...formData,
       [name]: value
-    }))
+    }
+    setFormData(nextForm)
     if (formError) setFormError('')
+    if (name === 'username' || name === 'password') {
+      handleAdminAndUser(nextForm)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -88,6 +106,11 @@ export default function Login() {
     }
   }
 
+  useEffect(() => {
+    getStorage()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flag, formData.username, formData.password])
+
   return (
     <div className="login-page">
       {/* Background */}
@@ -100,11 +123,6 @@ export default function Login() {
         />
       </div>
 
-      {/* Settings */}
-      <div className="login-settings">
-        <Settings />
-      </div>
-
       {/* Login Card */}
       <div className="login-card">
         <div className="login-header">
@@ -115,7 +133,6 @@ export default function Login() {
         </div>
 
         <div className="login-form">
-          {/* Errores */}
           {(error || formError) && (
             <div className="login-alert login-alert-error">
               <AlertCircle className="h-4 w-4" />
@@ -124,7 +141,6 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Usuario */}
             <div className="login-input-group">
               <input
                 type="text"
@@ -142,7 +158,6 @@ export default function Login() {
               <UserRound className="login-input-icon" />
             </div>
 
-            {/* Contraseña */}
             <div className="login-input-group">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -188,7 +203,7 @@ export default function Login() {
               </div>
             ) : (
               <div className="login-alert login-alert-warning">
-                ⚠️ No hay sucursales configuradas. Solo administradores pueden acceder.
+                ⚠️ Ingrese sus credenciales para seleccionar la sucursal.
               </div>
             )}
 

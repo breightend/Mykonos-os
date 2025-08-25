@@ -410,3 +410,22 @@ def delete_user(user_id):
         return jsonify(
             {"mensaje": f"Error interno del servidor: {str(e)}", "status": "error"}
         ), 500
+
+
+@usuario_router.route("/employee/username/<username>", methods=["GET"])
+def get_employee_by_username(username):
+    """Get employee by username"""
+    db = Database()
+    result = db.get_record_by_clause("users", "username = ?", (username,))
+    if result["success"] and result["record"] is not None:
+        # Elimina o convierte los campos problemáticos
+        record = result["record"]
+        # Por ejemplo, si tienes un campo 'password' o 'image' que es binario:
+        if "password" in record:
+            del record["password"]
+        # Si tienes otros campos binarios, elimínalos o conviértelos aquí
+        # if "image" in record:
+        #     record["image"] = base64.b64encode(record["image"]).decode()  # si quieres devolverlo como string
+        return jsonify({"data": record, "status": "éxito"}), 200
+    else:
+        return jsonify({"mensaje": result["message"], "status": "error"}), 404

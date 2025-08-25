@@ -84,3 +84,13 @@ export async function removeStorageFromEmployee(employeeId, storageId) {
         throw error;
     }
 }
+
+export async function fetchEmployeeByUsername(username) {
+    try {
+        const response = await axios.get(`http://localhost:5000/api/user/employee/username/${username}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching employee by username:", error);
+        throw error;
+    }
+}

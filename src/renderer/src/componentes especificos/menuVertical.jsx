@@ -15,11 +15,13 @@ import {
   Store
 } from 'lucide-react'
 import SettingsLog from './settingsLog'
+import { useSession } from '../contexts/SessionContext'
 
 export default function MenuVertical({ currentPath }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [, setLocation] = useLocation()
-
+  const { getCurrentUser } = useSession()
+  const role = getCurrentUser()?.role || 'user'
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
   return (
@@ -102,17 +104,19 @@ export default function MenuVertical({ currentPath }) {
             {isMenuOpen && <span className="ml-3 font-medium">Clientes</span>}
           </button>
         </li>
-        <li>
-          <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/empleados' ? 'active btn-active' : ''
-            }`}
-            onClick={() => setLocation('/empleados')}
-          >
-            <BriefcaseBusiness size={20} className="flex-shrink-0" />
-            {isMenuOpen && <span className="ml-3 font-medium">Empleados</span>}
-          </button>
-        </li>
+        {role === 'administrator' && (
+          <li>
+            <button
+              className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
+                currentPath === '/empleados' ? 'active btn-active' : ''
+              }`}
+              onClick={() => setLocation('/empleados')}
+            >
+              <BriefcaseBusiness size={20} className="flex-shrink-0" />
+              {isMenuOpen && <span className="ml-3 font-medium">Empleados</span>}
+            </button>
+          </li>
+        )}
         <li>
           <button
             className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
@@ -124,28 +128,32 @@ export default function MenuVertical({ currentPath }) {
             {isMenuOpen && <span className="ml-3 font-medium">Sucursales</span>}
           </button>
         </li>
-        <li>
-          <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/estadisticas' ? 'active btn-active' : ''
-            }`}
-            onClick={() => setLocation('/estadisticas')}
-          >
-            <ChartLine size={20} className="flex-shrink-0" />
-            {isMenuOpen && <span className="ml-3 font-medium">Estadísticas</span>}
-          </button>
-        </li>
-        <li>
-          <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/informes' ? 'active btn-active' : ''
-            }`}
-            onClick={() => setLocation('/informes')}
-          >
-            <ClipboardType size={20} className="flex-shrink-0" />
-            {isMenuOpen && <span className="ml-3 font-medium">Informes</span>}
-          </button>
-        </li>
+        {role === 'administrator' && (
+          <div>
+            <li>
+              <button
+                className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
+                  currentPath === '/estadisticas' ? 'active btn-active' : ''
+                }`}
+                onClick={() => setLocation('/estadisticas')}
+              >
+                <ChartLine size={20} className="flex-shrink-0" />
+                {isMenuOpen && <span className="ml-3 font-medium">Estadísticas</span>}
+              </button>
+            </li>
+            <li>
+              <button
+                className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
+                  currentPath === '/informes' ? 'active btn-active' : ''
+                }`}
+                onClick={() => setLocation('/informes')}
+              >
+                <ClipboardType size={20} className="flex-shrink-0" />
+                {isMenuOpen && <span className="ml-3 font-medium">Informes</span>}
+              </button>
+            </li>
+          </div>
+        )}
 
         {/* Configuraciones al final del menú */}
         <li className="absolute bottom-4 left-2 right-2">

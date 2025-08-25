@@ -1503,18 +1503,30 @@ class Database:
 
                 cur.execute(sql, value)
                 row = cur.fetchone()
-
                 if row:
                     result["success"] = True
                     result["message"] = "Registro encontrado."
                     if self.use_postgres:
-                        # For PostgreSQL, manually create dictionary
                         columns = [desc[0] for desc in cur.description]
-                        result["record"] = dict(zip(columns, row))
+                        record = dict(zip(columns, row))
                     else:
-                        # For SQLite, use row_factory
-                        result["record"] = {key: row[key] for key in row.keys()}
+                        record = {key: row[key] for key in row.keys()}
+
+                    # Sanitize: remove or convert non-JSON-serializable fields
+                    sanitized = {}
+                    for k, v in record.items():
+                        # Remove memoryview, bytes, or other non-serializable types
+                        if isinstance(v, (memoryview, bytes, bytearray)):
+                            # Option 1: Remove field
+                            continue
+                            # Option 2: Convert to base64 string (uncomment if needed)
+                            # import base64
+                            # sanitized[k] = base64.b64encode(v).decode('utf-8')
+                        else:
+                            sanitized[k] = v
+                    result["record"] = sanitized
                 else:
+                    result["message"] = "No se encontró ningún registro."
                     result["message"] = "No se encontró ningún registro."
 
         except Exception as e:

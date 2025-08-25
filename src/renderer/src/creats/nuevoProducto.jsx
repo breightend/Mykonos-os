@@ -429,13 +429,11 @@ export default function NuevoProducto() {
   }
 
   const prepareProductData = () => {
-    // Obtener IDs de talles y colores únicos
     const uniqueSizes = [...new Set(talles.map((t) => t.talle).filter(Boolean))]
     const uniqueColors = [
       ...new Set(talles.flatMap((t) => t.colores.map((c) => c.color).filter(Boolean)))
     ]
 
-    // Mapear nombres a IDs
     const sizeIds = uniqueSizes
       .map((sizeName) => {
         const size = tallesBD.find((s) => s.size_name === sizeName)
@@ -450,15 +448,13 @@ export default function NuevoProducto() {
       })
       .filter(Boolean)
 
-    // Obtener brand_id de la marca seleccionada
     const selectedBrand = brandByProvider.find((brand) => brand.brand_name === marca)
     const brandId = selectedBrand ? selectedBrand.id : null
 
-    // Preparar imagen para envío (extraer solo el base64 sin el prefijo data URI)
     let imageToSend = null
     if (productImage) {
       if (productImage.startsWith('data:')) {
-        imageToSend = productImage.split(',')[1] // Extraer solo la parte base64
+        imageToSend = productImage.split(',')[1] 
         console.log('🖼️ Preparando imagen para envío:')
         console.log('  - Imagen original:', productImage.substring(0, 100) + '...')
         console.log('  - Tipo MIME detectado:', productImage.split(',')[0])
@@ -495,6 +491,7 @@ export default function NuevoProducto() {
       color_ids: colorIds,
       product_image: imageToSend,
       storage_id: currentStorage?.id || null,
+      state: 'enTienda',
       initial_quantity: cantidadTotal,
       stock_variants: talles.flatMap((talle) => {
         const sizeData = tallesBD.find((s) => s.size_name === talle.talle)
