@@ -8,7 +8,6 @@ import paymentMethodsService from '../../services/paymentsServices/paymentMethod
 import { useLocation, useSearchParams } from 'wouter'
 
 export default function AgregarCompraProveedor({ provider }) {
-  const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -23,6 +22,11 @@ export default function AgregarCompraProveedor({ provider }) {
     transaction_number: '',
     invoice_number: '',
     notes: ''
+  })
+  const [paymentData, setPaymentData] = useState({
+    payment_method_id: '',
+    bank_id: '',
+    amount: 0
   })
 
   const handleCerrar = () => {
@@ -42,40 +46,21 @@ export default function AgregarCompraProveedor({ provider }) {
   const [banks, setBanks] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
 
+  // Cargar productos al montar el componente
   useEffect(() => {
-    const modal = document.getElementById('agregandoCompra')
-    if (modal) {
-      const handleShow = () => setIsOpen(true)
-      const handleHide = () => {
-        setIsOpen(false)
-        resetForm()
-      }
-
-      modal.addEventListener('show', handleShow)
-      modal.addEventListener('close', handleHide)
-
-      return () => {
-        modal.removeEventListener('show', handleShow)
-        modal.removeEventListener('close', handleHide)
-      }
+    const loadPaymentMethods = async () => {
+      const methods = await paymentMethodsService.getAllPaymentMethods()
+      setPaymentMethods(methods.payment_methods)
+      const bancosData = await getBancos()
+      setBanks(bancosData)
     }
+    loadPaymentMethods()
+    loadProducts()
   }, [])
-
-  useEffect(() => {
-    if (isOpen) {
-      loadProducts()
-    }
-  }, [isOpen])
 
   useEffect(() => {
     calculateTotals()
   }, [purchaseProducts])
-
-  useEffect(() => {
-    if (isOpen) {
-      console.log('Modal de agregar compra abierto')
-    }
-  }, [isOpen])
 
   const loadProducts = async () => {
     try {
@@ -257,7 +242,7 @@ export default function AgregarCompraProveedor({ provider }) {
 
       if (result.status === 'éxito') {
         toast.success('Compra creada exitosamente')
-        document.getElementById('agregandoCompra').close()
+        // Eliminado: cerrar modal, ahora es una pestaña
         resetForm()
         // Aquí podrías refrescar la lista de compras del proveedor
       } else {
@@ -272,49 +257,46 @@ export default function AgregarCompraProveedor({ provider }) {
   }
 
   return (
-    <div>
-      <div className="">
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-xl font-bold">
-            <ShoppingCart className="h-6 w-6" />
-            Nueva Compra - {provider?.entity_name}
-          </h3>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => document.getElementById('agregandoCompra').close()}
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <div className="container mx-auto max-w-4xl p-4">
+      <div className="mb-8 rounded-xl bg-white p-6 shadow-lg">
+        <div className="mb-6 flex items-center gap-4 border-b pb-4">
+          <ShoppingCart className="h-8 w-8 text-primary" />
+          <h2 className="text-2xl font-extrabold text-gray-800">
+            Nueva Compra - {provider?.entity_name || 'Proveedor'}
+          </h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información de la compra */}
-          <div className="rounded-lg bg-base-200 p-4">
-            <h4 className="mb-4 font-semibold">Información de la Compra</h4>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Purchase Information Section */}
+          <section className="rounded-lg bg-gray-50 p-6 shadow-sm">
+            <h3 className="mb-4 text-xl font-semibold text-gray-700">Información de la Compra</h3>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="label">
-                  <span className="label-text">Método de Pago</span>
+                  <span className="label-text font-medium text-gray-600">Método de Pago</span>
                 </label>
                 <select
                   name="payment_method"
-                  value={purchaseData.payment_method}
+                  value={paymentData.payment_method_id}
                   onChange={handlePurchaseInputChange}
                   className="select-bordered select w-full"
+                  required
                 >
-                  <option value="">Seleccionar...</option>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Transferencia">Transferencia</option>
-                  <option value="Cheque">Cheque</option>
-                  <option value="Tarjeta de Débito">Tarjeta de Débito</option>
-                  <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                  <option value="Cuenta Corriente">Cuenta Corriente</option>
+                  <option value="">Seleccionar método...</option>
+                  {paymentMethods &&
+                    paymentMethods.map((method) => (
+                      <option key={method.id} value={method.id}>
+                        {method.display_name}
+                      </option>
+                    ))}
                 </select>
               </div>
 
               <div>
                 <label className="label">
-                  <span className="label-text">Número de Transacción</span>
+                  <span className="label-text font-medium text-gray-600">
+                    Número de Transacción
+                  </span>
                 </label>
                 <input
                   type="text"
@@ -328,7 +310,7 @@ export default function AgregarCompraProveedor({ provider }) {
 
               <div>
                 <label className="label">
-                  <span className="label-text">Número de Factura</span>
+                  <span className="label-text font-medium text-gray-600">Número de Factura</span>
                 </label>
                 <input
                   type="text"
@@ -342,7 +324,7 @@ export default function AgregarCompraProveedor({ provider }) {
 
               <div className="lg:col-span-3">
                 <label className="label">
-                  <span className="label-text">Notas</span>
+                  <span className="label-text font-medium text-gray-600">Notas</span>
                 </label>
                 <textarea
                   name="notes"
@@ -354,15 +336,15 @@ export default function AgregarCompraProveedor({ provider }) {
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Productos */}
-          <div className="rounded-lg bg-base-200 p-4">
+          {/* Products Section */}
+          <section className="rounded-lg bg-gray-50 p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
-              <h4 className="flex items-center gap-2 font-semibold">
-                <Package className="h-5 w-5" />
+              <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-700">
+                <Package className="h-6 w-6 text-primary" />
                 Productos de la Compra
-              </h4>
+              </h3>
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
@@ -374,43 +356,47 @@ export default function AgregarCompraProveedor({ provider }) {
             </div>
 
             {purchaseProducts.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
-                  <thead>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="table w-full">
+                  <thead className="bg-gray-200 text-gray-700">
                     <tr>
-                      <th>Producto</th>
-                      <th>Código</th>
-                      <th>Precio Costo</th>
-                      <th>Cantidad</th>
-                      <th>Descuento</th>
-                      <th>Subtotal</th>
-                      <th>Acciones</th>
+                      <th className="px-4 py-3 text-left">Producto</th>
+                      <th className="px-4 py-3 text-left">Código</th>
+                      <th className="px-4 py-3 text-left">Precio Costo</th>
+                      <th className="px-4 py-3 text-left">Cantidad</th>
+                      <th className="px-4 py-3 text-left">Descuento</th>
+                      <th className="px-4 py-3 text-left">Subtotal</th>
+                      <th className="px-4 py-3 text-left">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {purchaseProducts.map((product) => (
-                      <tr key={product.id}>
-                        <td className="font-medium">{product.product_name}</td>
-                        <td>{product.barcode}</td>
-                        <td>${product.cost_price.toFixed(2)}</td>
-                        <td>{product.quantity}</td>
-                        <td>${product.discount.toFixed(2)}</td>
-                        <td className="font-semibold">${product.subtotal.toFixed(2)}</td>
-                        <td>
-                          <div className="flex gap-1">
+                      <tr key={product.id} className="border-b transition-colors hover:bg-gray-100">
+                        <td className="px-4 py-3 font-medium">{product.product_name}</td>
+                        <td className="px-4 py-3">{product.barcode}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          ${product.cost_price.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3">{product.quantity}</td>
+                        <td className="px-4 py-3 text-gray-600">${product.discount.toFixed(2)}</td>
+                        <td className="px-4 py-3 font-bold text-success">
+                          ${product.subtotal.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
                             <button
                               type="button"
                               onClick={() => handleEditProduct(product)}
-                              className="btn btn-ghost btn-xs text-blue-600"
+                              className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-100"
                             >
                               Editar
                             </button>
                             <button
                               type="button"
                               onClick={() => handleRemoveProduct(product.id)}
-                              className="btn btn-ghost btn-xs text-red-600"
+                              className="btn btn-ghost btn-xs text-red-600 hover:bg-red-100"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -420,63 +406,61 @@ export default function AgregarCompraProveedor({ provider }) {
                 </table>
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500">
-                No hay productos agregados a la compra
+              <div className="py-12 text-center text-gray-400">
+                <p>No hay productos agregados a la compra.</p>
+                <p className="text-sm">Usa el botón agregar producto para empezar.</p>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Totales */}
-          <div className="rounded-lg bg-base-200 p-4">
-            <h4 className="mb-4 font-semibold">Totales</h4>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div>
-                <label className="label">
-                  <span className="label-text">Subtotal</span>
-                </label>
-                <input
-                  type="number"
-                  value={purchaseData.subtotal}
-                  className="input-bordered input w-full"
-                  readOnly
-                />
-              </div>
-
-              <div>
-                <label className="label">
-                  <span className="label-text">Descuento Global</span>
-                </label>
-                <input
-                  type="number"
-                  name="discount"
-                  value={purchaseData.discount}
-                  onChange={handlePurchaseInputChange}
-                  className="input-bordered input w-full"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              <div>
-                <label className="label">
-                  <span className="label-text font-semibold">Total</span>
-                </label>
-                <input
-                  type="number"
-                  value={purchaseData.total}
-                  className="input-bordered input w-full font-semibold"
-                  readOnly
-                />
-              </div>
+          {/* Totals Section */}
+          <section className="flex flex-col gap-4 rounded-lg bg-gray-50 p-6 shadow-sm md:flex-row md:justify-end">
+            <div className="flex flex-col items-center md:w-1/3 md:items-end">
+              <label className="label">
+                <span className="label-text font-medium text-gray-600">Subtotal</span>
+              </label>
+              <input
+                type="text"
+                value={`$${purchaseData.subtotal}`}
+                className="input-bordered input w-full text-right font-mono text-lg"
+                readOnly
+              />
             </div>
-          </div>
 
-          {/* Botones de acción */}
-          <div className="modal-action">
+            <div className="flex flex-col items-center md:w-1/3 md:items-end">
+              <label className="label">
+                <span className="label-text font-medium text-gray-600">Descuento Global</span>
+              </label>
+              <input
+                type="number"
+                name="discount"
+                value={purchaseData.discount}
+                onChange={handlePurchaseInputChange}
+                className="input-bordered input w-full text-right font-mono text-lg"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div className="flex flex-col items-center md:w-1/3 md:items-end">
+              <label className="label">
+                <span className="label-text font-bold text-gray-800">TOTAL</span>
+              </label>
+              <input
+                type="text"
+                value={`$${purchaseData.total}`}
+                className="input-bordered input w-full bg-primary text-right text-xl font-extrabold text-white"
+                readOnly
+              />
+            </div>
+          </section>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4">
             <button
               type="button"
-              className="btn"
-              onClick={() => document.getElementById('agregandoCompra').close()}
+              className="btn btn-ghost text-gray-600 hover:bg-gray-200"
+              onClick={() => window.history.back()}
             >
               Cancelar
             </button>
@@ -491,18 +475,21 @@ export default function AgregarCompraProveedor({ provider }) {
         </form>
       </div>
 
-      {/* Modal para agregar/editar producto */}
+      {/* Modal to add/edit product */}
       {showProductModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="max-h-[80vh] w-96 overflow-y-auto rounded-lg bg-white p-6 shadow-2xl">
-            <h3 className="mb-4 text-lg font-bold text-gray-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
+            <h3 className="mb-4 text-2xl font-bold text-gray-800">
               {editingProduct ? 'Editar Producto' : 'Agregar Producto'}
             </h3>
+            <p className="mb-6 text-sm text-gray-500">
+              Selecciona o busca un producto y especifica los detalles de la compra.
+            </p>
 
             <div className="space-y-4">
               <div>
                 <label className="label">
-                  <span className="label-text">Buscar Producto</span>
+                  <span className="label-text font-medium text-gray-600">Buscar Producto</span>
                 </label>
                 <input
                   type="text"
@@ -527,10 +514,10 @@ export default function AgregarCompraProveedor({ provider }) {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label">
-                    <span className="label-text">Precio Costo *</span>
+                    <span className="label-text font-medium text-gray-600">Precio Costo *</span>
                   </label>
                   <input
                     type="number"
@@ -547,7 +534,7 @@ export default function AgregarCompraProveedor({ provider }) {
 
                 <div>
                   <label className="label">
-                    <span className="label-text">Cantidad *</span>
+                    <span className="label-text font-medium text-gray-600">Cantidad *</span>
                   </label>
                   <input
                     type="number"
@@ -563,7 +550,7 @@ export default function AgregarCompraProveedor({ provider }) {
 
               <div>
                 <label className="label">
-                  <span className="label-text">Descuento</span>
+                  <span className="label-text font-medium text-gray-600">Descuento</span>
                 </label>
                 <input
                   type="number"
@@ -578,11 +565,24 @@ export default function AgregarCompraProveedor({ provider }) {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-2">
-              <button type="button" className="btn">
+            <div className="mt-8 flex justify-end gap-4">
+              <button
+                type="button"
+                className="btn btn-ghost text-gray-600 hover:bg-gray-200"
+                onClick={handleCerrar}
+              >
                 Cancelar
               </button>
-              <button type="button" className="btn btn-primary" onClick={handleAddProduct}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAddProduct}
+                disabled={
+                  !productFormData.product_id ||
+                  productFormData.quantity <= 0 ||
+                  productFormData.cost_price < 0
+                }
+              >
                 {editingProduct ? 'Actualizar' : 'Agregar'}
               </button>
             </div>

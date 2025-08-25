@@ -301,10 +301,7 @@ export default function ConfirmacionDatosDeCompra() {
           discount: payment.discount || 0
         })),
         // Calcular el total y descuento según el pago
-        total:
-          totalAbonado > totalVenta
-            ? parseFloat(totalVenta) // Si pagó de más, el total es la suma de los productos (o el totalVenta)
-            : parseFloat(totalAbonado), // Si pagó menos o igual, el total es lo que pagó (incluye descuento)
+        total: totalAbonado > totalVenta ? parseFloat(totalVenta) : parseFloat(totalAbonado),
         discount:
           totalAbonado < totalVenta
             ? (parseFloat(totalVenta) - parseFloat(totalAbonado)).toFixed(2) // Descuento aplicado
