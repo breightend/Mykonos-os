@@ -54,8 +54,41 @@ export default function NuevoProducto() {
     }
   }, [providerId])
 
-  //Estados para la marcha
+  const [producto, setProducto] = useState({
+    provider_code: '',
+    product_name: '',
+    group_id: '',
+    provider_id: providerId,
+    description: '',
+    cost: 0,
+    sale_price: 0,
+    original_price: 0,
+    tax: 0,
+    discount: 0,
+    comments: '',
+    user_id: currentUser?.id || 1,
+    images_ids: null,
+    brand_id: '',
+    creation_date: new Date().toISOString(),
+    last_modified_date: new Date().toISOString(),
+    state: 'pendiente',
+    talles: [{ talle: '', colores: [{ color: '', cantidad: '' }] }],
+    product_image: '',
+    initial_quantity: 0
+  })
 
+  const [productos, setProductos] = useState([{ producto }])
+  const handleProductoChange = (idx, campo, valor) => {
+    const nuevosProductos = [...productos]
+    nuevosProductos[idx][campo] = valor
+    setProductos(nuevosProductos)
+  }
+  const agregarProducto = () => {
+    setProductos([...productos, { nombre: '', precio: '' /* ...otros campos */ }])
+  }
+  const eliminarProducto = (idx) => {
+    setProductos(productos.filter((_, i) => i !== idx))
+  }
   // Estados para el formulario
   const [productName, setProductName] = useState('')
   const [tipo, setTipo] = useState('')
@@ -811,6 +844,9 @@ export default function NuevoProducto() {
               </div>
             ) : (
               <>
+              {productos.map((prod, idx) => (
+               <>
+              <div>
                 <div className="card border border-base-300 bg-base-100 shadow-xl">
                   <div className="card-body">
                     <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
@@ -822,27 +858,32 @@ export default function NuevoProducto() {
 
                     <div className="space-y-6">
                       {/* Nombre del producto */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Nombre del producto</span>
-                          <span className="label-text-alt text-error">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Ej: Remera básica algodón"
-                          className={`input-bordered input w-full focus:border-primary ${
-                            errors.productName ? 'input-error' : ''
-                          }`}
-                          value={productName}
-                          onChange={(e) => setProductName(e.target.value)}
-                          required
-                        />
-                        {errors.productName && (
-                          <div className="label">
-                            <span className="label-text-alt text-error">{errors.productName}</span>
-                          </div>
-                        )}
-                      </div>
+                      {productos.map((prod, idx) => (
+                        <div key={idx} className="mb-4 rounded-lg border bg-base-200 p-4">
+                          <label className="label">
+                            <span className="label-text font-semibold">Nombre del producto</span>
+                            <span className="label-text-alt text-error">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ej: Remera básica algodón"
+                            className={`input-bordered input w-full focus:border-primary ${errors[`productName_${idx}`] ? 'input-error' : ''}`}
+                            value={prod.product_name}
+                            onChange={(e) =>
+                              handleProductoChange(idx, 'product_name', e.target.value)
+                            }
+                            required
+                          />
+                          {errors[`productName_${idx}`] && (
+                            <div className="label">
+                              <span className="label-text-alt text-error">
+                                {errors[`productName_${idx}`]}
+                              </span>
+                            </div>
+                          )}
+                          {/* Aquí puedes agregar los demás campos de ese producto, igual que este */}
+                        </div>
+                      ))}
 
                       {/* Imagen del producto */}
                       <div>
@@ -1476,6 +1517,9 @@ export default function NuevoProducto() {
                     </div>
                   </div>
                 </div>
+                </div>
+              </> 
+              ))}
               </>
             )}
             <button className="btn btn-primary mt-4">Agregar Producto</button>
