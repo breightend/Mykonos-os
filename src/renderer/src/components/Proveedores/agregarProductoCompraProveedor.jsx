@@ -1,7 +1,7 @@
 import { useLocation, useSearchParams } from 'wouter'
 import { useState, useEffect } from 'react'
 import { useProductContext } from '../../contexts/ProductContext'
-import { ArrowLeft, LoaderCircle, Save, Trash2, Menu, Lock, Unlock } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Save, Trash2, Menu, Lock, Unlock, ChevronsDown} from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from '../../contexts/SessionContext'
 import { useSettings } from '../../contexts/settingsContext'
@@ -27,7 +27,7 @@ export default function NuevoProducto() {
   const { calculateSalePrice, settings } = useSettings()
   const currentStorage = getCurrentStorage()
   const currentUser = getCurrentUser()
-  const searchParams = useSearchParams()
+  const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
 
   useEffect(() => {
@@ -626,7 +626,7 @@ export default function NuevoProducto() {
               </div>
               <div>
                 <h1 className="bg-gradient-to-r from-primary to-accent bg-clip-text text-3xl font-bold text-transparent">
-                  Agregar Artículo del proveedor:
+                  Agregar Artículo del proveedor: {provider?.entity_name}
                 </h1>
                 <p className="text-base-content/70 text-sm">
                   Complete los datos del nuevo producto. Los códigos de barras se generarán
@@ -661,637 +661,646 @@ export default function NuevoProducto() {
 
         <form className="mx-auto max-w-6xl space-y-8">
           {/* Sección: Información Básica */}
-          <div className="card border border-base-300 bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                  <span className="font-bold text-primary">1</span>
-                </div>
-                Información Básica
-              </h2>
 
-              <div className="space-y-6">
-                {/* Nombre del producto */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Nombre del producto</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Remera básica algodón"
-                    className={`input-bordered input w-full focus:border-primary ${
-                      errors.productName ? 'input-error' : ''
-                    }`}
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    required
-                  />
-                  {errors.productName && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">{errors.productName}</span>
-                    </div>
-                  )}
-                </div>
+          <section className="rounded-lg bg-base-300 p-4 space-y-4 shadow-md">
+            <label>Producto </label>
+            <button classname=''>
+              <ChevronsDown />
+            </button>
+          
+            <div className="card border border-base-300 bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <span className="font-bold text-primary">1</span>
+                  </div>
+                  Información Básica
+                </h2>
 
-                {/* Imagen del producto */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Imagen del producto</span>
-                    <span className="label-text-alt text-base-content/60">(Opcional)</span>
-                  </label>
+                <div className="space-y-6">
+                  {/* Nombre del producto */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Nombre del producto</span>
+                      <span className="label-text-alt text-error">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Remera básica algodón"
+                      className={`input-bordered input w-full focus:border-primary ${
+                        errors.productName ? 'input-error' : ''
+                      }`}
+                      value={productName}
+                      onChange={(e) => setProductName(e.target.value)}
+                      required
+                    />
+                    {errors.productName && (
+                      <div className="label">
+                        <span className="label-text-alt text-error">{errors.productName}</span>
+                      </div>
+                    )}
+                  </div>
 
-                  {productImage && (
-                    <div className="mb-4 flex justify-center">
-                      <div className="avatar">
-                        <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
-                          <img
-                            src={base64ToObjectUrl(productImage)}
-                            alt="Preview del producto"
-                            className="object-cover"
-                          />
+                  {/* Imagen del producto */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Imagen del producto</span>
+                      <span className="label-text-alt text-base-content/60">(Opcional)</span>
+                    </label>
+
+                    {productImage && (
+                      <div className="mb-4 flex justify-center">
+                        <div className="avatar">
+                          <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
+                            <img
+                              src={base64ToObjectUrl(productImage)}
+                              alt="Preview del producto"
+                              className="object-cover"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <div
-                    {...getRootProps()}
-                    className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 hover:border-primary/50 ${
-                      isDragActive
-                        ? 'border-primary bg-primary/5'
-                        : errors.productImage
-                          ? 'bg-error/5 border-error'
-                          : 'hover:bg-base-200/50 border-base-300'
-                    } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
-                  >
-                    <input {...getInputProps()} />
-                    <div className="space-y-2">
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                        {isUploadingImage ? (
-                          <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
-                        ) : (
-                          <svg
-                            className="h-6 w-6 text-primary"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                            />
-                          </svg>
-                        )}
+                    <div
+                      {...getRootProps()}
+                      className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 hover:border-primary/50 ${
+                        isDragActive
+                          ? 'border-primary bg-primary/5'
+                          : errors.productImage
+                            ? 'bg-error/5 border-error'
+                            : 'hover:bg-base-200/50 border-base-300'
+                      } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
+                    >
+                      <input {...getInputProps()} />
+                      <div className="space-y-2">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                          {isUploadingImage ? (
+                            <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+                          ) : (
+                            <svg
+                              className="h-6 w-6 text-primary"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium">
+                          {isUploadingImage
+                            ? 'Procesando imagen...'
+                            : isDragActive
+                              ? '¡Suelta la imagen aquí!'
+                              : 'Arrastra la imagen o haz clic para seleccionar'}
+                        </p>
+                        <p className="text-base-content/60 text-xs">PNG, JPG, WEBP hasta 10MB</p>
                       </div>
-                      <p className="text-sm font-medium">
-                        {isUploadingImage
-                          ? 'Procesando imagen...'
-                          : isDragActive
-                            ? '¡Suelta la imagen aquí!'
-                            : 'Arrastra la imagen o haz clic para seleccionar'}
-                      </p>
-                      <p className="text-base-content/60 text-xs">PNG, JPG, WEBP hasta 10MB</p>
                     </div>
+                    {errors.productImage && (
+                      <div className="label">
+                        <span className="label-text-alt text-error">{errors.productImage}</span>
+                      </div>
+                    )}
                   </div>
-                  {errors.productImage && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">{errors.productImage}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
-          </div>
-          {/* Sección: Categorización */}
-          <div className="card border border-base-300 bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
-                  <span className="font-bold text-secondary">2</span>
-                </div>
-                Categorización y Origen
-              </h2>
+            {/* Sección: Categorización */}
+            <div className="card border border-base-300 bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
+                    <span className="font-bold text-secondary">2</span>
+                  </div>
+                  Categorización y Origen
+                </h2>
 
-              {/* Grupo/Tipo de Prenda */}
-              <div>
-                <label className="label">
-                  <span className="label-text font-semibold">Grupo de Producto</span>
-                  <span className="label-text-alt text-error">*</span>
-                </label>
-                <div className="flex gap-2">
-                  <GroupTreeSelector
-                    groups={grupoTree}
-                    selectedGroupId={tipo ? parseInt(tipo) : null}
-                    onSelectGroup={handleGroupSelect}
-                    className={`flex-1 ${errors.tipo ? 'border-error' : ''}`}
-                    placeholder="Seleccione un grupo de producto..."
-                    emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
-                  />
-                  <div className="tooltip" data-tip="Ver estructura de grupos">
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-outline"
-                      onClick={() => setShowGroupTreeModal(true)}
+                {/* Grupo/Tipo de Prenda */}
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">Grupo de Producto</span>
+                    <span className="label-text-alt text-error">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <GroupTreeSelector
+                      groups={grupoTree}
+                      selectedGroupId={tipo ? parseInt(tipo) : null}
+                      onSelectGroup={handleGroupSelect}
+                      className={`flex-1 ${errors.tipo ? 'border-error' : ''}`}
+                      placeholder="Seleccione un grupo de producto..."
+                      emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
+                    />
+                    <div className="tooltip" data-tip="Ver estructura de grupos">
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-outline"
+                        onClick={() => setShowGroupTreeModal(true)}
+                      >
+                        <Menu className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {errors.tipo && (
+                    <div className="label">
+                      <span className="label-text-alt text-error">{errors.tipo}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {/* Marca */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Marca</span>
+                      <span className="label-text-alt text-error">*</span>
+                    </label>
+                    <select
+                      value={marca}
+                      onChange={(e) => setMarca(e.target.value)}
+                      className={`select-bordered select w-full focus:border-secondary ${
+                        errors.marca ? 'select-error' : ''
+                      } ${!selectedProvider ? 'select-disabled' : ''}`}
+                      required
+                      disabled={!selectedProvider}
                     >
-                      <Menu className="h-4 w-4" />
-                    </button>
+                      <option value="" disabled>
+                        {!selectedProvider
+                          ? 'Seleccione un proveedor primero'
+                          : 'Seleccione una marca'}
+                      </option>
+                      {brandByProvider.map((marcaItem) => (
+                        <option key={marcaItem.id} value={marcaItem.brand_name}>
+                          {marcaItem.brand_name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.marca && (
+                      <div className="label">
+                        <span className="label-text-alt text-error">{errors.marca}</span>
+                      </div>
+                    )}
+                    {brandByProvider.length === 1 && selectedProvider && (
+                      <div className="label">
+                        <span className="label-text-alt text-success">
+                          ✓ Marca seleccionada automáticamente
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Código del proveedor */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Código del proveedor</span>
+                      <span className="label-text-alt text-base-content/60">(Opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="providerCode"
+                      placeholder="Código interno del proveedor"
+                      value={providerCode}
+                      onChange={(e) => setProviderCode(e.target.value)}
+                      className="input-bordered input w-full focus:border-secondary"
+                    />
                   </div>
                 </div>
-                {errors.tipo && (
-                  <div className="label">
-                    <span className="label-text-alt text-error">{errors.tipo}</span>
+              </div>
+            </div>
+
+            {/* Sección: Precios */}
+            <div className="card border border-base-300 bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                    <span className="font-bold text-accent">3</span>
+                  </div>
+                  Precios y Costos
+                </h2>
+
+                {/* Control de cálculo automático */}
+                {settings.autoCalculatePrice && (
+                  <div className="alert mb-6 bg-accent">
+                    <div className="flex w-full items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl text-info">🧮</span>
+                        <div>
+                          <div className="font-semibold">Cálculo Automático de Precios</div>
+                          <div className="text-sm opacity-75">
+                            Configuración actual:{' '}
+                            {settings.markupType === 'percentage'
+                              ? `${settings.priceMarkupPercentage}% de ganancia`
+                              : `$${settings.priceMarkupPercentage} de ganancia fija`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="form-control">
+                        <label className="label cursor-pointer gap-3">
+                          <span className="label-text font-medium">
+                            {useAutoCalculation ? 'Automático' : 'Manual'}
+                          </span>
+                          <input
+                            type="checkbox"
+                            className="toggle toggle-secondary"
+                            checked={useAutoCalculation}
+                            onChange={(e) => {
+                              setUseAutoCalculation(e.target.checked)
+                              if (!e.target.checked) {
+                                setSalePrice('')
+                              } else if (e.target.checked && cost && parseFloat(cost) > 0) {
+                                const calculatedPrice = calculateSalePrice(cost)
+                                setSalePrice(calculatedPrice)
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Marca */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Marca</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <select
-                    value={marca}
-                    onChange={(e) => setMarca(e.target.value)}
-                    className={`select-bordered select w-full focus:border-secondary ${
-                      errors.marca ? 'select-error' : ''
-                    } ${!selectedProvider ? 'select-disabled' : ''}`}
-                    required
-                    disabled={!selectedProvider}
-                  >
-                    <option value="" disabled>
-                      {!selectedProvider
-                        ? 'Seleccione un proveedor primero'
-                        : 'Seleccione una marca'}
-                    </option>
-                    {brandByProvider.map((marcaItem) => (
-                      <option key={marcaItem.id} value={marcaItem.brand_name}>
-                        {marcaItem.brand_name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.marca && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">{errors.marca}</span>
-                    </div>
-                  )}
-                  {brandByProvider.length === 1 && selectedProvider && (
-                    <div className="label">
-                      <span className="label-text-alt text-success">
-                        ✓ Marca seleccionada automáticamente
-                      </span>
-                    </div>
-                  )}
-                </div>
 
-                {/* Código del proveedor */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Código del proveedor</span>
-                    <span className="label-text-alt text-base-content/60">(Opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="providerCode"
-                    placeholder="Código interno del proveedor"
-                    value={providerCode}
-                    onChange={(e) => setProviderCode(e.target.value)}
-                    className="input-bordered input w-full focus:border-secondary"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sección: Precios */}
-          <div className="card border border-base-300 bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
-                  <span className="font-bold text-accent">3</span>
-                </div>
-                Precios y Costos
-              </h2>
-
-              {/* Control de cálculo automático */}
-              {settings.autoCalculatePrice && (
-                <div className="alert mb-6 bg-accent">
-                  <div className="flex w-full items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl text-info">🧮</span>
-                      <div>
-                        <div className="font-semibold">Cálculo Automático de Precios</div>
-                        <div className="text-sm opacity-75">
-                          Configuración actual:{' '}
-                          {settings.markupType === 'percentage'
-                            ? `${settings.priceMarkupPercentage}% de ganancia`
-                            : `$${settings.priceMarkupPercentage} de ganancia fija`}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="form-control">
-                      <label className="label cursor-pointer gap-3">
-                        <span className="label-text font-medium">
-                          {useAutoCalculation ? 'Automático' : 'Manual'}
-                        </span>
-                        <input
-                          type="checkbox"
-                          className="toggle toggle-secondary"
-                          checked={useAutoCalculation}
-                          onChange={(e) => {
-                            setUseAutoCalculation(e.target.checked)
-                            if (!e.target.checked) {
-                              setSalePrice('')
-                            } else if (e.target.checked && cost && parseFloat(cost) > 0) {
-                              const calculatedPrice = calculateSalePrice(cost)
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {/* Costo */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Costo del producto</span>
+                      <span className="label-text-alt text-error">*</span>
+                    </label>
+                    <div className="w-full join">
+                      <span className="btn btn-disabled btn-outline join-item">$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={cost}
+                        onChange={(e) => {
+                          const newCost = e.target.value
+                          const regex = /^[0-9]*(\.[0-9]{0,2})?$/
+                          if (regex.test(newCost)) {
+                            setCost(newCost)
+                            if (
+                              settings.autoCalculatePrice &&
+                              useAutoCalculation &&
+                              newCost &&
+                              parseFloat(newCost) > 0
+                            ) {
+                              const calculatedPrice = calculateSalePrice(newCost)
                               setSalePrice(calculatedPrice)
                             }
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Costo */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Costo del producto</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <div className="w-full join">
-                    <span className="btn btn-disabled btn-outline join-item">$</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="0.00"
-                      value={cost}
-                      onChange={(e) => {
-                        const newCost = e.target.value
-                        const regex = /^[0-9]*(\.[0-9]{0,2})?$/
-                        if (regex.test(newCost)) {
-                          setCost(newCost)
-                          if (
-                            settings.autoCalculatePrice &&
-                            useAutoCalculation &&
-                            newCost &&
-                            parseFloat(newCost) > 0
-                          ) {
-                            const calculatedPrice = calculateSalePrice(newCost)
-                            setSalePrice(calculatedPrice)
                           }
-                        }
-                      }}
-                      className={`input-bordered input flex-1 join-item focus:border-accent ${
-                        errors.cost ? 'input-error' : ''
-                      }`}
-                      required
-                    />
-                  </div>
-                  {errors.cost && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">{errors.cost}</span>
+                        }}
+                        className={`input-bordered input flex-1 join-item focus:border-accent ${
+                          errors.cost ? 'input-error' : ''
+                        }`}
+                        required
+                      />
                     </div>
-                  )}
-                </div>
+                    {errors.cost && (
+                      <div className="label">
+                        <span className="label-text-alt text-error">{errors.cost}</span>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Precio de Venta */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Precio de venta</span>
-                    <span className="label-text-alt text-error">*</span>
+                  {/* Precio de Venta */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Precio de venta</span>
+                      <span className="label-text-alt text-error">*</span>
+                      {settings.autoCalculatePrice && useAutoCalculation && (
+                        <span className="label-text-alt text-xs text-success">
+                          📊 Cálculo automático activo
+                        </span>
+                      )}
+                      {settings.autoCalculatePrice && !useAutoCalculation && (
+                        <span className="label-text-alt text-xs text-warning">
+                          ✏️ Modo manual activo
+                        </span>
+                      )}
+                    </label>
+                    <div className="w-full join">
+                      <span className="btn btn-disabled btn-outline join-item">$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder={
+                          settings.autoCalculatePrice && useAutoCalculation
+                            ? 'Se calculará automáticamente'
+                            : '0.00'
+                        }
+                        value={salePrice}
+                        onChange={(e) => {
+                          const newSalePrice = e.target.value
+                          const regex = /^[0-9]*(\.[0-9]{0,2})?$/
+                          if (regex.test(newSalePrice)) {
+                            setSalePrice(newSalePrice)
+                          }
+                        }}
+                        className={`input-bordered input flex-1 join-item focus:border-accent ${
+                          errors.salePrice ? 'input-error' : ''
+                        } ${
+                          settings.autoCalculatePrice && useAutoCalculation && cost
+                            ? 'bg-success/10 border-success/30'
+                            : ''
+                        }`}
+                        disabled={
+                          settings.autoCalculatePrice &&
+                          useAutoCalculation &&
+                          cost &&
+                          parseFloat(cost) > 0
+                        }
+                        required
+                      />
+                    </div>
+                    {errors.salePrice && (
+                      <div className="label">
+                        <span className="label-text-alt text-error">{errors.salePrice}</span>
+                      </div>
+                    )}
                     {settings.autoCalculatePrice && useAutoCalculation && (
-                      <span className="label-text-alt text-xs text-success">
-                        📊 Cálculo automático activo
-                      </span>
+                      <div className="label">
+                        <span className="label-text-alt text-xs text-info">
+                          💡{' '}
+                          {settings.markupType === 'percentage'
+                            ? `Ganancia: ${settings.priceMarkupPercentage}%`
+                            : `Ganancia fija: $${settings.priceMarkupPercentage}`}
+                        </span>
+                      </div>
                     )}
-                    {settings.autoCalculatePrice && !useAutoCalculation && (
-                      <span className="label-text-alt text-xs text-warning">
-                        ✏️ Modo manual activo
-                      </span>
+
+                    {cost && salePrice && (
+                      <div className="label">
+                        <span className="label-text-alt text-info">
+                          Margen:{' '}
+                          {(
+                            ((parseFloat(salePrice) - parseFloat(cost)) / parseFloat(cost)) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </span>
+                      </div>
                     )}
-                  </label>
-                  <div className="w-full join">
-                    <span className="btn btn-disabled btn-outline join-item">$</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder={
-                        settings.autoCalculatePrice && useAutoCalculation
-                          ? 'Se calculará automáticamente'
-                          : '0.00'
-                      }
-                      value={salePrice}
-                      onChange={(e) => {
-                        const newSalePrice = e.target.value
-                        const regex = /^[0-9]*(\.[0-9]{0,2})?$/
-                        if (regex.test(newSalePrice)) {
-                          setSalePrice(newSalePrice)
-                        }
-                      }}
-                      className={`input-bordered input flex-1 join-item focus:border-accent ${
-                        errors.salePrice ? 'input-error' : ''
-                      } ${
-                        settings.autoCalculatePrice && useAutoCalculation && cost
-                          ? 'bg-success/10 border-success/30'
-                          : ''
-                      }`}
-                      disabled={
-                        settings.autoCalculatePrice &&
-                        useAutoCalculation &&
-                        cost &&
-                        parseFloat(cost) > 0
-                      }
-                      required
-                    />
                   </div>
-                  {errors.salePrice && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">{errors.salePrice}</span>
-                    </div>
-                  )}
-                  {settings.autoCalculatePrice && useAutoCalculation && (
-                    <div className="label">
-                      <span className="label-text-alt text-xs text-info">
-                        💡{' '}
-                        {settings.markupType === 'percentage'
-                          ? `Ganancia: ${settings.priceMarkupPercentage}%`
-                          : `Ganancia fija: $${settings.priceMarkupPercentage}`}
-                      </span>
-                    </div>
-                  )}
-
-                  {cost && salePrice && (
-                    <div className="label">
-                      <span className="label-text-alt text-info">
-                        Margen:{' '}
-                        {(
-                          ((parseFloat(salePrice) - parseFloat(cost)) / parseFloat(cost)) *
-                          100
-                        ).toFixed(1)}
-                        %
-                      </span>
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              {/* Información adicional */}
-              <div className="mt-4 rounded-lg bg-base-200 p-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Impuestos aplicables:</span>
-                  <span className="font-semibold">$0.00</span>
+                {/* Información adicional */}
+                <div className="mt-4 rounded-lg bg-base-200 p-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Impuestos aplicables:</span>
+                    <span className="font-semibold">$0.00</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Sección: Talles, Colores y Cantidades */}
-          <div className="card border border-base-300 bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="bg-success/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <span className="font-bold text-success">4</span>
-                </div>
-                Talles, Colores y Cantidades
-              </h2>
+            {/* Sección: Talles, Colores y Cantidades */}
+            <div className="card border border-base-300 bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                  <div className="bg-success/10 flex h-8 w-8 items-center justify-center rounded-lg">
+                    <span className="font-bold text-success">4</span>
+                  </div>
+                  Talles, Colores y Cantidades
+                </h2>
 
-              {/* Mensajes de error */}
-              {errors.talles && (
-                <div className="alert alert-error mb-4">
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                  <span>{errors.talles}</span>
-                </div>
-              )}
+                {/* Mensajes de error */}
+                {errors.talles && (
+                  <div className="alert alert-error mb-4">
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
+                      />
+                    </svg>
+                    <span>{errors.talles}</span>
+                  </div>
+                )}
 
-              {errors.cantidad && (
-                <div className="alert alert-error mb-4">
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                  <span>{errors.cantidad}</span>
-                </div>
-              )}
+                {errors.cantidad && (
+                  <div className="alert alert-error mb-4">
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
+                      />
+                    </svg>
+                    <span>{errors.cantidad}</span>
+                  </div>
+                )}
 
-              <div className="space-y-6">
-                {talles.map((talle, talleIndex) => (
-                  <div
-                    key={talleIndex}
-                    className="card border border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md"
-                  >
-                    <div className="card-body">
-                      {/* Header del talle */}
-                      <div className="mb-4 flex items-center justify-between">
-                        <h3 className="flex items-center gap-2 text-lg font-semibold">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
-                            <span className="text-xs font-bold text-primary">{talleIndex + 1}</span>
+                <div className="space-y-6">
+                  {talles.map((talle, talleIndex) => (
+                    <div
+                      key={talleIndex}
+                      className="card border border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md"
+                    >
+                      <div className="card-body">
+                        {/* Header del talle */}
+                        <div className="mb-4 flex items-center justify-between">
+                          <h3 className="flex items-center gap-2 text-lg font-semibold">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                              <span className="text-xs font-bold text-primary">
+                                {talleIndex + 1}
+                              </span>
+                            </div>
+                            Talle {talleIndex + 1}
+                          </h3>
+                          {talles.length > 1 && (
+                            <div className="tooltip" data-tip="Eliminar este talle">
+                              <button
+                                type="button"
+                                className="btn btn-error"
+                                onClick={() => handleDeleteTalle(talleIndex)}
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Selección de talle */}
+                        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                          <div>
+                            <label className="label">
+                              <span className="label-text font-semibold">Seleccionar talle</span>
+                              <span className="label-text-alt text-error">*</span>
+                            </label>
+                            <div className="flex gap-2">
+                              <select
+                                value={talle.talle}
+                                onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
+                                className="select-bordered select flex-1 focus:border-primary"
+                                required
+                              >
+                                <option value="" disabled>
+                                  Seleccione un talle
+                                </option>
+                                {getTallesDisponibles(talleIndex).map((talleBDItem) => (
+                                  <option key={talleBDItem.id} value={talleBDItem.size_name}>
+                                    {talleBDItem.size_name}
+                                  </option>
+                                ))}
+                              </select>
+                              <ModalSize onRefresh={refreshData} />
+                            </div>
                           </div>
-                          Talle {talleIndex + 1}
-                        </h3>
-                        {talles.length > 1 && (
-                          <div className="tooltip" data-tip="Eliminar este talle">
+                        </div>
+
+                        {/* Sección de colores */}
+                        <div>
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">Colores y cantidades</span>
+                              <ModalColor onRefresh={refreshData} />
+                            </div>
                             <button
                               type="button"
-                              className="btn btn-error"
-                              onClick={() => handleDeleteTalle(talleIndex)}
+                              onClick={() => agregarColor(talleIndex)}
+                              className="btn btn-secondary"
+                              disabled={!talle.talle}
                             >
-                              <Trash2 className="h-5 w-5" />
+                              + Agregar color
                             </button>
                           </div>
-                        )}
-                      </div>
 
-                      {/* Selección de talle */}
-                      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <div>
-                          <label className="label">
-                            <span className="label-text font-semibold">Seleccionar talle</span>
-                            <span className="label-text-alt text-error">*</span>
-                          </label>
-                          <div className="flex gap-2">
-                            <select
-                              value={talle.talle}
-                              onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
-                              className="select-bordered select flex-1 focus:border-primary"
-                              required
-                            >
-                              <option value="" disabled>
-                                Seleccione un talle
-                              </option>
-                              {getTallesDisponibles(talleIndex).map((talleBDItem) => (
-                                <option key={talleBDItem.id} value={talleBDItem.size_name}>
-                                  {talleBDItem.size_name}
-                                </option>
-                              ))}
-                            </select>
-                            <ModalSize onRefresh={refreshData} />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Sección de colores */}
-                      <div>
-                        <div className="mb-4 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">Colores y cantidades</span>
-                            <ModalColor onRefresh={refreshData} />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => agregarColor(talleIndex)}
-                            className="btn btn-secondary"
-                            disabled={!talle.talle}
-                          >
-                            + Agregar color
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {talle.colores.map((color, colorIndex) => (
-                            <div
-                              key={colorIndex}
-                              className="flex items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3"
-                            >
-                              <div className="flex-1">
-                                <ColorSelect
-                                  colors={
-                                    coloresDisponiblesPorTalle[talle.talle] !== undefined
-                                      ? colors.filter((colorItem) =>
-                                          coloresDisponiblesPorTalle[talle.talle]?.includes(
-                                            colorItem.color_name
+                          <div className="space-y-3">
+                            {talle.colores.map((color, colorIndex) => (
+                              <div
+                                key={colorIndex}
+                                className="flex items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3"
+                              >
+                                <div className="flex-1">
+                                  <ColorSelect
+                                    colors={
+                                      coloresDisponiblesPorTalle[talle.talle] !== undefined
+                                        ? colors.filter((colorItem) =>
+                                            coloresDisponiblesPorTalle[talle.talle]?.includes(
+                                              colorItem.color_name
+                                            )
                                           )
-                                        )
-                                      : []
-                                  }
-                                  value={color.color || ''}
-                                  onChange={(selectedColorName) => {
-                                    console.log('🎨 Color seleccionado:', selectedColorName)
-                                    console.log('🎨 Color actual en state:', color.color)
-                                    handleColorSelect(
-                                      talleIndex,
-                                      colorIndex,
-                                      'color',
-                                      selectedColorName
-                                    )
-                                  }}
-                                  className="w-full"
-                                  placeholder={
-                                    coloresDisponiblesPorTalle[talle.talle] !== undefined
-                                      ? 'Seleccione un color'
-                                      : 'Seleccione un talle primero'
-                                  }
-                                  disabled={coloresDisponiblesPorTalle[talle.talle] === undefined}
-                                  required
-                                />
-                              </div>
-                              <div className="w-24">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  placeholder="Cant"
-                                  value={color.cantidad}
-                                  onChange={(e) => {
-                                    const newQuantity = e.target.value
-                                    const regex = /^[0-9]*$/
-                                    if (regex.test(newQuantity)) {
-                                      handleColorChange(
+                                        : []
+                                    }
+                                    value={color.color || ''}
+                                    onChange={(selectedColorName) => {
+                                      console.log('🎨 Color seleccionado:', selectedColorName)
+                                      console.log('🎨 Color actual en state:', color.color)
+                                      handleColorSelect(
                                         talleIndex,
                                         colorIndex,
-                                        'cantidad',
-                                        parseInt(newQuantity, 10) || 0
+                                        'color',
+                                        selectedColorName
                                       )
+                                    }}
+                                    className="w-full"
+                                    placeholder={
+                                      coloresDisponiblesPorTalle[talle.talle] !== undefined
+                                        ? 'Seleccione un color'
+                                        : 'Seleccione un talle primero'
                                     }
-                                  }}
-                                  className="input-bordered input input-sm w-full text-center"
-                                  required
-                                />
-                              </div>
-                              {talle.colores.length > 1 && (
-                                <div className="tooltip" data-tip="Eliminar color">
-                                  <button
-                                    type="button"
-                                    className="btn btn-error"
-                                    onClick={() => handleDeleteColor(talleIndex, colorIndex)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
+                                    disabled={coloresDisponiblesPorTalle[talle.talle] === undefined}
+                                    required
+                                  />
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                <div className="w-24">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="Cant"
+                                    value={color.cantidad}
+                                    onChange={(e) => {
+                                      const newQuantity = e.target.value
+                                      const regex = /^[0-9]*$/
+                                      if (regex.test(newQuantity)) {
+                                        handleColorChange(
+                                          talleIndex,
+                                          colorIndex,
+                                          'cantidad',
+                                          parseInt(newQuantity, 10) || 0
+                                        )
+                                      }
+                                    }}
+                                    className="input-bordered input input-sm w-full text-center"
+                                    required
+                                  />
+                                </div>
+                                {talle.colores.length > 1 && (
+                                  <div className="tooltip" data-tip="Eliminar color">
+                                    <button
+                                      type="button"
+                                      className="btn btn-error"
+                                      onClick={() => handleDeleteColor(talleIndex, colorIndex)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Botón para agregar talle */}
-              <div className="mt-6 flex justify-center">
-                <button
-                  type="button"
-                  onClick={agregarTalle}
-                  className="btn btn-primary btn-outline gap-2"
-                  disabled={loadingData || tallesBD.length === 0}
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                  </svg>
-                  Agregar Nuevo Talle
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Sección: Observaciones */}
-          <div className="card border border-base-300 bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                <div className="bg-info/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <span className="font-bold text-info">5</span>
+                  ))}
                 </div>
-                Observaciones Adicionales
-              </h2>
 
-              <div>
-                <label className="label">
-                  <span className="label-text font-semibold">Comentarios o notas</span>
-                  <span className="label-text-alt text-base-content/60">(Opcional)</span>
-                </label>
-                <textarea
-                  name="comments"
-                  placeholder="Ingrese observaciones, notas especiales, o cualquier información adicional sobre el producto..."
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  className="textarea-bordered textarea h-24 w-full resize-none focus:border-info"
-                  rows="3"
-                ></textarea>
+                {/* Botón para agregar talle */}
+                <div className="mt-6 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={agregarTalle}
+                    className="btn btn-primary btn-outline gap-2"
+                    disabled={loadingData || tallesBD.length === 0}
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    Agregar Nuevo Talle
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
+            {/* Sección: Observaciones */}
+            <div className="card border border-base-300 bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                  <div className="bg-info/10 flex h-8 w-8 items-center justify-center rounded-lg">
+                    <span className="font-bold text-info">5</span>
+                  </div>
+                  Observaciones Adicionales
+                </h2>
+
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">Comentarios o notas</span>
+                    <span className="label-text-alt text-base-content/60">(Opcional)</span>
+                  </label>
+                  <textarea
+                    name="comments"
+                    placeholder="Ingrese observaciones, notas especiales, o cualquier información adicional sobre el producto..."
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                    className="textarea-bordered textarea h-24 w-full resize-none focus:border-info"
+                    rows="3"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </section>
           {/* Sección: Resumen y Acciones */}
           <div className="card border border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 shadow-xl">
             <div className="card-body">
