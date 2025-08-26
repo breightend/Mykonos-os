@@ -60,7 +60,6 @@ export default function NuevoProducto() {
   const [productName, setProductName] = useState('')
   const [tipo, setTipo] = useState('')
   const [marca, setMarca] = useState('')
-  const [selectedProvider, setSelectedProvider] = useState('')
   const [cost, setCost] = useState('')
   const [salePrice, setSalePrice] = useState('')
   const [comments, setComments] = useState('')
@@ -163,15 +162,15 @@ export default function NuevoProducto() {
 
   useEffect(() => {
     const fetchBrandsForProvider = async () => {
-      if (selectedProvider) {
+      if (providerId) {
         try {
-          const brandsByProviderResponse = await fetchBrandByProviders(selectedProvider)
+          const brandsByProviderResponse = await fetchBrandByProviders(providerId)
           setBrandByProvider(brandsByProviderResponse)
 
           if (brandsByProviderResponse.length === 1) {
             setMarca(brandsByProviderResponse[0].brand_name)
           } else {
-            setMarca('')
+            setMarca('')  
           }
         } catch (error) {
           console.error('Error fetching brands for provider: ', error)
@@ -184,7 +183,7 @@ export default function NuevoProducto() {
       }
     }
     fetchBrandsForProvider()
-  }, [selectedProvider])
+  }, [providerId])
 
   const handleGroupSelect = (group) => {
     setTipo(group.id.toString())
@@ -484,7 +483,7 @@ export default function NuevoProducto() {
       provider_code: providerCode,
       product_name: productName,
       group_id: parseInt(tipo),
-      provider_id: parseInt(selectedProvider),
+      provider_id: providerId,
       description: '',
       cost: cost && !isNaN(parseFloat(cost)) ? parseFloat(cost) : null,
       sale_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null,
@@ -529,7 +528,6 @@ export default function NuevoProducto() {
 
     if (!productName.trim()) newErrors.productName = 'El nombre del producto es requerido'
     if (!tipo) newErrors.tipo = 'El grupo de producto es requerido'
-    if (!selectedProvider) newErrors.provider = 'El proveedor es requerido'
     if (!marca) newErrors.marca = 'La marca es requerida'
     if (!cost || isNaN(parseFloat(cost)) || parseFloat(cost) <= 0)
       newErrors.cost = 'El costo debe ser mayor a 0'
@@ -968,14 +966,11 @@ export default function NuevoProducto() {
                           onChange={(e) => setMarca(e.target.value)}
                           className={`select-bordered select w-full focus:border-secondary ${
                             errors.marca ? 'select-error' : ''
-                          } ${!selectedProvider ? 'select-disabled' : ''}`}
+                          }`}
                           required
-                          disabled={!selectedProvider}
                         >
                           <option value="" disabled>
-                            {!selectedProvider
-                              ? 'Seleccione un proveedor primero'
-                              : 'Seleccione una marca'}
+                            Seleccione una marca
                           </option>
                           {brandByProvider.map((marcaItem) => (
                             <option key={marcaItem.id} value={marcaItem.brand_name}>
@@ -988,7 +983,7 @@ export default function NuevoProducto() {
                             <span className="label-text-alt text-error">{errors.marca}</span>
                           </div>
                         )}
-                        {brandByProvider.length === 1 && selectedProvider && (
+                        {brandByProvider.length === 1 && (
                           <div className="label">
                             <span className="label-text-alt text-success">
                               ✓ Marca seleccionada automáticamente
@@ -1464,6 +1459,7 @@ export default function NuevoProducto() {
                 </div>
               </>
             )}
+            <button className="btn btn-primary mt-4">Agregar Producto</button>
           </section>
           {/* Sección: Resumen y Acciones */}
           <div className="card border border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 shadow-xl">
@@ -1479,14 +1475,14 @@ export default function NuevoProducto() {
                       <div className="stat-desc">unidades</div>
                     </div>
                     <div className="stat">
-                      <div className="stat-title">Talles</div>
+                      <div className="stat-title">Variedades</div>
                       <div className="stat-value text-secondary">
                         {talles.filter((t) => t.talle).length}
                       </div>
                       <div className="stat-desc">diferentes</div>
                     </div>
                     <div className="stat">
-                      <div className="stat-title">Colores</div>
+                      <div className="stat-title">Total</div>
                       <div className="stat-value text-accent">
                         {
                           [
