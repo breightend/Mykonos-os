@@ -1,15 +1,7 @@
 import { useLocation, useSearchParams } from 'wouter'
 import { useState, useEffect } from 'react'
 import { useProductContext } from '../../contexts/ProductContext'
-import {
-  ArrowLeft,
-  LoaderCircle,
-  Save,
-  Trash2,
-  Menu,
-  Lock,
-  Unlock
-} from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Save, Trash2, Menu, Lock, Unlock } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from '../../contexts/SessionContext'
 import { useSettings } from '../../contexts/settingsContext'
@@ -85,7 +77,6 @@ export default function NuevoProducto() {
   const [showGroupTreeModal, setShowGroupTreeModal] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // Función para refrescar los datos después de crear nuevos talles/colores
   const refreshData = () => {
     setRefreshTrigger((prev) => prev + 1)
   }
@@ -94,13 +85,11 @@ export default function NuevoProducto() {
     const fetchData = async () => {
       try {
         // Hacer todas las llamadas en paralelo para mejor performance y robustez
-        const [sizesResponse, colorsResponse, providerResponse, grupoTreeData] =
-          await Promise.allSettled([
-            fetchSize(),
-            fetchColor(),
-            fetchProvider(),
-            fetchFamilyProductsTree()
-          ])
+        const [sizesResponse, colorsResponse, grupoTreeData] = await Promise.allSettled([
+          fetchSize(),
+          fetchColor(),
+          fetchFamilyProductsTree()
+        ])
 
         // Procesar sizes
         if (sizesResponse.status === 'fulfilled' && sizesResponse.value) {
@@ -120,16 +109,6 @@ export default function NuevoProducto() {
           setColors([])
         }
 
-        // Procesar providers
-        if (providerResponse.status === 'fulfilled' && providerResponse.value) {
-          setProvider(providerResponse.value)
-          console.log('✅ Proveedores cargados exitosamente:', providerResponse.value.length)
-        } else {
-          console.warn('⚠️ Error al cargar proveedores:', providerResponse.reason)
-          setProvider([])
-        }
-
-        // Procesar grupos (INDEPENDIENTE de talles y colores)
         if (grupoTreeData.status === 'fulfilled' && grupoTreeData.value) {
           setGrupoTree(grupoTreeData.value)
           console.log('✅ Grupos de productos cargados exitosamente:', grupoTreeData.value.length)
@@ -138,7 +117,6 @@ export default function NuevoProducto() {
           setGrupoTree([])
         }
 
-        // Configurar colores disponibles por talle SOLO si ambos están disponibles
         if (
           sizesResponse.status === 'fulfilled' &&
           sizesResponse.value &&
@@ -197,10 +175,6 @@ export default function NuevoProducto() {
     }
     fetchBrandsForProvider()
   }, [selectedProvider])
-
-  const handleProviderChange = (e) => {
-    setSelectedProvider(e.target.value)
-  }
 
   const handleGroupSelect = (group) => {
     setTipo(group.id.toString())
@@ -480,7 +454,7 @@ export default function NuevoProducto() {
     let imageToSend = null
     if (productImage) {
       if (productImage.startsWith('data:')) {
-        imageToSend = productImage.split(',')[1] 
+        imageToSend = productImage.split(',')[1]
         console.log('🖼️ Preparando imagen para envío:')
         console.log('  - Imagen original:', productImage.substring(0, 100) + '...')
         console.log('  - Tipo MIME detectado:', productImage.split(',')[0])
@@ -570,8 +544,6 @@ export default function NuevoProducto() {
     return Object.keys(newErrors).length === 0
   }
 
-  
-
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
 
@@ -654,7 +626,7 @@ export default function NuevoProducto() {
               </div>
               <div>
                 <h1 className="bg-gradient-to-r from-primary to-accent bg-clip-text text-3xl font-bold text-transparent">
-                  Agregar Artículo
+                  Agregar Artículo del proveedor:
                 </h1>
                 <p className="text-base-content/70 text-sm">
                   Complete los datos del nuevo producto. Los códigos de barras se generarán
@@ -835,36 +807,6 @@ export default function NuevoProducto() {
                 )}
               </div>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* Proveedor */}
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Proveedor</span>
-                    <span className="label-text-alt text-error">*</span>
-                  </label>
-                  <select
-                    value={selectedProvider}
-                    onChange={handleProviderChange}
-                    className={`select-bordered select w-full focus:border-secondary ${
-                      errors.provider ? 'select-error' : ''
-                    }`}
-                    required
-                  >
-                    <option value="" disabled>
-                      Seleccione un proveedor
-                    </option>
-                    {provider.map((proveedorItem) => (
-                      <option key={proveedorItem.id} value={proveedorItem.id}>
-                        {proveedorItem.entity_name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.provider && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">{errors.provider}</span>
-                    </div>
-                  )}
-                </div>
-
                 {/* Marca */}
                 <div>
                   <label className="label">
@@ -1285,7 +1227,7 @@ export default function NuevoProducto() {
                                 <div className="tooltip" data-tip="Eliminar color">
                                   <button
                                     type="button"
-                                    className="btn btn-error "
+                                    className="btn btn-error"
                                     onClick={() => handleDeleteColor(talleIndex, colorIndex)}
                                   >
                                     <Trash2 className="h-4 w-4" />
