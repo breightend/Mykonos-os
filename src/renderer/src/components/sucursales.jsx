@@ -187,16 +187,6 @@ function Sucursales() {
           <li>
             <button
               className="tooltip tooltip-bottom btn btn-ghost"
-              data-tip="Información de la sucursal"
-              onClick={() => setLocation(`/infoSucursal?id=${sucursalSeleccionada?.id}`)}
-              disabled={!sucursalSeleccionada}
-            >
-              <Info className="h-5 w-5" />
-            </button>
-          </li>
-          <li>
-            <button
-              className="tooltip tooltip-bottom btn btn-ghost"
               data-tip="Crear nueva sucursal"
               onClick={() => setShowCreateModal(true)}
             >
