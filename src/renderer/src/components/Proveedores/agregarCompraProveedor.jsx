@@ -52,7 +52,7 @@ export default function AgregarCompraProveedor({ provider }) {
       const methods = await paymentMethodsService.getAllPaymentMethods()
       setPaymentMethods(methods.payment_methods)
       const bancosData = await getBancos()
-      setBanks(bancosData)
+      setBanks(bancosData.banks)
     }
     loadPaymentMethods()
     loadProducts()
@@ -256,6 +256,17 @@ export default function AgregarCompraProveedor({ provider }) {
     }
   }
 
+  const handlePaymentInputChange = (e) => {
+    const { name, value } = e.target
+    setPaymentData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleAddProductWindow = () => {
+    setLocation(`/agregarProductoCompraProveedor?id=${providerId}`)
+  }
+
+
+
   return (
     <div className="container mx-auto max-w-4xl p-4">
       <div className="mb-8 rounded-xl bg-white p-6 shadow-lg">
@@ -287,6 +298,27 @@ export default function AgregarCompraProveedor({ provider }) {
                     paymentMethods.map((method) => (
                       <option key={method.id} value={method.id}>
                         {method.display_name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="" className='label'>
+                  <span className='label-text font-medium text-gray-600'>Banco</span>
+                </label>
+                <select
+                  name="bank_id"
+                  value={paymentData.bank_id}
+                  onChange={handlePaymentInputChange}
+                  className="select-bordered select w-full"
+                  required
+                >
+                  <option value="">Seleccionar banco...</option>
+                  {banks &&
+                    banks.map((bank) => (
+                      <option key={bank.id} value={bank.id}>
+                        {bank.name}
                       </option>
                     ))}
                 </select>
@@ -348,7 +380,7 @@ export default function AgregarCompraProveedor({ provider }) {
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
-                onClick={() => setShowProductModal(true)}
+                onClick={handleAddProductWindow}
               >
                 <Plus className="h-4 w-4" />
                 Agregar Producto

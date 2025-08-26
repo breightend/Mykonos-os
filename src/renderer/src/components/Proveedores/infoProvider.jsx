@@ -720,7 +720,7 @@ export default function InfoProvider() {
                 <div className="mb-4 flex flex-wrap justify-end gap-2">
                   <button
                     className="btn btn-accent gap-2 shadow-md transition-all hover:shadow-lg"
-                    onClick={() => setLocation('agregandoCompraProveedor')}
+                    onClick={() => setLocation(`/agregandoCompraProveedor?id=${providerId}`)}
                   >
                     <ShoppingBasket className="h-4 w-4" />
                     Agregar compra

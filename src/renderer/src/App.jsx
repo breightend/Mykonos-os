@@ -32,6 +32,7 @@ import ResumenProveedores from './components/stadistics/resumenProveedores'
 import EditarProducto from './components/Inventory/editarProducto'
 import GestionFormaDePago from './componentes especificos/GestionFormaDePago'
 import AgregarCompraProveedor from './components/Proveedores/agregarCompraProveedor'
+import AgregarProductoCompraProveedor from './components/Proveedores/agregarProductoCompraProveedor'
 
 function App() {
   return (
@@ -186,6 +187,11 @@ function App() {
         <Route path="/agregandoCompraProveedor">
           <ProtectedRoute>
             <AgregarCompraProveedor />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/agregarProductoCompraProveedor">
+          <ProtectedRoute>
+            <AgregarProductoCompraProveedor />
           </ProtectedRoute>
         </Route>
       </Switch>
