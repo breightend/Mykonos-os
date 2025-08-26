@@ -170,7 +170,7 @@ export default function NuevoProducto() {
           if (brandsByProviderResponse.length === 1) {
             setMarca(brandsByProviderResponse[0].brand_name)
           } else {
-            setMarca('')  
+            setMarca('')
           }
         } catch (error) {
           console.error('Error fetching brands for provider: ', error)
@@ -606,6 +606,10 @@ export default function NuevoProducto() {
   const handleToggleDropdown = () => {
     setDropdownOpen(!dropdownOpen)
   }
+  const [lockGroup, setLockGroup] = useState(false)
+  const handleLockGroup = () => {
+    setLockGroup(!lockGroup)
+  }
 
   if (loadingData) {
     return (
@@ -928,6 +932,21 @@ export default function NuevoProducto() {
                       <label className="label">
                         <span className="label-text font-semibold">Grupo de Producto</span>
                         <span className="label-text-alt text-error">*</span>
+                        <span>
+                          {lockGroup ? (
+                            <Lock
+                              onClick={handleLockGroup}
+                              className="tooltip ml-2 inline-block h-4 w-4 text-error hover:scale-150 hover:cursor-pointer"
+                              data-tip="Seguir con el grupo"
+                            />
+                          ) : (
+                            <Unlock
+                              onClick={handleLockGroup}
+                              className="tooltip ml-2 inline-block h-4 w-4 text-success hover:scale-150 hover:cursor-pointer"
+                              data-tip="No guardar grupo"
+                            />
+                          )}
+                        </span>
                       </label>
                       <div className="flex gap-2">
                         <GroupTreeSelector
