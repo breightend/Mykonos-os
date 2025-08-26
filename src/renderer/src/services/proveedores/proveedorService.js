@@ -1,6 +1,5 @@
 import axios from "axios";
 
-//Anda
 export async function fetchProvider() {
     try {
         const response = await axios.get("http://localhost:5000/api/provider/");
@@ -10,7 +9,7 @@ export async function fetchProvider() {
         throw error;
     }
 }
-//Anda
+
 export async function fetchProviderById(id) {
     try {
         const response = await axios.get(`http://localhost:5000/api/provider/${id}`,);

@@ -1,6 +1,15 @@
 import { useLocation, useSearchParams } from 'wouter'
 import { useState, useEffect } from 'react'
-import { ArrowLeft, LoaderCircle, Save, Trash2, PackagePlus, Menu } from 'lucide-react'
+import { useProductContext } from '../../contexts/ProductContext'
+import {
+  ArrowLeft,
+  LoaderCircle,
+  Save,
+  Trash2,
+  Menu,
+  Lock,
+  Unlock
+} from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from '../../contexts/SessionContext'
 import { useSettings } from '../../contexts/settingsContext'
@@ -9,7 +18,7 @@ import ModalColor from '../../modals/modalsProduct/modalColor'
 import BarcodeService from '../../services/barcodeService'
 import { fetchSize } from '../../services/products/sizeService'
 import { fetchColor } from '../../services/products/colorService'
-import { fetchProvider } from '../../services/proveedores/proveedorService'
+import { fetchProviderById } from '../../services/proveedores/proveedorService'
 import { fetchBrandByProviders } from '../../services/proveedores/brandService'
 import postData from '../../services/products/productService'
 import { fetchFamilyProductsTree } from '../../services/products/familyService'
@@ -18,20 +27,32 @@ import GroupTreePreviewModal from '../../components/GroupTreePreviewModal'
 import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 
-export default function AgregarProductoCompraProveedor() {
-  const [searchParams] = useSearchParams()
-  const providerId = searchParams.get('id')
-
-  const handleButtonVolver = () => {
-    setLocation(`/agregandoCompraProveedor?id=${providerId}`)
-  }
-
+//BUG: El color ahora tiene bug.
+export default function NuevoProducto() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual
   const { getCurrentStorage, getCurrentUser } = useSession()
   const { calculateSalePrice, settings } = useSettings()
   const currentStorage = getCurrentStorage()
   const currentUser = getCurrentUser()
+  const searchParams = useSearchParams()
+  const providerId = searchParams.get('id')
+
+  useEffect(() => {
+    if (providerId) {
+      const loadDataProvider = async () => {
+        try {
+          const providerData = await fetchProviderById(providerId)
+          setProvider(providerData)
+        } catch (error) {
+          console.error('Error al cargar los datos del proveedor:', error)
+        }
+      }
+      loadDataProvider()
+    }
+  }, [providerId])
+
+  //Estados para la marcha
 
   // Estados para el formulario
   const [productName, setProductName] = useState('')
@@ -459,7 +480,7 @@ export default function AgregarProductoCompraProveedor() {
     let imageToSend = null
     if (productImage) {
       if (productImage.startsWith('data:')) {
-        imageToSend = productImage.split(',')[1]
+        imageToSend = productImage.split(',')[1] 
         console.log('🖼️ Preparando imagen para envío:')
         console.log('  - Imagen original:', productImage.substring(0, 100) + '...')
         console.log('  - Tipo MIME detectado:', productImage.split(',')[0])
@@ -549,27 +570,7 @@ export default function AgregarProductoCompraProveedor() {
     return Object.keys(newErrors).length === 0
   }
 
-  const clearForm = () => {
-    setProductName('')
-    setTipo('')
-    setCost('')
-    setSalePrice('')
-    setComments('')
-    setProviderCode('')
-    setProductImage('')
-    setUseAutoCalculation(settings.autoCalculatePrice)
-    setTalles([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
-    setCantidadTotal(0)
-    setErrors({})
-
-    if (colors.length > 0 && tallesBD.length > 0) {
-      const coloresDisponibles = {}
-      tallesBD.forEach((talle) => {
-        coloresDisponibles[talle.size_name] = colors.map((color) => color.color_name)
-      })
-      setColoresDisponiblesPorTalle(coloresDisponibles)
-    }
-  }
+  
 
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
@@ -621,59 +622,6 @@ export default function AgregarProductoCompraProveedor() {
     }
   }
 
-  const handleSubmitAgregarPrenda = async (e) => {
-    e.preventDefault()
-
-    if (!validateForm()) return
-
-    setIsSubmitting(true)
-    try {
-      const productData = prepareProductData()
-      const response = await postData(productData)
-
-      console.log('Producto agregado exitosamente:', response)
-
-      if (response.product_id && productData.stock_variants.length > 0) {
-        try {
-          const barcodeService = new BarcodeService()
-          console.log('🏷️ Generando códigos de barras para variantes...')
-
-          const variants = productData.stock_variants.map((variant) => ({
-            size_id: variant.size_id,
-            color_id: variant.color_id,
-            quantity: variant.quantity
-          }))
-
-          const barcodeResult = await barcodeService.generateVariantBarcodes(
-            response.product_id,
-            variants
-          )
-          console.log('✅ Códigos de barras generados:', barcodeResult)
-        } catch (barcodeError) {
-          console.error('⚠️ Error generando códigos de barras:', barcodeError)
-        }
-      }
-
-      if (productImage && response.image_id) {
-        console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
-      }
-
-      clearForm()
-
-      const successMessage = productImage
-        ? 'Producto e imagen agregados exitosamente. Puede agregar otro.'
-        : 'Producto agregado exitosamente. Puede agregar otro.'
-
-      setErrors({ success: successMessage })
-      setTimeout(() => setErrors({}), 3000)
-    } catch (error) {
-      console.error('Error al agregar el producto:', error)
-      setErrors({ submit: 'Error al agregar el producto. Intente nuevamente.' })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   if (loadingData) {
     return (
       <>
@@ -688,6 +636,7 @@ export default function AgregarProductoCompraProveedor() {
       </>
     )
   }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
       {/* Header con gradiente y sombra */}
@@ -696,7 +645,10 @@ export default function AgregarProductoCompraProveedor() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="tooltip tooltip-bottom" data-tip="Volver al inventario">
-                <button className="btn btn-outline hover:scale-110" onClick={handleButtonVolver}>
+                <button
+                  className="btn btn-outline hover:scale-110"
+                  onClick={() => setLocation('/inventario')}
+                >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
               </div>
@@ -1333,7 +1285,7 @@ export default function AgregarProductoCompraProveedor() {
                                 <div className="tooltip" data-tip="Eliminar color">
                                   <button
                                     type="button"
-                                    className="btn btn-error"
+                                    className="btn btn-error "
                                     onClick={() => handleDeleteColor(talleIndex, colorIndex)}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -1488,20 +1440,6 @@ export default function AgregarProductoCompraProveedor() {
                         <Save className="h-5 w-5" />
                       )}
                       {isSubmitting ? 'Guardando...' : 'Guardar y Finalizar'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleSubmitAgregarPrenda}
-                      className="btn btn-primary flex-1 gap-2"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <LoaderCircle className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <PackagePlus className="h-5 w-5" />
-                      )}
-                      {isSubmitting ? 'Agregando...' : 'Agregar Otra Prenda'}
                     </button>
                   </div>
                 </div>

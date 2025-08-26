@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, Package, ShoppingCart, X } from 'lucide-react'
-import { fetchProductos } from '../../services/products/productService'
-import { createPurchase, addProductToPurchase } from '../../services/proveedores/purchaseService'
-import toast from 'react-hot-toast'
-import { getBancos } from '../../services/paymentsServices/banksService'
-import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService'
-import { useLocation, useSearchParams } from 'wouter'
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Package, ShoppingCart, FileUp, FileCheck2, CreditCard } from 'lucide-react';
+import { fetchProductos } from '../../services/products/productService';
+import { createPurchase } from '../../services/proveedores/purchaseService';
+import toast from 'react-hot-toast';
+import { getBancos } from '../../services/paymentsServices/banksService';
+import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService';
+import { useLocation, useSearchParams } from 'wouter';
 
 export default function AgregarCompraProveedor({ provider }) {
-  const [loading, setLoading] = useState(false)
-  const [products, setProducts] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [, setLocation] = useLocation()
-  const [searchParams] = useSearchParams()
-  const providerId = searchParams.get('id')
+  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [, setLocation] = useLocation();
+  const [searchParams] = useSearchParams();
+  const providerId = searchParams.get('id');
+
   const [purchaseData, setPurchaseData] = useState({
     subtotal: 0,
     discount: 0,
@@ -21,204 +22,86 @@ export default function AgregarCompraProveedor({ provider }) {
     payment_method: '',
     transaction_number: '',
     invoice_number: '',
-    notes: ''
-  })
+    notes: '',
+  });
+
   const [paymentData, setPaymentData] = useState({
-    payment_method_id: '',
     bank_id: '',
-    amount: 0
-  })
+  });
 
-  const handleCerrar = () => {
-    setLocation(`/infoProvider?id=${providerId}`)
-  }
-
-  const [purchaseProducts, setPurchaseProducts] = useState([])
-
-  const [showProductModal, setShowProductModal] = useState(false)
-  const [editingProduct, setEditingProduct] = useState(null)
+  const [purchaseProducts, setPurchaseProducts] = useState([]);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [productFormData, setProductFormData] = useState({
     product_id: '',
     cost_price: '',
     quantity: 1,
-    discount: 0
-  })
-  const [banks, setBanks] = useState([])
-  const [paymentMethods, setPaymentMethods] = useState([])
+    discount: 0,
+  });
 
-  // Cargar productos al montar el componente
+  const [banks, setBanks] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [invoiceFile, setInvoiceFile] = useState(null);
+
+  // Load necessary data on component mount
   useEffect(() => {
-    const loadPaymentMethods = async () => {
-      const methods = await paymentMethodsService.getAllPaymentMethods()
-      setPaymentMethods(methods.payment_methods)
-      const bancosData = await getBancos()
-      setBanks(bancosData.banks)
-    }
-    loadPaymentMethods()
-    loadProducts()
-  }, [])
+    const loadData = async () => {
+      try {
+        const methods = await paymentMethodsService.getAllPaymentMethods();
+        setPaymentMethods(methods.payment_methods || []);
+        const bancosData = await getBancos();
+        setBanks(bancosData.banks || []);
+        const productsData = await fetchProductos();
+        setProducts(Array.isArray(productsData) ? productsData : []);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast.error('Error al cargar datos');
+      }
+    };
+    loadData();
+  }, []);
 
   useEffect(() => {
-    calculateTotals()
-  }, [purchaseProducts])
-
-  const loadProducts = async () => {
-    try {
-      const data = await fetchProductos()
-      setProducts(Array.isArray(data) ? data : [])
-    } catch (error) {
-      console.error('Error loading products:', error)
-      toast.error('Error al cargar productos')
-    }
-  }
-
-  const resetForm = () => {
-    setPurchaseData({
-      subtotal: 0,
-      discount: 0,
-      total: 0,
-      payment_method: '',
-      transaction_number: '',
-      invoice_number: '',
-      notes: ''
-    })
-    setPurchaseProducts([])
-    setProductFormData({
-      product_id: '',
-      cost_price: '',
-      quantity: 1,
-      discount: 0
-    })
-    setEditingProduct(null)
-    setSearchTerm('')
-  }
-
-  const calculateTotals = () => {
-    const subtotal = purchaseProducts.reduce((acc, item) => {
-      const itemSubtotal = item.cost_price * item.quantity - item.discount
-      return acc + itemSubtotal
-    }, 0)
-
-    const total = subtotal - purchaseData.discount
+    const subtotal = purchaseProducts.reduce(
+      (acc, item) => acc + (item.cost_price * item.quantity - item.discount),
+      0,
+    );
+    const total = subtotal - purchaseData.discount;
 
     setPurchaseData((prev) => ({
       ...prev,
       subtotal: subtotal.toFixed(2),
-      total: total.toFixed(2)
-    }))
-  }
+      total: total.toFixed(2),
+    }));
+  }, [purchaseProducts, purchaseData.discount]);
 
   const handlePurchaseInputChange = (e) => {
-    const { name, value } = e.target
-    setPurchaseData((prev) => ({
-      ...prev,
-      [name]: value
-    }))
-  }
+    const { name, value } = e.target;
+    setPurchaseData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const handleProductInputChange = (e) => {
-    const { name, value } = e.target
-    setProductFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }))
-  }
+  const handlePaymentInputChange = (e) => {
+    const { name, value } = e.target;
+    setPaymentData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const getFilteredProducts = () => {
-    if (!searchTerm.trim()) return products
-    return products.filter(
-      (product) =>
-        product.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.provider_code?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }
 
-  const handleAddProduct = () => {
-    if (!productFormData.product_id || !productFormData.cost_price || !productFormData.quantity) {
-      toast.error('Por favor complete todos los campos requeridos')
-      return
-    }
 
-    const selectedProduct = products.find((p) => p.id === parseInt(productFormData.product_id))
-    if (!selectedProduct) {
-      toast.error('Producto no encontrado')
-      return
-    }
-
-    const productToAdd = {
-      id: editingProduct ? editingProduct.id : Date.now(),
-      product_id: parseInt(productFormData.product_id),
-      product_name: selectedProduct.product_name,
-      barcode: selectedProduct.barcode,
-      cost_price: parseFloat(productFormData.cost_price),
-      quantity: parseInt(productFormData.quantity),
-      discount: parseFloat(productFormData.discount) || 0,
-      subtotal:
-        parseFloat(productFormData.cost_price) * parseInt(productFormData.quantity) -
-        (parseFloat(productFormData.discount) || 0)
-    }
-
-    if (editingProduct) {
-      setPurchaseProducts((prev) =>
-        prev.map((item) => (item.id === editingProduct.id ? productToAdd : item))
-      )
-    } else {
-      // Verificar si el producto ya está agregado
-      const existingProduct = purchaseProducts.find(
-        (item) => item.product_id === productToAdd.product_id
-      )
-      if (existingProduct) {
-        toast.error('Este producto ya está agregado a la compra')
-        return
-      }
-      setPurchaseProducts((prev) => [...prev, productToAdd])
-    }
-
-    setShowProductModal(false)
-    setEditingProduct(null)
-    setProductFormData({
-      product_id: '',
-      cost_price: '',
-      quantity: 1,
-      discount: 0
-    })
-    toast.success(editingProduct ? 'Producto actualizado' : 'Producto agregado')
-  }
-
-  const handleEditProduct = (product) => {
-    setEditingProduct(product)
-    setProductFormData({
-      product_id: product.product_id.toString(),
-      cost_price: product.cost_price.toString(),
-      quantity: product.quantity.toString(),
-      discount: product.discount.toString()
-    })
-    setShowProductModal(true)
-  }
-
-  const handleRemoveProduct = (productId) => {
-    setPurchaseProducts((prev) => prev.filter((item) => item.id !== productId))
-    toast.success('Producto eliminado de la compra')
-  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!provider?.id) {
-      toast.error('No se ha seleccionado un proveedor')
-      return
+      toast.error('No se ha seleccionado un proveedor');
+      return;
     }
-
     if (purchaseProducts.length === 0) {
-      toast.error('Debe agregar al menos un producto')
-      return
+      toast.error('Debe agregar al menos un producto');
+      return;
     }
 
     try {
-      setLoading(true)
-
-      // Crear la compra principal
+      setLoading(true);
       const purchasePayload = {
         entity_id: provider.id,
         subtotal: parseFloat(purchaseData.subtotal),
@@ -234,45 +117,77 @@ export default function AgregarCompraProveedor({ provider }) {
           cost_price: product.cost_price,
           quantity: product.quantity,
           discount: product.discount,
-          subtotal: product.subtotal
-        }))
-      }
+          subtotal: product.subtotal,
+        })),
+        invoice_file: invoiceFile,
+      };
 
-      const result = await createPurchase(purchasePayload)
+      const result = await createPurchase(purchasePayload);
 
       if (result.status === 'éxito') {
-        toast.success('Compra creada exitosamente')
-        // Eliminado: cerrar modal, ahora es una pestaña
-        resetForm()
-        // Aquí podrías refrescar la lista de compras del proveedor
+        toast.success('Compra creada exitosamente');
+        // Redirect or reset the form
+        setLocation(`/infoProvider?id=${providerId}`);
+        resetForm();
       } else {
-        toast.error('Error al crear la compra')
+        toast.error('Error al crear la compra');
       }
     } catch (error) {
-      console.error('Error creating purchase:', error)
-      toast.error('Error al crear la compra')
+      console.error('Error creating purchase:', error);
+      toast.error('Error al crear la compra');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handlePaymentInputChange = (e) => {
-    const { name, value } = e.target
-    setPaymentData((prev) => ({ ...prev, [name]: value }))
-  }
+  const resetForm = () => {
+    setPurchaseData({
+      subtotal: 0,
+      discount: 0,
+      total: 0,
+      payment_method: '',
+      transaction_number: '',
+      invoice_number: '',
+      notes: '',
+    });
+    setPurchaseProducts([]);
+    setInvoiceFile(null);
+    setPaymentData({ bank_id: '' });
+  };
 
-  const handleAddProductWindow = () => {
-    setLocation(`/agregarProductoCompraProveedor?id=${providerId}`)
-  }
+  const handleFileChange = (e) => {
+    const uploadedFile = e.target.files[0];
+    if (uploadedFile && uploadedFile.type === 'application/pdf') {
+      setInvoiceFile(uploadedFile);
+    } else {
+      setInvoiceFile(null);
+      alert('Por favor, sube un archivo PDF.');
+    }
+  };
 
+  const handleRemoveFile = () => {
+    setInvoiceFile(null);
+  };
 
+  const isBankFieldVisible = ['2', '3', '4', '5'].includes(purchaseData.payment_method);
+
+  const handleCerrar= () => {
+    setShowProductModal(false);
+    setEditingProduct(null);
+    setProductFormData({
+      product_id: '',
+      cost_price: '',
+      quantity: 1,
+      discount: 0,
+    });
+  };
 
   return (
     <div className="container mx-auto max-w-4xl p-4">
-      <div className="mb-8 rounded-xl bg-white p-6 shadow-lg">
+      <div className="mb-8 rounded-xl bg-white p-6 shadow-2xl">
         <div className="mb-6 flex items-center gap-4 border-b pb-4">
-          <ShoppingCart className="h-8 w-8 text-primary" />
-          <h2 className="text-2xl font-extrabold text-gray-800">
+          <ShoppingCart className="h-10 w-10 text-primary" />
+          <h2 className="text-3xl font-extrabold text-gray-800">
             Nueva Compra - {provider?.entity_name || 'Proveedor'}
           </h2>
         </div>
@@ -280,49 +195,52 @@ export default function AgregarCompraProveedor({ provider }) {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Purchase Information Section */}
           <section className="rounded-lg bg-gray-50 p-6 shadow-sm">
-            <h3 className="mb-4 text-xl font-semibold text-gray-700">Información de la Compra</h3>
+            <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-700">
+              <CreditCard className="h-5 w-5 text-secondary" />
+              Detalles de la Compra
+            </h3>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="label">
-                  <span className="label-text font-medium text-gray-600">Método de Pago</span>
+                  <span className="label-text font-medium text-gray-600">Método de Pago *</span>
                 </label>
                 <select
                   name="payment_method"
-                  value={paymentData.payment_method_id}
+                  value={purchaseData.payment_method}
                   onChange={handlePurchaseInputChange}
                   className="select-bordered select w-full"
                   required
                 >
                   <option value="">Seleccionar método...</option>
-                  {paymentMethods &&
-                    paymentMethods.map((method) => (
-                      <option key={method.id} value={method.id}>
-                        {method.display_name}
-                      </option>
-                    ))}
+                  {paymentMethods.map((method) => (
+                    <option key={method.id} value={method.id}>
+                      {method.display_name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <div>
-                <label htmlFor="" className='label'>
-                  <span className='label-text font-medium text-gray-600'>Banco</span>
-                </label>
-                <select
-                  name="bank_id"
-                  value={paymentData.bank_id}
-                  onChange={handlePaymentInputChange}
-                  className="select-bordered select w-full"
-                  required
-                >
-                  <option value="">Seleccionar banco...</option>
-                  {banks &&
-                    banks.map((bank) => (
+              {isBankFieldVisible && (
+                <div>
+                  <label htmlFor="" className="label">
+                    <span className="label-text font-medium text-gray-600">Banco *</span>
+                  </label>
+                  <select
+                    name="bank_id"
+                    value={paymentData.bank_id}
+                    onChange={handlePaymentInputChange}
+                    className="select-bordered select w-full"
+                    required
+                  >
+                    <option value="">Seleccionar banco...</option>
+                    {banks.map((bank) => (
                       <option key={bank.id} value={bank.id}>
                         {bank.name}
                       </option>
                     ))}
-                </select>
-              </div>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="label">
@@ -370,17 +288,66 @@ export default function AgregarCompraProveedor({ provider }) {
             </div>
           </section>
 
+          {/* Invoice Upload Section */}
+          <section className="rounded-lg bg-gray-50 p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-700">
+              <FileUp className="h-5 w-5 text-secondary" />
+              Factura de Compra
+            </h3>
+            <p className="mb-4 text-sm text-gray-500">
+              Sube el archivo PDF de la factura para mantener un registro digital.
+            </p>
+            <div className="flex items-center space-x-4">
+              <label
+                htmlFor="invoice-upload"
+                className="btn btn-primary btn-outline cursor-pointer transition-colors duration-200 hover:bg-primary hover:text-white"
+              >
+                {invoiceFile ? (
+                  <div className="flex items-center gap-2">
+                    <FileCheck2 className="h-5 w-5" />
+                    <span>Cambiar Archivo</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <FileUp className="h-5 w-5" />
+                    <span>Seleccionar Archivo</span>
+                  </div>
+                )}
+                <input
+                  id="invoice-upload"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              {invoiceFile && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="truncate font-medium">{invoiceFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="text-error hover:text-red-700"
+                    aria-label="Eliminar archivo"
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* Products Section */}
           <section className="rounded-lg bg-gray-50 p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-700">
-                <Package className="h-6 w-6 text-primary" />
+                <Package className="h-5 w-5 text-secondary" />
                 Productos de la Compra
               </h3>
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
-                onClick={handleAddProductWindow}
+                onClick={() => setLocation(`/agregarProductoCompraProveedor?id=${providerId}`)}
               >
                 <Plus className="h-4 w-4" />
                 Agregar Producto
@@ -416,20 +383,7 @@ export default function AgregarCompraProveedor({ provider }) {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleEditProduct(product)}
-                              className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-100"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveProduct(product.id)}
-                              className="btn btn-ghost btn-xs text-red-600 hover:bg-red-100"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                          
                           </div>
                         </td>
                       </tr>
@@ -440,7 +394,7 @@ export default function AgregarCompraProveedor({ provider }) {
             ) : (
               <div className="py-12 text-center text-gray-400">
                 <p>No hay productos agregados a la compra.</p>
-                <p className="text-sm">Usa el botón agregar producto para empezar.</p>
+                <p className="text-sm">Usa el botón Agregar Producto para empezar.</p>
               </div>
             )}
           </section>
@@ -492,7 +446,7 @@ export default function AgregarCompraProveedor({ provider }) {
             <button
               type="button"
               className="btn btn-ghost text-gray-600 hover:bg-gray-200"
-              onClick={() => window.history.back()}
+              onClick={handleCerrar}
             >
               Cancelar
             </button>
@@ -507,120 +461,6 @@ export default function AgregarCompraProveedor({ provider }) {
         </form>
       </div>
 
-      {/* Modal to add/edit product */}
-      {showProductModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
-            <h3 className="mb-4 text-2xl font-bold text-gray-800">
-              {editingProduct ? 'Editar Producto' : 'Agregar Producto'}
-            </h3>
-            <p className="mb-6 text-sm text-gray-500">
-              Selecciona o busca un producto y especifica los detalles de la compra.
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="label">
-                  <span className="label-text font-medium text-gray-600">Buscar Producto</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre, código de barras o código de proveedor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input-bordered input mb-2 w-full"
-                />
-                <select
-                  name="product_id"
-                  value={productFormData.product_id}
-                  onChange={handleProductInputChange}
-                  className="select-bordered select w-full"
-                  required
-                >
-                  <option value="">Seleccionar producto...</option>
-                  {getFilteredProducts().map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.product_name} - {product.barcode}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="label">
-                    <span className="label-text font-medium text-gray-600">Precio Costo *</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="cost_price"
-                    value={productFormData.cost_price}
-                    onChange={handleProductInputChange}
-                    className="input-bordered input w-full"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="label">
-                    <span className="label-text font-medium text-gray-600">Cantidad *</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={productFormData.quantity}
-                    onChange={handleProductInputChange}
-                    className="input-bordered input w-full"
-                    min="1"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="label">
-                  <span className="label-text font-medium text-gray-600">Descuento</span>
-                </label>
-                <input
-                  type="number"
-                  name="discount"
-                  value={productFormData.discount}
-                  onChange={handleProductInputChange}
-                  className="input-bordered input w-full"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end gap-4">
-              <button
-                type="button"
-                className="btn btn-ghost text-gray-600 hover:bg-gray-200"
-                onClick={handleCerrar}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleAddProduct}
-                disabled={
-                  !productFormData.product_id ||
-                  productFormData.quantity <= 0 ||
-                  productFormData.cost_price < 0
-                }
-              >
-                {editingProduct ? 'Actualizar' : 'Agregar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  )
+  );
 }
