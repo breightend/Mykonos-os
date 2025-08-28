@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Package, ShoppingCart, FileUp, FileCheck2, CreditCard } from 'lucide-react';
-import { fetchProductos } from '../../services/products/productService';
-import { createPurchase } from '../../services/proveedores/purchaseService';
-import toast from 'react-hot-toast';
-import { getBancos } from '../../services/paymentsServices/banksService';
-import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService';
-import { useLocation, useSearchParams } from 'wouter';
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Package, ShoppingCart, FileUp, FileCheck2, CreditCard } from 'lucide-react'
+import { fetchProductos } from '../../services/products/productService'
+import { createPurchase } from '../../services/proveedores/purchaseService'
+import toast from 'react-hot-toast'
+import { getBancos } from '../../services/paymentsServices/banksService'
+import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService'
+import { useLocation, useSearchParams } from 'wouter'
 
 export default function AgregarCompraProveedor({ provider }) {
-  const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [, setLocation] = useLocation();
-  const [searchParams] = useSearchParams();
-  const providerId = searchParams.get('id');
+  const [loading, setLoading] = useState(false)
+  const [products, setProducts] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [, setLocation] = useLocation()
+  const [searchParams] = useSearchParams()
+  const providerId = searchParams.get('id')
 
   const [purchaseData, setPurchaseData] = useState({
     subtotal: 0,
@@ -22,86 +22,83 @@ export default function AgregarCompraProveedor({ provider }) {
     payment_method: '',
     transaction_number: '',
     invoice_number: '',
-    notes: '',
-  });
+    notes: ''
+  })
 
   const [paymentData, setPaymentData] = useState({
-    bank_id: '',
-  });
+    bank_id: ''
+  })
 
-  const [purchaseProducts, setPurchaseProducts] = useState([]);
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [purchaseProducts, setPurchaseProducts] = useState([])
+  const [showProductModal, setShowProductModal] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
   const [productFormData, setProductFormData] = useState({
     product_id: '',
     cost_price: '',
     quantity: 1,
-    discount: 0,
-  });
+    discount: 0
+  })
 
-  const [banks, setBanks] = useState([]);
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const [invoiceFile, setInvoiceFile] = useState(null);
+  const [banks, setBanks] = useState([])
+  const [paymentMethods, setPaymentMethods] = useState([])
+  const [invoiceFile, setInvoiceFile] = useState(null)
 
   // Load necessary data on component mount
   useEffect(() => {
     const loadData = async () => {
       try {
-        const methods = await paymentMethodsService.getAllPaymentMethods();
-        setPaymentMethods(methods.payment_methods || []);
-        const bancosData = await getBancos();
-        setBanks(bancosData.banks || []);
-        const productsData = await fetchProductos();
-        setProducts(Array.isArray(productsData) ? productsData : []);
+        const methods = await paymentMethodsService.getAllPaymentMethods()
+        setPaymentMethods(methods.payment_methods || [])
+        const bancosData = await getBancos()
+        setBanks(bancosData.banks || [])
+        const productsData = await fetchProductos()
+        setProducts(Array.isArray(productsData) ? productsData : [])
       } catch (error) {
-        console.error('Error loading data:', error);
-        toast.error('Error al cargar datos');
+        console.error('Error loading data:', error)
+        toast.error('Error al cargar datos')
       }
-    };
-    loadData();
-  }, []);
+    }
+    loadData()
+  }, [])
 
   useEffect(() => {
     const subtotal = purchaseProducts.reduce(
       (acc, item) => acc + (item.cost_price * item.quantity - item.discount),
-      0,
-    );
-    const total = subtotal - purchaseData.discount;
+      0
+    )
+    const total = subtotal - purchaseData.discount
 
     setPurchaseData((prev) => ({
       ...prev,
       subtotal: subtotal.toFixed(2),
-      total: total.toFixed(2),
-    }));
-  }, [purchaseProducts, purchaseData.discount]);
+      total: total.toFixed(2)
+    }))
+  }, [purchaseProducts, purchaseData.discount])
 
   const handlePurchaseInputChange = (e) => {
-    const { name, value } = e.target;
-    setPurchaseData((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setPurchaseData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handlePaymentInputChange = (e) => {
-    const { name, value } = e.target;
-    setPaymentData((prev) => ({ ...prev, [name]: value }));
-  };
-
-
-
+    const { name, value } = e.target
+    setPaymentData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!provider?.id) {
-      toast.error('No se ha seleccionado un proveedor');
-      return;
+      toast.error('No se ha seleccionado un proveedor')
+      return
     }
     if (purchaseProducts.length === 0) {
-      toast.error('Debe agregar al menos un producto');
-      return;
+      toast.error('Debe agregar al menos un producto')
+      return
     }
 
     try {
-      setLoading(true);
+      setLoading(true)
       const purchasePayload = {
         entity_id: provider.id,
         subtotal: parseFloat(purchaseData.subtotal),
@@ -117,28 +114,28 @@ export default function AgregarCompraProveedor({ provider }) {
           cost_price: product.cost_price,
           quantity: product.quantity,
           discount: product.discount,
-          subtotal: product.subtotal,
+          subtotal: product.subtotal
         })),
-        invoice_file: invoiceFile,
-      };
+        invoice_file: invoiceFile
+      }
 
-      const result = await createPurchase(purchasePayload);
+      const result = await createPurchase(purchasePayload)
 
       if (result.status === 'éxito') {
-        toast.success('Compra creada exitosamente');
+        toast.success('Compra creada exitosamente')
         // Redirect or reset the form
-        setLocation(`/infoProvider?id=${providerId}`);
-        resetForm();
+        setLocation(`/infoProvider?id=${providerId}`)
+        resetForm()
       } else {
-        toast.error('Error al crear la compra');
+        toast.error('Error al crear la compra')
       }
     } catch (error) {
-      console.error('Error creating purchase:', error);
-      toast.error('Error al crear la compra');
+      console.error('Error creating purchase:', error)
+      toast.error('Error al crear la compra')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const resetForm = () => {
     setPurchaseData({
@@ -148,39 +145,39 @@ export default function AgregarCompraProveedor({ provider }) {
       payment_method: '',
       transaction_number: '',
       invoice_number: '',
-      notes: '',
-    });
-    setPurchaseProducts([]);
-    setInvoiceFile(null);
-    setPaymentData({ bank_id: '' });
-  };
+      notes: ''
+    })
+    setPurchaseProducts([])
+    setInvoiceFile(null)
+    setPaymentData({ bank_id: '' })
+  }
 
   const handleFileChange = (e) => {
-    const uploadedFile = e.target.files[0];
+    const uploadedFile = e.target.files[0]
     if (uploadedFile && uploadedFile.type === 'application/pdf') {
-      setInvoiceFile(uploadedFile);
+      setInvoiceFile(uploadedFile)
     } else {
-      setInvoiceFile(null);
-      alert('Por favor, sube un archivo PDF.');
+      setInvoiceFile(null)
+      alert('Por favor, sube un archivo PDF.')
     }
-  };
+  }
 
   const handleRemoveFile = () => {
-    setInvoiceFile(null);
-  };
+    setInvoiceFile(null)
+  }
 
-  const isBankFieldVisible = ['2', '3', '4', '5'].includes(purchaseData.payment_method);
+  const isBankFieldVisible = ['2', '3', '4', '5'].includes(purchaseData.payment_method)
 
-  const handleCerrar= () => {
-    setShowProductModal(false);
-    setEditingProduct(null);
+  const handleCerrar = () => {
+    setShowProductModal(false)
+    setEditingProduct(null)
     setProductFormData({
       product_id: '',
       cost_price: '',
       quantity: 1,
-      discount: 0,
-    });
-  };
+      discount: 0
+    })
+  }
 
   return (
     <div className="container mx-auto max-w-4xl p-4">
@@ -382,9 +379,7 @@ export default function AgregarCompraProveedor({ provider }) {
                           ${product.subtotal.toFixed(2)}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                          
-                          </div>
+                          <div className="flex gap-2"></div>
                         </td>
                       </tr>
                     ))}
@@ -460,7 +455,6 @@ export default function AgregarCompraProveedor({ provider }) {
           </div>
         </form>
       </div>
-
     </div>
-  );
+  )
 }

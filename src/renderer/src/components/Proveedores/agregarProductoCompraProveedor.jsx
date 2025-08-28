@@ -10,7 +10,9 @@ import {
   Lock,
   Unlock,
   ChevronsDown,
-  ChevronsUp
+  ChevronsUp,
+  CloudUpload,
+  Plus
 } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from '../../contexts/SessionContext'
@@ -30,7 +32,7 @@ import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 
 //BUG: El color ahora tiene bug.
-export default function NuevoProducto() {
+export default function NuevoProductoDeProveedor() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual
   const { getCurrentStorage, getCurrentUser } = useSession()
@@ -54,7 +56,8 @@ export default function NuevoProducto() {
     }
   }, [providerId])
 
-  const [producto, setProducto] = useState({
+  const getInitialProductState = () => ({
+    id: Date.now(), // Unique key for React's map function
     provider_code: '',
     product_name: '',
     group_id: '',
@@ -74,31 +77,14 @@ export default function NuevoProducto() {
     state: 'pendiente',
     talles: [{ talle: '', colores: [{ color: '', cantidad: '' }] }],
     product_image: '',
-    initial_quantity: 0
+    initial_quantity: 0,
+    errors: {}
   })
 
-  const [productos, setProductos] = useState([{ producto }])
-  const handleProductoChange = (idx, campo, valor) => {
-    const nuevosProductos = [...productos]
-    nuevosProductos[idx][campo] = valor
-    setProductos(nuevosProductos)
-  }
-  const agregarProducto = () => {
-    setProductos([...productos, { nombre: '', precio: '' /* ...otros campos */ }])
-  }
-  const eliminarProducto = (idx) => {
-    setProductos(productos.filter((_, i) => i !== idx))
-  }
+  const [productos, setProductos] = useState([getInitialProductState()])
+
   // Estados para el formulario
-  const [productName, setProductName] = useState('')
-  const [tipo, setTipo] = useState('')
-  const [marca, setMarca] = useState('')
-  const [cost, setCost] = useState('')
-  const [salePrice, setSalePrice] = useState('')
-  const [comments, setComments] = useState('')
-  const [providerCode, setProviderCode] = useState('')
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
-  const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
   const [, setLocation] = useLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
 
@@ -122,18 +108,16 @@ export default function NuevoProducto() {
   const refreshData = () => {
     setRefreshTrigger((prev) => prev + 1)
   }
-
+  //trae los datos iniciales y un par de cosas más.
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Hacer todas las llamadas en paralelo para mejor performance y robustez
         const [sizesResponse, colorsResponse, grupoTreeData] = await Promise.allSettled([
           fetchSize(),
           fetchColor(),
           fetchFamilyProductsTree()
         ])
 
-        // Procesar sizes
         if (sizesResponse.status === 'fulfilled' && sizesResponse.value) {
           setTallesBD(sizesResponse.value)
           console.log('✅ Talles cargados exitosamente:', sizesResponse.value.length)
@@ -199,110 +183,121 @@ export default function NuevoProducto() {
         try {
           const brandsByProviderResponse = await fetchBrandByProviders(providerId)
           setBrandByProvider(brandsByProviderResponse)
-
           if (brandsByProviderResponse.length === 1) {
-            setMarca(brandsByProviderResponse[0].brand_name)
-          } else {
-            setMarca('')
+            setProductos((prev) =>
+              prev.map((p) => ({ ...p, brand_id: brandsByProviderResponse[0].id }))
+            )
           }
         } catch (error) {
           console.error('Error fetching brands for provider: ', error)
-          setBrandByProvider([])
-          setMarca('')
         }
-      } else {
-        setBrandByProvider([])
-        setMarca('')
       }
     }
     fetchBrandsForProvider()
   }, [providerId])
 
-  const handleGroupSelect = (group) => {
-    setTipo(group.id.toString())
+  const handleProductChange = (index, field, value) => {
+    const newProductos = [...productos]
+    const product = newProductos[index]
+    product[field] = value
+
+    if (field === 'cost' && product.useAutoCalculation) {
+      const numericCost = parseFloat(value)
+      if (numericCost > 0) {
+        product.sale_price = calculateSalePrice(numericCost)
+      } else {
+        product.sale_price = ''
+      }
+    }
+
+    setProductos(newProductos)
+  }
+
+  const handleGroupSelect = (productIndex, group) => {
+    const newProductos = [...productos]
+    newProductos[productIndex].group_id = group.id.toString()
+    setProductos(newProductos)
   }
 
   const handleCantidadTotal = () => {
-    let cantidadTotal = 0
-    talles.forEach((talle) => {
-      talle.colores.forEach((color) => {
-        cantidadTotal += parseInt(color.cantidad || 0, 10)
+    let total = 0
+    productos.forEach((product) => {
+      product.talles.forEach((talle) => {
+        talle.colores.forEach((color) => {
+          total += parseInt(color.cantidad || 0, 10)
+        })
       })
     })
-    setCantidadTotal(cantidadTotal)
+    setCantidadTotal(total)
   }
 
-  const handleDeleteColor = (talleIndex, colorIndex) => {
-    const nuevosTalles = [...talles]
-    const colorEliminado = nuevosTalles[talleIndex].colores[colorIndex].color
-    const talleActual = nuevosTalles[talleIndex].talle
+  const handleDeleteColor = (productIndex, talleIndex, colorIndex) => {
+    const newProductos = [...productos]
+    const product = newProductos[productIndex]
+    product.talles[talleIndex].colores.splice(colorIndex, 1)
+    setProductos(newProductos)
+  }
 
-    if (colorEliminado && talleActual) {
-      setColoresDisponiblesPorTalle((prev) => ({
-        ...prev,
-        [talleActual]: [...(prev[talleActual] || []), colorEliminado]
-      }))
-    }
-
-    nuevosTalles[talleIndex].colores.splice(colorIndex, 1)
-    setTalles(nuevosTalles)
+  const handleDeleteTalle = (productIndex, talleIndex) => {
+    const newProductos = [...productos]
+    const product = newProductos[productIndex]
+    product.talles.splice(talleIndex, 1)
+    setProductos(newProductos)
     handleCantidadTotal()
   }
-
-  const handleDeleteTalle = (talleIndex) => {
-    const nuevosTalles = [...talles]
-    const talleEliminado = nuevosTalles[talleIndex]
-
-    if (talleEliminado.talle) {
-      setColoresDisponiblesPorTalle((prev) => ({
-        ...prev,
-        [talleEliminado.talle]: colors.map((color) => color.color_name)
-      }))
-    }
-
-    nuevosTalles.splice(talleIndex, 1)
-    setTalles(nuevosTalles)
-    handleCantidadTotal()
+  const agregarTalle = (productIndex) => {
+    const newProductos = [...productos]
+    const product = newProductos[productIndex]
+    product.talles.push({ talle: '', colores: [{ color: '', cantidad: '' }] })
+    setProductos(newProductos)
   }
 
-  const agregarTalle = () => {
-    const tallesUsados = talles.map((t) => t.talle).filter(Boolean)
-    const tallesDisponibles = tallesBD.filter((t) => !tallesUsados.includes(t.size_name))
+  const handleTalleChange = (productIndex, talleIndex, value) => {
+    const newProductos = [...productos]
+    const product = newProductos[productIndex]
+    product.talles[talleIndex].talle = value
+    setProductos(newProductos)
+  }
 
-    if (tallesDisponibles.length === 0) {
-      alert('No hay más talles disponibles para agregar')
+  const agregarColor = (productIndex, talleIndex) => {
+    const newProductos = [...productos]
+    const product = newProductos[productIndex]
+    product.talles[talleIndex].colores.push({ color: '', cantidad: '' })
+    setProductos(newProductos)
+  }
+  const handleDropzone = (index, acceptedFiles) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0]
+      const reader = new FileReader()
+      reader.onload = () => {
+        handleProductChange(index, 'product_image', reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const agregarProducto = () => {
+    const newProduct = getInitialProductState()
+    if (lockGroup && productos.length > 0) {
+      const lastProduct = productos[productos.length - 1]
+      newProduct.group_id = lastProduct.group_id
+    }
+    setProductos([...productos, newProduct])
+  }
+
+  const eliminarProducto = (index) => {
+    // Prevent deleting the last product form
+    if (productos.length === 1) {
+      alert('No puedes eliminar el único formulario de productos.')
       return
     }
-
-    setTalles([...talles, { talle: '', colores: [{ color: '', cantidad: 0 }] }])
+    setProductos(productos.filter((_, i) => i !== index))
   }
 
-  const handleTalleChange = (talleIndex, value) => {
-    const nuevosTalles = [...talles]
-
-    nuevosTalles[talleIndex].talle = value
-    setTalles(nuevosTalles)
-
-    if (value && colors.length > 0) {
-      setColoresDisponiblesPorTalle((prev) => ({
-        ...prev,
-        [value]: colors.map((color) => color.color_name)
-      }))
-    }
-  }
-
-  const agregarColor = (talleIndex) => {
-    const nuevosTalles = [...talles]
-    nuevosTalles[talleIndex].colores.push({ color: '', cantidad: '' })
-    setTalles(nuevosTalles)
-  }
-
-  const handleColorSelect = (talleIndex, colorIndex, field, value) => {
-    handleColorChange(talleIndex, colorIndex, field, value)
-  }
-
-  const handleColorChange = (talleIndex, colorIndex, field, value) => {
-    const nuevosTalles = [...talles]
+  const handleColorChange = (productIndex, talleIndex, colorIndex, field, value) => {
+    const newProductos = [...productos]
+    const product = newProductos[productIndex]
+    const nuevosTalles = [...product.talles]
     const talleActual = nuevosTalles[talleIndex].talle
     const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
 
@@ -310,13 +305,10 @@ export default function NuevoProducto() {
       const nuevoColor = value
 
       if (nuevoColor !== colorAnterior) {
-        // Actualizar el color en el estado
         nuevosTalles[talleIndex].colores[colorIndex].color = nuevoColor
 
         setColoresDisponiblesPorTalle((prev) => {
           const nuevosDisponibles = { ...prev }
-
-          // Si había un color anterior, devolverlo a la lista de disponibles
           if (colorAnterior && talleActual) {
             if (!nuevosDisponibles[talleActual]) {
               nuevosDisponibles[talleActual] = []
@@ -325,31 +317,29 @@ export default function NuevoProducto() {
               nuevosDisponibles[talleActual].push(colorAnterior)
             }
           }
-
-          // Remover el nuevo color de la lista de disponibles
           if (nuevoColor && talleActual && nuevosDisponibles[talleActual]) {
             nuevosDisponibles[talleActual] = nuevosDisponibles[talleActual].filter(
               (c) => c !== nuevoColor
             )
           }
-
           return nuevosDisponibles
         })
       }
     }
 
-    // Actualizar el campo correspondiente
     nuevosTalles[talleIndex].colores[colorIndex][field] =
       field === 'cantidad' ? parseInt(value, 10) || 0 : value
 
-    setTalles(nuevosTalles)
+    product.talles = nuevosTalles
+    setProductos(newProductos)
     handleCantidadTotal()
   }
 
   // Función para obtener talles disponibles (no repetidos)
-  const getTallesDisponibles = (talleIndex) => {
-    const tallesSeleccionados = talles
-      .map((t, index) => (index !== talleIndex ? t.talle : null))
+  const getTallesDisponibles = (productIndex, currentTalleIndex) => {
+    const product = productos[productIndex]
+    const tallesSeleccionados = product.talles
+      .map((t, index) => (index !== currentTalleIndex ? t.talle : null))
       .filter(Boolean)
 
     return tallesBD.filter((talle) => !tallesSeleccionados.includes(talle.size_name))
@@ -365,14 +355,13 @@ export default function NuevoProducto() {
     })
   }
 
-  // Configuración de react-dropzone para la imagen del producto
+  // Configuración de react-dropzone para la imagen del productos
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
       'image/*': []
     },
-    maxSize: 10485760, // 10MB en bytes
+    maxSize: 10485760,
     onDrop: async (acceptedFiles, rejectedFiles) => {
-      // Manejar archivos rechazados
       if (rejectedFiles.length > 0) {
         const rejection = rejectedFiles[0]
         if (rejection.errors.some((e) => e.code === 'file-too-large')) {
@@ -391,7 +380,6 @@ export default function NuevoProducto() {
         }
       }
 
-      // Procesar archivo válido
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0]
         try {
@@ -470,10 +458,10 @@ export default function NuevoProducto() {
     return URL.createObjectURL(blob)
   }
 
-  const prepareProductData = () => {
-    const uniqueSizes = [...new Set(talles.map((t) => t.talle).filter(Boolean))]
+  const prepareProductData = (product) => {
+    const uniqueSizes = [...new Set(product.talles.map((t) => t.talle).filter(Boolean))]
     const uniqueColors = [
-      ...new Set(talles.flatMap((t) => t.colores.map((c) => c.color).filter(Boolean)))
+      ...new Set(product.talles.flatMap((t) => t.colores.map((c) => c.color).filter(Boolean)))
     ]
 
     const sizeIds = uniqueSizes
@@ -490,55 +478,54 @@ export default function NuevoProducto() {
       })
       .filter(Boolean)
 
-    const selectedBrand = brandByProvider.find((brand) => brand.brand_name === marca)
+    const selectedBrand = brandByProvider.find((brand) => brand.id === product.brand_id)
     const brandId = selectedBrand ? selectedBrand.id : null
 
     let imageToSend = null
-    if (productImage) {
-      if (productImage.startsWith('data:')) {
-        imageToSend = productImage.split(',')[1]
-        console.log('🖼️ Preparando imagen para envío:')
-        console.log('  - Imagen original:', productImage.substring(0, 100) + '...')
-        console.log('  - Tipo MIME detectado:', productImage.split(',')[0])
-        console.log(
-          '  - Base64 enviado (primeros 100 chars):',
-          imageToSend.substring(0, 100) + '...'
-        )
+    if (product.product_image) {
+      if (product.product_image.startsWith('data:')) {
+        imageToSend = product.product_image.split(',')[1]
       } else {
-        imageToSend = productImage
-        console.log('🖼️ Imagen ya está en formato base64 puro')
+        imageToSend = product.product_image
       }
-    } else {
-      console.log('🖼️ No hay imagen para enviar')
     }
 
+    const cantidadTotal = product.talles.reduce(
+      (total, talle) =>
+        total +
+        talle.colores.reduce(
+          (subtotal, color) => subtotal + (parseInt(color.cantidad, 10) || 0),
+          0
+        ),
+      0
+    )
+
     return {
-      provider_code: providerCode,
-      product_name: productName,
-      group_id: parseInt(tipo),
+      provider_code: product.provider_code,
+      product_name: product.product_name,
+      group_id: parseInt(product.group_id),
       provider_id: providerId,
-      description: '',
-      cost: cost && !isNaN(parseFloat(cost)) ? parseFloat(cost) : null,
-      sale_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null,
-      original_price: salePrice && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : null,
+      description: product.description || '',
+      cost: !isNaN(parseFloat(product.cost)) ? parseFloat(product.cost) : null,
+      sale_price: !isNaN(parseFloat(product.sale_price)) ? parseFloat(product.sale_price) : null,
+      original_price: !isNaN(parseFloat(product.original_price))
+        ? parseFloat(product.original_price)
+        : null,
       tax: 0,
       discount: 0,
-      comments: comments || null,
+      comments: product.comments || null,
       user_id: currentUser?.id || 1,
       images_ids: null,
-      brand_id: brandId,
+      brand_id: product.brand_id || brandId,
       creation_date: new Date().toISOString(),
       last_modified_date: new Date().toISOString(),
-      size_ids: sizeIds,
-      color_ids: colorIds,
-      product_image: imageToSend,
+      state: 'pendiente',
+      product_image: imageToSend || null,
       storage_id: currentStorage?.id || null,
-      state: 'enTienda',
       initial_quantity: cantidadTotal,
-      stock_variants: talles.flatMap((talle) => {
+      stock_variants: product.talles.flatMap((talle) => {
         const sizeData = tallesBD.find((s) => s.size_name === talle.talle)
         if (!sizeData) return []
-
         return talle.colores
           .filter((color) => color.color && color.cantidad > 0)
           .map((color) => {
@@ -546,9 +533,7 @@ export default function NuevoProducto() {
             return {
               size_id: sizeData.id,
               color_id: colorData ? colorData.id : null,
-              quantity: parseInt(color.cantidad) || 0,
-              size_name: talle.talle,
-              color_name: color.color
+              quantity: parseInt(color.cantidad) || 0
             }
           })
           .filter((variant) => variant.color_id !== null)
@@ -559,26 +544,31 @@ export default function NuevoProducto() {
   const validateForm = () => {
     const newErrors = {}
 
-    if (!productName.trim()) newErrors.productName = 'El nombre del producto es requerido'
-    if (!tipo) newErrors.tipo = 'El grupo de producto es requerido'
-    if (!marca) newErrors.marca = 'La marca es requerida'
-    if (!cost || isNaN(parseFloat(cost)) || parseFloat(cost) <= 0)
+    if (!productos.product_name.trim()) newErrors.product_name = 'El nombre es requerido'
+    if (!productos.group_id) newErrors.group_id = 'El grupo es requerido'
+    if (!productos.brand_id) newErrors.brand_id = 'La marca es requerida'
+    if (!productos.cost || isNaN(parseFloat(productos.cost)) || parseFloat(productos.cost) <= 0)
       newErrors.cost = 'El costo debe ser mayor a 0'
-    if (!salePrice || isNaN(parseFloat(salePrice)) || parseFloat(salePrice) <= 0)
-      newErrors.salePrice = 'El precio de venta debe ser mayor a 0'
-    if (cantidadTotal <= 0) newErrors.cantidad = 'Debe agregar al menos una unidad'
+    if (
+      !productos.sale_price ||
+      isNaN(parseFloat(productos.sale_price)) ||
+      parseFloat(productos.sale_price) <= 0
+    )
+      newErrors.sale_price = 'El precio de venta debe ser mayor a 0'
 
-    if (currentStorage && cantidadTotal <= 0) {
-      newErrors.cantidad = 'Debe especificar la cantidad para la sucursal seleccionada'
-    }
+    const cantidadTotal = productos.talles.reduce(
+      (total, talle) =>
+        total +
+        talle.colores.reduce(
+          (subtotal, color) => subtotal + (parseInt(color.cantidad, 10) || 0),
+          0
+        ),
+      0
+    )
 
-    const hasInvalidTalles = talles.some((talle) => {
-      if (!talle.talle) return true
-      return talle.colores.some((color) => !color.color || !color.cantidad || color.cantidad <= 0)
-    })
-
-    if (hasInvalidTalles) {
-      newErrors.talles = 'Todos los talles deben tener al menos un color con cantidad válida'
+    if (cantidadTotal <= 0) {
+      newErrors.cantidad = 'Debe agregar al menos una unidad'
+      return newErrors
     }
 
     setErrors(newErrors)
@@ -593,13 +583,13 @@ export default function NuevoProducto() {
     setIsSubmitting(true)
     try {
       const productData = prepareProductData()
-      console.log('🔍 DATOS DE PRODUCTO PREPARADOS:', productData)
+      console.log('🔍 DATOS DE PRODUCTOS PREPARADOS:', productData)
       console.log('🔍 STOCK VARIANTS A ENVIAR:', productData.stock_variants)
       console.log('🔍 CANTIDAD DE VARIANTES:', productData.stock_variants?.length || 0)
 
       const response = await postData(productData)
 
-      console.log('Producto guardado exitosamente:', response)
+      console.log('Productos guardado exitosamente:', response)
 
       if (response.product_id && productData.stock_variants.length > 0) {
         try {
@@ -628,12 +618,13 @@ export default function NuevoProducto() {
 
       setLocation('/inventario')
     } catch (error) {
-      console.error('Error al guardar el producto:', error)
-      setErrors({ submit: 'Error al guardar el producto. Intente nuevamente.' })
+      console.error('Error al guardar el productos:', error)
+      setErrors({ submit: 'Error al guardar el productos. Intente nuevamente.' })
     } finally {
       setIsSubmitting(false)
     }
   }
+
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const handleToggleDropdown = () => {
@@ -642,6 +633,23 @@ export default function NuevoProducto() {
   const [lockGroup, setLockGroup] = useState(false)
   const handleLockGroup = () => {
     setLockGroup(!lockGroup)
+  }
+
+  const handleAutoCalcToggle = (index, isChecked) => {
+    const newProductos = [...productos]
+    const product = newProductos[index]
+    product.useAutoCalculation = isChecked
+
+    if (isChecked) {
+      // If toggled ON, calculate the price immediately if there's a valid cost
+      const numericCost = parseFloat(product.cost)
+      if (numericCost > 0) {
+        product.sale_price = calculateSalePrice(numericCost)
+      }
+    }
+    // If toggled OFF, the user can now manually edit the sale_price, so we do nothing here.
+
+    setProductos(newProductos)
   }
 
   if (loadingData) {
@@ -679,7 +687,7 @@ export default function NuevoProducto() {
                   Agregar Artículo del proveedor: {provider?.entity_name}
                 </h1>
                 <p className="text-base-content/70 text-sm">
-                  Complete los datos del nuevo producto. Los códigos de barras se generarán
+                  Complete los datos del nuevo productos. Los códigos de barras se generarán
                   automáticamente para cada variante.
                 </p>
               </div>
@@ -714,7 +722,7 @@ export default function NuevoProducto() {
 
           <section className="space-y-4 rounded-lg bg-base-300 p-4 shadow-md">
             <div className="flex justify-between">
-              <label>Producto </label>
+              <label>Productos </label>
               {dropdownOpen ? (
                 <button
                   className="hover:scale-110 hover:cursor-pointer"
@@ -733,6 +741,7 @@ export default function NuevoProducto() {
                 </button>
               )}
             </div>
+            {/* Sección: para mostrar la información resumida */}
             {dropdownOpen ? (
               <div>
                 <div className="card border border-base-300 bg-base-100 shadow-xl">
@@ -745,10 +754,10 @@ export default function NuevoProducto() {
                     </h2>
 
                     <div className="space-y-6">
-                      {/* Nombre del producto */}
+                      {/* Nombre del productos */}
                       <div>
                         <label className="label">
-                          <span className="label-text font-semibold">Nombre del producto</span>
+                          <span className="label-text font-semibold">Nombre del productos</span>
                           <span className="label-text-alt text-error">*</span>
                         </label>
                         <input
@@ -768,10 +777,10 @@ export default function NuevoProducto() {
                         )}
                       </div>
 
-                      {/* Imagen del producto */}
+                      {/* Imagen del productos */}
                       <div>
                         <label className="label">
-                          <span className="label-text font-semibold">Imagen del producto</span>
+                          <span className="label-text font-semibold">Imagen del productos</span>
                           <span className="label-text-alt text-base-content/60">(Opcional)</span>
                         </label>
 
@@ -781,7 +790,7 @@ export default function NuevoProducto() {
                               <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
                                 <img
                                   src={base64ToObjectUrl(productImage)}
-                                  alt="Preview del producto"
+                                  alt="Preview del productos"
                                   className="object-cover"
                                 />
                               </div>
@@ -844,685 +853,738 @@ export default function NuevoProducto() {
               </div>
             ) : (
               <>
-              {productos.map((prod, idx) => (
-               <>
-              <div>
-                <div className="card border border-base-300 bg-base-100 shadow-xl">
-                  <div className="card-body">
-                    <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                        <span className="font-bold text-primary">1</span>
-                      </div>
-                      Información Básica
-                    </h2>
-
-                    <div className="space-y-6">
-                      {/* Nombre del producto */}
-                      {productos.map((prod, idx) => (
-                        <div key={idx} className="mb-4 rounded-lg border bg-base-200 p-4">
-                          <label className="label">
-                            <span className="label-text font-semibold">Nombre del producto</span>
-                            <span className="label-text-alt text-error">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ej: Remera básica algodón"
-                            className={`input-bordered input w-full focus:border-primary ${errors[`productName_${idx}`] ? 'input-error' : ''}`}
-                            value={prod.product_name}
-                            onChange={(e) =>
-                              handleProductoChange(idx, 'product_name', e.target.value)
-                            }
-                            required
-                          />
-                          {errors[`productName_${idx}`] && (
-                            <div className="label">
-                              <span className="label-text-alt text-error">
-                                {errors[`productName_${idx}`]}
-                              </span>
-                            </div>
-                          )}
-                          {/* Aquí puedes agregar los demás campos de ese producto, igual que este */}
-                        </div>
-                      ))}
-
-                      {/* Imagen del producto */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Imagen del producto</span>
-                          <span className="label-text-alt text-base-content/60">(Opcional)</span>
-                        </label>
-
-                        {productImage && (
-                          <div className="mb-4 flex justify-center">
-                            <div className="avatar">
-                              <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
-                                <img
-                                  src={base64ToObjectUrl(productImage)}
-                                  alt="Preview del producto"
-                                  className="object-cover"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div
-                          {...getRootProps()}
-                          className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 hover:border-primary/50 ${
-                            isDragActive
-                              ? 'border-primary bg-primary/5'
-                              : errors.productImage
-                                ? 'bg-error/5 border-error'
-                                : 'hover:bg-base-200/50 border-base-300'
-                          } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
-                        >
-                          <input {...getInputProps()} />
-                          <div className="space-y-2">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                              {isUploadingImage ? (
-                                <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
-                              ) : (
-                                <svg
-                                  className="h-6 w-6 text-primary"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                  />
-                                </svg>
-                              )}
-                            </div>
-                            <p className="text-sm font-medium">
-                              {isUploadingImage
-                                ? 'Procesando imagen...'
-                                : isDragActive
-                                  ? '¡Suelta la imagen aquí!'
-                                  : 'Arrastra la imagen o haz clic para seleccionar'}
-                            </p>
-                            <p className="text-base-content/60 text-xs">
-                              PNG, JPG, WEBP hasta 10MB
-                            </p>
-                          </div>
-                        </div>
-                        {errors.productImage && (
-                          <div className="label">
-                            <span className="label-text-alt text-error">{errors.productImage}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Sección: Categorización */}
-                <div className="card border border-base-300 bg-base-100 shadow-xl">
-                  <div className="card-body">
-                    <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
-                        <span className="font-bold text-secondary">2</span>
-                      </div>
-                      Categorización y Origen
-                    </h2>
-
-                    {/* Grupo/Tipo de Prenda */}
-                    <div>
-                      <label className="label">
-                        <span className="label-text font-semibold">Grupo de Producto</span>
-                        <span className="label-text-alt text-error">*</span>
-                        <span>
-                          {lockGroup ? (
-                            <Lock
-                              onClick={handleLockGroup}
-                              className="tooltip ml-2 inline-block h-4 w-4 text-error hover:scale-150 hover:cursor-pointer"
-                              data-tip="Seguir con el grupo"
-                            />
-                          ) : (
-                            <Unlock
-                              onClick={handleLockGroup}
-                              className="tooltip ml-2 inline-block h-4 w-4 text-success hover:scale-150 hover:cursor-pointer"
-                              data-tip="No guardar grupo"
-                            />
-                          )}
-                        </span>
-                      </label>
-                      <div className="flex gap-2">
-                        <GroupTreeSelector
-                          groups={grupoTree}
-                          selectedGroupId={tipo ? parseInt(tipo) : null}
-                          onSelectGroup={handleGroupSelect}
-                          className={`flex-1 ${errors.tipo ? 'border-error' : ''}`}
-                          placeholder="Seleccione un grupo de producto..."
-                          emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
-                        />
-                        <div className="tooltip" data-tip="Ver estructura de grupos">
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-outline"
-                            onClick={() => setShowGroupTreeModal(true)}
+                {productos &&
+                  productos.map(
+                    (prod, idx) =>
+                      prod && (
+                        <>
+                          <div
+                            key={prod.id}
+                            className="relative space-y-8 rounded-md border bg-blue-100 p-4 shadow-xl"
                           >
-                            <Menu className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      {errors.tipo && (
-                        <div className="label">
-                          <span className="label-text-alt text-error">{errors.tipo}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      {/* Marca */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Marca</span>
-                          <span className="label-text-alt text-error">*</span>
-                        </label>
-                        <select
-                          value={marca}
-                          onChange={(e) => setMarca(e.target.value)}
-                          className={`select-bordered select w-full focus:border-secondary ${
-                            errors.marca ? 'select-error' : ''
-                          }`}
-                          required
-                        >
-                          <option value="" disabled>
-                            Seleccione una marca
-                          </option>
-                          {brandByProvider.map((marcaItem) => (
-                            <option key={marcaItem.id} value={marcaItem.brand_name}>
-                              {marcaItem.brand_name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.marca && (
-                          <div className="label">
-                            <span className="label-text-alt text-error">{errors.marca}</span>
-                          </div>
-                        )}
-                        {brandByProvider.length === 1 && (
-                          <div className="label">
-                            <span className="label-text-alt text-success">
-                              ✓ Marca seleccionada automáticamente
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Código del proveedor */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Código del proveedor</span>
-                          <span className="label-text-alt text-base-content/60">(Opcional)</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="providerCode"
-                          placeholder="Código interno del proveedor"
-                          value={providerCode}
-                          onChange={(e) => setProviderCode(e.target.value)}
-                          className="input-bordered input w-full focus:border-secondary"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sección: Precios */}
-                <div className="card border border-base-300 bg-base-100 shadow-xl">
-                  <div className="card-body">
-                    <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
-                        <span className="font-bold text-accent">3</span>
-                      </div>
-                      Precios y Costos
-                    </h2>
-
-                    {/* Control de cálculo automático */}
-                    {settings.autoCalculatePrice && (
-                      <div className="alert mb-6 bg-accent">
-                        <div className="flex w-full items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl text-info">🧮</span>
-                            <div>
-                              <div className="font-semibold">Cálculo Automático de Precios</div>
-                              <div className="text-sm opacity-75">
-                                Configuración actual:{' '}
-                                {settings.markupType === 'percentage'
-                                  ? `${settings.priceMarkupPercentage}% de ganancia`
-                                  : `$${settings.priceMarkupPercentage} de ganancia fija`}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="form-control">
-                            <label className="label cursor-pointer gap-3">
-                              <span className="label-text font-medium">
-                                {useAutoCalculation ? 'Automático' : 'Manual'}
-                              </span>
-                              <input
-                                type="checkbox"
-                                className="toggle toggle-secondary"
-                                checked={useAutoCalculation}
-                                onChange={(e) => {
-                                  setUseAutoCalculation(e.target.checked)
-                                  if (!e.target.checked) {
-                                    setSalePrice('')
-                                  } else if (e.target.checked && cost && parseFloat(cost) > 0) {
-                                    const calculatedPrice = calculateSalePrice(cost)
-                                    setSalePrice(calculatedPrice)
-                                  }
-                                }}
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      {/* Costo */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Costo del producto</span>
-                          <span className="label-text-alt text-error">*</span>
-                        </label>
-                        <div className="w-full join">
-                          <span className="btn btn-disabled btn-outline join-item">$</span>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={cost}
-                            onChange={(e) => {
-                              const newCost = e.target.value
-                              const regex = /^[0-9]*(\.[0-9]{0,2})?$/
-                              if (regex.test(newCost)) {
-                                setCost(newCost)
-                                if (
-                                  settings.autoCalculatePrice &&
-                                  useAutoCalculation &&
-                                  newCost &&
-                                  parseFloat(newCost) > 0
-                                ) {
-                                  const calculatedPrice = calculateSalePrice(newCost)
-                                  setSalePrice(calculatedPrice)
-                                }
-                              }
-                            }}
-                            className={`input-bordered input flex-1 join-item focus:border-accent ${
-                              errors.cost ? 'input-error' : ''
-                            }`}
-                            required
-                          />
-                        </div>
-                        {errors.cost && (
-                          <div className="label">
-                            <span className="label-text-alt text-error">{errors.cost}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Precio de Venta */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Precio de venta</span>
-                          <span className="label-text-alt text-error">*</span>
-                          {settings.autoCalculatePrice && useAutoCalculation && (
-                            <span className="label-text-alt text-xs text-success">
-                              📊 Cálculo automático activo
-                            </span>
-                          )}
-                          {settings.autoCalculatePrice && !useAutoCalculation && (
-                            <span className="label-text-alt text-xs text-warning">
-                              ✏️ Modo manual activo
-                            </span>
-                          )}
-                        </label>
-                        <div className="w-full join">
-                          <span className="btn btn-disabled btn-outline join-item">$</span>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            placeholder={
-                              settings.autoCalculatePrice && useAutoCalculation
-                                ? 'Se calculará automáticamente'
-                                : '0.00'
-                            }
-                            value={salePrice}
-                            onChange={(e) => {
-                              const newSalePrice = e.target.value
-                              const regex = /^[0-9]*(\.[0-9]{0,2})?$/
-                              if (regex.test(newSalePrice)) {
-                                setSalePrice(newSalePrice)
-                              }
-                            }}
-                            className={`input-bordered input flex-1 join-item focus:border-accent ${
-                              errors.salePrice ? 'input-error' : ''
-                            } ${
-                              settings.autoCalculatePrice && useAutoCalculation && cost
-                                ? 'bg-success/10 border-success/30'
-                                : ''
-                            }`}
-                            disabled={
-                              settings.autoCalculatePrice &&
-                              useAutoCalculation &&
-                              cost &&
-                              parseFloat(cost) > 0
-                            }
-                            required
-                          />
-                        </div>
-                        {errors.salePrice && (
-                          <div className="label">
-                            <span className="label-text-alt text-error">{errors.salePrice}</span>
-                          </div>
-                        )}
-                        {settings.autoCalculatePrice && useAutoCalculation && (
-                          <div className="label">
-                            <span className="label-text-alt text-xs text-info">
-                              💡{' '}
-                              {settings.markupType === 'percentage'
-                                ? `Ganancia: ${settings.priceMarkupPercentage}%`
-                                : `Ganancia fija: $${settings.priceMarkupPercentage}`}
-                            </span>
-                          </div>
-                        )}
-
-                        {cost && salePrice && (
-                          <div className="label">
-                            <span className="label-text-alt text-info">
-                              Margen:{' '}
-                              {(
-                                ((parseFloat(salePrice) - parseFloat(cost)) / parseFloat(cost)) *
-                                100
-                              ).toFixed(1)}
-                              %
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Información adicional */}
-                    <div className="mt-4 rounded-lg bg-base-200 p-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Impuestos aplicables:</span>
-                        <span className="font-semibold">$0.00</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sección: Talles, Colores y Cantidades */}
-                <div className="card border border-base-300 bg-base-100 shadow-xl">
-                  <div className="card-body">
-                    <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                      <div className="bg-success/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                        <span className="font-bold text-success">4</span>
-                      </div>
-                      Talles, Colores y Cantidades
-                    </h2>
-
-                    {/* Mensajes de error */}
-                    {errors.talles && (
-                      <div className="alert alert-error mb-4">
-                        <svg
-                          className="h-6 w-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
-                          />
-                        </svg>
-                        <span>{errors.talles}</span>
-                      </div>
-                    )}
-
-                    {errors.cantidad && (
-                      <div className="alert alert-error mb-4">
-                        <svg
-                          className="h-6 w-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
-                          />
-                        </svg>
-                        <span>{errors.cantidad}</span>
-                      </div>
-                    )}
-
-                    <div className="space-y-6">
-                      {talles.map((talle, talleIndex) => (
-                        <div
-                          key={talleIndex}
-                          className="card border border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md"
-                        >
-                          <div className="card-body">
-                            {/* Header del talle */}
                             <div className="mb-4 flex items-center justify-between">
-                              <h3 className="flex items-center gap-2 text-lg font-semibold">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
-                                  <span className="text-xs font-bold text-primary">
-                                    {talleIndex + 1}
-                                  </span>
-                                </div>
-                                Talle {talleIndex + 1}
-                              </h3>
-                              {talles.length > 1 && (
-                                <div className="tooltip" data-tip="Eliminar este talle">
-                                  <button
-                                    type="button"
-                                    className="btn btn-error"
-                                    onClick={() => handleDeleteTalle(talleIndex)}
-                                  >
-                                    <Trash2 className="h-5 w-5" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Selección de talle */}
-                            <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                              <div>
-                                <label className="label">
-                                  <span className="label-text font-semibold">
-                                    Seleccionar talle
-                                  </span>
-                                  <span className="label-text-alt text-error">*</span>
-                                </label>
-                                <div className="flex gap-2">
-                                  <select
-                                    value={talle.talle}
-                                    onChange={(e) => handleTalleChange(talleIndex, e.target.value)}
-                                    className="select-bordered select flex-1 focus:border-primary"
-                                    required
-                                  >
-                                    <option value="" disabled>
-                                      Seleccione un talle
-                                    </option>
-                                    {getTallesDisponibles(talleIndex).map((talleBDItem) => (
-                                      <option key={talleBDItem.id} value={talleBDItem.size_name}>
-                                        {talleBDItem.size_name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <ModalSize onRefresh={refreshData} />
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Sección de colores */}
-                            <div>
-                              <div className="mb-4 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold">Colores y cantidades</span>
-                                  <ModalColor onRefresh={refreshData} />
-                                </div>
+                              <h2 className="card-title text-2xl">Artículo {idx + 1}</h2>
+                              {productos.length > 1 && (
                                 <button
                                   type="button"
-                                  onClick={() => agregarColor(talleIndex)}
-                                  className="btn btn-secondary"
-                                  disabled={!talle.talle}
+                                  onClick={() => eliminarProducto(idx)}
+                                  className="btn btn-error btn-outline btn-sm btn-circle"
+                                  title="Eliminar este productos"
                                 >
-                                  + Agregar color
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
-                              </div>
+                              )}
+                            </div>
+                            <div className="card border border-base-300 bg-base-100 shadow-xl">
+                              <div className="card-body">
+                                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                                    <span className="font-bold text-primary">1</span>
+                                  </div>
+                                  Información Básica
+                                </h2>
 
-                              <div className="space-y-3">
-                                {talle.colores.map((color, colorIndex) => (
-                                  <div
-                                    key={colorIndex}
-                                    className="flex items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3"
-                                  >
-                                    <div className="flex-1">
-                                      <ColorSelect
-                                        colors={
-                                          coloresDisponiblesPorTalle[talle.talle] !== undefined
-                                            ? colors.filter((colorItem) =>
-                                                coloresDisponiblesPorTalle[talle.talle]?.includes(
-                                                  colorItem.color_name
-                                                )
-                                              )
-                                            : []
-                                        }
-                                        value={color.color || ''}
-                                        onChange={(selectedColorName) => {
-                                          console.log('🎨 Color seleccionado:', selectedColorName)
-                                          console.log('🎨 Color actual en state:', color.color)
-                                          handleColorSelect(
-                                            talleIndex,
-                                            colorIndex,
-                                            'color',
-                                            selectedColorName
-                                          )
-                                        }}
-                                        className="w-full"
-                                        placeholder={
-                                          coloresDisponiblesPorTalle[talle.talle] !== undefined
-                                            ? 'Seleccione un color'
-                                            : 'Seleccione un talle primero'
-                                        }
-                                        disabled={
-                                          coloresDisponiblesPorTalle[talle.talle] === undefined
-                                        }
-                                        required
-                                      />
-                                    </div>
-                                    <div className="w-24">
-                                      <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        placeholder="Cant"
-                                        value={color.cantidad}
-                                        onChange={(e) => {
-                                          const newQuantity = e.target.value
-                                          const regex = /^[0-9]*$/
-                                          if (regex.test(newQuantity)) {
-                                            handleColorChange(
-                                              talleIndex,
-                                              colorIndex,
-                                              'cantidad',
-                                              parseInt(newQuantity, 10) || 0
-                                            )
-                                          }
-                                        }}
-                                        className="input-bordered input input-sm w-full text-center"
-                                        required
-                                      />
-                                    </div>
-                                    {talle.colores.length > 1 && (
-                                      <div className="tooltip" data-tip="Eliminar color">
-                                        <button
-                                          type="button"
-                                          className="btn btn-error"
-                                          onClick={() => handleDeleteColor(talleIndex, colorIndex)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </button>
+                                <div className="space-y-6">
+                                  {/* Informacion básica del productos */}
+                                  <div key={idx} className="mb-4 rounded-lg border bg-base-200 p-4">
+                                    <label className="label">
+                                      <span className="label-text font-semibold">
+                                        Nombre del productos
+                                      </span>
+                                      <span className="label-text-alt text-error">*</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      placeholder="Ej: Remera básica algodón"
+                                      className={`input-bordered input w-full focus:border-primary ${errors[`productName_${idx}`] ? 'input-error' : ''}`}
+                                      value={prod.product_name}
+                                      onChange={(e) =>
+                                        handleProductChange(idx, 'product_name', e.target.value)
+                                      }
+                                      required
+                                    />
+                                    {errors[`productName_${idx}`] && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-error">
+                                          {errors[`productName_${idx}`]}
+                                        </span>
                                       </div>
                                     )}
                                   </div>
-                                ))}
+
+                                  {/* Imagen del productos */}
+                                  <div>
+                                    <label className="label">
+                                      <span className="label-text font-semibold">
+                                        Imagen del productos
+                                      </span>
+                                      <span className="label-text-alt text-base-content/60">
+                                        (Opcional)
+                                      </span>
+                                    </label>
+
+                                    {prod.productImage && (
+                                      <div className="mb-4 flex justify-center">
+                                        <div className="avatar">
+                                          <div className="mask-squircle h-32 w-32 rounded-xl ring-offset-2 ring-offset-base-100">
+                                            <img
+                                              src={base64ToObjectUrl(productImage)}
+                                              alt="Preview del productos"
+                                              className="object-cover"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    <div
+                                      {...getRootProps()}
+                                      className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 hover:border-primary/50 ${
+                                        isDragActive
+                                          ? 'border-primary bg-primary/5'
+                                          : errors.productImage
+                                            ? 'bg-error/5 border-error'
+                                            : 'hover:bg-base-200/50 border-base-300'
+                                      } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
+                                    >
+                                      <input {...getInputProps()} />
+                                      <div className="space-y-2">
+                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                                          {isUploadingImage ? (
+                                            <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
+                                          ) : (
+                                            <CloudUpload />
+                                          )}
+                                        </div>
+                                        <p className="text-sm font-medium">
+                                          {isUploadingImage
+                                            ? 'Procesando imagen...'
+                                            : isDragActive
+                                              ? '¡Suelta la imagen aquí!'
+                                              : 'Arrastra la imagen o haz clic para seleccionar'}
+                                        </p>
+                                        <p className="text-base-content/60 text-xs">
+                                          PNG, JPG, WEBP hasta 10MB
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {errors.productImage && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-error">
+                                          {errors.productImage}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Sección: Categorización */}
+                            <div className="card border border-base-300 bg-base-100 shadow-xl">
+                              <div className="card-body">
+                                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
+                                    <span className="font-bold text-secondary">2</span>
+                                  </div>
+                                  Categorización y Origen
+                                </h2>
+
+                                {/* Grupo/Tipo de Prenda */}
+                                <div>
+                                  <label className="label">
+                                    <span className="label-text font-semibold">
+                                      Grupo de Productos
+                                    </span>
+                                    <span className="label-text-alt text-error">*</span>
+                                    <span>
+                                      {lockGroup ? (
+                                        <Lock
+                                          onClick={handleLockGroup}
+                                          className="tooltip ml-2 inline-block h-4 w-4 text-error hover:scale-150 hover:cursor-pointer"
+                                          data-tip="Seguir con el grupo"
+                                        />
+                                      ) : (
+                                        <Unlock
+                                          onClick={handleLockGroup}
+                                          className="tooltip ml-2 inline-block h-4 w-4 text-success hover:scale-150 hover:cursor-pointer"
+                                          data-tip="No guardar grupo"
+                                        />
+                                      )}
+                                    </span>
+                                  </label>
+                                  <div className="flex gap-2">
+                                    <GroupTreeSelector
+                                      groups={grupoTree}
+                                      onSelectGroup={handleGroupSelect}
+                                      onGroupSelect={(group) =>
+                                        handleProductChange(idx, 'group_id', group.id.toString())
+                                      }
+                                      disabled={lockGroup && idx > 0}
+                                      selectedValue={prod.group_id} // <-- CORRECT
+                                      className={`flex-1 ${prod.errors?.group_id ? 'border-error' : ''}`} // <-- CORRECT
+                                      placeholder="Seleccione un grupo de productos..."
+                                      emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
+                                    />
+                                    {prod.errors?.group_id && (
+                                      <span className="text-xs text-error">
+                                        {prod.errors.group_id}
+                                      </span>
+                                    )}
+                                    <div className="tooltip" data-tip="Ver estructura de grupos">
+                                      <button
+                                        type="button"
+                                        className="btn btn-secondary btn-outline"
+                                        onClick={() => setShowGroupTreeModal(true)}
+                                      >
+                                        <Menu className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                  {/* Marca */}
+                                  <div>
+                                    <label className="label">
+                                      <span className="label-text font-semibold">Marca</span>
+                                      <span className="label-text-alt text-error">*</span>
+                                    </label>
+                                    <select
+                                      value={prod.brand_id}
+                                      onChange={(e) =>
+                                        handleProductChange(idx, 'brand_id', e.target.value)
+                                      }
+                                      className={`select-bordered select w-full focus:border-secondary ${
+                                        prod.errors?.brand_id ? 'select-error' : ''
+                                      }`}
+                                      required
+                                    >
+                                      <option value="" disabled>
+                                        Seleccione una marca
+                                      </option>
+                                      {brandByProvider.map((brand) => (
+                                        <option key={brand.id} value={brand.id}>
+                                          {brand.brand_name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    {prod.errors?.brand_id && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-error">
+                                          {prod.errors.brand_id}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {brandByProvider.length === 1 && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-success">
+                                          ✓ Marca seleccionada automáticamente
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Código del proveedor */}
+                                  <div>
+                                    <label className="label">
+                                      <span className="label-text font-semibold">
+                                        Código del proveedor
+                                      </span>
+                                      <span className="label-text-alt text-base-content/60">
+                                        (Opcional)
+                                      </span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      id="provider_code"
+                                      placeholder="Código interno del proveedor"
+                                      value={prod.provider_code}
+                                      onChange={(e) =>
+                                        handleProductChange(idx, 'provider_code', e.target.value)
+                                      }
+                                      className="input-bordered input w-full focus:border-secondary"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Sección: Precios */}
+                            <div className="card border border-base-300 bg-base-100 shadow-xl">
+                              <div className="card-body">
+                                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                                    <span className="font-bold text-accent">3</span>
+                                  </div>
+                                  Precios y Costos
+                                </h2>
+
+                                {/* Control de cálculo automático */}
+                                {settings.autoCalculatePrice && (
+                                  <div className="alert mb-6 bg-accent">
+                                    <div className="flex w-full items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-2xl text-info">🧮</span>
+                                        <div>
+                                          <div className="font-semibold">
+                                            Cálculo Automático de Precios
+                                          </div>
+                                          <div className="text-sm opacity-75">
+                                            Configuración actual:{' '}
+                                            {settings.markupType === 'percentage'
+                                              ? `${settings.priceMarkupPercentage}% de ganancia`
+                                              : `$${settings.priceMarkupPercentage} de ganancia fija`}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="form-control">
+                                        <label className="label cursor-pointer gap-3">
+                                          <span className="label-text font-medium">
+                                            {useAutoCalculation ? 'Automático' : 'Manual'}
+                                          </span>
+                                          <input
+                                            type="checkbox"
+                                            className="toggle toggle-secondary"
+                                            checked={productos.useAutoCalculation}
+                                            onChange={(e) =>
+                                              handleAutoCalcToggle(idx, e.target.checked)
+                                            }
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                  {/* Costo */}
+                                  <div>
+                                    <label className="label">
+                                      <span className="label-text font-semibold">
+                                        Costo del productos
+                                      </span>
+                                      <span className="label-text-alt text-error">*</span>
+                                    </label>
+                                    <div>
+                                      <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder="0.00"
+                                        value={prod.cost}
+                                        onChange={(e) => {
+                                          const newCost = e.target.value
+                                          const regex = /^[0-9]*(\.[0-9]{0,2})?$/
+                                          if (regex.test(newCost)) {
+                                            handleProductChange(idx, 'cost', newCost)
+                                          }
+                                        }}
+                                        className={`input-bordered input w-full ${prod.errors?.cost ? 'input-error' : ''}`}
+                                      />
+                                      {prod.errors?.cost && (
+                                        <span className="label-text-alt text-error">
+                                          {prod.errors.cost}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {errors.cost && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-error">
+                                          {errors.cost}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Precio de Venta */}
+                                  <div>
+                                    <label className="label">
+                                      <span className="label-text font-semibold">
+                                        Precio de venta
+                                      </span>
+                                      <span className="label-text-alt text-error">*</span>
+                                      {settings.autoCalculatePrice && useAutoCalculation && (
+                                        <span className="label-text-alt text-xs text-success">
+                                          📊 Cálculo automático activo
+                                        </span>
+                                      )}
+                                      {settings.autoCalculatePrice && !useAutoCalculation && (
+                                        <span className="label-text-alt text-xs text-warning">
+                                          ✏️ Modo manual activo
+                                        </span>
+                                      )}
+                                    </label>
+                                    <div className="w-full join">
+                                      <span className="btn btn-disabled btn-outline join-item">
+                                        $
+                                      </span>
+                                      <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder={
+                                          settings.autoCalculatePrice && useAutoCalculation
+                                            ? 'Se calculará automáticamente'
+                                            : '0.00'
+                                        }
+                                        value={prod.sale_price}
+                                        onChange={(e) => {
+                                          const newSalePrice = e.target.value
+                                          const regex = /^[0-9]*(\.[0-9]{0,2})?$/
+                                          if (regex.test(newSalePrice)) {
+                                            handleProductChange(idx, 'sale_price', newSalePrice)
+                                          }
+                                        }}
+                                        className={`input-bordered input flex-1 join-item focus:border-accent ${
+                                          prod.errors?.salePrice ? 'input-error' : ''
+                                        } ${
+                                          settings.autoCalculatePrice &&
+                                          useAutoCalculation &&
+                                          prod.cost
+                                            ? 'bg-success/10 border-success/30'
+                                            : ''
+                                        }`}
+                                        disabled={
+                                          settings.autoCalculatePrice &&
+                                          prod.useAutoCalculation &&
+                                          prod.cost &&
+                                          parseFloat(prod.cost) > 0
+                                        }
+                                        required
+                                      />
+                                    </div>
+                                    {prod.errors?.salePrice && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-error">
+                                          {prod.errors.salePrice}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {settings.autoCalculatePrice && prod.useAutoCalculation && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-xs text-info">
+                                          💡{' '}
+                                          {settings.markupType === 'percentage'
+                                            ? `Ganancia: ${settings.priceMarkupPercentage}%`
+                                            : `Ganancia fija: $${settings.priceMarkupPercentage}`}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {prod.cost && prod.sale_price && (
+                                      <div className="label">
+                                        <span className="label-text-alt text-info">
+                                          Margen:{' '}
+                                          {(
+                                            ((parseFloat(prod.sale_price) - parseFloat(prod.cost)) /
+                                              parseFloat(prod.cost)) *
+                                            100
+                                          ).toFixed(1)}
+                                          %
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Información adicional */}
+                                <div className="mt-4 rounded-lg bg-base-200 p-4">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span>Impuestos aplicables:</span>
+                                    <span className="font-semibold">$0.00</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Sección: Talles, Colores y Cantidades */}
+                            <div className="card border border-base-300 bg-base-100 shadow-xl">
+                              <div className="card-body">
+                                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                                  <div className="bg-success/10 flex h-8 w-8 items-center justify-center rounded-lg">
+                                    <span className="font-bold text-success">4</span>
+                                  </div>
+                                  Talles, Colores y Cantidades
+                                </h2>
+
+                                {/* Mensajes de error */}
+                                {errors.talles && (
+                                  <div className="alert alert-error mb-4">
+                                    <svg
+                                      className="h-6 w-6"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
+                                      />
+                                    </svg>
+                                    <span>{errors.talles}</span>
+                                  </div>
+                                )}
+
+                                {errors.cantidad && (
+                                  <div className="alert alert-error mb-4">
+                                    <svg
+                                      className="h-6 w-6"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
+                                      />
+                                    </svg>
+                                    <span>{errors.cantidad}</span>
+                                  </div>
+                                )}
+
+                                <div className="space-y-6">
+                                  {prod.talles.map((talle, talleIndex) => (
+                                    <div
+                                      key={talleIndex}
+                                      className="card border border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md"
+                                    >
+                                      <div className="card-body">
+                                        {/* Header del talle */}
+                                        <div className="mb-4 flex items-center justify-between">
+                                          <h3 className="flex items-center gap-2 text-lg font-semibold">
+                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                                              <span className="text-xs font-bold text-primary">
+                                                {talleIndex + 1}
+                                              </span>
+                                            </div>
+                                            Talle {talleIndex + 1}
+                                          </h3>
+                                          {prod.talles.length > 1 && (
+                                            <div className="tooltip" data-tip="Eliminar este talle">
+                                              <button
+                                                type="button"
+                                                className="btn btn-error"
+                                                onClick={() => handleDeleteTalle(idx, talleIndex)}
+                                              >
+                                                <Trash2 className="h-5 w-5" />
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Selección de talle */}
+                                        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                          <div>
+                                            <label className="label">
+                                              <span className="label-text font-semibold">
+                                                Seleccionar talle
+                                              </span>
+                                              <span className="label-text-alt text-error">*</span>
+                                            </label>
+                                            <div className="flex gap-2">
+                                              <select
+                                                value={talle.talle}
+                                                onChange={(e) =>
+                                                  handleTalleChange(idx, talleIndex, e.target.value)
+                                                }
+                                                className="select-bordered select flex-1 focus:border-primary"
+                                                required
+                                              >
+                                                <option value="" disabled>
+                                                  Seleccione un talle
+                                                </option>
+                                                {getTallesDisponibles(idx, talleIndex).map(
+                                                  (talleBDItem) => (
+                                                    <option
+                                                      key={talleBDItem.id}
+                                                      value={talleBDItem.size_name}
+                                                    >
+                                                      {talleBDItem.size_name}
+                                                    </option>
+                                                  )
+                                                )}
+                                              </select>
+                                              <ModalSize onRefresh={refreshData} />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Sección de colores */}
+                                        <div>
+                                          <div className="mb-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-semibold">
+                                                Colores y cantidades
+                                              </span>
+                                              <ModalColor onRefresh={refreshData} />
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => agregarColor(idx, talleIndex)}
+                                              className="btn btn-secondary"
+                                              disabled={!talle.talle}
+                                            >
+                                              + Agregar color
+                                            </button>
+                                          </div>
+
+                                          <div className="space-y-3">
+                                            {talle.colores.map((color, colorIndex) => (
+                                              <div
+                                                key={colorIndex}
+                                                className="flex items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3"
+                                              >
+                                                <div className="flex-1">
+                                                  <ColorSelect
+                                                    colors={
+                                                      coloresDisponiblesPorTalle[talle.talle] !==
+                                                      undefined
+                                                        ? colors.filter((colorItem) =>
+                                                            coloresDisponiblesPorTalle[
+                                                              talle.talle
+                                                            ]?.includes(colorItem.color_name)
+                                                          )
+                                                        : []
+                                                    }
+                                                    value={color.color || ''}
+                                                    onChange={(selectedColorName) => {
+                                                      console.log(
+                                                        '🎨 Color seleccionado:',
+                                                        selectedColorName
+                                                      )
+                                                      console.log(
+                                                        '🎨 Color actual en state:',
+                                                        color.color
+                                                      )
+                                                      handleColorChange(
+                                                        idx,
+                                                        talleIndex,
+                                                        colorIndex,
+                                                        'color',
+                                                        selectedColorName
+                                                      )
+                                                    }}
+                                                    className="w-full"
+                                                    placeholder={
+                                                      coloresDisponiblesPorTalle[talle.talle] !==
+                                                      undefined
+                                                        ? 'Seleccione un color'
+                                                        : 'Seleccione un talle primero'
+                                                    }
+                                                    disabled={
+                                                      coloresDisponiblesPorTalle[talle.talle] ===
+                                                      undefined
+                                                    }
+                                                    required
+                                                  />
+                                                </div>
+                                                <div className="w-24">
+                                                  <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    placeholder="Cant"
+                                                    value={color.cantidad}
+                                                    onChange={(e) => {
+                                                      const newQuantity = e.target.value
+                                                      const regex = /^[0-9]*$/
+                                                      if (regex.test(newQuantity)) {
+                                                        handleColorChange(
+                                                          idx,
+                                                          talleIndex,
+                                                          colorIndex,
+                                                          'cantidad',
+                                                          parseInt(newQuantity, 10) || 0
+                                                        )
+                                                      }
+                                                    }}
+                                                    className="input-bordered input input-sm w-full text-center"
+                                                    required
+                                                  />
+                                                </div>
+                                                {talle.colores.length > 1 && (
+                                                  <div
+                                                    className="tooltip"
+                                                    data-tip="Eliminar color"
+                                                  >
+                                                    <button
+                                                      type="button"
+                                                      className="btn btn-error"
+                                                      onClick={() =>
+                                                        handleDeleteColor(
+                                                          idx,
+                                                          talleIndex,
+                                                          colorIndex
+                                                        )
+                                                      }
+                                                    >
+                                                      <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Botón para agregar talle */}
+                                <div className="mt-6 flex justify-center">
+                                  <button
+                                    type="button"
+                                    onClick={agregarTalle}
+                                    className="btn btn-primary btn-outline gap-2"
+                                    disabled={loadingData || tallesBD.length === 0}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                    Agregar Nuevo Talle
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Sección: Observaciones */}
+                            <div className="card border border-base-300 bg-base-100 shadow-xl">
+                              <div className="card-body">
+                                <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                                  <div className="bg-info/10 flex h-8 w-8 items-center justify-center rounded-lg">
+                                    <span className="font-bold text-info">5</span>
+                                  </div>
+                                  Observaciones Adicionales
+                                </h2>
+
+                                <div>
+                                  <label className="label">
+                                    <span className="label-text font-semibold">
+                                      Comentarios o notas
+                                    </span>
+                                    <span className="label-text-alt text-base-content/60">
+                                      (Opcional)
+                                    </span>
+                                  </label>
+                                  <textarea
+                                    name="comments"
+                                    placeholder="Ingrese observaciones, notas especiales, o cualquier información adicional sobre el productos..."
+                                    value={prod.comments}
+                                    onChange={(e) =>
+                                      handleProductChange(idx, 'comments', e.target.value)
+                                    }
+                                    className="textarea-bordered textarea h-24 w-full resize-none focus:border-info"
+                                    rows="3"
+                                  ></textarea>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Botón para agregar talle */}
-                    <div className="mt-6 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={agregarTalle}
-                        className="btn btn-primary btn-outline gap-2"
-                        disabled={loadingData || tallesBD.length === 0}
-                      >
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                          />
-                        </svg>
-                        Agregar Nuevo Talle
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sección: Observaciones */}
-                <div className="card border border-base-300 bg-base-100 shadow-xl">
-                  <div className="card-body">
-                    <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                      <div className="bg-info/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                        <span className="font-bold text-info">5</span>
-                      </div>
-                      Observaciones Adicionales
-                    </h2>
-
-                    <div>
-                      <label className="label">
-                        <span className="label-text font-semibold">Comentarios o notas</span>
-                        <span className="label-text-alt text-base-content/60">(Opcional)</span>
-                      </label>
-                      <textarea
-                        name="comments"
-                        placeholder="Ingrese observaciones, notas especiales, o cualquier información adicional sobre el producto..."
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        className="textarea-bordered textarea h-24 w-full resize-none focus:border-info"
-                        rows="3"
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
-                </div>
-              </> 
-              ))}
+                        </>
+                      )
+                  )}
               </>
             )}
-            <button className="btn btn-primary mt-4">Agregar Producto</button>
+            <button className="btn btn-primary mt-4">Agregar Productos</button>
           </section>
           {/* Sección: Resumen y Acciones */}
           <div className="card border border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 shadow-xl">
@@ -1530,7 +1592,7 @@ export default function NuevoProducto() {
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 {/* Resumen */}
                 <div className="space-y-4">
-                  <h3 className="text-xl font-bold text-primary">Resumen del Producto</h3>
+                  <h3 className="text-xl font-bold text-primary">Resumen del Productos</h3>
                   <div className="stats shadow">
                     <div className="stat">
                       <div className="stat-title">Cantidad Total</div>
@@ -1540,20 +1602,24 @@ export default function NuevoProducto() {
                     <div className="stat">
                       <div className="stat-title">Variedades</div>
                       <div className="stat-value text-secondary">
-                        {talles.filter((t) => t.talle).length}
+                        {productos.reduce(
+                          (acc, prod) => acc + prod.talles.filter((t) => t.talle).length,
+                          0
+                        )}
                       </div>
                       <div className="stat-desc">diferentes</div>
                     </div>
                     <div className="stat">
                       <div className="stat-title">Total</div>
                       <div className="stat-value text-accent">
-                        {
-                          [
-                            ...new Set(
-                              talles.flatMap((t) => t.colores.map((c) => c.color).filter(Boolean))
+                        {(() => {
+                          const allColors = productos.flatMap((prod) =>
+                            prod.talles.flatMap((t) =>
+                              t.colores.map((c) => c.color).filter(Boolean)
                             )
-                          ].length
-                        }
+                          )
+                          return new Set(allColors).size
+                        })()}
                       </div>
                       <div className="stat-desc">únicos</div>
                     </div>
