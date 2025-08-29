@@ -11,7 +11,6 @@ import {
   Unlock,
   ChevronsDown,
   ChevronsUp,
-  CloudUpload,
   Plus
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
@@ -30,8 +29,7 @@ import GroupTreePreviewModal from '../../components/GroupTreePreviewModal'
 import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 import ProductImageUploader from '../../componentes especificos/dropZone'
-import { useMemo } from 'react' // Make sure to import useMemo at the top of your file
-import { Shirt, Palette, Boxes } from 'lucide-react'
+import { Shirt,  Boxes } from 'lucide-react'
 
 //BUG: El color ahora tiene bug (Ver como arreglarlo).
 //TODO: Arreglar Agregar Talle
@@ -107,7 +105,6 @@ export default function NuevoProductoDeProveedor() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [coloresDisponiblesPorTalle, setColoresDisponiblesPorTalle] = useState({})
   const [productImage, setProductImage] = useState('')
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [errors, setErrors] = useState({})
   const [showGroupTreeModal, setShowGroupTreeModal] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -179,7 +176,6 @@ export default function NuevoProductoDeProveedor() {
     fetchData()
   }, [refreshTrigger])
 
-  // Sincronizar el estado local con la configuración global
   useEffect(() => {
     setUseAutoCalculation(settings.autoCalculatePrice)
   }, [settings.autoCalculatePrice])
@@ -517,7 +513,7 @@ export default function NuevoProductoDeProveedor() {
   }
 
   const calculateTotalCost = () => {
-    return productos.reduce((total, prod) => {
+    const total = productos.reduce((total, prod) => {
       const numericCost = parseFloat(prod.cost) || 0
       const totalCantidad = prod.talles.reduce(
         (talleSum, talle) =>
@@ -532,6 +528,12 @@ export default function NuevoProductoDeProveedor() {
       )
       return total + numericCost * totalCantidad
     }, 0)
+
+    return total.toLocaleString('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2
+    })
   }
 
   if (loadingData) {
@@ -583,7 +585,7 @@ export default function NuevoProductoDeProveedor() {
           <div className="grid grid-cols-3">
             <div>
               <label htmlFor="" className="text-xl font-bold">
-                Total: {calculateTotalCost}
+                Total: {calculateTotalCost()}
               </label>
             </div>
             <div>
@@ -593,10 +595,31 @@ export default function NuevoProductoDeProveedor() {
             </div>
             <div>
               <label htmlFor="" className="text-xl font-bold">
-                Cantidad total de productos:{cantidadTotal}
+                Cantidad total de productos: {cantidadTotal}
               </label>
             </div>
           </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          {dropdownOpen ? (
+            <button
+              className="hover:scale-110 hover:cursor-pointer"
+              onClick={handleToggleDropdown}
+              title="Resumen productos"
+              type="button"
+            >
+              <ChevronsDown />
+            </button>
+          ) : (
+            <button
+              className="hover:scale-110 hover:cursor-pointer"
+              onClick={handleToggleDropdown}
+              title="Informacion completa productos"
+              type="button"
+            >
+              <ChevronsUp />
+            </button>
+          )}
         </div>
       </div>
 
@@ -1396,7 +1419,7 @@ export default function NuevoProductoDeProveedor() {
                                 <div className="mt-6 flex justify-center">
                                   <button
                                     type="button"
-                                    onClick={agregarTalle}
+                                    onClick={() => agregarTalle(idx)}
                                     className="btn btn-primary btn-outline gap-2"
                                     disabled={loadingData || tallesBD.length === 0}
                                   >
