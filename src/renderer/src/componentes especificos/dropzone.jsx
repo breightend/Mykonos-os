@@ -58,20 +58,24 @@ export default function ProductImageUploader({ productImage, onImageDrop, onImag
     <div>
       {/* Image Preview */}
       {productImage && (
-        <div className="relative mx-auto mb-4 h-32 w-32">
-          <img
-            src={base64ToObjectUrl(productImage)}
-            alt="Vista previa del producto"
-            className="h-32 w-32 rounded-xl object-cover"
-          />
-          <button
-            type="button"
-            onClick={onImageRemove}
-            className="btn btn-error btn-xs btn-circle absolute -right-2 -top-2"
-            title="Quitar imagen"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+        <div className="relative mx-auto mb-4 flex flex-col items-center justify-center">
+
+          <div className="group relative h-40 w-40 overflow-hidden rounded-2xl shadow-lg ring-2 ring-primary ring-offset-2 ring-offset-base-100 transition-transform duration-200 hover:scale-105 hover:ring-accent">
+            <img
+              src={base64ToObjectUrl(productImage)}
+              alt="Vista previa del producto"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+            />
+
+            <button
+              type="button"
+              onClick={onImageRemove}
+              title="Quitar imagen"
+              className="absolute right-2 top-2 z-10 flex h-9 w-9 scale-90 items-center justify-center rounded-full bg-black/30 text-white opacity-0 backdrop-blur-sm transition-all duration-300 ease-in-out hover:bg-error hover:!opacity-100 group-hover:scale-100 group-hover:opacity-100"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       )}
 

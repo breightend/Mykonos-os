@@ -30,6 +30,8 @@ import GroupTreePreviewModal from '../../components/GroupTreePreviewModal'
 import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 import ProductImageUploader from '../../componentes especificos/dropZone'
+import { useMemo } from 'react' // Make sure to import useMemo at the top of your file
+import { Shirt, Palette, Boxes } from 'lucide-react'
 
 //BUG: El color ahora tiene bug (Ver como arreglarlo).
 //TODO: Arreglar Agregar Talle
@@ -62,7 +64,7 @@ export default function NuevoProductoDeProveedor() {
   }, [providerId])
 
   const getInitialProductState = () => ({
-    id: Date.now(), // Unique key for React's map function
+    id: Date.now(),
     provider_code: '',
     product_name: '',
     group_id: '',
@@ -80,7 +82,7 @@ export default function NuevoProductoDeProveedor() {
     creation_date: new Date().toISOString(),
     last_modified_date: new Date().toISOString(),
     state: 'pendiente',
-    talles: [{ talle: '', colores: [{ color: '', cantidad: '' }] }],
+    talles: [{ talle: '', colores: [{ color: '', cantidad: 0 }] }],
     product_image: '',
     initial_quantity: 0,
     errors: {}
@@ -505,25 +507,31 @@ export default function NuevoProductoDeProveedor() {
     product.useAutoCalculation = isChecked
 
     if (isChecked) {
-      // If toggled ON, calculate the price immediately if there's a valid cost
       const numericCost = parseFloat(product.cost)
       if (numericCost > 0) {
         product.sale_price = calculateSalePrice(numericCost)
       }
     }
-    // If toggled OFF, the user can now manually edit the sale_price, so we do nothing here.
 
     setProductos(newProductos)
   }
 
   const calculateTotalCost = () => {
-    productos.map((prod) => {
-      const numericCost = parseFloat(prod.cost)
-      if (numericCost > 0) {
-        return numericCost * (prod.quantity || 0)
-      }
-      return 0
-    })
+    return productos.reduce((total, prod) => {
+      const numericCost = parseFloat(prod.cost) || 0
+      const totalCantidad = prod.talles.reduce(
+        (talleSum, talle) =>
+          talleSum +
+          (talle.colores
+            ? talle.colores.reduce(
+                (colorSum, color) => colorSum + (parseFloat(color.cantidad) || 0),
+                0
+              )
+            : 0),
+        0
+      )
+      return total + numericCost * totalCantidad
+    }, 0)
   }
 
   if (loadingData) {
@@ -647,39 +655,86 @@ export default function NuevoProductoDeProveedor() {
                     {productos &&
                       productos.map((prod, idx) => (
                         <>
-                          <div key={prod.id}>
-                            <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                                <span className="font-bold text-primary">{idx + 1}</span>
-                              </div>
-                              Información
-                            </h2>
-                          </div>
-                          <div className="space-y-6">
-                            {/* Nombre del productos */}
-                            <div>
-                              <label className="label">
-                                <span className="label-text font-semibold">
-                                  Nombre del productos: {prod.product_name || ' No especificado'}
-                                </span>
-                              </label>
-                            </div>
+                          <div
+                            key={prod.id}
+                            className="card-compact card w-full bg-base-200 shadow-md"
+                          >
+                            <div className="card-body">
+                              <div className="flex flex-col gap-6 md:flex-row">
+                                {/* --- Image Column --- */}
+                                {prod.product_image && (
+                                  <div className="mx-auto flex-shrink-0 md:mx-0">
+                                    <img
+                                      src={base64ToObjectUrl(prod.product_image)}
+                                      alt={`Vista previa de ${prod.product_name}`}
+                                      className="h-32 w-32 rounded-lg object-cover shadow-lg"
+                                    />
+                                  </div>
+                                )}
 
-                            {/* Imagen del productos */}
-                            <div>
-                              {prod.product_image && (
-                                <div className="mb-4 flex justify-center">
-                                  <div className="avatar">
-                                    <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
-                                      <img
-                                        src={base64ToObjectUrl(prod.product_image)}
-                                        alt="Vista previa del producto"
-                                        className="h-32 w-32 rounded-xl object-cover"
-                                      />
+                                {/* --- Details Column --- */}
+                                <div className="flex-grow">
+                                  {/* 2. Clear Title and Stats */}
+                                  <div className="mb-3 flex items-start justify-between">
+                                    <h2 className="card-title text-primary">
+                                      {prod.product_name || 'Artículo sin nombre'}
+                                    </h2>
+                                    <div className="badge badge-outline badge-lg">
+                                      Artículo #{idx + 1}
                                     </div>
                                   </div>
+
+                                  {/* 3. Key Stats at a glance */}
+                                  <div className="text-base-content/80 mb-4 flex items-center gap-4 text-sm">
+                                    <span className="flex items-center gap-2 font-semibold">
+                                      <Boxes className="h-4 w-4 text-secondary" />
+                                      Total: {calculateTotalCost} unidades
+                                    </span>
+                                  </div>
+
+                                  {/* 4. Improved Variant List (Grouped by Talle) */}
+                                  <h3 className="mb-2 font-semibold">Variedades:</h3>
+                                  <div className="space-y-3">
+                                    {prod.talles && prod.talles.length > 0 ? (
+                                      prod.talles.map(
+                                        (talle, tIdx) =>
+                                          talle.talle && ( // Only show if a size is selected
+                                            <div
+                                              key={tIdx}
+                                              className="rounded-md bg-base-100 p-2 text-sm"
+                                            >
+                                              <div className="flex items-center gap-2 font-bold">
+                                                <Shirt className="h-4 w-4" /> Talle: {talle.talle}
+                                              </div>
+                                              <ul className="mt-1 list-inside list-disc pl-4">
+                                                {talle.colores.map(
+                                                  (color, cIdx) =>
+                                                    color.color &&
+                                                    color.cantidad > 0 && ( // Only show if color/qty exists
+                                                      <li key={cIdx}>
+                                                        Color:{' '}
+                                                        <span className="font-semibold">
+                                                          {color.color}
+                                                        </span>
+                                                        , Cantidad:{' '}
+                                                        <span className="font-semibold">
+                                                          {color.cantidad}
+                                                        </span>
+                                                      </li>
+                                                    )
+                                                )}
+                                              </ul>
+                                            </div>
+                                          )
+                                      )
+                                    ) : (
+                                      <p className="text-base-content/60 text-sm">
+                                        No se han especificado variedades.
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </>
@@ -750,38 +805,6 @@ export default function NuevoProductoDeProveedor() {
 
                                   {/* Imagen del productos */}
                                   <div>
-                                    <label className="label">
-                                      <span className="label-text font-semibold">
-                                        Imagen del productos
-                                      </span>
-                                      <span className="label-text-alt text-base-content/60">
-                                        (Opcional)
-                                      </span>
-                                    </label>
-
-                                    {prod.product_image && (
-                                      <div className="mb-4 flex justify-center">
-                                        <div className="avatar">
-                                          <div className="mask-squircle h-32 w-32 rounded-xl ring-offset-2 ring-offset-base-100">
-                                            <img
-                                              src={base64ToObjectUrl(prod.product_image)}
-                                              alt="Preview del productos"
-                                              className="object-cover"
-                                            />
-                                            <button
-                                              type="button"
-                                              className="btn btn-error btn-xs mt-2"
-                                              onClick={() =>
-                                                handleProductChange(idx, 'product_image', '')
-                                              }
-                                            >
-                                              Eliminar
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-
                                     <div key={productos.id} className="card ...">
                                       <div className="card-body">
                                         <h2 className="card-title">Producto {idx + 1}</h2>
