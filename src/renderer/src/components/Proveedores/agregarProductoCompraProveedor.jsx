@@ -14,7 +14,6 @@ import {
   CloudUpload,
   Plus
 } from 'lucide-react'
-import { useDropzone } from 'react-dropzone'
 import { useSession } from '../../contexts/SessionContext'
 import { useSettings } from '../../contexts/settingsContext'
 import ModalSize from '../../modals/modalsProduct/modalSize'
@@ -32,7 +31,12 @@ import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 import ProductImageUploader from '../../componentes especificos/dropZone'
 
-//BUG: El color ahora tiene bug.
+//BUG: El color ahora tiene bug (Ver como arreglarlo).
+//TODO: Arreglar Agregar Talle
+//TODO: Arreglar limpiar array de colores cuando se actualiza
+//TODO: Ver estadisticas finales
+//TODO: Colocar que se pueda ver el costo total del pedido.
+
 export default function NuevoProductoDeProveedor() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual
@@ -83,7 +87,6 @@ export default function NuevoProductoDeProveedor() {
   })
 
   const [productos, setProductos] = useState([getInitialProductState()])
-
 
   // Estados para el formulario
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
@@ -337,25 +340,6 @@ export default function NuevoProductoDeProveedor() {
     return tallesBD.filter((talle) => !tallesSeleccionados.includes(talle.size_name))
   }
 
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = (error) => reject(error)
-    })
-  }
-  const handleDropzone = (index, acceptedFiles) => {
-    if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0]
-      const reader = new FileReader()
-      reader.onload = () => {
-        handleProductChange(index, 'product_image', reader.result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
   const base64ToObjectUrl = (base64Data) => {
     if (!base64Data) return ''
     try {
@@ -373,14 +357,7 @@ export default function NuevoProductoDeProveedor() {
     }
   }
 
-  // --- Dropzone logic is now handled per-product inside the render map ---
-  // See the render section: for each product, useDropzone is called with handlers that update only that product's image and uploading state.
-
-  // This function should be in your NuevoProducto component.
-  // It now correctly processes one product at a time.
-
   const prepareProductData = (product) => {
-    // Calculate total quantity for this specific product
     const cantidadTotal = product.talles.reduce(
       (total, talle) =>
         total +
@@ -391,7 +368,6 @@ export default function NuevoProductoDeProveedor() {
       0
     )
 
-    // Extract just the base64 string if an image exists
     let imageToSend = null
     if (product.product_image && product.product_image.startsWith('data:')) {
       imageToSend = product.product_image.split(',')[1]
@@ -402,13 +378,13 @@ export default function NuevoProductoDeProveedor() {
       product_name: product.product_name,
       group_id: parseInt(product.group_id),
       provider_id: providerId,
-      description: '', // You can add this to your state if needed
+      description: '',
       cost: parseFloat(product.cost) || 0,
       sale_price: parseFloat(product.sale_price) || 0,
       comments: product.comments || null,
       user_id: currentUser?.id || 1,
       brand_id: product.brand_id,
-      product_image: imageToSend, // Send only the base64 part
+      product_image: imageToSend,
       storage_id: currentStorage?.id || null,
       state: 'enTienda',
       initial_quantity: cantidadTotal,
@@ -540,6 +516,16 @@ export default function NuevoProductoDeProveedor() {
     setProductos(newProductos)
   }
 
+  const calculateTotalCost = () => {
+    productos.map((prod) => {
+      const numericCost = parseFloat(prod.cost)
+      if (numericCost > 0) {
+        return numericCost * (prod.quantity || 0)
+      }
+      return 0
+    })
+  }
+
   if (loadingData) {
     return (
       <>
@@ -579,6 +565,28 @@ export default function NuevoProductoDeProveedor() {
                   automáticamente para cada variante.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Container sticky que contiene las stats */}
+      <div className="bg-base-100/95 sticky top-0 z-10 border-b border-base-300 p-4 shadow-lg backdrop-blur-lg">
+        <div className="card card-body">
+          <div className="grid grid-cols-3">
+            <div>
+              <label htmlFor="" className="text-xl font-bold">
+                Total: {calculateTotalCost}
+              </label>
+            </div>
+            <div>
+              <label htmlFor="" className="text-xl font-bold">
+                Cantidad de articulos: {productos.length}
+              </label>
+            </div>
+            <div>
+              <label htmlFor="" className="text-xl font-bold">
+                Cantidad total de productos:{cantidadTotal}
+              </label>
             </div>
           </div>
         </div>
@@ -696,7 +704,7 @@ export default function NuevoProductoDeProveedor() {
                                 <button
                                   type="button"
                                   onClick={() => eliminarProducto(idx)}
-                                  className="btn btn-error btn-outline btn-sm btn-circle"
+                                  className="btn btn-error"
                                   title="Eliminar este productos"
                                 >
                                   <Trash2 className="h-4 w-4" />
