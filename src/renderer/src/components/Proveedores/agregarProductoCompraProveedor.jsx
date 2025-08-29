@@ -30,6 +30,7 @@ import GroupTreeSelector from '../../components/GroupTreeSelector'
 import GroupTreePreviewModal from '../../components/GroupTreePreviewModal'
 import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
+import ProductImageUploader from '../../componentes especificos/dropZone'
 
 //BUG: El color ahora tiene bug.
 export default function NuevoProductoDeProveedor() {
@@ -82,6 +83,7 @@ export default function NuevoProductoDeProveedor() {
   })
 
   const [productos, setProductos] = useState([getInitialProductState()])
+
 
   // Estados para el formulario
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
@@ -265,16 +267,6 @@ export default function NuevoProductoDeProveedor() {
     product.talles[talleIndex].colores.push({ color: '', cantidad: '' })
     setProductos(newProductos)
   }
-  const handleDropzone = (index, acceptedFiles) => {
-    if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0]
-      const reader = new FileReader()
-      reader.onload = () => {
-        handleProductChange(index, 'product_image', reader.result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   const agregarProducto = () => {
     const newProduct = getInitialProductState()
@@ -345,7 +337,6 @@ export default function NuevoProductoDeProveedor() {
     return tallesBD.filter((talle) => !tallesSeleccionados.includes(talle.size_name))
   }
 
-  // Función para convertir archivo a base64
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -354,142 +345,42 @@ export default function NuevoProductoDeProveedor() {
       reader.onerror = (error) => reject(error)
     })
   }
-
-  // Configuración de react-dropzone para la imagen del productos
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'image/*': []
-    },
-    maxSize: 10485760,
-    onDrop: async (acceptedFiles, rejectedFiles) => {
-      if (rejectedFiles.length > 0) {
-        const rejection = rejectedFiles[0]
-        if (rejection.errors.some((e) => e.code === 'file-too-large')) {
-          setErrors((prev) => ({
-            ...prev,
-            productImage: 'La imagen es demasiado grande. Máximo 10MB.'
-          }))
-          return
-        }
-        if (rejection.errors.some((e) => e.code === 'file-invalid-type')) {
-          setErrors((prev) => ({
-            ...prev,
-            productImage: 'Formato de imagen no válido. Use PNG, JPG o WEBP.'
-          }))
-          return
-        }
+  const handleDropzone = (index, acceptedFiles) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0]
+      const reader = new FileReader()
+      reader.onload = () => {
+        handleProductChange(index, 'product_image', reader.result)
       }
-
-      if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0]
-        try {
-          setIsUploadingImage(true)
-          const base64 = await convertToBase64(file)
-          setProductImage(base64)
-
-          // Extraer información del tipo MIME para debugging
-          const mimeType = file.type
-          const dataUriPrefix = base64.split(',')[0]
-
-          console.log(
-            '✅ Imagen cargada exitosamente:',
-            file.name,
-            'Tipo MIME:',
-            mimeType,
-            'Data URI prefix:',
-            dataUriPrefix,
-            'Tamaño:',
-            (file.size / 1024 / 1024).toFixed(2),
-            'MB'
-          )
-
-          // Limpiar error de imagen si existe
-          if (errors.productImage) {
-            setErrors((prev) => ({ ...prev, productImage: '' }))
-          }
-        } catch (error) {
-          console.error('❌ Error al convertir imagen:', error)
-          setErrors((prev) => ({ ...prev, productImage: 'Error al procesar la imagen.' }))
-        } finally {
-          setIsUploadingImage(false)
-        }
-      }
+      reader.readAsDataURL(file)
     }
-  })
-
-  /**
-   * Convierte una imagen base64 a Blob y crea una URL de objeto
-   * @param base64Data Los datos de imagen codificados en base64 (con o sin prefijo data URI)
-   * @returns La URL del objeto que se puede usar como fuente de imagen
-   */
-  function base64ToObjectUrl(base64Data) {
-    // Extraer tipo de contenido y datos base64
-    let contentType = 'image/png' // predeterminado
-    let base64WithoutPrefix = base64Data
-
-    // Verificar si es un data URI y extraer el tipo de contenido
-    if (base64Data.startsWith('data:')) {
-      const matches = base64Data.match(/^data:(.+?);/)
-      if (matches && matches[1]) {
-        contentType = matches[1]
-      }
-      base64WithoutPrefix = base64Data.split(';base64,').pop()
-    }
-
-    // Convertir base64 a datos binarios sin procesar
-    const byteCharacters = atob(base64WithoutPrefix)
-    const byteArrays = []
-
-    // Convertir cada carácter a matriz de bytes
-    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-      const slice = byteCharacters.slice(offset, offset + 512)
-      const byteNumbers = new Array(slice.length)
-
-      for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i)
-      }
-
-      const byteArray = new Uint8Array(byteNumbers)
-      byteArrays.push(byteArray)
-    }
-
-    const blob = new Blob(byteArrays, { type: contentType })
-
-    return URL.createObjectURL(blob)
   }
 
-  const prepareProductData = (product) => {
-    const uniqueSizes = [...new Set(product.talles.map((t) => t.talle).filter(Boolean))]
-    const uniqueColors = [
-      ...new Set(product.talles.flatMap((t) => t.colores.map((c) => c.color).filter(Boolean)))
-    ]
-
-    const sizeIds = uniqueSizes
-      .map((sizeName) => {
-        const size = tallesBD.find((s) => s.size_name === sizeName)
-        return size ? size.id : null
-      })
-      .filter(Boolean)
-
-    const colorIds = uniqueColors
-      .map((colorName) => {
-        const color = colors.find((c) => c.color_name === colorName)
-        return color ? color.id : null
-      })
-      .filter(Boolean)
-
-    const selectedBrand = brandByProvider.find((brand) => brand.id === product.brand_id)
-    const brandId = selectedBrand ? selectedBrand.id : null
-
-    let imageToSend = null
-    if (product.product_image) {
-      if (product.product_image.startsWith('data:')) {
-        imageToSend = product.product_image.split(',')[1]
-      } else {
-        imageToSend = product.product_image
+  const base64ToObjectUrl = (base64Data) => {
+    if (!base64Data) return ''
+    try {
+      const byteCharacters = atob(base64Data.split(',')[1])
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
       }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: 'image/jpeg' }) // You can adjust MIME type
+      return URL.createObjectURL(blob)
+    } catch (error) {
+      console.error('Error converting base64 to object URL:', error)
+      return ''
     }
+  }
 
+  // --- Dropzone logic is now handled per-product inside the render map ---
+  // See the render section: for each product, useDropzone is called with handlers that update only that product's image and uploading state.
+
+  // This function should be in your NuevoProducto component.
+  // It now correctly processes one product at a time.
+
+  const prepareProductData = (product) => {
+    // Calculate total quantity for this specific product
     const cantidadTotal = product.talles.reduce(
       (total, talle) =>
         total +
@@ -500,28 +391,26 @@ export default function NuevoProductoDeProveedor() {
       0
     )
 
+    // Extract just the base64 string if an image exists
+    let imageToSend = null
+    if (product.product_image && product.product_image.startsWith('data:')) {
+      imageToSend = product.product_image.split(',')[1]
+    }
+
     return {
       provider_code: product.provider_code,
       product_name: product.product_name,
       group_id: parseInt(product.group_id),
       provider_id: providerId,
-      description: product.description || '',
-      cost: !isNaN(parseFloat(product.cost)) ? parseFloat(product.cost) : null,
-      sale_price: !isNaN(parseFloat(product.sale_price)) ? parseFloat(product.sale_price) : null,
-      original_price: !isNaN(parseFloat(product.original_price))
-        ? parseFloat(product.original_price)
-        : null,
-      tax: 0,
-      discount: 0,
+      description: '', // You can add this to your state if needed
+      cost: parseFloat(product.cost) || 0,
+      sale_price: parseFloat(product.sale_price) || 0,
       comments: product.comments || null,
       user_id: currentUser?.id || 1,
-      images_ids: null,
-      brand_id: product.brand_id || brandId,
-      creation_date: new Date().toISOString(),
-      last_modified_date: new Date().toISOString(),
-      state: 'pendiente',
-      product_image: imageToSend || null,
+      brand_id: product.brand_id,
+      product_image: imageToSend, // Send only the base64 part
       storage_id: currentStorage?.id || null,
+      state: 'enTienda',
       initial_quantity: cantidadTotal,
       stock_variants: product.talles.flatMap((talle) => {
         const sizeData = tallesBD.find((s) => s.size_name === talle.talle)
@@ -540,7 +429,6 @@ export default function NuevoProductoDeProveedor() {
       })
     }
   }
-
   const validateForm = () => {
     const newErrors = {}
 
@@ -728,6 +616,7 @@ export default function NuevoProductoDeProveedor() {
                   className="hover:scale-110 hover:cursor-pointer"
                   onClick={handleToggleDropdown}
                   title="Resumen productos"
+                  type="button"
                 >
                   <ChevronsDown />
                 </button>
@@ -736,6 +625,7 @@ export default function NuevoProductoDeProveedor() {
                   className="hover:scale-110 hover:cursor-pointer"
                   onClick={handleToggleDropdown}
                   title="Informacion completa productos"
+                  type="button"
                 >
                   <ChevronsUp />
                 </button>
@@ -746,108 +636,46 @@ export default function NuevoProductoDeProveedor() {
               <div>
                 <div className="card border border-base-300 bg-base-100 shadow-xl">
                   <div className="card-body">
-                    <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                        <span className="font-bold text-primary">1</span>
-                      </div>
-                      Información Básica
-                    </h2>
-
-                    <div className="space-y-6">
-                      {/* Nombre del productos */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Nombre del productos</span>
-                          <span className="label-text-alt text-error">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Ej: Remera básica algodón"
-                          className={`input-bordered input w-full focus:border-primary ${
-                            errors.productName ? 'input-error' : ''
-                          }`}
-                          value={productName}
-                          onChange={(e) => setProductName(e.target.value)}
-                          required
-                        />
-                        {errors.productName && (
-                          <div className="label">
-                            <span className="label-text-alt text-error">{errors.productName}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Imagen del productos */}
-                      <div>
-                        <label className="label">
-                          <span className="label-text font-semibold">Imagen del productos</span>
-                          <span className="label-text-alt text-base-content/60">(Opcional)</span>
-                        </label>
-
-                        {productImage && (
-                          <div className="mb-4 flex justify-center">
-                            <div className="avatar">
-                              <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
-                                <img
-                                  src={base64ToObjectUrl(productImage)}
-                                  alt="Preview del productos"
-                                  className="object-cover"
-                                />
+                    {productos &&
+                      productos.map((prod, idx) => (
+                        <>
+                          <div key={prod.id}>
+                            <h2 className="card-title mb-6 flex items-center gap-3 text-2xl">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                                <span className="font-bold text-primary">{idx + 1}</span>
                               </div>
-                            </div>
+                              Información
+                            </h2>
                           </div>
-                        )}
+                          <div className="space-y-6">
+                            {/* Nombre del productos */}
+                            <div>
+                              <label className="label">
+                                <span className="label-text font-semibold">
+                                  Nombre del productos: {prod.product_name || ' No especificado'}
+                                </span>
+                              </label>
+                            </div>
 
-                        <div
-                          {...getRootProps()}
-                          className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 hover:border-primary/50 ${
-                            isDragActive
-                              ? 'border-primary bg-primary/5'
-                              : errors.productImage
-                                ? 'bg-error/5 border-error'
-                                : 'hover:bg-base-200/50 border-base-300'
-                          } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
-                        >
-                          <input {...getInputProps()} />
-                          <div className="space-y-2">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                              {isUploadingImage ? (
-                                <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
-                              ) : (
-                                <svg
-                                  className="h-6 w-6 text-primary"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                  />
-                                </svg>
+                            {/* Imagen del productos */}
+                            <div>
+                              {prod.product_image && (
+                                <div className="mb-4 flex justify-center">
+                                  <div className="avatar">
+                                    <div className="h-32 w-32 rounded-xl ring ring-primary ring-offset-2 ring-offset-base-100">
+                                      <img
+                                        src={base64ToObjectUrl(prod.product_image)}
+                                        alt="Vista previa del producto"
+                                        className="h-32 w-32 rounded-xl object-cover"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
                               )}
                             </div>
-                            <p className="text-sm font-medium">
-                              {isUploadingImage
-                                ? 'Procesando imagen...'
-                                : isDragActive
-                                  ? '¡Suelta la imagen aquí!'
-                                  : 'Arrastra la imagen o haz clic para seleccionar'}
-                            </p>
-                            <p className="text-base-content/60 text-xs">
-                              PNG, JPG, WEBP hasta 10MB
-                            </p>
                           </div>
-                        </div>
-                        {errors.productImage && (
-                          <div className="label">
-                            <span className="label-text-alt text-error">{errors.productImage}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                        </>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -923,55 +751,57 @@ export default function NuevoProductoDeProveedor() {
                                       </span>
                                     </label>
 
-                                    {prod.productImage && (
+                                    {prod.product_image && (
                                       <div className="mb-4 flex justify-center">
                                         <div className="avatar">
                                           <div className="mask-squircle h-32 w-32 rounded-xl ring-offset-2 ring-offset-base-100">
                                             <img
-                                              src={base64ToObjectUrl(productImage)}
+                                              src={base64ToObjectUrl(prod.product_image)}
                                               alt="Preview del productos"
                                               className="object-cover"
                                             />
+                                            <button
+                                              type="button"
+                                              className="btn btn-error btn-xs mt-2"
+                                              onClick={() =>
+                                                handleProductChange(idx, 'product_image', '')
+                                              }
+                                            >
+                                              Eliminar
+                                            </button>
                                           </div>
                                         </div>
                                       </div>
                                     )}
 
-                                    <div
-                                      {...getRootProps()}
-                                      className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 hover:border-primary/50 ${
-                                        isDragActive
-                                          ? 'border-primary bg-primary/5'
-                                          : errors.productImage
-                                            ? 'bg-error/5 border-error'
-                                            : 'hover:bg-base-200/50 border-base-300'
-                                      } ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}
-                                    >
-                                      <input {...getInputProps()} />
-                                      <div className="space-y-2">
-                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                                          {isUploadingImage ? (
-                                            <LoaderCircle className="h-6 w-6 animate-spin text-primary" />
-                                          ) : (
-                                            <CloudUpload />
-                                          )}
+                                    <div key={productos.id} className="card ...">
+                                      <div className="card-body">
+                                        <h2 className="card-title">Producto {idx + 1}</h2>
+
+                                        <div className="mt-6">
+                                          <label className="label">
+                                            <span className="label-text font-semibold">
+                                              Imagen del producto
+                                            </span>
+                                          </label>
+                                          <ProductImageUploader
+                                            productImage={prod.product_image}
+                                            onImageDrop={(base64Image) =>
+                                              handleProductChange(idx, 'product_image', base64Image)
+                                            }
+                                            onImageRemove={() =>
+                                              handleProductChange(idx, 'product_image', '')
+                                            }
+                                            error={prod.errors.product_image}
+                                          />
                                         </div>
-                                        <p className="text-sm font-medium">
-                                          {isUploadingImage
-                                            ? 'Procesando imagen...'
-                                            : isDragActive
-                                              ? '¡Suelta la imagen aquí!'
-                                              : 'Arrastra la imagen o haz clic para seleccionar'}
-                                        </p>
-                                        <p className="text-base-content/60 text-xs">
-                                          PNG, JPG, WEBP hasta 10MB
-                                        </p>
                                       </div>
                                     </div>
-                                    {errors.productImage && (
+
+                                    {prod.errors?.product_image && (
                                       <div className="label">
                                         <span className="label-text-alt text-error">
-                                          {errors.productImage}
+                                          {prod.errors.product_image}
                                         </span>
                                       </div>
                                     )}
@@ -1584,13 +1414,14 @@ export default function NuevoProductoDeProveedor() {
                   )}
               </>
             )}
-            <button className="btn btn-primary mt-4">Agregar Productos</button>
+            <button className="btn btn-primary mt-4" type="button" onClick={agregarProducto}>
+              Agregar productos
+            </button>
           </section>
           {/* Sección: Resumen y Acciones */}
           <div className="card border border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 shadow-xl">
             <div className="card-body">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                {/* Resumen */}
                 <div className="space-y-4">
                   <h3 className="text-xl font-bold text-primary">Resumen del Productos</h3>
                   <div className="stats shadow">
