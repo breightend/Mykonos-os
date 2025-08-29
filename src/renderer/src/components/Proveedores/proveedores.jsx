@@ -1,4 +1,4 @@
-import { Search, Package, FileChartPie, HousePlus } from 'lucide-react'
+import { Search, Package, FileChartPie, HousePlus, CalendarClock } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../../componentes especificos/menuVertical'
@@ -12,7 +12,6 @@ import '../../assets/modal-improvements.css'
 
 pinwheel.register()
 
-//TODO: Agregar resumen de compra total de los proveedores.
 export default function Proveedores() {
   const [, setLocation] = useLocation()
   const [proveedores, setProveedores] = useState([])
@@ -135,6 +134,15 @@ export default function Proveedores() {
               </button>
             </li>
           )}
+          <li>
+            <button
+              className="tooltip tooltip-bottom btn btn-ghost"
+              data-tip="Ver pedidos"
+              onClick={() => setLocation('/pedidosProveedor')}
+            >
+              <CalendarClock className="h-5 w-5" />
+            </button>
+          </li>
         </ul>
 
         {/* Barra de búsqueda */}

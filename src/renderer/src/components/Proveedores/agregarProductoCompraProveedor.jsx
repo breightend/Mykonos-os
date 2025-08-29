@@ -29,13 +29,10 @@ import GroupTreePreviewModal from '../../components/GroupTreePreviewModal'
 import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 import ProductImageUploader from '../../componentes especificos/dropZone'
-import { Shirt,  Boxes } from 'lucide-react'
+import { Shirt, Boxes } from 'lucide-react'
 
 //BUG: El color ahora tiene bug (Ver como arreglarlo).
-//TODO: Arreglar Agregar Talle
 //TODO: Arreglar limpiar array de colores cuando se actualiza
-//TODO: Ver estadisticas finales
-//TODO: Colocar que se pueda ver el costo total del pedido.
 
 export default function NuevoProductoDeProveedor() {
   pinwheel.register()
@@ -328,7 +325,6 @@ export default function NuevoProductoDeProveedor() {
     handleCantidadTotal()
   }
 
-  // Función para obtener talles disponibles (no repetidos)
   const getTallesDisponibles = (productIndex, currentTalleIndex) => {
     const product = productos[productIndex]
     const tallesSeleccionados = product.talles
@@ -647,9 +643,9 @@ export default function NuevoProductoDeProveedor() {
         <form className="mx-auto max-w-6xl space-y-8">
           {/* Sección: Información Básica */}
 
-          <section className="space-y-4 rounded-lg bg-base-300 p-4 shadow-md">
+          <section className="space-y-4 rounded-lg border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 p-4 shadow-xl">
             <div className="flex justify-between">
-              <label>Productos </label>
+              <label className="text-2xl font-semibold">Productos </label>
               {dropdownOpen ? (
                 <button
                   className="hover:scale-110 hover:cursor-pointer"
@@ -774,7 +770,7 @@ export default function NuevoProductoDeProveedor() {
                         <>
                           <div
                             key={prod.id}
-                            className="relative space-y-8 rounded-md border bg-blue-100 p-4 shadow-xl"
+                            className="relative space-y-8 rounded-md border bg-primary/20 p-4 shadow-xl"
                           >
                             <div className="mb-4 flex items-center justify-between">
                               <h2 className="card-title text-2xl">Artículo {idx + 1}</h2>
@@ -1473,102 +1469,51 @@ export default function NuevoProductoDeProveedor() {
             </button>
           </section>
           {/* Sección: Resumen y Acciones */}
-          <div className="card border border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 shadow-xl">
-            <div className="card-body">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold text-primary">Resumen del Productos</h3>
-                  <div className="stats shadow">
-                    <div className="stat">
-                      <div className="stat-title">Cantidad Total</div>
-                      <div className="stat-value text-primary">{cantidadTotal}</div>
-                      <div className="stat-desc">unidades</div>
-                    </div>
-                    <div className="stat">
-                      <div className="stat-title">Variedades</div>
-                      <div className="stat-value text-secondary">
-                        {productos.reduce(
-                          (acc, prod) => acc + prod.talles.filter((t) => t.talle).length,
-                          0
-                        )}
-                      </div>
-                      <div className="stat-desc">diferentes</div>
-                    </div>
-                    <div className="stat">
-                      <div className="stat-title">Total</div>
-                      <div className="stat-value text-accent">
-                        {(() => {
-                          const allColors = productos.flatMap((prod) =>
-                            prod.talles.flatMap((t) =>
-                              t.colores.map((c) => c.color).filter(Boolean)
-                            )
-                          )
-                          return new Set(allColors).size
-                        })()}
-                      </div>
-                      <div className="stat-desc">únicos</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botones de acción */}
-                <div className="flex flex-col gap-3">
-                  {/* Mensajes de estado */}
-                  {errors.submit && (
-                    <div className="alert alert-error">
-                      <svg
-                        className="h-6 w-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
-                        />
-                      </svg>
-                      <span>{errors.submit}</span>
-                    </div>
-                  )}
-
-                  {errors.success && (
-                    <div className="alert alert-success">
-                      <svg
-                        className="h-6 w-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span>{errors.success}</span>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={handleSubmitGuardar}
-                      className="btn btn-success flex-1 gap-2"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <LoaderCircle className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Save className="h-5 w-5" />
-                      )}
-                      {isSubmitting ? 'Guardando...' : 'Guardar y Finalizar'}
-                    </button>
-                  </div>
-                </div>
+          {/* Botones de acción */}
+          <div className="">
+            {/* Mensajes de estado */}
+            {errors.submit && (
+              <div className="alert alert-error">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+                <span>{errors.submit}</span>
               </div>
+            )}
+
+            {errors.success && (
+              <div className="alert alert-success">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>{errors.success}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleSubmitGuardar}
+                className="btn btn-success gap-2"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <LoaderCircle className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Save className="h-5 w-5" />
+                )}
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
+              </button>
             </div>
           </div>
         </form>
