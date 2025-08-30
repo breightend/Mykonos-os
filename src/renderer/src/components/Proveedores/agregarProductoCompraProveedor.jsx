@@ -12,7 +12,6 @@ import {
   ChevronsDown,
   ChevronsUp,
   Plus,
-  Wand2,
   Calculator
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
@@ -893,10 +892,15 @@ export default function NuevoProductoDeProveedor() {
                                   <div className="flex gap-2">
                                     <GroupTreeSelector
                                       groups={grupoTree}
-                                      onGroupSelect={(group) =>
+                                      selectedGroupId={
+                                        prod.group_id ? parseInt(prod.group_id, 10) : null
+                                      }
+                                      onSelectGroup={(group) =>
                                         handleProductChange(idx, 'group_id', group.id.toString())
                                       }
-                                      selectedValue={prod.group_id}
+                                      onGroupDeselect={() =>
+                                        handleProductChange(idx, 'group_id', '')
+                                      }
                                       className={`flex-1 ${prod.errors?.group_id ? 'border-error' : ''}`}
                                       placeholder="Seleccione un grupo de productos..."
                                       emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
@@ -1156,7 +1160,6 @@ export default function NuevoProductoDeProveedor() {
                                         }}
                                         onChange={(e) => {
                                           let raw = e.target.value.replace(/[^\d.,]/g, '')
-                                          // Support big numbers: remove dots as thousand separators, keep last comma/dot as decimal
                                           const lastComma = raw.lastIndexOf(',')
                                           const lastDot = raw.lastIndexOf('.')
                                           let decimalIdx = Math.max(lastComma, lastDot)
