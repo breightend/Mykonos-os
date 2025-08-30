@@ -1392,16 +1392,19 @@ export default function NuevoProductoDeProveedor() {
                                                           )
                                                         : []
                                                     }
+                                                    allColors={colors}
+                                                    availableColors={
+                                                      coloresDisponiblesPorTalle[talle.talle] !==
+                                                      undefined
+                                                        ? colors.filter((colorItem) =>
+                                                            coloresDisponiblesPorTalle[
+                                                              talle.talle
+                                                            ]?.includes(colorItem.color_name)
+                                                          )
+                                                        : []
+                                                    }
                                                     value={color.color || ''}
                                                     onChange={(selectedColorName) => {
-                                                      console.log(
-                                                        '🎨 Color seleccionado:',
-                                                        selectedColorName
-                                                      )
-                                                      console.log(
-                                                        '🎨 Color actual en state:',
-                                                        color.color
-                                                      )
                                                       handleColorChange(
                                                         idx,
                                                         talleIndex,
