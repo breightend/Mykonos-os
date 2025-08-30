@@ -32,12 +32,11 @@ import { pinwheel } from 'ldrs'
 import ProductImageUploader from '../../componentes especificos/dropZone'
 import { Shirt, Boxes } from 'lucide-react'
 
-//BUG: El color ahora tiene bug (Ver como arreglarlo).
-//TODO: Arreglar limpiar array de colores cuando se actualiza
+//BUG: la cantidad inicial vale 0 cuando tenes un color
+//TODO: agregar costo y codigo proveedor para mostrar el resumen de info.
 
 export default function NuevoProductoDeProveedor() {
   pinwheel.register()
-  // Contexto de sesión para obtener el storage actual
   const { getCurrentStorage, getCurrentUser } = useSession()
   const { calculateSalePrice, settings } = useSettings()
   const currentStorage = getCurrentStorage()
@@ -215,12 +214,6 @@ export default function NuevoProductoDeProveedor() {
     setProductos(newProductos)
   }
 
-  const handleGroupSelect = (productIndex, group) => {
-    const newProductos = [...productos]
-    newProductos[productIndex].group_id = group.id.toString()
-    setProductos(newProductos)
-  }
-
   const handleCantidadTotal = () => {
     let total = 0
     productos.forEach((product) => {
@@ -270,6 +263,9 @@ export default function NuevoProductoDeProveedor() {
 
   const agregarProducto = () => {
     const newProduct = getInitialProductState()
+    if (brandByProvider.length === 1) {
+      newProduct.brand_id = brandByProvider[0].id
+    }
     if (lockGroup && productos.length > 0) {
       const lastProduct = productos[productos.length - 1]
       newProduct.group_id = lastProduct.group_id
