@@ -11,7 +11,9 @@ import {
   Unlock,
   ChevronsDown,
   ChevronsUp,
-  Plus
+  Plus,
+  Wand2,
+  Calculator
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
 import { useSettings } from '../../contexts/settingsContext'
@@ -65,11 +67,11 @@ export default function NuevoProductoDeProveedor() {
     group_id: '',
     provider_id: providerId,
     description: '',
-    cost: 0,
-    sale_price: 0,
-    original_price: 0,
-    tax: 0,
-    discount: 0,
+    cost: '',
+    sale_price: '',
+    original_price: '',
+    tax: '',
+    discount: '',
     comments: '',
     user_id: currentUser?.id || 1,
     images_ids: null,
@@ -80,7 +82,8 @@ export default function NuevoProductoDeProveedor() {
     talles: [{ talle: '', colores: [{ color: '', cantidad: 0 }] }],
     product_image: '',
     initial_quantity: 0,
-    errors: {}
+    errors: {},
+    useAutoCalculation: settings.autoCalculatePrice
   })
 
   const [productos, setProductos] = useState([getInitialProductState()])
@@ -276,7 +279,6 @@ export default function NuevoProductoDeProveedor() {
   }
 
   const eliminarProducto = (index) => {
-    // Prevent deleting the last product form
     if (productos.length === 1) {
       alert('No puedes eliminar el único formulario de productos.')
       return
@@ -504,7 +506,6 @@ export default function NuevoProductoDeProveedor() {
         product.sale_price = calculateSalePrice(numericCost)
       }
     }
-
     setProductos(newProductos)
   }
 
@@ -636,7 +637,9 @@ export default function NuevoProductoDeProveedor() {
               </div>
               <div className="divider divider-horizontal"></div>
             </div>
-            <div className="text-sm opacity-75">El stock inicial se asignará a esta sucursal</div>
+            <div className="text-sm opacity-75">
+              El stock inicial se asignará a esta sucursalcuando llegue el pedido
+            </div>
           </div>
         )}
 
@@ -680,7 +683,6 @@ export default function NuevoProductoDeProveedor() {
                           >
                             <div className="card-body">
                               <div className="flex flex-col gap-6 md:flex-row">
-                                {/* --- Image Column --- */}
                                 {prod.product_image && (
                                   <div className="mx-auto flex-shrink-0 md:mx-0">
                                     <img
@@ -691,9 +693,7 @@ export default function NuevoProductoDeProveedor() {
                                   </div>
                                 )}
 
-                                {/* --- Details Column --- */}
                                 <div className="flex-grow">
-                                  {/* 2. Clear Title and Stats */}
                                   <div className="mb-3 flex items-start justify-between">
                                     <h2 className="card-title text-primary">
                                       {prod.product_name || 'Artículo sin nombre'}
@@ -703,7 +703,6 @@ export default function NuevoProductoDeProveedor() {
                                     </div>
                                   </div>
 
-                                  {/* 3. Key Stats at a glance */}
                                   <div className="text-base-content/80 mb-4 flex items-center gap-4 text-sm">
                                     <span className="flex items-center gap-2 font-semibold">
                                       <Boxes className="h-4 w-4 text-secondary" />
@@ -711,13 +710,12 @@ export default function NuevoProductoDeProveedor() {
                                     </span>
                                   </div>
 
-                                  {/* 4. Improved Variant List (Grouped by Talle) */}
                                   <h3 className="mb-2 font-semibold">Variedades:</h3>
                                   <div className="space-y-3">
                                     {prod.talles && prod.talles.length > 0 ? (
                                       prod.talles.map(
                                         (talle, tIdx) =>
-                                          talle.talle && ( // Only show if a size is selected
+                                          talle.talle && (
                                             <div
                                               key={tIdx}
                                               className="rounded-md bg-base-100 p-2 text-sm"
@@ -729,7 +727,7 @@ export default function NuevoProductoDeProveedor() {
                                                 {talle.colores.map(
                                                   (color, cIdx) =>
                                                     color.color &&
-                                                    color.cantidad > 0 && ( // Only show if color/qty exists
+                                                    color.cantidad > 0 && (
                                                       <li key={cIdx}>
                                                         Color:{' '}
                                                         <span className="font-semibold">
@@ -795,7 +793,7 @@ export default function NuevoProductoDeProveedor() {
                                 </h2>
 
                                 <div className="space-y-6">
-                                  {/* Informacion básica del productos */}
+                                  {/* Formulario del productos */}
                                   <div key={idx} className="mb-4 rounded-lg border bg-base-200 p-4">
                                     <label className="label">
                                       <span className="label-text font-semibold">
@@ -879,13 +877,13 @@ export default function NuevoProductoDeProveedor() {
                                     <span>
                                       {lockGroup ? (
                                         <Lock
-                                          onClick={handleLockGroup}
+                                          onClick={() => handleLockGroup()}
                                           className="tooltip ml-2 inline-block h-4 w-4 text-error hover:scale-150 hover:cursor-pointer"
                                           data-tip="Seguir con el grupo"
                                         />
                                       ) : (
                                         <Unlock
-                                          onClick={handleLockGroup}
+                                          onClick={() => handleLockGroup()}
                                           className="tooltip ml-2 inline-block h-4 w-4 text-success hover:scale-150 hover:cursor-pointer"
                                           data-tip="No guardar grupo"
                                         />
@@ -895,13 +893,11 @@ export default function NuevoProductoDeProveedor() {
                                   <div className="flex gap-2">
                                     <GroupTreeSelector
                                       groups={grupoTree}
-                                      onSelectGroup={handleGroupSelect}
                                       onGroupSelect={(group) =>
                                         handleProductChange(idx, 'group_id', group.id.toString())
                                       }
-                                      disabled={lockGroup && idx > 0}
-                                      selectedValue={prod.group_id} // <-- CORRECT
-                                      className={`flex-1 ${prod.errors?.group_id ? 'border-error' : ''}`} // <-- CORRECT
+                                      selectedValue={prod.group_id}
+                                      className={`flex-1 ${prod.errors?.group_id ? 'border-error' : ''}`}
                                       placeholder="Seleccione un grupo de productos..."
                                       emptyMessage="No hay grupos disponibles - Crear grupos desde Inventario"
                                     />
@@ -1000,31 +996,34 @@ export default function NuevoProductoDeProveedor() {
 
                                 {/* Control de cálculo automático */}
                                 {settings.autoCalculatePrice && (
-                                  <div className="alert mb-6 bg-accent">
-                                    <div className="flex w-full items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-2xl text-info">🧮</span>
+                                  <div className="border-base-300/50 bg-base-200/30 mb-6 rounded-xl border p-4 shadow-sm">
+                                    <div className="flex items-center justify-between gap-4">
+                                      <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                          <Calculator className="h-6 w-6" />
+                                        </div>
+
                                         <div>
-                                          <div className="font-semibold">
+                                          <h3 className="font-bold text-base-content">
                                             Cálculo Automático de Precios
-                                          </div>
-                                          <div className="text-sm opacity-75">
-                                            Configuración actual:{' '}
+                                          </h3>
+                                          <p className="text-base-content/70 text-xs">
                                             {settings.markupType === 'percentage'
-                                              ? `${settings.priceMarkupPercentage}% de ganancia`
-                                              : `$${settings.priceMarkupPercentage} de ganancia fija`}
-                                          </div>
+                                              ? `Configuración: ${settings.priceMarkupPercentage}% de ganancia`
+                                              : `Configuración: $${settings.priceMarkupPercentage} de ganancia fija`}
+                                          </p>
                                         </div>
                                       </div>
+
                                       <div className="form-control">
                                         <label className="label cursor-pointer gap-3">
                                           <span className="label-text font-medium">
-                                            {useAutoCalculation ? 'Automático' : 'Manual'}
+                                            {prod.useAutoCalculation ? 'Automático' : 'Manual'}
                                           </span>
                                           <input
                                             type="checkbox"
-                                            className="toggle toggle-secondary"
-                                            checked={productos.useAutoCalculation}
+                                            className="checkbox"
+                                            checked={prod.useAutoCalculation}
                                             onChange={(e) =>
                                               handleAutoCalcToggle(idx, e.target.checked)
                                             }
@@ -1048,13 +1047,44 @@ export default function NuevoProductoDeProveedor() {
                                       <input
                                         type="text"
                                         inputMode="decimal"
-                                        placeholder="0.00"
-                                        value={prod.cost}
+                                        placeholder="0,00"
+                                        value={
+                                          prod._costInputFocused
+                                            ? (prod.cost ?? '')
+                                            : prod.cost && !isNaN(Number(prod.cost))
+                                              ? Number(prod.cost).toLocaleString('es-AR', {
+                                                  style: 'currency',
+                                                  currency: 'ARS'
+                                                })
+                                              : prod.cost
+                                        }
+                                        onFocus={() => {
+                                          const newProductos = [...productos]
+                                          newProductos[idx]._costInputFocused = true
+                                          setProductos(newProductos)
+                                        }}
+                                        onBlur={() => {
+                                          const newProductos = [...productos]
+                                          newProductos[idx]._costInputFocused = false
+                                          setProductos(newProductos)
+                                        }}
                                         onChange={(e) => {
-                                          const newCost = e.target.value
-                                          const regex = /^[0-9]*(\.[0-9]{0,2})?$/
-                                          if (regex.test(newCost)) {
-                                            handleProductChange(idx, 'cost', newCost)
+                                          let raw = e.target.value.replace(/[^\d.,]/g, '')
+                                          const lastComma = raw.lastIndexOf(',')
+                                          const lastDot = raw.lastIndexOf('.')
+                                          let decimalIdx = Math.max(lastComma, lastDot)
+                                          let intPart =
+                                            decimalIdx > -1
+                                              ? raw.slice(0, decimalIdx).replace(/[.,]/g, '')
+                                              : raw.replace(/[.,]/g, '')
+                                          let decPart =
+                                            decimalIdx > -1
+                                              ? raw.slice(decimalIdx + 1, decimalIdx + 3)
+                                              : ''
+                                          let numeric = intPart
+                                          if (decPart) numeric += '.' + decPart
+                                          if (/^\d*(\.\d{0,2})?$/.test(numeric)) {
+                                            handleProductChange(idx, 'cost', numeric)
                                           }
                                         }}
                                         className={`input-bordered input w-full ${prod.errors?.cost ? 'input-error' : ''}`}
@@ -1100,23 +1130,55 @@ export default function NuevoProductoDeProveedor() {
                                         type="text"
                                         inputMode="decimal"
                                         placeholder={
-                                          settings.autoCalculatePrice && useAutoCalculation
+                                          settings.autoCalculatePrice && prod.useAutoCalculation
                                             ? 'Se calculará automáticamente'
-                                            : '0.00'
+                                            : '0,00'
                                         }
-                                        value={prod.sale_price}
+                                        value={
+                                          prod._salePriceInputFocused
+                                            ? (prod.sale_price ?? '')
+                                            : prod.sale_price && !isNaN(Number(prod.sale_price))
+                                              ? Number(prod.sale_price).toLocaleString('es-AR', {
+                                                  style: 'currency',
+                                                  currency: 'ARS'
+                                                })
+                                              : prod.sale_price
+                                        }
+                                        onFocus={() => {
+                                          const newProductos = [...productos]
+                                          newProductos[idx]._salePriceInputFocused = true
+                                          setProductos(newProductos)
+                                        }}
+                                        onBlur={() => {
+                                          const newProductos = [...productos]
+                                          newProductos[idx]._salePriceInputFocused = false
+                                          setProductos(newProductos)
+                                        }}
                                         onChange={(e) => {
-                                          const newSalePrice = e.target.value
-                                          const regex = /^[0-9]*(\.[0-9]{0,2})?$/
-                                          if (regex.test(newSalePrice)) {
-                                            handleProductChange(idx, 'sale_price', newSalePrice)
+                                          let raw = e.target.value.replace(/[^\d.,]/g, '')
+                                          // Support big numbers: remove dots as thousand separators, keep last comma/dot as decimal
+                                          const lastComma = raw.lastIndexOf(',')
+                                          const lastDot = raw.lastIndexOf('.')
+                                          let decimalIdx = Math.max(lastComma, lastDot)
+                                          let intPart =
+                                            decimalIdx > -1
+                                              ? raw.slice(0, decimalIdx).replace(/[.,]/g, '')
+                                              : raw.replace(/[.,]/g, '')
+                                          let decPart =
+                                            decimalIdx > -1
+                                              ? raw.slice(decimalIdx + 1, decimalIdx + 3)
+                                              : ''
+                                          let numeric = intPart
+                                          if (decPart) numeric += '.' + decPart
+                                          if (/^\d*(\.\d{0,2})?$/.test(numeric)) {
+                                            handleProductChange(idx, 'sale_price', numeric)
                                           }
                                         }}
                                         className={`input-bordered input flex-1 join-item focus:border-accent ${
                                           prod.errors?.salePrice ? 'input-error' : ''
                                         } ${
                                           settings.autoCalculatePrice &&
-                                          useAutoCalculation &&
+                                          prod.useAutoCalculation &&
                                           prod.cost
                                             ? 'bg-success/10 border-success/30'
                                             : ''
@@ -1468,7 +1530,6 @@ export default function NuevoProductoDeProveedor() {
               Agregar productos
             </button>
           </section>
-          {/* Sección: Resumen y Acciones */}
           {/* Botones de acción */}
           <div className="">
             {/* Mensajes de estado */}

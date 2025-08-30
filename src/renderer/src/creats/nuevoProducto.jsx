@@ -357,7 +357,6 @@ export default function NuevoProducto() {
           const base64 = await convertToBase64(file)
           setProductImage(base64)
 
-          // Extraer información del tipo MIME para debugging
           const mimeType = file.type
           const dataUriPrefix = base64.split(',')[0]
 
@@ -713,7 +712,6 @@ export default function NuevoProducto() {
         </div>
       </div>
 
-      {/* Container principal con máximo ancho */}
       <div className="container mx-auto px-6 py-8">
         {/* Información de la sesión actual */}
         {currentStorage && (
