@@ -8,9 +8,9 @@ import {
   FileCheck2,
   CreditCard,
   X,
-  Filter,
   FilterX,
-  Calendar
+  Calendar,
+  Check
 } from 'lucide-react'
 import { fetchProductos } from '../../services/products/productService'
 import { createPurchase } from '../../services/proveedores/purchaseService'
@@ -181,9 +181,9 @@ export default function AgregarCompraProveedor({ provider }) {
   const isBankFieldVisible = ['2', '3', '4', '5'].includes(purchaseData.payment_method)
 
   const handleCerrar = () => {
-    setShowProductModal(false)
-    setEditingProduct(null)
+    setLocation(`/infoProvider?id=${providerId}`)
   }
+
   const [echeq_time, setEcheqTime] = useState('')
 
   const isEcheqTimeVisible = ['6'].includes(purchaseData.payment_method)
@@ -319,83 +319,119 @@ export default function AgregarCompraProveedor({ provider }) {
 
               {showCalendar && (
                 <div
-                  className="fixed inset-0 z-50 flex items-center justify-center"
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
                   onClick={(e) => {
                     if (e.target === e.currentTarget) {
                       setShowCalendar(false)
                     }
                   }}
                 >
-                  <div className="relative mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-base-100 p-6 shadow-xl backdrop-blur-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Seleccionar dia</h3>
+                  <div className="animate-in fade-in-0 zoom-in-95 relative mx-4 w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl duration-200">
+                    {/* Modal Header */}
+                    <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        <h3 className="text-xl font-bold text-gray-800">
+                          Seleccionar Fecha de Entrega
+                        </h3>{' '}
+                        {/* More specific title */}
+                      </div>
                       <button
                         type="button"
-                        className="btn btn-ghost btn-sm btn-circle"
+                        className="btn btn-ghost btn-sm btn-circle text-gray-500 hover:bg-red-50 hover:text-red-500" // Added text-gray-500 for initial color
                         onClick={() => setShowCalendar(false)}
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </div>
 
-                    {/* Calendario */}
+                    {/* Calendario con estilos mejorados */}
                     <div className="flex justify-center">
                       <DayPicker
                         classNames={{
-                          root: 'react-delivery_date-picker text-sm',
-                          todelivery_date: 'border-2 border-amber-500 rounded font-bold',
+                          // Overall container for the DayPicker
+                          root: 'day-picker-root p-2 rounded-lg bg-base-100', // Added rounded background
+
+                          // Day styling
+                          day: 'h-9 w-9 p-4 font-medium hover:bg-primary/10 hover:text-primary rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
                           selected:
-                            'bg-amber-500 border-amber-500 text-white rounded font-semibold',
-                          delivery_date_button:
-                            'w-9 h-9 text-sm rounded hover:bg-amber-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-300',
-                          nav_button: 'btn btn-sm btn-ghost hover:bg-amber-100',
-                          nav_button_next: 'btn btn-sm btn-ghost hover:bg-amber-100',
-                          nav_button_previous: 'btn btn-sm btn-ghost hover:bg-amber-100',
-                          caption: 'text-lg font-semibold mb-3 text-center text-amber-700',
-                          weekdelivery_dates: 'text-xs font-medium text-gray-600 mb-1',
-                          week: 'mb-1',
-                          delivery_date: 'text-sm font-medium p-1'
+                            'bg-primary text-white hover:bg-primary hover:text-white focus:bg-primary focus:text-white rounded-md font-bold shadow-sm',
+                          today: 'bg-secondary text-white font-bold rounded-md', // Highlight today's date
+                          outside: 'text-gray-300 opacity-50',
+                          disabled: 'text-gray-300 opacity-30 cursor-not-allowed',
+                          hidden: 'invisible',
+                          // Month grid layout
+                          months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
+                          month: 'space-y-4',
+
+                          // Caption (Month and Year) - THIS IS WHERE NAVIGATION MOVES
+                          caption_label: 'text-lg font-bold text-gray-800',
+                          caption:
+                            'flex justify-center items-center text-lg font-bold text-gray-800 mb-4 relative', // Keep relative for custom nav
+
+                          // Custom Navigation - POSITIONED EXPLICITLY
+                          nav: 'flex items-center absolute left-0 right-0 justify-between px-2', // Position nav buttons
+                          nav_button:
+                            'h-8 w-8 bg-transparent p-0 rounded-full transition-colors border border-base-300 text-base-content hover:bg-primary hover:text-white', // Consistent styling
+                          nav_button_previous: '', // No specific additional styles needed here
+                          nav_button_next: '', // No specific additional styles needed here
+
+
+                          // Days Grid
+                          row: 'flex w-full mt-2',
+                          cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary [&:has([aria-selected])]:text-white first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
+
                         }}
-                        mode="range"
+                        mode="single"
                         selected={delivery_date}
                         onSelect={setDeliveryDate}
                         locale={es}
-                        disabled={{ after: new Date() }}
+                        disabled={{ before: new Date() }}
                         showOutsideDays={false}
                         fixedWeeks={false}
                         numberOfMonths={1}
                       />
                     </div>
 
-                    {/* Información del dia seleccionado */}
+                    {/* Información del día seleccionado con mejor diseño */}
                     {delivery_date && (
-                      <div className="mt-4 rounded bg-amber-50 p-3">
-                        <p className="text-sm font-medium text-amber-800">Día seleccionado:</p>
-                        <p className="text-sm text-amber-700">
-                          {delivery_date.toLocaleDateString()}
+                      <div className="mt-6 rounded-xl border border-primary/10 bg-gradient-to-r from-primary/5 to-secondary/5 p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          <p className="text-sm font-semibold text-primary">Fecha seleccionada:</p>
+                        </div>
+                        <p className="text-lg font-bold text-gray-800">
+                          {delivery_date.toLocaleDateString('es-ES', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
                         </p>
                       </div>
                     )}
 
-                    {/* Botones de acción */}
-                    <div className="mt-6 flex justify-end gap-2">
+                    {/* Botones de acción mejorados */}
+                    <div className="mt-6 flex justify-between gap-3">
                       <button
                         type="button"
-                        className="btn btn-ghost btn-sm"
+                        className="btn btn-error btn-outline flex-1"
                         onClick={() => {
+                          setDeliveryDate(null)
                           setShowCalendar(false)
                         }}
                       >
-                        <FilterX className="mr-1 h-4 w-4" />
+                        <FilterX className="mr-2 h-4 w-4" />
                         Limpiar
                       </button>
                       <button
                         type="button"
-                        className="btn btn-primary btn-sm"
+                        className="btn btn-primary flex-1"
                         onClick={() => setShowCalendar(false)}
+                        disabled={!delivery_date}
                       >
-                        <Filter className="mr-1 h-4 w-4" />
-                        Aplicar
+                        <Check className="mr-2 h-4 w-4" /> {/* Changed icon for "Confirm" */}
+                        Confirmar
                       </button>
                     </div>
                   </div>
