@@ -12,7 +12,8 @@ import {
   ChevronsDown,
   ChevronsUp,
   Plus,
-  Calculator
+  Calculator,
+  Warehouse
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
 import { useSettings } from '../../contexts/settingsContext'
@@ -23,7 +24,6 @@ import { fetchSize } from '../../services/products/sizeService'
 import { fetchColor } from '../../services/products/colorService'
 import { fetchProviderById } from '../../services/proveedores/proveedorService'
 import { fetchBrandByProviders } from '../../services/proveedores/brandService'
-import postData from '../../services/products/productService'
 import { fetchFamilyProductsTree } from '../../services/products/familyService'
 import GroupTreeSelector from '../../components/GroupTreeSelector'
 import GroupTreePreviewModal from '../../components/GroupTreePreviewModal'
@@ -32,8 +32,8 @@ import { pinwheel } from 'ldrs'
 import ProductImageUploader from '../../componentes especificos/dropZone'
 import { Shirt, Boxes } from 'lucide-react'
 
-//BUG: la cantidad inicial vale 0 cuando tenes un color
-//TODO: agregar costo y codigo proveedor para mostrar el resumen de info.
+//TODO: conectar el contexto
+//BUG: colores del mismo talle en distintos artículos
 
 export default function NuevoProductoDeProveedor() {
   pinwheel.register()
@@ -77,7 +77,7 @@ export default function NuevoProductoDeProveedor() {
     creation_date: new Date().toISOString(),
     last_modified_date: new Date().toISOString(),
     state: 'pendiente',
-    talles: [{ talle: '', colores: [{ color: '', cantidad: 0 }] }],
+    talles: [{ talle: '', colores: [{ color: '', cantidad: '' }] }],
     product_image: '',
     initial_quantity: 0,
     errors: {},
@@ -430,6 +430,8 @@ export default function NuevoProductoDeProveedor() {
     return Object.keys(newErrors).length === 0
   }
 
+  const { addProduct } = useProductContext()
+
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
 
@@ -442,11 +444,10 @@ export default function NuevoProductoDeProveedor() {
       console.log('🔍 STOCK VARIANTS A ENVIAR:', productData.stock_variants)
       console.log('🔍 CANTIDAD DE VARIANTES:', productData.stock_variants?.length || 0)
 
-      const response = await postData(productData)
+      addProduct(productData)
+      console.log('Productos guardado exitosamente:', productData)
 
-      console.log('Productos guardado exitosamente:', response)
-
-      if (response.product_id && productData.stock_variants.length > 0) {
+      if (productData.product_id && productData.stock_variants.length > 0) {
         try {
           const barcodeService = new BarcodeService()
           console.log('🏷️ Generando códigos de barras para variantes...')
@@ -458,7 +459,7 @@ export default function NuevoProductoDeProveedor() {
           }))
 
           const barcodeResult = await barcodeService.generateVariantBarcodes(
-            response.product_id,
+            productData.product_id,
             variants
           )
           console.log('✅ Códigos de barras generados:', barcodeResult)
@@ -467,11 +468,11 @@ export default function NuevoProductoDeProveedor() {
         }
       }
 
-      if (productImage && response.image_id) {
-        console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
+      if (productImage && productData.image_id) {
+        console.log('✅ Imagen subida exitosamente con ID:', productData.image_id)
       }
 
-      setLocation('/inventario')
+      setLocation(`/agregandoCompraProveedor/${providerId}`)
     } catch (error) {
       console.error('Error al guardar el productos:', error)
       setErrors({ submit: 'Error al guardar el productos. Intente nuevamente.' })
@@ -520,12 +521,44 @@ export default function NuevoProductoDeProveedor() {
       )
       return total + numericCost * totalCantidad
     }, 0)
-
     return total.toLocaleString('es-AR', {
       style: 'currency',
       currency: 'ARS',
       minimumFractionDigits: 2
     })
+  }
+
+  const calculateCostPerProduct = (producto) => {
+    const numericCost = parseFloat(producto.cost) || 0
+    const totalCantidad = producto.talles.reduce(
+      (talleSum, talle) =>
+        talleSum +
+        (talle.colores
+          ? talle.colores.reduce(
+              (colorSum, color) => colorSum + (parseFloat(color.cantidad) || 0),
+              0
+            )
+          : 0),
+      0
+    )
+    return (numericCost * totalCantidad).toLocaleString('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2
+    })
+  }
+  const totalQuantityPerProduct = (producto) => {
+    return producto.talles.reduce(
+      (total, talle) =>
+        total +
+        (talle.colores
+          ? talle.colores.reduce(
+              (colorSum, color) => colorSum + (parseFloat(color.cantidad) || 0),
+              0
+            )
+          : 0),
+      0
+    )
   }
 
   if (loadingData) {
@@ -683,7 +716,7 @@ export default function NuevoProductoDeProveedor() {
                                     <img
                                       src={base64ToObjectUrl(prod.product_image)}
                                       alt={`Vista previa de ${prod.product_name}`}
-                                      className="h-32 w-32 rounded-lg object-cover shadow-lg"
+                                      className="h-32 w-32 rounded-lg object-cover shadow-lg transition-transform duration-300 hover:scale-150"
                                     />
                                   </div>
                                 )}
@@ -698,13 +731,26 @@ export default function NuevoProductoDeProveedor() {
                                     </div>
                                   </div>
 
-                                  <div className="text-base-content/80 mb-4 flex items-center gap-4 text-sm">
-                                    <span className="flex items-center gap-2 font-semibold">
-                                      <Boxes className="h-4 w-4 text-secondary" />
-                                      Total: {calculateTotalCost} unidades
-                                    </span>
+                                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    <div className="text-base-content/80 mb-4 flex items-center gap-4 text-sm">
+                                      <span className="flex items-center gap-2 font-semibold">
+                                        <Boxes className="h-4 w-4 text-secondary" />
+                                        Costo total: {calculateCostPerProduct(prod)}
+                                      </span>
+                                    </div>
+                                    <div className="text-base-content/80 mb-4 flex items-center gap-4 text-sm">
+                                      <span className="flex items-center gap-2 font-semibold">
+                                        <Shirt className="h-4 w-4 text-secondary" />
+                                        Total unidades: {totalQuantityPerProduct(prod)}
+                                      </span>
+                                    </div>
+                                    <div className="text-base-content/80 mb-4 flex items-center gap-4 text-sm">
+                                      <span className="flex items-center gap-2 font-semibold">
+                                        <Warehouse className="h-4 w-4 text-secondary" />
+                                        Codigo proveedor: {prod.provider_code}
+                                      </span>
+                                    </div>
                                   </div>
-
                                   <h3 className="mb-2 font-semibold">Variedades:</h3>
                                   <div className="space-y-3">
                                     {prod.talles && prod.talles.length > 0 ? (
@@ -1428,7 +1474,11 @@ export default function NuevoProductoDeProveedor() {
                                                     type="text"
                                                     inputMode="numeric"
                                                     placeholder="Cant"
-                                                    value={color.cantidad}
+                                                    value={
+                                                      color.cantidad === 0 || color.cantidad === '0'
+                                                        ? ''
+                                                        : color.cantidad
+                                                    }
                                                     onChange={(e) => {
                                                       const newQuantity = e.target.value
                                                       const regex = /^[0-9]*$/

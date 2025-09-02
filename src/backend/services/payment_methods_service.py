@@ -111,6 +111,7 @@ class PaymentMethodsService:
                 "success": False,
                 "message": f"Error en el servicio de métodos de pago: {e}",
             }
+        
 
     def get_all_payment_methods(self, active_only=False):
         """
@@ -137,6 +138,54 @@ class PaymentMethodsService:
 
         except Exception as e:
             print(f"Error getting payment methods: {e}")
+            return []
+        
+    def get_provider_use_it(self):
+        """
+        Gets all payment methods that providers can use
+        For this example, let's assume providers can use all active methods except 'cuenta_corriente'
+
+        Returns:
+            list: List of payment methods
+        """
+        try:
+            payment_methods = self.db.execute_query(
+                """
+                SELECT * FROM payment_methods 
+                WHERE is_active = %s AND provider_use_it = %s
+                ORDER BY display_name
+                """,
+                (True, True),
+            )
+
+            return payment_methods or []
+
+        except Exception as e:
+            print(f"Error getting provider payment methods: {e}")
+            return []
+        
+    def get_client_use_it(self):
+        """
+        Gets all payment methods that clients can use
+        For this example, let's assume clients can use all active methods except 'cuenta_corriente'
+
+        Returns:
+            list: List of payment methods
+        """
+        try:
+            payment_methods = self.db.execute_query(
+                """
+                SELECT * FROM payment_methods 
+                WHERE is_active = %s AND client_use_it = %s
+                ORDER BY display_name
+                """,
+                (True, True),
+            )
+
+            return payment_methods or []
+
+        except Exception as e:
+            print(f"Error getting client payment methods: {e}")
             return []
 
     def get_payment_method_by_id(self, payment_method_id):

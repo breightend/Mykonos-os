@@ -31,6 +31,49 @@ def get_payment_methods():
             {"success": False, "message": f"Error obteniendo métodos de pago: {e}"}
         ), 500
 
+@payment_methods_router.route("/client_use_it", methods=["GET"])
+def get_client_use_it():
+    """
+    Gets all payment methods that clients can use
+    """
+    try:
+        service = PaymentMethodsService()
+        payment_methods = service.get_client_use_it()
+
+        return jsonify(
+            {
+                "success": True,
+                "payment_methods": payment_methods,
+                "total": len(payment_methods),
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error obteniendo métodos de pago: {e}"}
+        ), 500
+    
+@payment_methods_router.route("/provider_use_it", methods=["GET"])
+def get_provider_use_it():
+    """
+    Gets all payment methods that providers can use
+    """
+    try:
+        service = PaymentMethodsService()
+        payment_methods = service.get_provider_use_it()
+
+        return jsonify(
+            {
+                "success": True,
+                "payment_methods": payment_methods,
+                "total": len(payment_methods),
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error obteniendo métodos de pago: {e}"}
+        ), 500
 
 @payment_methods_router.route("/<int:payment_method_id>", methods=["GET"])
 def get_payment_method(payment_method_id):

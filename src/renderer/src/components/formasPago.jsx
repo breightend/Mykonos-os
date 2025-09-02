@@ -51,8 +51,7 @@ export default function FormasPago() {
   useEffect(() => {
     const fetchPaymentMethods = async () => {
       try {
-        const data = await paymentMethodsService.getAllPaymentMethods()
-        // Ensure payment_methods is an array and has the expected structure
+        const data = await paymentMethodsService.getClientPaymentMethods()
         if (Array.isArray(data.payment_methods)) {
           setMetodosPago(data.payment_methods)
         } else {

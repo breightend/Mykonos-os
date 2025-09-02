@@ -1,12 +1,30 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Package, ShoppingCart, FileUp, FileCheck2, CreditCard } from 'lucide-react'
+import {
+  Plus,
+  Trash2,
+  Package,
+  ShoppingCart,
+  FileUp,
+  FileCheck2,
+  CreditCard,
+  X,
+  Filter,
+  FilterX,
+  Calendar
+} from 'lucide-react'
 import { fetchProductos } from '../../services/products/productService'
 import { createPurchase } from '../../services/proveedores/purchaseService'
 import toast from 'react-hot-toast'
 import { getBancos } from '../../services/paymentsServices/banksService'
 import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService'
 import { useLocation, useSearchParams } from 'wouter'
+import { useProductContext } from '../../contexts/ProductContext'
+import { DayPicker } from 'react-day-picker'
+import { es } from 'react-day-picker/locale'
 
+//TODO: formas de pago completamente desde 0 casi
+//TODO: Mostrar productos cargados.
+//TODO: poder editar los productos.
 export default function AgregarCompraProveedor({ provider }) {
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState([])
@@ -14,7 +32,6 @@ export default function AgregarCompraProveedor({ provider }) {
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
-
   const [purchaseData, setPurchaseData] = useState({
     subtotal: 0,
     discount: 0,
@@ -29,25 +46,20 @@ export default function AgregarCompraProveedor({ provider }) {
     bank_id: ''
   })
 
+  const { productData } = useProductContext()
+
   const [purchaseProducts, setPurchaseProducts] = useState([])
   const [showProductModal, setShowProductModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
-  const [productFormData, setProductFormData] = useState({
-    product_id: '',
-    cost_price: '',
-    quantity: 1,
-    discount: 0
-  })
 
   const [banks, setBanks] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
   const [invoiceFile, setInvoiceFile] = useState(null)
 
-  // Load necessary data on component mount
   useEffect(() => {
     const loadData = async () => {
       try {
-        const methods = await paymentMethodsService.getAllPaymentMethods()
+        const methods = await paymentMethodsService.getProviderPaymentMethods()
         setPaymentMethods(methods.payment_methods || [])
         const bancosData = await getBancos()
         setBanks(bancosData.banks || [])
@@ -171,12 +183,20 @@ export default function AgregarCompraProveedor({ provider }) {
   const handleCerrar = () => {
     setShowProductModal(false)
     setEditingProduct(null)
-    setProductFormData({
-      product_id: '',
-      cost_price: '',
-      quantity: 1,
-      discount: 0
-    })
+  }
+  const [echeq_time, setEcheqTime] = useState('')
+
+  const isEcheqTimeVisible = ['6'].includes(purchaseData.payment_method)
+
+  const [showCalendar, setShowCalendar] = useState(false)
+  const toggleCalendar = () => {
+    setShowCalendar(!showCalendar)
+  }
+  const [delivery_date, setDeliveryDate] = useState()
+
+  const getLabel = () => {
+    if (!delivery_date) return 'Selecciona dia de arribo de mercadería'
+    else return delivery_date.toLocaleDateString('es-ES', { dateStyle: 'medium' })
   }
 
   return (
@@ -238,6 +258,25 @@ export default function AgregarCompraProveedor({ provider }) {
                   </select>
                 </div>
               )}
+              {isEcheqTimeVisible && (
+                <div>
+                  <label htmlFor="" className="label">
+                    <span className="label-text font-medium text-gray-600">Tiempo: </span>
+                  </label>
+                  <select
+                    name="echeq_time"
+                    value={paymentData.echeq_time}
+                    onChange={handlePaymentInputChange}
+                    className="select-bordered select w-full"
+                    required
+                  >
+                    <option value="">Seleccionar a dias...</option>
+                    <option value={30}>30</option>
+                    <option value={60}>60</option>
+                    <option value={90}>90</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="label">
@@ -268,6 +307,100 @@ export default function AgregarCompraProveedor({ provider }) {
                   placeholder="Número de factura"
                 />
               </div>
+
+              <button
+                type="button"
+                className={`btn btn-warning btn-outline min-w-[200px] ${showCalendar ? 'btn-active' : ''}`}
+                onClick={toggleCalendar}
+              >
+                <Calendar className="h-4 w-4" />
+                {getLabel()}
+              </button>
+
+              {showCalendar && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                      setShowCalendar(false)
+                    }
+                  }}
+                >
+                  <div className="relative mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-base-100 p-6 shadow-xl backdrop-blur-sm">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Seleccionar dia</h3>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm btn-circle"
+                        onClick={() => setShowCalendar(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Calendario */}
+                    <div className="flex justify-center">
+                      <DayPicker
+                        classNames={{
+                          root: 'react-delivery_date-picker text-sm',
+                          todelivery_date: 'border-2 border-amber-500 rounded font-bold',
+                          selected:
+                            'bg-amber-500 border-amber-500 text-white rounded font-semibold',
+                          delivery_date_button:
+                            'w-9 h-9 text-sm rounded hover:bg-amber-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-300',
+                          nav_button: 'btn btn-sm btn-ghost hover:bg-amber-100',
+                          nav_button_next: 'btn btn-sm btn-ghost hover:bg-amber-100',
+                          nav_button_previous: 'btn btn-sm btn-ghost hover:bg-amber-100',
+                          caption: 'text-lg font-semibold mb-3 text-center text-amber-700',
+                          weekdelivery_dates: 'text-xs font-medium text-gray-600 mb-1',
+                          week: 'mb-1',
+                          delivery_date: 'text-sm font-medium p-1'
+                        }}
+                        mode="range"
+                        selected={delivery_date}
+                        onSelect={setDeliveryDate}
+                        locale={es}
+                        disabled={{ after: new Date() }}
+                        showOutsideDays={false}
+                        fixedWeeks={false}
+                        numberOfMonths={1}
+                      />
+                    </div>
+
+                    {/* Información del dia seleccionado */}
+                    {delivery_date && (
+                      <div className="mt-4 rounded bg-amber-50 p-3">
+                        <p className="text-sm font-medium text-amber-800">Día seleccionado:</p>
+                        <p className="text-sm text-amber-700">
+                          {delivery_date.toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Botones de acción */}
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => {
+                          setShowCalendar(false)
+                        }}
+                      >
+                        <FilterX className="mr-1 h-4 w-4" />
+                        Limpiar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => setShowCalendar(false)}
+                      >
+                        <Filter className="mr-1 h-4 w-4" />
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="lg:col-span-3">
                 <label className="label">

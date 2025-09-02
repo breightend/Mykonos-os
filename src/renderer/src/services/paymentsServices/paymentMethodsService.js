@@ -20,6 +20,26 @@ export const paymentMethodsService = {
         }
     },
 
+    async getProviderPaymentMethods() {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/provider_use_it`)
+            return response.data
+        } catch (error) {
+            console.error('Error getting provider payment methods:', error)
+            throw error
+        }
+    },
+
+    async getClientPaymentMethods() {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/client_use_it`)
+            return response.data
+        } catch (error) {
+            console.error('Error getting client payment methods:', error)
+            throw error
+        }
+    },
+
     /**
      * Gets a specific payment method by ID
      * @param {number} paymentMethodId - Payment method ID

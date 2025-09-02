@@ -34,6 +34,7 @@ import GestionFormaDePago from './componentes especificos/GestionFormaDePago'
 import AgregarCompraProveedor from './components/Proveedores/agregarCompraProveedor'
 import AgregarProductoCompraProveedor from './components/Proveedores/agregarProductoCompraProveedor'
 import PedidosAProveedores from './components/Proveedores/pedidosAProveedores'
+import { ProductProvider } from './contexts/ProductContext'
 
 function App() {
   return (
@@ -182,12 +183,16 @@ function App() {
         </Route>
         <Route path="/formasDePagoGestion">
           <ProtectedRoute>
-            <GestionFormaDePago />
+            <ProductProvider>
+              <GestionFormaDePago />
+            </ProductProvider>
           </ProtectedRoute>
         </Route>
         <Route path="/agregandoCompraProveedor">
           <ProtectedRoute>
-            <AgregarCompraProveedor />
+            <ProductProvider>
+              <AgregarCompraProveedor />
+            </ProductProvider>
           </ProtectedRoute>
         </Route>
         <Route path="/agregarProductoCompraProveedor">
