@@ -183,9 +183,7 @@ function App() {
         </Route>
         <Route path="/formasDePagoGestion">
           <ProtectedRoute>
-            <ProductProvider>
-              <GestionFormaDePago />
-            </ProductProvider>
+            <GestionFormaDePago />
           </ProtectedRoute>
         </Route>
         <Route path="/agregandoCompraProveedor">
@@ -197,7 +195,9 @@ function App() {
         </Route>
         <Route path="/agregarProductoCompraProveedor">
           <ProtectedRoute>
-            <AgregarProductoCompraProveedor />
+            <ProductProvider>
+              <AgregarProductoCompraProveedor />
+            </ProductProvider>
           </ProtectedRoute>
         </Route>
         <Route path="/pedidosProveedor">

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
   Plus,
-  Trash2,
   Package,
   ShoppingCart,
   FileUp,
@@ -22,13 +21,13 @@ import { useProductContext } from '../../contexts/ProductContext'
 import { DayPicker } from 'react-day-picker'
 import { es } from 'react-day-picker/locale'
 
-//TODO: formas de pago completamente desde 0 casi
 //TODO: Mostrar productos cargados.
 //TODO: poder editar los productos.
+//TODO: conectar el calendario.
+//TODO: chequear lo que mando.
 export default function AgregarCompraProveedor({ provider }) {
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
@@ -39,18 +38,18 @@ export default function AgregarCompraProveedor({ provider }) {
     payment_method: '',
     transaction_number: '',
     invoice_number: '',
-    notes: ''
+    notes: '',
+    delivery_date: ''
   })
 
   const [paymentData, setPaymentData] = useState({
-    bank_id: ''
+    bank_id: '',
+    echeq_time: ''
   })
 
   const { productData } = useProductContext()
 
   const [purchaseProducts, setPurchaseProducts] = useState([])
-  const [showProductModal, setShowProductModal] = useState(false)
-  const [editingProduct, setEditingProduct] = useState(null)
 
   const [banks, setBanks] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
@@ -117,6 +116,9 @@ export default function AgregarCompraProveedor({ provider }) {
         discount: parseFloat(purchaseData.discount) || 0,
         total: parseFloat(purchaseData.total),
         payment_method: purchaseData.payment_method,
+        bank_id: paymentData.bank_id || null,
+        echeq_time: paymentData.echeq_time || null,
+        delivery_date: delivery_date || null,
         transaction_number: purchaseData.transaction_number,
         invoice_number: purchaseData.invoice_number,
         notes: purchaseData.notes,
@@ -135,7 +137,6 @@ export default function AgregarCompraProveedor({ provider }) {
 
       if (result.status === 'éxito') {
         toast.success('Compra creada exitosamente')
-        // Redirect or reset the form
         setLocation(`/infoProvider?id=${providerId}`)
         resetForm()
       } else {
@@ -178,7 +179,8 @@ export default function AgregarCompraProveedor({ provider }) {
     setInvoiceFile(null)
   }
 
-  const isBankFieldVisible = ['2', '3', '4', '5'].includes(purchaseData.payment_method)
+  const isBankFieldVisible = ['2', '3', '4', '7'].includes(purchaseData.payment_method)
+  console.log(purchaseData.payment_method)
 
   const handleCerrar = () => {
     setLocation(`/infoProvider?id=${providerId}`)
@@ -271,9 +273,9 @@ export default function AgregarCompraProveedor({ provider }) {
                     required
                   >
                     <option value="">Seleccionar a dias...</option>
-                    <option value={30}>30</option>
-                    <option value={60}>60</option>
-                    <option value={90}>90</option>
+                    <option value={30}>30 días</option>
+                    <option value={60}>60 días</option>
+                    <option value={90}>90 días</option>
                   </select>
                 </div>
               )}
@@ -310,7 +312,7 @@ export default function AgregarCompraProveedor({ provider }) {
 
               <button
                 type="button"
-                className={`btn btn-warning btn-outline min-w-[200px] ${showCalendar ? 'btn-active' : ''}`}
+                className={`btn btn-warning btn-outline min-w-[200px] mt-8 ${showCalendar ? 'btn-active' : ''}`}
                 onClick={toggleCalendar}
               >
                 <Calendar className="h-4 w-4" />
@@ -349,38 +351,25 @@ export default function AgregarCompraProveedor({ provider }) {
                     <div className="flex justify-center">
                       <DayPicker
                         classNames={{
-                          // Overall container for the DayPicker
-                          root: 'day-picker-root p-2 rounded-lg bg-base-100', // Added rounded background
-
-                          // Day styling
-                          day: 'h-9 w-9 p-4 font-medium hover:bg-primary/10 hover:text-primary rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+                          day: 'h-9 w-9 p-4 font-medium hover:bg-primary/10 hover:text-primary rounded-md transition-colors  focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
                           selected:
                             'bg-primary text-white hover:bg-primary hover:text-white focus:bg-primary focus:text-white rounded-md font-bold shadow-sm',
-                          today: 'bg-secondary text-white font-bold rounded-md', // Highlight today's date
+                          today: 'bg-secondary text-white font-bold rounded-md',
                           outside: 'text-gray-300 opacity-50',
                           disabled: 'text-gray-300 opacity-30 cursor-not-allowed',
                           hidden: 'invisible',
-                          // Month grid layout
                           months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
                           month: 'space-y-4',
 
-                          // Caption (Month and Year) - THIS IS WHERE NAVIGATION MOVES
                           caption_label: 'text-lg font-bold text-gray-800',
                           caption:
-                            'flex justify-center items-center text-lg font-bold text-gray-800 mb-4 relative', // Keep relative for custom nav
+                            'flex justify-center items-center text-lg font-bold text-gray-800 mb-4 relative',
 
-                          // Custom Navigation - POSITIONED EXPLICITLY
-                          nav: 'flex items-center absolute left-0 right-0 justify-between px-2', // Position nav buttons
+                          nav: 'flex items-center absolute left-0 right-0 justify-between px-2',
                           nav_button:
                             'h-8 w-8 bg-transparent p-0 rounded-full transition-colors border border-base-300 text-base-content hover:bg-primary hover:text-white', // Consistent styling
-                          nav_button_previous: '', // No specific additional styles needed here
-                          nav_button_next: '', // No specific additional styles needed here
-
-
-                          // Days Grid
-                          row: 'flex w-full mt-2',
-                          cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary [&:has([aria-selected])]:text-white first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
-
+                          nav_button_previous: '',
+                          nav_button_next: ''
                         }}
                         mode="single"
                         selected={delivery_date}
@@ -520,33 +509,30 @@ export default function AgregarCompraProveedor({ provider }) {
               </button>
             </div>
 
-            {purchaseProducts.length > 0 ? (
+            {productData.products.length > 0 ? (
               <div className="overflow-x-auto rounded-lg border">
                 <table className="table w-full">
                   <thead className="bg-gray-200 text-gray-700">
                     <tr>
-                      <th className="px-4 py-3 text-left">Producto</th>
-                      <th className="px-4 py-3 text-left">Código</th>
+                      <th className="px-4 py-3 text-left">Producto N</th>
+                      <th className="px-4 py-3 text-left">Nombre</th>
+                      <th className="px-4 py-3 text-left">Codigo proveedor</th>
                       <th className="px-4 py-3 text-left">Precio Costo</th>
                       <th className="px-4 py-3 text-left">Cantidad</th>
-                      <th className="px-4 py-3 text-left">Descuento</th>
-                      <th className="px-4 py-3 text-left">Subtotal</th>
                       <th className="px-4 py-3 text-left">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {purchaseProducts.map((product) => (
+                    {productData.products.map((product, index) => (
                       <tr key={product.id} className="border-b transition-colors hover:bg-gray-100">
+                        <td className="px-4 py-3 font-medium">{index + 1}</td>
                         <td className="px-4 py-3 font-medium">{product.product_name}</td>
-                        <td className="px-4 py-3">{product.barcode}</td>
+                        <td className="px-4 py-3">{product.provider_code}</td>
                         <td className="px-4 py-3 text-gray-600">
                           ${product.cost_price.toFixed(2)}
                         </td>
                         <td className="px-4 py-3">{product.quantity}</td>
                         <td className="px-4 py-3 text-gray-600">${product.discount.toFixed(2)}</td>
-                        <td className="px-4 py-3 font-bold text-success">
-                          ${product.subtotal.toFixed(2)}
-                        </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2"></div>
                         </td>

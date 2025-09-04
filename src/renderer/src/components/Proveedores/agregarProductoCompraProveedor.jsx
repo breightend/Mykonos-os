@@ -33,7 +33,6 @@ import ProductImageUploader from '../../componentes especificos/dropZone'
 import { Shirt, Boxes } from 'lucide-react'
 
 //TODO: conectar el contexto
-//BUG: colores del mismo talle en distintos artículos
 
 export default function NuevoProductoDeProveedor() {
   pinwheel.register()
@@ -178,6 +177,8 @@ export default function NuevoProductoDeProveedor() {
     setUseAutoCalculation(settings.autoCalculatePrice)
   }, [settings.autoCalculatePrice])
 
+  console.log('Id del proveedor', { providerId })
+
   useEffect(() => {
     const fetchBrandsForProvider = async () => {
       if (providerId) {
@@ -285,34 +286,6 @@ export default function NuevoProductoDeProveedor() {
     const newProductos = [...productos]
     const product = newProductos[productIndex]
     const nuevosTalles = [...product.talles]
-    const talleActual = nuevosTalles[talleIndex].talle
-    const colorAnterior = nuevosTalles[talleIndex].colores[colorIndex].color
-
-    if (field === 'color') {
-      const nuevoColor = value
-
-      if (nuevoColor !== colorAnterior) {
-        nuevosTalles[talleIndex].colores[colorIndex].color = nuevoColor
-
-        setColoresDisponiblesPorTalle((prev) => {
-          const nuevosDisponibles = { ...prev }
-          if (colorAnterior && talleActual) {
-            if (!nuevosDisponibles[talleActual]) {
-              nuevosDisponibles[talleActual] = []
-            }
-            if (!nuevosDisponibles[talleActual].includes(colorAnterior)) {
-              nuevosDisponibles[talleActual].push(colorAnterior)
-            }
-          }
-          if (nuevoColor && talleActual && nuevosDisponibles[talleActual]) {
-            nuevosDisponibles[talleActual] = nuevosDisponibles[talleActual].filter(
-              (c) => c !== nuevoColor
-            )
-          }
-          return nuevosDisponibles
-        })
-      }
-    }
 
     nuevosTalles[talleIndex].colores[colorIndex][field] =
       field === 'cantidad' ? parseInt(value, 10) || 0 : value
@@ -329,6 +302,25 @@ export default function NuevoProductoDeProveedor() {
       .filter(Boolean)
 
     return tallesBD.filter((talle) => !tallesSeleccionados.includes(talle.size_name))
+  }
+
+  const getColoresDisponiblesParaTalle = (productIndex, talleIndex, currentColorIndex) => {
+    const product = productos[productIndex]
+    const talle = product.talles[talleIndex]
+
+    if (!talle.talle || !coloresDisponiblesPorTalle[talle.talle]) {
+      return []
+    }
+
+    const coloresYaSeleccionados = talle.colores
+      .map((color, index) => (index !== currentColorIndex ? color.color : null))
+      .filter(Boolean)
+
+    return colors.filter(
+      (colorItem) =>
+        coloresDisponiblesPorTalle[talle.talle]?.includes(colorItem.color_name) &&
+        !coloresYaSeleccionados.includes(colorItem.color_name)
+    )
   }
 
   const base64ToObjectUrl = (base64Data) => {
@@ -399,7 +391,7 @@ export default function NuevoProductoDeProveedor() {
   const validateForm = () => {
     const newErrors = {}
 
-    if (!productos.product_name.trim()) newErrors.product_name = 'El nombre es requerido'
+    if (!productos.product_name) newErrors.product_name = 'El nombre es requerido'
     if (!productos.group_id) newErrors.group_id = 'El grupo es requerido'
     if (!productos.brand_id) newErrors.brand_id = 'La marca es requerida'
     if (!productos.cost || isNaN(parseFloat(productos.cost)) || parseFloat(productos.cost) <= 0)
@@ -472,7 +464,7 @@ export default function NuevoProductoDeProveedor() {
         console.log('✅ Imagen subida exitosamente con ID:', productData.image_id)
       }
 
-      setLocation(`/agregandoCompraProveedor/${providerId}`)
+      setLocation(`/agregandoCompraProveedor?id=${providerId}`)
     } catch (error) {
       console.error('Error al guardar el productos:', error)
       setErrors({ submit: 'Error al guardar el productos. Intente nuevamente.' })
@@ -583,10 +575,11 @@ export default function NuevoProductoDeProveedor() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="tooltip tooltip-bottom" data-tip="Volver al inventario">
+              <div className="" data-tip="Volver">
                 <button
                   className="btn btn-outline hover:scale-110"
-                  onClick={() => setLocation('/inventario')}
+                  title="Volver"
+                  onClick={() => setLocation(`/agregandoCompraProveedor?id=${providerId}`)}
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
@@ -1424,27 +1417,17 @@ export default function NuevoProductoDeProveedor() {
                                               >
                                                 <div className="flex-1">
                                                   <ColorSelect
-                                                    colors={
-                                                      coloresDisponiblesPorTalle[talle.talle] !==
-                                                      undefined
-                                                        ? colors.filter((colorItem) =>
-                                                            coloresDisponiblesPorTalle[
-                                                              talle.talle
-                                                            ]?.includes(colorItem.color_name)
-                                                          )
-                                                        : []
-                                                    }
+                                                    colors={getColoresDisponiblesParaTalle(
+                                                      idx,
+                                                      talleIndex,
+                                                      colorIndex
+                                                    )}
                                                     allColors={colors}
-                                                    availableColors={
-                                                      coloresDisponiblesPorTalle[talle.talle] !==
-                                                      undefined
-                                                        ? colors.filter((colorItem) =>
-                                                            coloresDisponiblesPorTalle[
-                                                              talle.talle
-                                                            ]?.includes(colorItem.color_name)
-                                                          )
-                                                        : []
-                                                    }
+                                                    availableColors={getColoresDisponiblesParaTalle(
+                                                      idx,
+                                                      talleIndex,
+                                                      colorIndex
+                                                    )}
                                                     value={color.color || ''}
                                                     onChange={(selectedColorName) => {
                                                       handleColorChange(

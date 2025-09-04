@@ -89,27 +89,22 @@ export default function InfoProvider() {
         setLoadingPurchases(true)
         setLoadingMovements(true)
 
-        // Cargar información del proveedor
         const data = await fetchProviderById(providerId)
         console.log(data)
         setProvider(data)
 
-        // Cargar marcas del proveedor
         const brands = await fetchBrandByProviders(providerId)
         console.log('Fetched provider brands:', brands)
         setProviderBrands(Array.isArray(brands) ? brands : [])
 
-        // Cargar todas las marcas
         const allBrandsData = await fetchBrand()
         console.log('Fetched all brands:', allBrandsData)
         setAllBrands(Array.isArray(allBrandsData) ? allBrandsData : [])
 
-        // Cargar compras del proveedor
         const purchasesData = await fetchPurchasesByProvider(providerId)
         console.log('Fetched provider purchases:', purchasesData)
         setPurchases(Array.isArray(purchasesData) ? purchasesData : [])
 
-        // Cargar movimientos de cuenta del proveedor
         try {
           const movementsData = await accountMovementsService.getProviderMovements(providerId)
           console.log('Fetched provider movements:', movementsData)
@@ -119,7 +114,6 @@ export default function InfoProvider() {
           setMovements([])
         }
 
-        // Calculate provider balance (total pending payments)
         const [movementsResponse, balanceResponse] = await Promise.all([
           accountMovementsService.getProviderMovements(providerId),
           accountMovementsService.getProviderBalance(providerId)
