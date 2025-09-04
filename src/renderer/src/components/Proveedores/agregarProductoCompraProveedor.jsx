@@ -1,6 +1,7 @@
 import { useLocation, useSearchParams } from 'wouter'
 import { useState, useEffect } from 'react'
 import { useProductContext } from '../../contexts/ProductContext'
+import toast from 'react-hot-toast'
 import {
   ArrowLeft,
   LoaderCircle,
@@ -388,22 +389,22 @@ export default function NuevoProductoDeProveedor() {
       })
     }
   }
-  const validateForm = () => {
+  const validateForm = (product = productos[0]) => {
     const newErrors = {}
 
-    if (!productos.product_name) newErrors.product_name = 'El nombre es requerido'
-    if (!productos.group_id) newErrors.group_id = 'El grupo es requerido'
-    if (!productos.brand_id) newErrors.brand_id = 'La marca es requerida'
-    if (!productos.cost || isNaN(parseFloat(productos.cost)) || parseFloat(productos.cost) <= 0)
+    if (!product.product_name) newErrors.product_name = 'El nombre es requerido'
+    if (!product.group_id) newErrors.group_id = 'El grupo es requerido'
+    if (!product.brand_id) newErrors.brand_id = 'La marca es requerida'
+    if (!product.cost || isNaN(parseFloat(product.cost)) || parseFloat(product.cost) <= 0)
       newErrors.cost = 'El costo debe ser mayor a 0'
     if (
-      !productos.sale_price ||
-      isNaN(parseFloat(productos.sale_price)) ||
-      parseFloat(productos.sale_price) <= 0
+      !product.sale_price ||
+      isNaN(parseFloat(product.sale_price)) ||
+      parseFloat(product.sale_price) <= 0
     )
       newErrors.sale_price = 'El precio de venta debe ser mayor a 0'
 
-    const cantidadTotal = productos.talles.reduce(
+    const cantidadTotal = product.talles.reduce(
       (total, talle) =>
         total +
         talle.colores.reduce(
@@ -415,7 +416,6 @@ export default function NuevoProductoDeProveedor() {
 
     if (cantidadTotal <= 0) {
       newErrors.cantidad = 'Debe agregar al menos una unidad'
-      return newErrors
     }
 
     setErrors(newErrors)
@@ -426,48 +426,37 @@ export default function NuevoProductoDeProveedor() {
 
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
+    let allValid = true
+    productos.forEach((product, index) => {
+      if (!validateForm(product, index)) {
+        allValid = false
+      }
+    })
 
-    if (!validateForm()) return
+    if (!allValid) return
 
     setIsSubmitting(true)
     try {
-      const productData = prepareProductData()
-      console.log('🔍 DATOS DE PRODUCTOS PREPARADOS:', productData)
-      console.log('🔍 STOCK VARIANTS A ENVIAR:', productData.stock_variants)
-      console.log('🔍 CANTIDAD DE VARIANTES:', productData.stock_variants?.length || 0)
+      productos.forEach((product, index) => {
+        const productData = prepareProductData(product)
+        console.log(`🔍 DATOS DEL PRODUCTO ${index + 1} PREPARADOS:`, productData)
+        console.log(`🔍 STOCK VARIANTS PRODUCTO ${index + 1}:`, productData.stock_variants)
+        console.log(
+          `🔍 CANTIDAD DE VARIANTES PRODUCTO ${index + 1}:`,
+          productData.stock_variants?.length || 0
+        )
 
-      addProduct(productData)
-      console.log('Productos guardado exitosamente:', productData)
+        addProduct(productData)
+        console.log(`✅ Producto ${index + 1} guardado exitosamente:`, productData)
+      })
 
-      if (productData.product_id && productData.stock_variants.length > 0) {
-        try {
-          const barcodeService = new BarcodeService()
-          console.log('🏷️ Generando códigos de barras para variantes...')
-
-          const variants = productData.stock_variants.map((variant) => ({
-            size_id: variant.size_id,
-            color_id: variant.color_id,
-            quantity: variant.quantity
-          }))
-
-          const barcodeResult = await barcodeService.generateVariantBarcodes(
-            productData.product_id,
-            variants
-          )
-          console.log('✅ Códigos de barras generados:', barcodeResult)
-        } catch (barcodeError) {
-          console.error('⚠️ Error generando códigos de barras:', barcodeError)
-        }
-      }
-
-      if (productImage && productData.image_id) {
-        console.log('✅ Imagen subida exitosamente con ID:', productData.image_id)
-      }
+      toast.success(`${productos.length} producto(s) agregado(s) a la compra`)
 
       setLocation(`/agregandoCompraProveedor?id=${providerId}`)
     } catch (error) {
-      console.error('Error al guardar el productos:', error)
-      setErrors({ submit: 'Error al guardar el productos. Intente nuevamente.' })
+      console.error('Error al guardar los productos:', error)
+      toast.error('Error al guardar los productos. Intente nuevamente.')
+      setErrors({ submit: 'Error al guardar los productos. Intente nuevamente.' })
     } finally {
       setIsSubmitting(false)
     }

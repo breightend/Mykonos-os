@@ -9,7 +9,9 @@ import {
   X,
   FilterX,
   Calendar,
-  Check
+  Check,
+  Trash2,
+  Edit
 } from 'lucide-react'
 import { fetchProductos } from '../../services/products/productService'
 import { createPurchase } from '../../services/proveedores/purchaseService'
@@ -47,9 +49,10 @@ export default function AgregarCompraProveedor({ provider }) {
     echeq_time: ''
   })
 
-  const { productData } = useProductContext()
+  const { productData, removeProduct, updateProductQuantity, clearProducts } = useProductContext()
 
-  const [purchaseProducts, setPurchaseProducts] = useState([])
+  // Remove unused state since we're using context now
+  // const [purchaseProducts, setPurchaseProducts] = useState([])
 
   const [banks, setBanks] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
@@ -73,18 +76,18 @@ export default function AgregarCompraProveedor({ provider }) {
   }, [])
 
   useEffect(() => {
-    const subtotal = purchaseProducts.reduce(
-      (acc, item) => acc + (item.cost_price * item.quantity - item.discount),
+    const subtotal = productData.products.reduce(
+      (acc, item) => acc + item.cost_price * item.quantity,
       0
     )
-    const total = subtotal - purchaseData.discount
+    const total = subtotal - (parseFloat(purchaseData.discount) || 0)
 
     setPurchaseData((prev) => ({
       ...prev,
       subtotal: subtotal.toFixed(2),
       total: total.toFixed(2)
     }))
-  }, [purchaseProducts, purchaseData.discount])
+  }, [productData.products, purchaseData.discount])
 
   const handlePurchaseInputChange = (e) => {
     const { name, value } = e.target
@@ -103,7 +106,7 @@ export default function AgregarCompraProveedor({ provider }) {
       toast.error('No se ha seleccionado un proveedor')
       return
     }
-    if (purchaseProducts.length === 0) {
+    if (productData.products.length === 0) {
       toast.error('Debe agregar al menos un producto')
       return
     }
@@ -123,11 +126,11 @@ export default function AgregarCompraProveedor({ provider }) {
         invoice_number: purchaseData.invoice_number,
         notes: purchaseData.notes,
         status: 'Pendiente de entrega',
-        products: purchaseProducts.map((product) => ({
+        products: productData.products.map((product) => ({
           product_id: product.product_id,
           cost_price: product.cost_price,
           quantity: product.quantity,
-          discount: product.discount,
+          discount: product.discount || 0,
           subtotal: product.subtotal
         })),
         invoice_file: invoiceFile
@@ -158,11 +161,13 @@ export default function AgregarCompraProveedor({ provider }) {
       payment_method: '',
       transaction_number: '',
       invoice_number: '',
-      notes: ''
+      notes: '',
+      delivery_date: ''
     })
-    setPurchaseProducts([])
+    clearProducts()
     setInvoiceFile(null)
-    setPaymentData({ bank_id: '' })
+    setPaymentData({ bank_id: '', echeq_time: '' })
+    setDeliveryDate(null)
   }
 
   const handleFileChange = (e) => {
@@ -312,7 +317,7 @@ export default function AgregarCompraProveedor({ provider }) {
 
               <button
                 type="button"
-                className={`btn btn-warning btn-outline min-w-[200px] mt-8 ${showCalendar ? 'btn-active' : ''}`}
+                className={`btn btn-warning btn-outline mt-8 min-w-[200px] ${showCalendar ? 'btn-active' : ''}`}
                 onClick={toggleCalendar}
               >
                 <Calendar className="h-4 w-4" />
@@ -516,9 +521,10 @@ export default function AgregarCompraProveedor({ provider }) {
                     <tr>
                       <th className="px-4 py-3 text-left">Producto N</th>
                       <th className="px-4 py-3 text-left">Nombre</th>
-                      <th className="px-4 py-3 text-left">Codigo proveedor</th>
+                      <th className="px-4 py-3 text-left">Código Proveedor</th>
                       <th className="px-4 py-3 text-left">Precio Costo</th>
                       <th className="px-4 py-3 text-left">Cantidad</th>
+                      <th className="px-4 py-3 text-left">Subtotal</th>
                       <th className="px-4 py-3 text-left">Acciones</th>
                     </tr>
                   </thead>
@@ -531,10 +537,29 @@ export default function AgregarCompraProveedor({ provider }) {
                         <td className="px-4 py-3 text-gray-600">
                           ${product.cost_price.toFixed(2)}
                         </td>
-                        <td className="px-4 py-3">{product.quantity}</td>
-                        <td className="px-4 py-3 text-gray-600">${product.discount.toFixed(2)}</td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-2"></div>
+                          <input
+                            type="number"
+                            value={product.quantity}
+                            onChange={(e) =>
+                              updateProductQuantity(product.id, parseInt(e.target.value) || 0)
+                            }
+                            className="input-bordered input input-sm w-20 text-center"
+                            min="0"
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-medium">${product.subtotal.toFixed(2)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              className="btn btn-error btn-sm"
+                              onClick={() => removeProduct(product.id)}
+                              title="Eliminar producto"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -603,7 +628,7 @@ export default function AgregarCompraProveedor({ provider }) {
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading || purchaseProducts.length === 0}
+              disabled={loading || productData.products.length === 0}
             >
               {loading ? 'Creando...' : 'Crear Compra'}
             </button>
