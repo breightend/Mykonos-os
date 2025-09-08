@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
 from datetime import datetime
+import base64
 
 purchase_bp = Blueprint("purchase", __name__)
 
@@ -10,6 +11,7 @@ purchase_bp = Blueprint("purchase", __name__)
 def create_purchase():
     try:
         data = request.get_json()
+        print(f"Received purchase data: {data}")
 
         # Validar datos requeridos
         required_fields = ["entity_id", "subtotal", "total", "products"]
@@ -25,6 +27,28 @@ def create_purchase():
             ), 400
 
         db = Database()
+        file_id = None
+
+        # Procesar archivo adjunto si existe
+        if data.get("invoice_file"):
+            try:
+                invoice_file = data["invoice_file"]
+                # Si es un archivo base64, procesarlo
+                if isinstance(invoice_file, str):
+                    file_content = base64.b64decode(invoice_file)
+                    file_data = {
+                        "file_name": f"invoice_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                        "file_extension": "pdf",
+                        "file_content": file_content,
+                        "comment": "Factura de compra",
+                    }
+                    file_result = db.add_record("file_attachments", file_data)
+                    if file_result.get("success"):
+                        file_id = file_result.get("rowid")
+                    else:
+                        print(f"Error saving file: {file_result}")
+            except Exception as e:
+                print(f"Error processing invoice file: {e}")
 
         # Crear la compra principal
         purchase_data = {
@@ -32,12 +56,24 @@ def create_purchase():
             "subtotal": data["subtotal"],
             "discount": data.get("discount", 0),
             "total": data["total"],
-            "payment_method": data.get("payment_method", ""),
+            "payment_method": data.get("payment_method")
+            if data.get("payment_method")
+            else None,
             "transaction_number": data.get("transaction_number", ""),
             "invoice_number": data.get("invoice_number", ""),
             "notes": data.get("notes", ""),
             "status": data.get("status", "Pendiente de entrega"),
+            "file_id": file_id,
+            "delivery_date": data.get("delivery_date"),
+            "echeq_time": data.get("echeq_time") if data.get("echeq_time") else None,
         }
+
+        # El payment_method ahora referencia directamente a BANKS_PAYMENT_METHODS.id
+        # que ya contiene tanto bank_id como payment_method_id
+        # No necesitamos manejar bank_id por separado ya que está en la relación
+
+        # Filtrar valores None para campos opcionales
+        purchase_data = {k: v for k, v in purchase_data.items() if v is not None}
 
         purchase_result = db.add_record("purchases", purchase_data)
 
@@ -59,10 +95,16 @@ def create_purchase():
                 "subtotal": product["subtotal"],
             }
 
+            # Agregar metadata si existe información adicional
+            if product.get("stock_variants"):
+                product_detail["metadata"] = str(product["stock_variants"])
+
             detail_result = db.add_record("purchases_detail", product_detail)
             if not detail_result.get("success"):
-                # Si falla algún detalle, eliminar la compra
+                # Si falla algún detalle, eliminar la compra y el archivo
                 db.delete_record("purchases", "id = ?", (purchase_id,))
+                if file_id:
+                    db.delete_record("file_attachments", "id = ?", (file_id,))
                 return jsonify(
                     {
                         "status": "error",
@@ -85,12 +127,33 @@ def create_purchase():
         ), 500
 
 
-# Obtener todas las compras
+# Obtener todas las compras con relaciones completas
+#TODO: sumar los productos que se compraron
 @purchase_bp.route("/", methods=["GET"])
 def get_purchases():
     try:
         db = Database()
-        purchases = db.fetch_all_with_relations("purchases")
+        query = """
+        SELECT 
+            p.*,
+            e.entity_name as provider_name,
+            e.cuit as provider_cuit,
+            e.phone_number as provider_phone,
+            e.email as provider_email,
+            bpm.amount as payment_method_amount,
+            b.name as bank_name,
+            pm.method_name as payment_method_name,
+            fa.file_name as invoice_file_name,
+            fa.file_extension as invoice_file_extension
+        FROM purchases p
+        LEFT JOIN entities e ON p.entity_id = e.id
+        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
+        LEFT JOIN banks b ON bpm.bank_id = b.id
+        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+        LEFT JOIN file_attachments fa ON p.file_id = fa.id
+        ORDER BY p.purchase_date DESC
+        """
+        purchases = db.execute_query(query)
         return jsonify(purchases), 200
     except Exception as e:
         print(f"Error fetching purchases: {e}")
@@ -99,15 +162,27 @@ def get_purchases():
         ), 500
 
 
-# Obtener compras por proveedor
+# Obtener compras por proveedor con información completa
 @purchase_bp.route("/provider/<int:provider_id>", methods=["GET"])
 def get_purchases_by_provider(provider_id):
     try:
         db = Database()
         query = """
-        SELECT p.*, e.entity_name as provider_name
+        SELECT 
+            p.*,
+            e.entity_name as provider_name,
+            e.cuit as provider_cuit,
+            e.razon_social as provider_razon_social,
+            bpm.amount as payment_method_amount,
+            b.name as bank_name,
+            pm.method_name as payment_method_name,
+            fa.file_name as invoice_file_name
         FROM purchases p
         LEFT JOIN entities e ON p.entity_id = e.id
+        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
+        LEFT JOIN banks b ON bpm.bank_id = b.id
+        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+        LEFT JOIN file_attachments fa ON p.file_id = fa.id
         WHERE p.entity_id = ?
         ORDER BY p.purchase_date DESC
         """
@@ -120,17 +195,35 @@ def get_purchases_by_provider(provider_id):
         ), 500
 
 
-# Obtener una compra por ID con sus detalles
+# Obtener una compra por ID con sus detalles completos
 @purchase_bp.route("/<int:purchase_id>", methods=["GET"])
 def get_purchase_by_id(purchase_id):
     try:
         db = Database()
 
-        # Obtener datos de la compra
+        # Obtener datos de la compra con todas las relaciones
         purchase_query = """
-        SELECT p.*, e.entity_name as provider_name
+        SELECT 
+            p.*,
+            e.entity_name as provider_name,
+            e.cuit as provider_cuit,
+            e.razon_social as provider_razon_social,
+            e.domicilio_comercial as provider_address,
+            e.phone_number as provider_phone,
+            e.email as provider_email,
+            bpm.amount as payment_method_amount,
+            b.name as bank_name,
+            b.code as bank_code,
+            pm.method_name as payment_method_name,
+            fa.file_name as invoice_file_name,
+            fa.file_extension as invoice_file_extension,
+            fa.file_content as invoice_file_content
         FROM purchases p
         LEFT JOIN entities e ON p.entity_id = e.id
+        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
+        LEFT JOIN banks b ON bpm.bank_id = b.id
+        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+        LEFT JOIN file_attachments fa ON p.file_id = fa.id
         WHERE p.id = ?
         """
         purchase = db.execute_query(purchase_query, (purchase_id,))
@@ -138,11 +231,20 @@ def get_purchase_by_id(purchase_id):
         if not purchase:
             return jsonify({"status": "error", "message": "Compra no encontrada"}), 404
 
-        # Obtener detalles de los productos
+        # Obtener detalles de los productos con información completa
         details_query = """
-        SELECT pd.*, pr.product_name, pr.barcode
+        SELECT 
+            pd.*,
+            pr.product_name,
+            pr.provider_code,
+            pr.cost as current_cost,
+            pr.sale_price as current_sale_price,
+            b.brand_name,
+            g.group_name
         FROM purchases_detail pd
         LEFT JOIN products pr ON pd.product_id = pr.id
+        LEFT JOIN brands b ON pr.brand_id = b.id
+        LEFT JOIN [group] g ON pr.group_id = g.id
         WHERE pd.purchase_id = ?
         """
         details = db.execute_query(details_query, (purchase_id,))
@@ -150,12 +252,196 @@ def get_purchase_by_id(purchase_id):
         purchase_data = purchase[0]
         purchase_data["products"] = details
 
+        # Convertir file_content a base64 si existe para envío seguro
+        if purchase_data.get("invoice_file_content"):
+            purchase_data["invoice_file_content_base64"] = base64.b64encode(
+                purchase_data["invoice_file_content"]
+            ).decode("utf-8")
+            # Remover el contenido binario original
+            del purchase_data["invoice_file_content"]
+
         return jsonify(purchase_data), 200
 
     except Exception as e:
         print(f"Error fetching purchase by ID: {e}")
         return jsonify(
             {"status": "error", "message": "Error al obtener la compra"}
+        ), 500
+
+
+# Obtener información de métodos de pago y bancos para compras
+@purchase_bp.route("/payment-info", methods=["GET"])
+def get_payment_info():
+    try:
+        db = Database()
+
+        # Obtener combinaciones de bancos y métodos de pago desde BANKS_PAYMENT_METHODS
+        payment_methods_query = """
+        SELECT 
+            bpm.id,
+            bpm.amount,
+            b.name as bank_name,
+            b.code as bank_code,
+            pm.method_name as payment_method_name,
+            pm.method_name || ' - ' || b.name as display_name
+        FROM banks_payment_methods bpm
+        LEFT JOIN banks b ON bpm.bank_id = b.id
+        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+        WHERE b.is_active = 1
+        ORDER BY pm.method_name, b.name
+        """
+        payment_methods = db.execute_query(payment_methods_query)
+
+        # También obtener bancos separados por si se necesitan
+        banks_query = """
+        SELECT id, name, code 
+        FROM banks 
+        WHERE is_active = 1
+        ORDER BY name
+        """
+        banks = db.execute_query(banks_query)
+
+        # Y métodos de pago básicos
+        basic_payment_methods_query = """
+        SELECT id, method_name
+        FROM payment_methods
+        ORDER BY method_name
+        """
+        basic_payment_methods = db.execute_query(basic_payment_methods_query)
+
+        return jsonify(
+            {
+                "payment_methods": payment_methods,
+                "banks": banks,
+                "basic_payment_methods": basic_payment_methods,
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"Error fetching payment info: {e}")
+        return jsonify(
+            {"status": "error", "message": "Error al obtener información de pagos"}
+        ), 500
+
+
+# Obtener archivos adjuntos de una compra
+@purchase_bp.route("/<int:purchase_id>/attachments", methods=["GET"])
+def get_purchase_attachments(purchase_id):
+    try:
+        db = Database()
+
+        query = """
+        SELECT fa.id, fa.file_name, fa.file_extension, fa.upload_date, fa.comment
+        FROM purchases p
+        LEFT JOIN file_attachments fa ON p.file_id = fa.id
+        WHERE p.id = ? AND fa.id IS NOT NULL
+        """
+        attachments = db.execute_query(query, (purchase_id,))
+
+        return jsonify(attachments), 200
+
+    except Exception as e:
+        print(f"Error fetching purchase attachments: {e}")
+        return jsonify(
+            {"status": "error", "message": "Error al obtener archivos adjuntos"}
+        ), 500
+
+
+# Descargar archivo adjunto
+@purchase_bp.route("/attachment/<int:file_id>", methods=["GET"])
+def download_attachment(file_id):
+    try:
+        db = Database()
+
+        query = """
+        SELECT file_name, file_extension, file_content
+        FROM file_attachments
+        WHERE id = ?
+        """
+        file_data = db.execute_query(query, (file_id,))
+
+        if not file_data:
+            return jsonify({"status": "error", "message": "Archivo no encontrado"}), 404
+
+        file_info = file_data[0]
+        file_content_base64 = base64.b64encode(file_info["file_content"]).decode(
+            "utf-8"
+        )
+
+        return jsonify(
+            {
+                "file_name": file_info["file_name"],
+                "file_extension": file_info["file_extension"],
+                "file_content": file_content_base64,
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"Error downloading attachment: {e}")
+        return jsonify(
+            {"status": "error", "message": "Error al descargar archivo"}
+        ), 500
+
+
+# Obtener resumen de compras (estadísticas)
+@purchase_bp.route("/summary", methods=["GET"])
+def get_purchases_summary():
+    try:
+        db = Database()
+
+        # Resumen general
+        summary_query = """
+        SELECT 
+            COUNT(*) as total_purchases,
+            SUM(total) as total_amount,
+            SUM(CASE WHEN status = 'Pendiente de entrega' THEN 1 ELSE 0 END) as pending_purchases,
+            SUM(CASE WHEN status = 'Recibido' THEN 1 ELSE 0 END) as received_purchases,
+            SUM(CASE WHEN status = 'Cancelado' THEN 1 ELSE 0 END) as cancelled_purchases
+        FROM purchases
+        """
+        summary = db.execute_query(summary_query)
+
+        # Compras por proveedor (top 5)
+        by_provider_query = """
+        SELECT 
+            e.entity_name as provider_name,
+            COUNT(p.id) as purchase_count,
+            SUM(p.total) as total_amount
+        FROM purchases p
+        LEFT JOIN entities e ON p.entity_id = e.id
+        GROUP BY p.entity_id, e.entity_name
+        ORDER BY total_amount DESC
+        LIMIT 5
+        """
+        by_provider = db.execute_query(by_provider_query)
+
+        # Compras por método de pago
+        by_payment_method_query = """
+        SELECT 
+            pm.method_name || ' - ' || b.name as payment_method,
+            COUNT(p.id) as purchase_count,
+            SUM(p.total) as total_amount
+        FROM purchases p
+        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
+        LEFT JOIN banks b ON bpm.bank_id = b.id
+        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+        GROUP BY p.payment_method, pm.method_name, b.name
+        ORDER BY total_amount DESC
+        """
+        by_payment_method = db.execute_query(by_payment_method_query)
+
+        return jsonify(
+            {
+                "summary": summary[0] if summary else {},
+                "by_provider": by_provider,
+                "by_payment_method": by_payment_method,
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"Error fetching purchases summary: {e}")
+        return jsonify(
+            {"status": "error", "message": "Error al obtener resumen de compras"}
         ), 500
 
 

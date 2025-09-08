@@ -2,6 +2,17 @@ import axios from 'axios'
 
 const API_BASE_URL = 'http://localhost:5000/api/purchases'
 
+// Get payment information (banks and payment methods for purchases)
+export async function fetchPaymentInfo() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/payment-info`)
+        return response.data
+    } catch (error) {
+        console.error('Error fetching payment info:', error)
+        throw error
+    }
+}
+
 // Crear una nueva compra
 export async function createPurchase(purchaseData) {
     try {

@@ -9,6 +9,21 @@ export const ProductProvider = ({ children }) => {
     discount: 0
   })
 
+  const [purchaseInfo, setPurchaseInfo] = useState({
+    entity_id: null,
+    basic_payment_method: '',
+    bank_id: '',
+    transaction_number: '',
+    invoice_number: '',
+    notes: '',
+    delivery_date: '',
+    echeq_time: '',
+    invoice_file: null,
+    subtotal: 0,
+    discount: 0,
+    total: 0
+  })
+
   const addProduct = (product) => {
     // Transform the product data to match the purchase page requirements
     const purchaseProduct = {
@@ -54,6 +69,30 @@ export const ProductProvider = ({ children }) => {
     })
   }
 
+  const clearPurchaseInfo = () => {
+    setPurchaseInfo({
+      entity_id: null,
+      basic_payment_method: '',
+      bank_id: '',
+      transaction_number: '',
+      invoice_number: '',
+      notes: '',
+      delivery_date: '',
+      echeq_time: '',
+      invoice_file: null,
+      subtotal: 0,
+      discount: 0,
+      total: 0
+    })
+  }
+
+  const updatePurchaseInfo = (newInfo) => {
+    setPurchaseInfo((prev) => ({
+      ...prev,
+      ...newInfo
+    }))
+  }
+
   const updateProductQuantity = (productId, newQuantity) => {
     setProductData((prev) => {
       const updatedProducts = prev.products.map((product) =>
@@ -78,7 +117,11 @@ export const ProductProvider = ({ children }) => {
         addProduct,
         removeProduct,
         clearProducts,
-        updateProductQuantity
+        updateProductQuantity,
+        purchaseInfo,
+        setPurchaseInfo,
+        updatePurchaseInfo,
+        clearPurchaseInfo
       }}
     >
       {children}

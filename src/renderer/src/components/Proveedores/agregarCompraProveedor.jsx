@@ -23,7 +23,6 @@ import { useProductContext } from '../../contexts/ProductContext'
 import { DayPicker } from 'react-day-picker'
 import { es } from 'react-day-picker/locale'
 
-//TODO: Mostrar productos cargados.
 //TODO: poder editar los productos.
 //TODO: conectar el calendario.
 //TODO: chequear lo que mando.
@@ -37,7 +36,7 @@ export default function AgregarCompraProveedor({ provider }) {
     subtotal: 0,
     discount: 0,
     total: 0,
-    payment_method: '',
+    basic_payment_method: '', // For basic payment methods
     transaction_number: '',
     invoice_number: '',
     notes: '',
@@ -49,22 +48,71 @@ export default function AgregarCompraProveedor({ provider }) {
     echeq_time: ''
   })
 
-  const { productData, removeProduct, updateProductQuantity, clearProducts } = useProductContext()
+  // Function to find the correct payment method ID for the backend
+  const getPaymentMethodId = () => {
+    const basicMethod = purchaseData.basic_payment_method
+    const bankId = paymentData.bank_id
+
+    if (basicMethod && bankId) {
+      // Find combination in BANKS_PAYMENT_METHODS
+      const combination = bankPaymentCombinations.find(
+        (combo) => combo.bank_id == bankId && combo.payment_method_id == basicMethod
+      )
+      return combination?.id || null
+    } else if (basicMethod) {
+      // For methods that don't require bank selection, use the basic method
+      return basicMethod
+    }
+    return null
+  }
+
+  const {
+    productData,
+    removeProduct,
+    updateProductQuantity,
+    clearProducts,
+    purchaseInfo,
+    updatePurchaseInfo,
+    clearPurchaseInfo
+  } = useProductContext()
 
   // Remove unused state since we're using context now
   // const [purchaseProducts, setPurchaseProducts] = useState([])
 
+  const [paymentMethods, setPaymentMethods] = useState([]) // Keep for compatibility
   const [banks, setBanks] = useState([])
-  const [paymentMethods, setPaymentMethods] = useState([])
+  const [basicPaymentMethods, setBasicPaymentMethods] = useState([])
+  const [bankPaymentCombinations, setBankPaymentCombinations] = useState([])
   const [invoiceFile, setInvoiceFile] = useState(null)
 
+  // Initialize form data from context if available
+  useEffect(() => {
+    if (purchaseInfo.basic_payment_method) {
+      setPurchaseData((prev) => ({
+        ...prev,
+        basic_payment_method: purchaseInfo.basic_payment_method,
+        transaction_number: purchaseInfo.transaction_number,
+        invoice_number: purchaseInfo.invoice_number,
+        notes: purchaseInfo.notes,
+        delivery_date: purchaseInfo.delivery_date
+      }))
+      setPaymentData((prev) => ({
+        ...prev,
+        bank_id: purchaseInfo.bank_id,
+        echeq_time: purchaseInfo.echeq_time
+      }))
+    }
+  }, [purchaseInfo])
+
+
+  //TODO: rehacer!!!!! 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const methods = await paymentMethodsService.getProviderPaymentMethods()
-        setPaymentMethods(methods.payment_methods || [])
-        const bancosData = await getBancos()
-        setBanks(bancosData.banks || [])
+        const paymentInfo = await paymentMethodsService.getProviderPaymentMethods()
+        setPaymentMethods(paymentInfo.payment_methods)
+        setBanks(getBancos().banks)
+
         const productsData = await fetchProductos()
         setProducts(Array.isArray(productsData) ? productsData : [])
       } catch (error) {
@@ -92,11 +140,15 @@ export default function AgregarCompraProveedor({ provider }) {
   const handlePurchaseInputChange = (e) => {
     const { name, value } = e.target
     setPurchaseData((prev) => ({ ...prev, [name]: value }))
+
+    updatePurchaseInfo({ [name]: value })
   }
 
   const handlePaymentInputChange = (e) => {
     const { name, value } = e.target
     setPaymentData((prev) => ({ ...prev, [name]: value }))
+
+    updatePurchaseInfo({ [name]: value })
   }
 
   const handleSubmit = async (e) => {
@@ -113,15 +165,25 @@ export default function AgregarCompraProveedor({ provider }) {
 
     try {
       setLoading(true)
+
+      let fileBase64 = null
+      if (invoiceFile) {
+        const reader = new FileReader()
+        fileBase64 = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result.split(',')[1]) // Remove data:application/pdf;base64, prefix
+          reader.onerror = reject
+          reader.readAsDataURL(invoiceFile)
+        })
+      }
+
       const purchasePayload = {
         entity_id: provider.id,
         subtotal: parseFloat(purchaseData.subtotal),
         discount: parseFloat(purchaseData.discount) || 0,
         total: parseFloat(purchaseData.total),
-        payment_method: purchaseData.payment_method,
-        bank_id: paymentData.bank_id || null,
+        payment_method: getPaymentMethodId(),
         echeq_time: paymentData.echeq_time || null,
-        delivery_date: delivery_date || null,
+        delivery_date: delivery_date ? delivery_date.toISOString().split('T')[0] : null,
         transaction_number: purchaseData.transaction_number,
         invoice_number: purchaseData.invoice_number,
         notes: purchaseData.notes,
@@ -131,10 +193,13 @@ export default function AgregarCompraProveedor({ provider }) {
           cost_price: product.cost_price,
           quantity: product.quantity,
           discount: product.discount || 0,
-          subtotal: product.subtotal
+          subtotal: product.subtotal,
+          stock_variants: product.stock_variants
         })),
-        invoice_file: invoiceFile
+        invoice_file: fileBase64
       }
+
+      console.log('Sending purchase payload:', purchasePayload)
 
       const result = await createPurchase(purchasePayload)
 
@@ -158,13 +223,14 @@ export default function AgregarCompraProveedor({ provider }) {
       subtotal: 0,
       discount: 0,
       total: 0,
-      payment_method: '',
+      basic_payment_method: '',
       transaction_number: '',
       invoice_number: '',
       notes: '',
       delivery_date: ''
     })
     clearProducts()
+    clearPurchaseInfo()
     setInvoiceFile(null)
     setPaymentData({ bank_id: '', echeq_time: '' })
     setDeliveryDate(null)
@@ -184,16 +250,22 @@ export default function AgregarCompraProveedor({ provider }) {
     setInvoiceFile(null)
   }
 
-  const isBankFieldVisible = ['2', '3', '4', '7'].includes(purchaseData.payment_method)
-  console.log(purchaseData.payment_method)
+  console.log(purchaseData.basic_payment_method)
 
   const handleCerrar = () => {
     setLocation(`/infoProvider?id=${providerId}`)
   }
 
-  const [echeq_time, setEcheqTime] = useState('')
+  const isBankFieldVisible = () => {
+    
+  }
 
-  const isEcheqTimeVisible = ['6'].includes(purchaseData.payment_method)
+  const isEcheqTimeVisible = () => {
+    const selectedMethod = basicPaymentMethods.find(
+      (method) => method.id == purchaseData.basic_payment_method
+    )
+    return selectedMethod?.method_name === 'Cheque diferido'
+  }
 
   const [showCalendar, setShowCalendar] = useState(false)
   const toggleCalendar = () => {
@@ -229,22 +301,22 @@ export default function AgregarCompraProveedor({ provider }) {
                   <span className="label-text font-medium text-gray-600">Método de Pago *</span>
                 </label>
                 <select
-                  name="payment_method"
-                  value={purchaseData.payment_method}
+                  name="basic_payment_method"
+                  value={purchaseData.basic_payment_method}
                   onChange={handlePurchaseInputChange}
                   className="select-bordered select w-full"
                   required
                 >
                   <option value="">Seleccionar método...</option>
-                  {paymentMethods.map((method) => (
+                  {basicPaymentMethods.map((method) => (
                     <option key={method.id} value={method.id}>
-                      {method.display_name}
+                      {method.method_name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {isBankFieldVisible && (
+              {isBankFieldVisible() && (
                 <div>
                   <label htmlFor="" className="label">
                     <span className="label-text font-medium text-gray-600">Banco *</span>
@@ -265,7 +337,8 @@ export default function AgregarCompraProveedor({ provider }) {
                   </select>
                 </div>
               )}
-              {isEcheqTimeVisible && (
+
+              {isEcheqTimeVisible() && (
                 <div>
                   <label htmlFor="" className="label">
                     <span className="label-text font-medium text-gray-600">Tiempo: </span>

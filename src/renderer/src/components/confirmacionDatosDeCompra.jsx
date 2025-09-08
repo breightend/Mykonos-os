@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { Gift, Printer, Replace, RotateCcw, Shirt } from 'lucide-react'
 import { salesService } from '../services/salesService'
 import { getCurrentBranchId } from '../utils/posUtils'
-import { barcodePrintService } from '../services/barcodePrintService'
 import { useSession } from '../contexts/SessionContext'
 
 export default function ConfirmacionDatosDeCompra() {
@@ -29,67 +28,109 @@ export default function ConfirmacionDatosDeCompra() {
     textColor: '#000000'
   })
 
-  const handlePrintPreview = () => {
-    if (!barcodePreview?.png_data) {
-      alert('No hay vista previa PNG para imprimir')
-      return
-    }
+  /**
+   * Función para imprimir códigos de barras de regalos desde el frontend
+   * @param {Array} images - Array de objetos con png_base64, text_lines, etc.
+   */
+  const printGiftBarcodesFromFrontend = (images) => {
+    try {
+      if (!images || images.length === 0) {
+        toast.error('No hay códigos de barras para imprimir')
+        return
+      }
 
-    // Crear canvas para imprimir la imagen PNG
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
-
-    img.onload = function () {
-      // Configurar canvas con el tamaño de la imagen
-      canvas.width = img.width
-      canvas.height = img.height
-
-      // Dibujar la imagen en el canvas
-      ctx.drawImage(img, 0, 0)
-      const printContent = `
+      // Crear contenido HTML para imprimir todos los códigos
+      let printContent = `
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Vista Previa - Codigo regalos</title>
+            <title>Códigos de Barras - Regalos</title>
             <style>
               body {
                 margin: 0;
                 padding: 20px;
                 font-family: Arial, sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
                 background: white;
               }
-              .barcode-container {
+              .barcode-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                justify-items: center;
+              }
+              .barcode-item {
                 text-align: center;
                 border: 2px dashed #ccc;
-                padding: 20px;
+                padding: 15px;
                 border-radius: 8px;
                 background: white;
+                break-inside: avoid;
+                page-break-inside: avoid;
               }
-              .preview-title {
-                margin-bottom: 15px;
-                color: #666;
-                font-size: 12px;
+              .barcode-img {
+                max-width: 100%;
+                height: auto;
+                margin-bottom: 10px;
+              }
+              .barcode-text {
+                font-size: 11px;
+                line-height: 1.3;
+                color: #333;
+              }
+              .barcode-text div {
+                margin: 2px 0;
               }
               @media print {
                 body { margin: 0; padding: 10px; }
-                .preview-title { display: none; }
-                .barcode-container { border: none; }
+                .barcode-item { 
+                  border: 1px solid #000; 
+                  margin-bottom: 15px;
+                }
+                .barcode-grid {
+                  grid-template-columns: repeat(2, 1fr);
+                  gap: 10px;
+                }
               }
             </style>
           </head>
           <body>
-            <div class="barcode-container">
-              <div class="preview-title">Vista Previa del Código de Barras</div>
-              <img src="${canvas.toDataURL('image/png')}" alt="Código de barras" style="max-width: 100%; height: auto;"/>
+            <div class="barcode-grid">
+      `
+
+      // Agregar cada código de barras
+      images.forEach((image) => {
+        const quantity = image.quantity || 1
+        // Repetir cada imagen según la cantidad
+        for (let i = 0; i < quantity; i++) {
+          printContent += `
+            <div class="barcode-item">
+              <img src="data:image/png;base64,${image.png_base64}" 
+                   alt="Código de barras ${image.sales_detail_id}" 
+                   class="barcode-img"/>
+              <div class="barcode-text">
+          `
+
+          // Agregar líneas de texto si existen
+          if (image.text_lines && image.text_lines.length > 0) {
+            image.text_lines.forEach((line) => {
+              if (line.trim()) {
+                printContent += `<div>${line}</div>`
+              }
+            })
+          }
+
+          printContent += `
+              </div>
+            </div>
+          `
+        }
+      })
+
+      printContent += `
             </div>
           </body>
         </html>
-  `
+      `
 
       // Crear iframe oculto para imprimir
       const iframe = document.createElement('iframe')
@@ -111,6 +152,9 @@ export default function ConfirmacionDatosDeCompra() {
           iframe.contentWindow.focus()
           iframe.contentWindow.print()
 
+          // Mostrar mensaje de éxito
+          toast.success(`${images.length} códigos de barras enviados a impresión`)
+
           // Limpiar el iframe después de imprimir
           setTimeout(() => {
             if (iframe.parentNode) {
@@ -120,101 +164,14 @@ export default function ConfirmacionDatosDeCompra() {
         }, 500)
       } catch (error) {
         console.error('Error al preparar la impresión:', error)
-        alert('Error al preparar la impresión. Intenta nuevamente.')
+        toast.error('Error al preparar la impresión. Intenta nuevamente.')
         if (iframe.parentNode) {
           document.body.removeChild(iframe)
         }
       }
-    }
-    img.onerror = function () {
-      alert('Error al cargar la imagen PNG para imprimir')
-    }
-
-    // Cargar la imagen base64
-    img.src = `data:image/png;base64,${barcodePreview.png_data}`
-  }
-
-  // Función alternativa para descargar la vista previa como PNG
-  const handleDownloadPreview = () => {
-    if (!barcodePreview?.png_data) {
-      alert('No hay vista previa PNG para descargar')
-      return
-    }
-
-    try {
-      // Crear blob de la imagen PNG
-      const byteCharacters = atob(barcodePreview.png_data)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      const blob = new Blob([byteArray], { type: 'image/png' })
-
-      // Crear enlace de descarga
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `codigo-barras-.png`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      toast.success('Imagen PNG descargada correctamente')
     } catch (error) {
-      console.error('Error al descargar PNG:', error)
-      toast.error('Error al descargar la imagen PNG')
-    }
-  }
-
-  const handlePrintBarcodes = async () => {
-    try {
-      setLoading(true)
-
-      // Preparar variantes seleccionadas con sus cantidades
-      const selectedVariants = Object.entries(quantities)
-        .filter(([, quantity]) => quantity > 0)
-        .map(([variantId, quantity]) => {
-          const variant = variants.find((v) => v.id.toString() === variantId)
-          return {
-            variant: variant,
-            quantity: quantity
-          }
-        })
-
-      if (selectedVariants.length === 0) {
-        toast.error('Por favor selecciona al menos una variante para imprimir')
-        return
-      }
-
-      // Mostrar mensaje de progreso
-      toast.loading('Generando códigos de barras...', { duration: 2000 })
-
-      // Usar el servicio de impresión de códigos de barras
-      const result = await barcodePrintService.processPrintRequest(
-        selectedVariants,
-        product,
-        printOptions
-      )
-
-      if (result.success) {
-        toast.success(result.message, { duration: 4000 })
-        console.log('📊 Impresión exitosa:', result)
-
-        // Cerrar el modal después de una impresión exitosa
-        setTimeout(() => {
-          onClose()
-        }, 1000)
-      } else {
-        toast.error(result.message, { duration: 4000 })
-        console.error('❌ Error en impresión:', result.message)
-      }
-    } catch (err) {
-      console.error('Error imprimiendo códigos:', err)
-      toast.error('Error inesperado al imprimir códigos de barras', { duration: 4000 })
-    } finally {
-      setLoading(false)
+      console.error('Error en printGiftBarcodesFromFrontend:', error)
+      toast.error('Error al procesar códigos de barras para impresión')
     }
   }
 
@@ -337,9 +294,39 @@ export default function ConfirmacionDatosDeCompra() {
     setIsProcessing(true)
 
     try {
+      // --- SPLIT PRODUCTS FOR GIFT LOGIC (same as handleSubmit) ---
+      let splitProducts = []
+      saleData.products.forEach((product) => {
+        const quantity = parseInt(product.quantity || product.cantidad || 1)
+        // Count how many gifts for this variant_id
+        let giftCount = 0
+        if (Array.isArray(saleData.gifts)) {
+          giftCount = saleData.gifts
+            .filter((g) => g.variant_id === product.variant_id)
+            .reduce((sum, g) => sum + (parseInt(g.quantity) || 1), 0)
+        }
+        const nonGiftCount = quantity - giftCount
+        // Add gift items
+        for (let i = 0; i < giftCount; i++) {
+          splitProducts.push({
+            ...product,
+            quantity: 1,
+            gift: true
+          })
+        }
+        // Add non-gift items
+        for (let i = 0; i < nonGiftCount; i++) {
+          splitProducts.push({
+            ...product,
+            quantity: 1,
+            gift: false
+          })
+        }
+      })
+
       const saleDataForBackend = {
         customer: saleData.customer || null,
-        products: saleData.products.map((product) => ({
+        products: splitProducts.map((product) => ({
           product_id: product.product_id,
           variant_id: product.variant_id,
           product_name:
@@ -351,7 +338,7 @@ export default function ConfirmacionDatosDeCompra() {
           price: parseFloat(product.price || product.precio || 0),
           quantity: parseInt(product.quantity || product.cantidad || 1),
           variant_barcode: product.variant_barcode || '',
-          gift: product.gift || null
+          gift: product.gift === true
         })),
         exchange: saleData.exchange?.hasExchange
           ? {
@@ -434,7 +421,7 @@ export default function ConfirmacionDatosDeCompra() {
               // 2. Imprimir desde el frontend usando un iframe oculto
               console.log('Contenido de impresión:', data.images)
               printGiftBarcodesFromFrontend(data.images)
-            } catch (err) {
+            } catch {
               toast.error('No se pudo imprimir los códigos de barras de los regalos')
             }
           }
@@ -477,23 +464,23 @@ export default function ConfirmacionDatosDeCompra() {
   const [discount, setDiscount] = useState(0)
   const [change, setChange] = useState(0)
 
-  const handleChange = () => {
-    if (totalAbonado > totalVenta) {
-      setChange(totalAbonado - totalVenta)
-    } else {
-      setChange(0)
-    }
-  }
-
-  const handleDiscount = () => {
-    if (totalAbonado <= totalVenta) {
-      setDiscount((totalAbonado - totalVenta).toFixed(2))
-    }
-  }
-
   useEffect(() => {
-    handleChange()
-    handleDiscount()
+    const calculateChange = () => {
+      if (totalAbonado > totalVenta) {
+        setChange(totalAbonado - totalVenta)
+      } else {
+        setChange(0)
+      }
+    }
+
+    const calculateDiscount = () => {
+      if (totalAbonado <= totalVenta) {
+        setDiscount((totalAbonado - totalVenta).toFixed(2))
+      }
+    }
+
+    calculateChange()
+    calculateDiscount()
   }, [totalAbonado, totalVenta])
 
   return (

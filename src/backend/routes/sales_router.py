@@ -703,6 +703,8 @@ def create_sale():
                 )
 
             # 4. Procesar productos vendidos (productos que se lleva el cliente)
+            gift_sales_details = []  # Para recopilar IDs de sales_detail de regalos
+
             for i, product in enumerate(data["products"]):
                 print(f"🔍 DEBUG: Procesando producto {i + 1}: {product}")
 
@@ -723,6 +725,7 @@ def create_sale():
                     size_name, color_name, cost_price, sale_price, 
                     quantity, subtotal, total, barcode_scanned, gift
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
                 """
 
                 subtotal = float(product["price"]) * int(product["quantity"])
@@ -746,9 +749,26 @@ def create_sale():
                 print(f"📝 DEBUG: Parámetros detalle venta: {sales_detail_params}")
 
                 cursor.execute(sales_detail_query, sales_detail_params)
-                print(
-                    f"✅ DEBUG: Detalle de venta agregado para producto: {product['product_name']} (gift={is_gift})"
+                sales_detail_result = cursor.fetchone()
+                sales_detail_id = (
+                    sales_detail_result[0] if sales_detail_result else None
                 )
+
+                print(
+                    f"✅ DEBUG: Detalle de venta agregado para producto: {product['product_name']} (gift={is_gift}, sales_detail_id={sales_detail_id})"
+                )
+
+                # Si es un regalo, agregar el ID a la lista
+                if is_gift and sales_detail_id:
+                    gift_sales_details.append(
+                        {
+                            "sales_detail_id": sales_detail_id,
+                            "quantity": int(product["quantity"]),
+                        }
+                    )
+                    print(
+                        f"🎁 DEBUG: Regalo agregado a la lista: sales_detail_id={sales_detail_id}"
+                    )
 
                 # Reducir stock (productos que sale del inventario)
                 print(
@@ -843,6 +863,7 @@ def create_sale():
             # 6. Confirmar transacción
             conn.commit()
             print("✅ DEBUG: Transacción completada exitosamente")
+            print(f"🎁 DEBUG: Gift sales details finales: {gift_sales_details}")
 
             return jsonify(
                 {
@@ -853,6 +874,7 @@ def create_sale():
                         "sale_id": sale_id,
                         "total": total_sale,
                         "has_exchange": has_exchange,
+                        "gift_sales_details": gift_sales_details,  # Agregar la lista de regalos
                     },
                 }
             )

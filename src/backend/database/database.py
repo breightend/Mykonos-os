@@ -4,7 +4,6 @@ import io as io
 import sqlite3
 import psycopg2
 import psycopg2.extras
-import time
 import threading
 from datetime import datetime
 from enum import Enum
@@ -479,7 +478,7 @@ DATABASE_TABLES = {
             "subtotal": "REAL NOT NULL",  # Suma total antes de descuentos
             "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
             "total": "REAL NOT NULL",  # Total final después de aplicar descuentos
-            "payment_method": "TEXT",  # Medio de pago (efectivo, tarjeta, etc.)
+            "payment_method": "INTEGER",  # Medio de pago (efectivo, tarjeta, etc.)
             "transaction_number": "TEXT",  # Número del comprobante te transferencia/ticket de la compra
             "invoice_number": "TEXT",  # Número de factura de la compra
             "notes": "TEXT",  # Nota de texto para dejar comentarios
@@ -493,6 +492,12 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.ENTITIES,
                 "reference_column": "id",
                 "export_column_name": "entity_name",
+            },
+            {  # Relación con tabla de productos si es necesario
+                "column": "payment_method",
+                "reference_table": TABLES.BANKS_PAYMENT_METHODS,
+                "reference_column": "id",
+                "export_column_name": "payment_method_name",
             },
             {  # Relación con tabla de archivos si es necesario
                 "column": "file_id",
@@ -683,6 +688,8 @@ DATABASE_TABLES = {
             "icon_name": "TEXT",
             "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",
             "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",
+            "provider_use_it": "BOOLEAN",
+            "client_use_it": "BOOLEAN"
         },
         "foreign_keys": [],
     },
