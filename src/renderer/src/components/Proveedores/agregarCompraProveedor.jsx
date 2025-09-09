@@ -104,14 +104,13 @@ export default function AgregarCompraProveedor({ provider }) {
     }
   }, [purchaseInfo])
 
-
-  //TODO: rehacer!!!!! 
   useEffect(() => {
     const loadData = async () => {
       try {
         const paymentInfo = await paymentMethodsService.getProviderPaymentMethods()
         setPaymentMethods(paymentInfo.payment_methods)
-        setBanks(getBancos().banks)
+        const data = await getBancos()
+        setBanks(data.banks)
 
         const productsData = await fetchProductos()
         setProducts(Array.isArray(productsData) ? productsData : [])
@@ -122,6 +121,7 @@ export default function AgregarCompraProveedor({ provider }) {
     }
     loadData()
   }, [])
+
 
   useEffect(() => {
     const subtotal = productData.products.reduce(
@@ -257,14 +257,15 @@ export default function AgregarCompraProveedor({ provider }) {
   }
 
   const isBankFieldVisible = () => {
-    
+    const selectedMethodId = parseInt(purchaseData.basic_payment_method)
+    // Show bank field for payment methods that need bank relation (IDs: 7, 6, 2)
+    return [7, 6, 2].includes(selectedMethodId)
   }
 
   const isEcheqTimeVisible = () => {
-    const selectedMethod = basicPaymentMethods.find(
-      (method) => method.id == purchaseData.basic_payment_method
-    )
-    return selectedMethod?.method_name === 'Cheque diferido'
+    const selectedMethodId = parseInt(purchaseData.basic_payment_method)
+    // Assuming Echeq (ID: 3 based on your data) is the "Cheque diferido"
+    return selectedMethodId === 3
   }
 
   const [showCalendar, setShowCalendar] = useState(false)
@@ -279,7 +280,7 @@ export default function AgregarCompraProveedor({ provider }) {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl p-4">
+    <div className="container mx-auto max-w-7xl p-4">
       <div className="mb-8 rounded-xl bg-white p-6 shadow-2xl">
         <div className="mb-6 flex items-center gap-4 border-b pb-4">
           <ShoppingCart className="h-10 w-10 text-primary" />
@@ -308,9 +309,9 @@ export default function AgregarCompraProveedor({ provider }) {
                   required
                 >
                   <option value="">Seleccionar método...</option>
-                  {basicPaymentMethods.map((method) => (
+                  {paymentMethods.map((method) => (
                     <option key={method.id} value={method.id}>
-                      {method.method_name}
+                      {method.display_name}
                     </option>
                   ))}
                 </select>
@@ -592,7 +593,7 @@ export default function AgregarCompraProveedor({ provider }) {
                 <table className="table w-full">
                   <thead className="bg-gray-200 text-gray-700">
                     <tr>
-                      <th className="px-4 py-3 text-left">Producto N</th>
+                      <th className="px-4 py-3 text-left">#</th>
                       <th className="px-4 py-3 text-left">Nombre</th>
                       <th className="px-4 py-3 text-left">Código Proveedor</th>
                       <th className="px-4 py-3 text-left">Precio Costo</th>

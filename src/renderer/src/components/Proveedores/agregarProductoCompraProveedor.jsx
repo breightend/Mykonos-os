@@ -84,7 +84,50 @@ export default function NuevoProductoDeProveedor() {
     useAutoCalculation: settings.autoCalculatePrice
   })
 
-  const [productos, setProductos] = useState([getInitialProductState()])
+  // Transform context products to form format
+  const transformContextProductsToFormFormat = (contextProducts) => {
+    return contextProducts.map(product => ({
+      id: product.id,
+      provider_code: product.provider_code || '',
+      product_name: product.product_name || '',
+      group_id: product.group_id || '',
+      provider_id: product.provider_id || providerId,
+      description: '',
+      cost: product.cost_price?.toString() || '',
+      sale_price: product.sale_price?.toString() || '',
+      original_price: '',
+      tax: '',
+      discount: '',
+      comments: '',
+      user_id: currentUser?.id || 1,
+      images_ids: null,
+      brand_id: product.brand_id || '',
+      creation_date: new Date().toISOString(),
+      last_modified_date: new Date().toISOString(),
+      state: 'guardado', // Mark as saved since they come from context
+      talles: product.stock_variants?.length > 0 
+        ? product.stock_variants.map(variant => ({
+            talle: variant.size_name || '',
+            colores: [{ color: variant.color_name || '', cantidad: variant.quantity?.toString() || '' }]
+          }))
+        : [{ talle: '', colores: [{ color: '', cantidad: product.quantity?.toString() || '' }] }],
+      product_image: '',
+      initial_quantity: product.quantity || 0,
+      errors: {},
+      useAutoCalculation: settings.autoCalculatePrice,
+      _isFromContext: true // Flag to identify context products
+    }))
+  }
+
+  // Initialize productos with context products + one new empty product
+  const initializeProducts = () => {
+    const contextProductsInFormFormat = transformContextProductsToFormFormat(productData.products)
+    return contextProductsInFormFormat.length > 0 
+      ? [...contextProductsInFormFormat, getInitialProductState()]
+      : [getInitialProductState()]
+  }
+
+  const [productos, setProductos] = useState(initializeProducts())
 
   // Estados para el formulario
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
@@ -422,7 +465,7 @@ export default function NuevoProductoDeProveedor() {
     return Object.keys(newErrors).length === 0
   }
 
-  const { addProduct } = useProductContext()
+  const { addProduct, productData } = useProductContext()
 
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
@@ -437,20 +480,27 @@ export default function NuevoProductoDeProveedor() {
 
     setIsSubmitting(true)
     try {
-      productos.forEach((product, index) => {
+      // Only add products that are NOT from context (new products only)
+      const newProducts = productos.filter(product => !product._isFromContext)
+      
+      newProducts.forEach((product, index) => {
         const productData = prepareProductData(product)
-        console.log(`🔍 DATOS DEL PRODUCTO ${index + 1} PREPARADOS:`, productData)
-        console.log(`🔍 STOCK VARIANTS PRODUCTO ${index + 1}:`, productData.stock_variants)
+        console.log(`🔍 DATOS DEL PRODUCTO NUEVO ${index + 1} PREPARADOS:`, productData)
+        console.log(`🔍 STOCK VARIANTS PRODUCTO NUEVO ${index + 1}:`, productData.stock_variants)
         console.log(
-          `🔍 CANTIDAD DE VARIANTES PRODUCTO ${index + 1}:`,
+          `🔍 CANTIDAD DE VARIANTES PRODUCTO NUEVO ${index + 1}:`,
           productData.stock_variants?.length || 0
         )
 
         addProduct(productData)
-        console.log(`✅ Producto ${index + 1} guardado exitosamente:`, productData)
+        console.log(`✅ Producto nuevo ${index + 1} guardado exitosamente:`, productData)
       })
 
-      toast.success(`${productos.length} producto(s) agregado(s) a la compra`)
+      if (newProducts.length > 0) {
+        toast.success(`${newProducts.length} producto(s) nuevo(s) agregado(s) a la compra`)
+      } else {
+        toast.info('No hay productos nuevos para agregar')
+      }
 
       setLocation(`/agregandoCompraProveedor?id=${providerId}`)
     } catch (error) {
@@ -597,8 +647,11 @@ export default function NuevoProductoDeProveedor() {
             </div>
             <div>
               <label htmlFor="" className="text-xl font-bold">
-                Cantidad de articulos: {productos.length}
+                Total artículos: {productos.length}
               </label>
+              <div className="text-sm text-base-content/70">
+                {productos.filter(p => p._isFromContext).length} ya en compra + {productos.filter(p => !p._isFromContext).length} nuevos
+              </div>
             </div>
             <div>
               <label htmlFor="" className="text-xl font-bold">
@@ -689,9 +742,21 @@ export default function NuevoProductoDeProveedor() {
                         <>
                           <div
                             key={prod.id}
-                            className="card-compact card w-full bg-base-200 shadow-md"
+                            className={`card-compact card w-full shadow-md ${
+                              prod._isFromContext 
+                                ? 'bg-success/10 border-2 border-success/30' 
+                                : 'bg-base-200'
+                            }`}
                           >
                             <div className="card-body">
+                              {prod._isFromContext && (
+                                <div className="mb-2 flex items-center gap-2">
+                                  <div className="badge badge-success gap-2">
+                                    <Boxes className="h-3 w-3" />
+                                    Ya agregado a la compra
+                                  </div>
+                                </div>
+                              )}
                               <div className="flex flex-col gap-6 md:flex-row">
                                 {prod.product_image && (
                                   <div className="mx-auto flex-shrink-0 md:mx-0">
@@ -708,8 +773,15 @@ export default function NuevoProductoDeProveedor() {
                                     <h2 className="card-title text-primary">
                                       {prod.product_name || 'Artículo sin nombre'}
                                     </h2>
-                                    <div className="badge badge-outline badge-lg">
-                                      Artículo #{idx + 1}
+                                    <div className="flex flex-col items-end gap-1">
+                                      <div className="badge badge-outline badge-lg">
+                                        Artículo #{idx + 1}
+                                      </div>
+                                      {prod._isFromContext && (
+                                        <div className="text-xs text-success font-medium">
+                                          ✓ Guardado en compra
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
 
