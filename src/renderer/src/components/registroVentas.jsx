@@ -838,19 +838,24 @@ export default function RegistroVentas() {
             </button>
           )}
         </div>
-
         {/* Modal de Detalles de Venta */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
             <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-white shadow-2xl">
-              <div className="p-6">
-                <div className="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
-                  <h3 className="text-2xl font-bold text-warning">
-                    Detalles de Venta # {selectedSale?.id}
-                  </h3>
-                  <button className="hover:bg-warning/10 btn btn-ghost btn-sm" onClick={closeModal}>
-                    <X className="h-5 w-5" />
-                  </button>
+              {/* Sticky header */}
+              <div>
+                <div className="sticky top-0 z-10 border-b border-base-300 bg-white p-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-2xl font-bold text-warning">
+                      Detalles de Venta # {selectedSale?.id}
+                    </h3>
+                    <button
+                      className="hover:bg-warning/10 btn btn-ghost btn-sm"
+                      onClick={closeModal}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
 
                 {loadingDetails ? (

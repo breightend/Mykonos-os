@@ -665,23 +665,23 @@ export default function ConfirmacionDatosDeCompra() {
               <Replace className="h-5 w-5" />
               Detalles del Intercambio
             </h2>
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="rounded-lg border border-blue-100 bg-accent/5 p-6">
               {/* Resumen del intercambio */}
               <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="text-center">
-                  <div className="mb-1 text-sm text-gray-600">Productos que lleva</div>
+                  <div className="mb-1 text-sm font-semibold text-black">Productos que lleva</div>
                   <div className="text-lg font-bold text-green-600">
                     ${parseFloat(saleData.exchange.totalProductsValue || 0).toLocaleString()}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="mb-1 text-sm text-gray-600">Productos devueltos</div>
+                  <div className="mb-1 text-sm font-semibold text-black">Productos devueltos</div>
                   <div className="text-lg font-bold text-red-600">
                     -${parseFloat(saleData.exchange.totalReturnedValue || 0).toLocaleString()}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="mb-1 text-sm text-gray-600">Total a pagar</div>
+                  <div className="mb-1 text-sm font-semibold text-black">Total a pagar</div>
                   <div className="text-xl font-bold text-blue-600">
                     ${parseFloat(saleData.exchange.finalAmount || 0).toLocaleString()}
                   </div>
