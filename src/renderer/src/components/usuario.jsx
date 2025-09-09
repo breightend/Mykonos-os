@@ -199,7 +199,6 @@ export default function Usuario() {
                   onChange={handleStorageChange}
                   disabled={isChangingStorage || availableStorages.length === 0}
                 >
-                  <option value="">Sin sucursal</option>
                   {availableStorages.map((storage) => (
                     <option key={storage.id} value={storage.id}>
                       {storage && storage.name ? storage.name : 'Sucursal desconocida'}

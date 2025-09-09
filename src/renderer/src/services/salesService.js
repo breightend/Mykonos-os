@@ -24,6 +24,24 @@ export const salesService = {
     },
 
     /**
+     * Busca un producto por código de barras de variante para intercambios
+     * Permite encontrar productos incluso si están sin stock
+     * @param {string} variantBarcode - Código de barras de la variante
+     * @returns {Promise} Información del producto con detalles de variante
+     */
+    async getProductByVariantBarcodeForExchange(variantBarcode) {
+        try {
+            const response = await axios.get(
+                `${API_URL}/sales/product-by-variant-barcode-exchange/${variantBarcode}`
+            )
+            return response.data
+        } catch (error) {
+            console.error('Error al buscar producto para intercambio por código de variante:', error)
+            throw error
+        }
+    },
+
+    /**
      * Verifica el stock disponible de una variante específica
      * @param {number} productId - ID del producto
      * @param {number} sizeId - ID del talle

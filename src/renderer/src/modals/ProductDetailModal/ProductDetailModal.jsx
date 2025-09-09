@@ -19,7 +19,6 @@ import { useLocation } from 'wouter'
 import toast, { Toaster } from 'react-hot-toast'
 import { getCurrentBranchId } from '../../utils/posUtils'
 //BUG: stock_total muestra un valor erroneo
-//Promp: the conections with the var stock_total are wrong made because they doesnt update when a variant is added or removed but I also Need to make the conection in order to show the name of the privider and the name of the group, for that i need
 
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
@@ -193,6 +192,11 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   }
 
   if (!isOpen) return null
+
+  const stockTotal =
+    productDetails && productDetails.stock_variants
+      ? new Set(productDetails.stock_variants.map((v) => v.sucursal_nombre)).size
+      : 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 p-4 backdrop-blur-md">
@@ -435,7 +439,10 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                           Dirección
                         </th>
                         <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">
-                          Cantidad
+                          Cantidad adquirida
+                        </th>
+                        <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">
+                          Cantidad vendida
                         </th>
                         <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">
                           Última Actualización
@@ -459,6 +466,11 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                               className={`font-semibold ${stock.cantidad > 0 ? 'text-green-600' : 'text-red-600'}`}
                             >
                               {stock.cantidad}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="font-semibold text-gray-800">
+                              {stock.cantidad - stockTotal  }
                             </span>
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-600">
@@ -609,15 +621,10 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                                 0
                               )}
                             </div>
-                            <div className="text-sm text-purple-700">Stock total real</div>
+                            <div className="text-sm text-purple-700">Stock total</div>
                           </div>
                           <div className="rounded-lg bg-orange-50 p-3">
-                            <div className="text-2xl font-bold text-orange-600">
-                              {
-                                new Set(productDetails.stock_variants.map((v) => v.sucursal_nombre))
-                                  .size
-                              }
-                            </div>
+                            <div className="text-2xl font-bold text-orange-600">{stockTotal}</div>
                             <div className="text-sm text-orange-700">Sucursales</div>
                           </div>
                         </div>
