@@ -161,3 +161,14 @@ export async function fetchPurchasesSummary() {
         throw error
     }
 }
+
+// Obtener estadísticas de productos por grupos
+export async function fetchProductStatistics() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/product-stats`)
+        return response.data
+    } catch (error) {
+        console.error('Error fetching product statistics:', error)
+        throw error
+    }
+}

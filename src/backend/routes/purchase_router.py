@@ -445,6 +445,117 @@ def get_purchases_summary():
         ), 500
 
 
+# Obtener estadísticas de productos por grupos
+@purchase_bp.route("/product-stats", methods=["GET"])
+def get_product_statistics():
+    try:
+        db = Database()
+
+        # Productos más comprados por grupo
+        products_by_group_query = """
+        SELECT 
+            g.group_name,
+            COUNT(pd.id) as purchase_count,
+            SUM(pd.quantity) as total_quantity,
+            SUM(pd.subtotal) as total_spent,
+            AVG(pd.cost_price) as avg_cost_price,
+            COUNT(DISTINCT p.id) as unique_products
+        FROM purchases_detail pd
+        LEFT JOIN products p ON pd.product_id = p.id
+        LEFT JOIN groups g ON p.group_id = g.id
+        WHERE g.group_name IS NOT NULL
+        GROUP BY g.id, g.group_name
+        ORDER BY total_quantity DESC
+        """
+        products_by_group = db.execute_query(products_by_group_query)
+
+        # Top productos más comprados con su grupo
+        top_products_query = """
+        SELECT 
+            p.product_name,
+            g.group_name,
+            SUM(pd.quantity) as total_quantity,
+            SUM(pd.subtotal) as total_spent,
+            COUNT(pd.id) as purchase_frequency,
+            AVG(pd.cost_price) as avg_cost_price
+        FROM purchases_detail pd
+        LEFT JOIN products p ON pd.product_id = p.id
+        LEFT JOIN groups g ON p.group_id = g.id
+        WHERE p.product_name IS NOT NULL
+        GROUP BY p.id, p.product_name, g.group_name
+        ORDER BY total_quantity DESC
+        LIMIT 10
+        """
+        top_products = db.execute_query(top_products_query)
+
+        # Estadísticas por marca dentro de cada grupo
+        brands_by_group_query = """
+        SELECT 
+            g.group_name,
+            b.brand_name,
+            SUM(pd.quantity) as total_quantity,
+            SUM(pd.subtotal) as total_spent,
+            COUNT(DISTINCT p.id) as unique_products
+        FROM purchases_detail pd
+        LEFT JOIN products p ON pd.product_id = p.id
+        LEFT JOIN groups g ON p.group_id = g.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        WHERE g.group_name IS NOT NULL AND b.brand_name IS NOT NULL
+        GROUP BY g.id, g.group_name, b.id, b.brand_name
+        ORDER BY g.group_name, total_quantity DESC
+        """
+        brands_by_group = db.execute_query(brands_by_group_query)
+
+        # Resumen general de productos
+        product_summary_query = """
+        SELECT 
+            COUNT(DISTINCT p.id) as total_unique_products,
+            COUNT(DISTINCT g.id) as total_groups,
+            COUNT(DISTINCT b.id) as total_brands,
+            SUM(pd.quantity) as total_products_purchased,
+            SUM(pd.subtotal) as total_products_value
+        FROM purchases_detail pd
+        LEFT JOIN products p ON pd.product_id = p.id
+        LEFT JOIN groups g ON p.group_id = g.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        """
+        product_summary = db.execute_query(product_summary_query)
+
+        # Evolución mensual de compras por grupo (últimos 6 meses)
+        monthly_by_group_query = """
+        SELECT 
+            g.group_name,
+            strftime('%Y-%m', pur.purchase_date) as month,
+            SUM(pd.quantity) as quantity,
+            SUM(pd.subtotal) as total_spent
+        FROM purchases_detail pd
+        LEFT JOIN purchases pur ON pd.purchase_id = pur.id
+        LEFT JOIN products p ON pd.product_id = p.id
+        LEFT JOIN groups g ON p.group_id = g.id
+        WHERE g.group_name IS NOT NULL 
+            AND pur.purchase_date >= date('now', '-6 months')
+        GROUP BY g.id, g.group_name, strftime('%Y-%m', pur.purchase_date)
+        ORDER BY month DESC, quantity DESC
+        """
+        monthly_by_group = db.execute_query(monthly_by_group_query)
+
+        return jsonify(
+            {
+                "product_summary": product_summary[0] if product_summary else {},
+                "products_by_group": products_by_group,
+                "top_products": top_products,
+                "brands_by_group": brands_by_group,
+                "monthly_by_group": monthly_by_group,
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"Error fetching product statistics: {e}")
+        return jsonify(
+            {"status": "error", "message": "Error al obtener estadísticas de productos"}
+        ), 500
+
+
 # Actualizar el estado de una compra
 @purchase_bp.route("/<int:purchase_id>/status", methods=["PUT"])
 def update_purchase_status(purchase_id):
