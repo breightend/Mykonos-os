@@ -86,7 +86,7 @@ export default function NuevoProductoDeProveedor() {
 
   // Transform context products to form format
   const transformContextProductsToFormFormat = (contextProducts) => {
-    return contextProducts.map(product => ({
+    return contextProducts.map((product) => ({
       id: product.id,
       provider_code: product.provider_code || '',
       product_name: product.product_name || '',
@@ -105,12 +105,15 @@ export default function NuevoProductoDeProveedor() {
       creation_date: new Date().toISOString(),
       last_modified_date: new Date().toISOString(),
       state: 'guardado', // Mark as saved since they come from context
-      talles: product.stock_variants?.length > 0 
-        ? product.stock_variants.map(variant => ({
-            talle: variant.size_name || '',
-            colores: [{ color: variant.color_name || '', cantidad: variant.quantity?.toString() || '' }]
-          }))
-        : [{ talle: '', colores: [{ color: '', cantidad: product.quantity?.toString() || '' }] }],
+      talles:
+        product.stock_variants?.length > 0
+          ? product.stock_variants.map((variant) => ({
+              talle: variant.size_name || '',
+              colores: [
+                { color: variant.color_name || '', cantidad: variant.quantity?.toString() || '' }
+              ]
+            }))
+          : [{ talle: '', colores: [{ color: '', cantidad: product.quantity?.toString() || '' }] }],
       product_image: '',
       initial_quantity: product.quantity || 0,
       errors: {},
@@ -122,7 +125,7 @@ export default function NuevoProductoDeProveedor() {
   // Initialize productos with context products + one new empty product
   const initializeProducts = () => {
     const contextProductsInFormFormat = transformContextProductsToFormFormat(productData.products)
-    return contextProductsInFormFormat.length > 0 
+    return contextProductsInFormFormat.length > 0
       ? [...contextProductsInFormFormat, getInitialProductState()]
       : [getInitialProductState()]
   }
@@ -481,8 +484,8 @@ export default function NuevoProductoDeProveedor() {
     setIsSubmitting(true)
     try {
       // Only add products that are NOT from context (new products only)
-      const newProducts = productos.filter(product => !product._isFromContext)
-      
+      const newProducts = productos.filter((product) => !product._isFromContext)
+
       newProducts.forEach((product, index) => {
         const productData = prepareProductData(product)
         console.log(`🔍 DATOS DEL PRODUCTO NUEVO ${index + 1} PREPARADOS:`, productData)
@@ -649,8 +652,9 @@ export default function NuevoProductoDeProveedor() {
               <label htmlFor="" className="text-xl font-bold">
                 Total artículos: {productos.length}
               </label>
-              <div className="text-sm text-base-content/70">
-                {productos.filter(p => p._isFromContext).length} ya en compra + {productos.filter(p => !p._isFromContext).length} nuevos
+              <div className="text-base-content/70 text-sm">
+                {productos.filter((p) => p._isFromContext).length} ya en compra +{' '}
+                {productos.filter((p) => !p._isFromContext).length} nuevos
               </div>
             </div>
             <div>
@@ -743,8 +747,8 @@ export default function NuevoProductoDeProveedor() {
                           <div
                             key={prod.id}
                             className={`card-compact card w-full shadow-md ${
-                              prod._isFromContext 
-                                ? 'bg-success/10 border-2 border-success/30' 
+                              prod._isFromContext
+                                ? 'bg-success/10 border-success/30 border-2'
                                 : 'bg-base-200'
                             }`}
                           >
@@ -778,7 +782,7 @@ export default function NuevoProductoDeProveedor() {
                                         Artículo #{idx + 1}
                                       </div>
                                       {prod._isFromContext && (
-                                        <div className="text-xs text-success font-medium">
+                                        <div className="text-xs font-medium text-success">
                                           ✓ Guardado en compra
                                         </div>
                                       )}

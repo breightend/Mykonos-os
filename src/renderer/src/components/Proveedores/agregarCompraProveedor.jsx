@@ -122,7 +122,6 @@ export default function AgregarCompraProveedor({ provider }) {
     loadData()
   }, [])
 
-
   useEffect(() => {
     const subtotal = productData.products.reduce(
       (acc, item) => acc + item.cost_price * item.quantity,
