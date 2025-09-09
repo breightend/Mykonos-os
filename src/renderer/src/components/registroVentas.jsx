@@ -429,7 +429,7 @@ export default function RegistroVentas() {
           <h2 className="mb-6 mt-4 text-3xl font-bold text-warning">
             Registro de ventas: {currentStorage?.id}
           </h2>
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="flex flex-1 flex-col gap-4">
               {/* Unified Search with Mode Toggle */}
               <div className="flex gap-2">
@@ -530,65 +530,6 @@ export default function RegistroVentas() {
                   </div>
                 )}
               </div>
-
-              {/* Resultado de búsqueda de regalo */}
-              {giftSearchResult && (
-                <div className="alert alert-success">
-                  <Gift className="h-5 w-5" />
-                  <div>
-                    <h4 className="font-bold">Regalo encontrado</h4>
-                    <p className="text-sm">
-                      {giftSearchResult.product.name} - {giftSearchResult.variant.size_name} -{' '}
-                      {giftSearchResult.variant.color_name}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Precio pagado:</strong> $
-                      {giftSearchResult.sale_info.unit_price.toFixed(2)}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Fecha de compra:</strong>{' '}
-                      {new Date(giftSearchResult.sale_info.sale_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Resultado de búsqueda de productos */}
-              {productSearchResults.length > 0 && (
-                <div className="alert alert-info">
-                  <ShoppingBag className="h-5 w-5" />
-                  <div className="w-full">
-                    <h4 className="font-bold">
-                      Productos encontrados ({productSearchResults.length} ventas)
-                    </h4>
-                    <div className="mt-2 max-h-40 overflow-y-auto">
-                      {productSearchResults.slice(0, 5).map((result, index) => (
-                        <div
-                          key={index}
-                          className="mb-2 cursor-pointer rounded border p-2 hover:bg-blue-50"
-                          onClick={() => handleRowDoubleClick(result)}
-                        >
-                          <p className="text-sm">
-                            <strong>Venta #{result.id}</strong> - {formatDate(result.sale_date)}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {result.customer_name || 'Cliente Anónimo'} - $
-                            {formatPrice(result.total)}
-                          </p>
-                          <p className="text-xs">
-                            {result.products_found} producto(s) coincidente(s)
-                          </p>
-                        </div>
-                      ))}
-                      {productSearchResults.length > 5 && (
-                        <p className="text-xs text-gray-500">
-                          Y {productSearchResults.length - 5} ventas más...
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Botón del calendario */}
@@ -729,6 +670,63 @@ export default function RegistroVentas() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Search Results Section - Separated from the main search bar */}
+          <div className="mb-6">
+            {/* Resultado de búsqueda de regalo */}
+            {giftSearchResult && (
+              <div className="alert alert-success mb-4">
+                <Gift className="h-5 w-5" />
+                <div>
+                  <h4 className="font-bold">Regalo encontrado!</h4>
+                  <p className="text-sm">
+                    {giftSearchResult.product.name} - {giftSearchResult.variant.size_name} -{' '}
+                    {giftSearchResult.variant.color_name}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Precio pagado:</strong> $
+                    {giftSearchResult.sale_info.unit_price.toFixed(2)}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Fecha de compra:</strong>{' '}
+                    {new Date(giftSearchResult.sale_info.sale_date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Resultado de búsqueda de productos */}
+            {productSearchResults.length > 0 && (
+              <div className="alert alert-info">
+                <ShoppingBag className="h-5 w-5" />
+                <div className="w-full">
+                  <h4 className="font-bold">
+                    Productos encontrados ({productSearchResults.length} ventas)
+                  </h4>
+                  <div className="mt-2 max-h-96 overflow-y-auto">
+                    {productSearchResults.map((result, index) => (
+                      <div
+                        key={index}
+                        className="mb-2 cursor-pointer rounded border p-2 hover:bg-blue-50"
+                        onClick={() => handleRowDoubleClick(result)}
+                      >
+                        <p className="text-sm">
+                          <strong>Venta #{result.id}</strong> - {formatDate(result.sale_date)}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {result.customer_name || 'Cliente Anónimo'} - ${formatPrice(result.total)}
+                        </p>
+                        <p className="text-xs">
+                          {result.products_found} producto(s) coincidente(s):{' '}
+                          {result.matching_products}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Botones de acción */}
