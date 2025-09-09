@@ -40,6 +40,8 @@ export default function RegistroVentas() {
   const [giftSearchResult, setGiftSearchResult] = useState(null)
   const [searchingGift, setSearchingGift] = useState(false)
   const [isGiftSearch, setIsGiftSearch] = useState(false)
+  const [isProductSearch, setIsProductSearch] = useState(false)
+  const [productSearchResults, setProductSearchResults] = useState([])
   const { getCurrentStorage } = useSession()
   const currentStorage = getCurrentStorage()
 
@@ -178,12 +180,46 @@ export default function RegistroVentas() {
     }
   }
 
-  // Unified search handler
+  // Function to search for products within sales details
+  const searchProductsInSales = async (searchQuery) => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setProductSearchResults([])
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/sales/search-by-product?` +
+          new URLSearchParams({
+            query: searchQuery.trim(),
+            storage_id: currentStorage?.id || 1,
+            start_date: range?.from?.toISOString().split('T')[0] || '',
+            end_date: range?.to?.toISOString().split('T')[0] || ''
+          })
+      )
+
+      const data = await response.json()
+
+      if (response.ok && data.status === 'success') {
+        setProductSearchResults(data.data || [])
+        toast.success(`Encontradas ${data.data?.length || 0} ventas con ese producto`)
+      } else {
+        setProductSearchResults([])
+        toast.error(data.message || 'No se encontraron ventas con ese producto')
+      }
+    } catch (error) {
+      console.error('Error searching products:', error)
+      setProductSearchResults([])
+      toast.error('Error al buscar productos')
+    }
+  }
+
+  // Enhanced unified search handler
   const handleUnifiedSearch = (value) => {
     if (isGiftSearch) {
       setGiftBarcode(value)
       setSearchTerm('')
-      // Clear regular search results when switching to gift search
+      // Clear other search results when switching to gift search
       if (value.length === 0) {
         setGiftSearchResult(null)
       }
@@ -194,21 +230,39 @@ export default function RegistroVentas() {
         // Clear results while typing incomplete gift code
         setGiftSearchResult(null)
       }
+    } else if (isProductSearch) {
+      setSearchTerm(value) // Keep the value for product search
+      setGiftBarcode('')
+      setGiftSearchResult(null)
+      // Search for products in sales
+      searchProductsInSales(value)
     } else {
       setSearchTerm(value)
       setGiftBarcode('')
       setGiftSearchResult(null)
+      setProductSearchResults([])
       // Regular search happens in useEffect
     }
   }
 
   // Handle search mode toggle
-  const handleSearchModeToggle = (checked) => {
-    setIsGiftSearch(checked)
-    // Clear both search states when toggling
+  const handleSearchModeToggle = (mode) => {
+    // Reset all search modes
+    setIsGiftSearch(false)
+    setIsProductSearch(false)
+
+    // Set the selected mode
+    if (mode === 'gift') {
+      setIsGiftSearch(true)
+    } else if (mode === 'product') {
+      setIsProductSearch(true)
+    }
+
+    // Clear all search states when toggling
     setSearchTerm('')
     setGiftBarcode('')
     setGiftSearchResult(null)
+    setProductSearchResults([])
   }
 
   useEffect(() => {
@@ -381,7 +435,11 @@ export default function RegistroVentas() {
               <div className="flex gap-2">
                 <label
                   className={`input-bordered input flex flex-1 items-center gap-2 ${
-                    isGiftSearch ? 'input-accent' : 'input-warning'
+                    isGiftSearch
+                      ? 'input-accent'
+                      : isProductSearch
+                        ? 'input-secondary'
+                        : 'input-warning'
                   }`}
                 >
                   <input
@@ -389,7 +447,9 @@ export default function RegistroVentas() {
                     placeholder={
                       isGiftSearch
                         ? 'Escanear código de regalo (GIFT########)'
-                        : 'Buscar por notas, número de factura, cliente...'
+                        : isProductSearch
+                          ? 'Buscar por nombre de producto, marca, talle, color...'
+                          : 'Buscar por notas, número de factura, cliente...'
                     }
                     className="grow"
                     value={isGiftSearch ? giftBarcode : searchTerm}
@@ -397,6 +457,8 @@ export default function RegistroVentas() {
                   />
                   {isGiftSearch ? (
                     <Gift className="h-4 w-4 text-accent" />
+                  ) : isProductSearch ? (
+                    <ShoppingBag className="h-4 w-4 text-secondary" />
                   ) : (
                     <Search className="h-4 w-4 text-gray-500" />
                   )}
@@ -417,30 +479,56 @@ export default function RegistroVentas() {
                 )}
               </div>
 
-              {/* Search Mode Toggle */}
-              <div className="flex items-center gap-2">
-                <label className="label cursor-pointer">
+              {/* Search Mode Toggle - Radio buttons for three modes */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                   <input
-                    type="checkbox"
-                    className="checkbox checkbox-accent checkbox-sm"
-                    checked={isGiftSearch}
-                    onChange={(e) => handleSearchModeToggle(e.target.checked)}
+                    type="radio"
+                    name="searchMode"
+                    className="radio radio-warning radio-sm"
+                    checked={!isGiftSearch && !isProductSearch}
+                    onChange={() => handleSearchModeToggle('regular')}
                   />
-                  <span className="label-text ml-2">
-                    {isGiftSearch ? (
-                      <span className="flex items-center gap-1">
-                        <Gift className="h-4 w-4" />
-                        Búsqueda de regalos
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Search className="h-4 w-4" />
-                        Búsqueda regular
-                      </span>
-                    )}
+                  <span className="flex items-center gap-1 text-sm">
+                    <Search className="h-4 w-4" />
+                    Búsqueda regular
                   </span>
-                </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="searchMode"
+                    className="radio radio-secondary radio-sm"
+                    checked={isProductSearch}
+                    onChange={() => handleSearchModeToggle('product')}
+                  />
+                  <span className="flex items-center gap-1 text-sm">
+                    <ShoppingBag className="h-4 w-4" />
+                    Buscar productos
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="searchMode"
+                    className="radio radio-accent radio-sm"
+                    checked={isGiftSearch}
+                    onChange={() => handleSearchModeToggle('gift')}
+                  />
+                  <span className="flex items-center gap-1 text-sm">
+                    <Gift className="h-4 w-4" />
+                    Buscar regalos
+                  </span>
+                </div>
+
                 {isGiftSearch && <div className="text-sm text-gray-500">Ejemplo: GIFT00000019</div>}
+                {isProductSearch && (
+                  <div className="text-sm text-gray-500">
+                    Buscar en todos los productos vendidos
+                  </div>
+                )}
               </div>
 
               {/* Resultado de búsqueda de regalo */}
@@ -461,6 +549,43 @@ export default function RegistroVentas() {
                       <strong>Fecha de compra:</strong>{' '}
                       {new Date(giftSearchResult.sale_info.sale_date).toLocaleDateString()}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Resultado de búsqueda de productos */}
+              {productSearchResults.length > 0 && (
+                <div className="alert alert-info">
+                  <ShoppingBag className="h-5 w-5" />
+                  <div className="w-full">
+                    <h4 className="font-bold">
+                      Productos encontrados ({productSearchResults.length} ventas)
+                    </h4>
+                    <div className="mt-2 max-h-40 overflow-y-auto">
+                      {productSearchResults.slice(0, 5).map((result, index) => (
+                        <div
+                          key={index}
+                          className="mb-2 cursor-pointer rounded border p-2 hover:bg-blue-50"
+                          onClick={() => handleRowDoubleClick(result)}
+                        >
+                          <p className="text-sm">
+                            <strong>Venta #{result.id}</strong> - {formatDate(result.sale_date)}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {result.customer_name || 'Cliente Anónimo'} - $
+                            {formatPrice(result.total)}
+                          </p>
+                          <p className="text-xs">
+                            {result.products_found} producto(s) coincidente(s)
+                          </p>
+                        </div>
+                      ))}
+                      {productSearchResults.length > 5 && (
+                        <p className="text-xs text-gray-500">
+                          Y {productSearchResults.length - 5} ventas más...
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -675,7 +800,7 @@ export default function RegistroVentas() {
                     <td>
                       <div className="flex items-center gap-2">
                         <span className="badge badge-primary badge-sm">
-                          {sale.total_quantity || 0} items
+                          {sale.total_quantity || 0} producto(s)
                         </span>
                         {sale.notes?.includes('intercambio') && (
                           <span className="badge badge-warning badge-sm">
@@ -723,7 +848,7 @@ export default function RegistroVentas() {
               <div className="p-6">
                 <div className="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
                   <h3 className="text-2xl font-bold text-warning">
-                    Detalles de Venta #{selectedSale?.id}
+                    Detalles de Venta # {selectedSale?.id}
                   </h3>
                   <button className="hover:bg-warning/10 btn btn-ghost btn-sm" onClick={closeModal}>
                     <X className="h-5 w-5" />

@@ -42,29 +42,16 @@ export default function PedidosAProveedores() {
         </div>
         <div className="">
           <h2 className="text-xl font-semibold">Informacion general de las compras:</h2>
-          <p>Aca agrupamos por grupo</p>
           <table>
             <thead>
               <tr>
-                <th>Grupo de Producto</th>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Proveedor</th>
                 <th>Cantidad</th>
                 <th>Total compra</th>
                 <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div className="card card-body">
-          <h3>Informacion proveedor: </h3>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Proveedor</th>
-                <th>Fecha</th>
-                <th>Total</th>
-                <th>Estado</th>
+                <th>Cambio estado</th>
               </tr>
             </thead>
             <tbody></tbody>

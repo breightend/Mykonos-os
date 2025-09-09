@@ -124,10 +124,29 @@ def search_gift_by_barcode(barcode):
 
         # Extraer sales_detail_id del código
         sales_detail_id = int(barcode[4:])  # Quitar "GIFT" y convertir a int
+        print(f"🔍 DEBUG: Buscando sales_detail_id = {sales_detail_id}")
 
         from database.database import Database
 
         db = Database()
+
+        # Primero, hacer una consulta simple para verificar que la tabla existe
+        try:
+            simple_query = "SELECT id FROM sales_detail WHERE id = %s"
+            print(
+                f"🔍 DEBUG: Ejecutando query simple con sales_detail_id = {sales_detail_id}"
+            )
+            simple_result = db.execute_query(simple_query, (sales_detail_id,))
+            print(f"🔍 DEBUG: Resultado query simple: {simple_result}")
+
+            if not simple_result:
+                return jsonify(
+                    {"error": f"No se encontró sales_detail con ID {sales_detail_id}"}
+                ), 404
+
+        except Exception as e:
+            print(f"❌ DEBUG: Error en query simple: {str(e)}")
+            return jsonify({"error": f"Error en consulta simple: {str(e)}"}), 500
 
         # Buscar información completa de la venta
         query = """
@@ -136,31 +155,23 @@ def search_gift_by_barcode(barcode):
                 sd.product_id,
                 sd.variant_id,
                 sd.quantity,
-                sd.unit_price,
+                sd.sale_price as unit_price,
                 sd.subtotal,
                 p.product_name,
-                b.brand_name,
-                v.variant_barcode,
-                s.size_name,
-                c.color_name,
-                c.color_hex,
-                sale.id as sale_id,
-                sale.sale_date,
-                sale.total as sale_total,
-                cust.name as customer_name,
-                cust.dni as customer_dni
+                s.id as sale_id,
+                s.sale_date,
+                s.total as sale_total
             FROM sales_detail sd
             LEFT JOIN products p ON sd.product_id = p.id
-            LEFT JOIN brands b ON p.brand_id = b.id
-            LEFT JOIN warehouse_stock_variants v ON sd.variant_id = v.id
-            LEFT JOIN sizes s ON v.size_id = s.id
-            LEFT JOIN colors c ON v.color_id = c.id
-            LEFT JOIN sales sale ON sd.sale_id = sale.id
-            LEFT JOIN customers cust ON sale.customer_id = cust.id
+            LEFT JOIN sales s ON sd.sale_id = s.id
             WHERE sd.id = %s
         """
 
+        print(
+            f"🔍 DEBUG: Ejecutando query completa con sales_detail_id = {sales_detail_id}"
+        )
         result = db.execute_query(query, (sales_detail_id,))
+        print(f"🔍 DEBUG: Resultado query completa: {result}")
 
         if not result:
             return jsonify(
@@ -171,42 +182,38 @@ def search_gift_by_barcode(barcode):
 
         info = result[0]
 
-        # Formatear respuesta
+        # Formatear respuesta con los datos disponibles
         gift_info = {
             "sales_detail_id": info["sales_detail_id"],
             "gift_barcode": barcode,
             "product": {
                 "id": info["product_id"],
                 "name": info["product_name"],
-                "brand": info["brand_name"],
+                "brand": "Sin información",  # No disponible en la query simplificada
             },
             "variant": {
                 "id": info["variant_id"],
-                "barcode": info["variant_barcode"],
-                "size_name": info["size_name"],
-                "color_name": info["color_name"],
-                "color_hex": info["color_hex"],
+                "barcode": "Sin información",  # No disponible en la query simplificada
+                "size_name": "Sin información",  # No disponible en la query simplificada
+                "color_name": "Sin información",  # No disponible en la query simplificada
+                "color_hex": None,  # No disponible en la query simplificada
             },
             "sale_info": {
                 "quantity": info["quantity"],
                 "unit_price": float(info["unit_price"]),  # Precio real pagado
                 "subtotal": float(info["subtotal"]),
                 "sale_id": info["sale_id"],
-                "sale_date": info["sale_date"].isoformat()
-                if info["sale_date"]
-                else None,
+                "sale_date": str(info["sale_date"]) if info["sale_date"] else None,
                 "sale_total": float(info["sale_total"]) if info["sale_total"] else 0,
             },
-            "customer": {"name": info["customer_name"], "dni": info["customer_dni"]}
-            if info["customer_name"]
-            else None,
+            "customer": None,  # No disponible en la query simplificada
         }
 
         return jsonify(
             {
                 "success": True,
                 "gift_info": gift_info,
-                "message": f"Información encontrada para regalo comprado el {info['sale_date'].strftime('%d/%m/%Y') if info['sale_date'] else 'fecha desconocida'}",
+                "message": f"Información encontrada para regalo comprado el {str(info['sale_date'])[:10] if info['sale_date'] else 'fecha desconocida'}",
             }
         )
 

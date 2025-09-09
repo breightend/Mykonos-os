@@ -6,16 +6,12 @@ export default function ResumenProveedores() {
 
   return (
     <div className="flex h-screen flex-col items-center justify-center">
-      <button
-        onClick={() => setLocation('/proveedores')}
-        type="button"
-        className="btn btn-neutral btn-circle"
-      >
-        <ArrowLeft />
+      <button onClick={() => setLocation('/proveedores')} type="button" className="btn btn-neutral">
+        <ArrowLeft className="h-4 w-4" />
       </button>
       <h1 className="mb-4 text-2xl font-bold">Resumen de Proveedores</h1>
       <p className="text-gray-500">Esta sección está en desarrollo.</p>
-      <p className="text-gray-500">Pronto podrás ver estadísticas y resúmenes de proveedores.</p>
+      <p className="text-gray-500">Aca se va a ver mas por producto que por proveedor</p>
     </div>
   )
 }

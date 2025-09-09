@@ -1348,3 +1348,141 @@ def get_sales_stats():
                 "error": str(e),
             }
         ), 500
+
+
+@sales_router.route("/search-by-product", methods=["GET"])
+def search_sales_by_product():
+    """
+    Busca ventas que contengan productos que coincidan con la consulta
+    Parameters:
+        - query: Término de búsqueda para nombre de producto, marca, talle, color
+        - storage_id: ID del almacén
+        - start_date: Fecha de inicio (opcional)
+        - end_date: Fecha de fin (opcional)
+    """
+    try:
+        db = Database()
+        query = request.args.get("query", "").strip()
+        storage_id = request.args.get("storage_id", type=int)
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+
+        if not query or len(query) < 2:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Consulta de búsqueda debe tener al menos 2 caracteres",
+                }
+            ), 400
+
+        # Construir la consulta SQL (simplificada sin tablas problemáticas)
+        base_query = """
+            SELECT DISTINCT 
+                s.id,
+                s.sale_date,
+                s.total,
+                s.status,
+                s.notes,
+                COUNT(DISTINCT sd.id) as products_found,
+                STRING_AGG(DISTINCT p.product_name, ', ') as matching_products
+            FROM sales s
+            LEFT JOIN sales_detail sd ON s.id = sd.sale_id
+            LEFT JOIN products p ON sd.product_id = p.id
+            LEFT JOIN brands b ON p.brand_id = b.id
+            LEFT JOIN warehouse_stock_variants wsv ON sd.variant_id = wsv.id
+            LEFT JOIN sizes sz ON wsv.size_id = sz.id
+            LEFT JOIN colors col ON wsv.color_id = col.id
+            WHERE s.status = 'Completada'
+        """
+
+        conditions = []
+        params = []
+
+        # Filtro de búsqueda en productos
+        search_condition = """
+            AND (
+                LOWER(p.product_name) LIKE LOWER(%s)
+                OR LOWER(b.brand_name) LIKE LOWER(%s)
+                OR LOWER(sz.size_name) LIKE LOWER(%s)
+                OR LOWER(col.color_name) LIKE LOWER(%s)
+            )
+        """
+        search_term = f"%{query}%"
+        params.extend([search_term, search_term, search_term, search_term])
+
+        # Filtro por almacén
+        if storage_id:
+            conditions.append("AND s.storage_id = %s")
+            params.append(storage_id)
+
+        # Filtros de fecha
+        if start_date:
+            conditions.append("AND DATE(s.sale_date) >= %s")
+            params.append(start_date)
+
+        if end_date:
+            conditions.append("AND DATE(s.sale_date) <= %s")
+            params.append(end_date)
+
+        # Construir consulta final
+        final_query = (
+            base_query
+            + search_condition
+            + " ".join(conditions)
+            + """
+            GROUP BY s.id, s.sale_date, s.total, s.status, s.notes
+            ORDER BY s.sale_date DESC
+            LIMIT 50
+        """
+        )
+
+        print(f"🔍 Búsqueda de productos: '{query}'")
+        print(f"📋 Query SQL: {final_query}")
+        print(f"📋 Parámetros: {params}")
+
+        result = db.execute_query(final_query, params)
+
+        if not result:
+            return jsonify(
+                {
+                    "status": "success",
+                    "data": [],
+                    "message": f"No se encontraron ventas con productos que contengan '{query}'",
+                }
+            )
+
+        # Formatear resultados
+        sales_data = []
+        for row in result:
+            sale = {
+                "id": row["id"],
+                "sale_date": str(row["sale_date"]) if row["sale_date"] else None,
+                "total": float(row["total"]) if row["total"] else 0,
+                "status": row["status"],
+                "notes": row["notes"],
+                "customer_name": None,  # No disponible en la query simplificada
+                "products_found": row["products_found"],
+                "matching_products": row["matching_products"],
+            }
+            sales_data.append(sale)
+
+        return jsonify(
+            {
+                "status": "success",
+                "data": sales_data,
+                "message": f"Se encontraron {len(sales_data)} ventas con productos que contienen '{query}'",
+            }
+        )
+
+    except Exception as e:
+        print(f"❌ ERROR en búsqueda de productos: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Error interno del servidor",
+                "error": str(e),
+            }
+        ), 500
