@@ -370,7 +370,7 @@ export default function NuevoProductoDeProveedor() {
       brand_id: product.brand_id,
       product_image: imageToSend,
       storage_id: currentStorage?.id || null,
-      state: 'enTienda',
+      state: 'esperandoArribo',
       initial_quantity: cantidadTotal,
       stock_variants: product.talles.flatMap((talle) => {
         const sizeData = tallesBD.find((s) => s.size_name === talle.talle)

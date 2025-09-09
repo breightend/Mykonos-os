@@ -243,6 +243,7 @@ DATABASE_TABLES = {
             "brand_id": "INTEGER",  # ID de la marca del producto.
             "creation_date": "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",  # Fecha de creación del producto, se establece por defecto a la fecha y hora actuales.
             "last_modified_date": "TEXT",  # Fecha de la última modificación del producto.
+            "state": "TEXT DEFAULT 'activo'"  # Estado del producto posibles: (enTienda, sinStock, esperandoArribo).
         },
         "foreign_keys": [
             {  # Relación con la tabla de usuarios.
@@ -331,6 +332,7 @@ DATABASE_TABLES = {
             "branch_id": "INTEGER NOT NULL",  # Identificador de la sucursal que almacena el producto.
             "quantity": "INTEGER NOT NULL CHECK (quantity >= 0)",  # Cantidad actual del producto en la sucursal, no puede ser negativo.
             "last_updated": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de la última actualización del stock.
+            "provider_id" : "INTEGER NOT NULL"
         },
         "foreign_keys": [
             {  # Relación con la tabla de productos.
@@ -345,6 +347,12 @@ DATABASE_TABLES = {
                 "reference_column": "id",
                 "export_column_name": "name",
             },
+            {
+                "column": "provider_id",
+                "reference_table": TABLES.ENTITIES,
+                "reference_column": "id",
+                "export_column_name": "name",
+            }
         ],
     },
     TABLES.WAREHOUSE_STOCK_VARIANTS: {

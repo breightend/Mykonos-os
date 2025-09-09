@@ -35,10 +35,13 @@ export default function PedidosAProveedores() {
         </span>
         Pedidos a Proveedores
       </h1>
+      <div>
+        {/* Aca van las stats generales como cuanto llevo comprado, deuda a saldar en total, cantidad de envios pendientes a llegar */}
+      </div>
       <div className="mt-4 space-y-4">
         <div className="body-card card bg-primary/20 p-10">
           <h2>Selecciona el periodo: </h2>
-          <p>Aca va lo de m1 mes 2 meses bla bla bla</p>
+          <p>Aca va lo de 1 mes 2 meses bla bla bla</p>
         </div>
         <div className="">
           <h2 className="text-xl font-semibold">Informacion general de las compras:</h2>
@@ -46,7 +49,7 @@ export default function PedidosAProveedores() {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Fecha</th>
+                <th>Fecha actual</th>
                 <th>Proveedor</th>
                 <th>Cantidad</th>
                 <th>Total compra</th>
@@ -58,6 +61,8 @@ export default function PedidosAProveedores() {
           </table>
         </div>
       </div>
+      {/* Modal de Detalles de Venta */}
+
     </div>
   )
 }
