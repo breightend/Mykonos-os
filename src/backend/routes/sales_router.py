@@ -201,7 +201,9 @@ def get_product_by_variant_barcode(variant_barcode):
         ), 500
 
 
-@sales_router.route("/product-by-variant-barcode-exchange/<variant_barcode>", methods=["GET"])
+@sales_router.route(
+    "/product-by-variant-barcode-exchange/<variant_barcode>", methods=["GET"]
+)
 def get_product_by_variant_barcode_exchange(variant_barcode):
     """
     Busca un producto por su código de barras de variante para intercambios

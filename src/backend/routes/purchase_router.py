@@ -128,7 +128,7 @@ def create_purchase():
 
 
 # Obtener todas las compras con relaciones completas
-#TODO: sumar los productos que se compraron
+# TODO: sumar los productos que se compraron
 @purchase_bp.route("/", methods=["GET"])
 def get_purchases():
     try:
@@ -463,9 +463,11 @@ def update_purchase_status(purchase_id):
         elif data["status"] == "Recibido":
             update_data["delivery_date"] = datetime.now().isoformat()
 
-        success = db.update_data("purchases", purchase_id, update_data)
+        # Add the id to the data for the update_record method
+        update_data["id"] = purchase_id
+        success = db.update_record("purchases", update_data)
 
-        if success:
+        if success.get("success"):
             return jsonify(
                 {"status": "éxito", "message": "Estado actualizado exitosamente"}
             ), 200
@@ -496,11 +498,12 @@ def receive_purchase(purchase_id):
         db = Database()
 
         # Verificar que la compra existe y está pendiente
-        purchase = db.fetch_by_id("purchases", purchase_id)
-        if not purchase:
+        purchase = db.get_record_by_id("purchases", purchase_id)
+        if not purchase.get("success") or not purchase.get("record"):
             return jsonify({"status": "error", "message": "Compra no encontrada"}), 404
 
-        if purchase["status"] != "Pendiente de entrega":
+        purchase_data = purchase["record"]
+        if purchase_data["status"] != "Pendiente de entrega":
             return jsonify(
                 {"status": "error", "message": "La compra ya fue procesada"}
             ), 400
@@ -530,20 +533,21 @@ def receive_purchase(purchase_id):
             if existing_stock:
                 # Actualizar stock existente
                 new_quantity = existing_stock[0]["quantity"] + quantity
-                db.update_data(
-                    "warehouse_stock",
-                    existing_stock[0]["id"],
-                    {
-                        "quantity": new_quantity,
-                        "last_updated": datetime.now().isoformat(),
-                    },
-                )
+                update_stock_data = {
+                    "id": existing_stock[0]["id"],
+                    "quantity": new_quantity,
+                    "last_updated": datetime.now().isoformat(),
+                }
+                db.update_record("warehouse_stock", update_stock_data)
             else:
                 # Crear nuevo registro de stock
                 stock_data = {
                     "product_id": product_id,
                     "branch_id": storage_id,
                     "quantity": quantity,
+                    "provider_id": purchase_data[
+                        "entity_id"
+                    ],  # Add provider_id from purchase
                 }
                 db.add_record("warehouse_stock", stock_data)
 
@@ -627,12 +631,13 @@ def delete_purchase(purchase_id):
         db = Database()
 
         # Verificar que la compra existe
-        purchase = db.fetch_by_id("purchases", purchase_id)
-        if not purchase:
+        purchase = db.get_record_by_id("purchases", purchase_id)
+        if not purchase.get("success") or not purchase.get("record"):
             return jsonify({"status": "error", "message": "Compra no encontrada"}), 404
 
+        purchase_data = purchase["record"]
         # No permitir eliminar compras recibidas
-        if purchase["status"] == "Recibido":
+        if purchase_data["status"] == "Recibido":
             return jsonify(
                 {
                     "status": "error",
@@ -660,4 +665,187 @@ def delete_purchase(purchase_id):
         print(f"Error deleting purchase: {e}")
         return jsonify(
             {"status": "error", "message": "Error interno del servidor"}
+        ), 500
+
+
+# Create sample test data for development
+@purchase_bp.route("/create-sample-data", methods=["POST"])
+def create_sample_data():
+    """
+    Development endpoint to create sample data for testing
+    """
+    try:
+        from datetime import datetime, timedelta
+        import random
+
+        db = Database()
+
+        # Create payment methods if they don't exist
+        payment_methods = [
+            {
+                "method_name": "efectivo",
+                "display_name": "Efectivo",
+                "description": "Pago en efectivo",
+            },
+            {
+                "method_name": "transferencia",
+                "display_name": "Transferencia",
+                "description": "Transferencia bancaria",
+            },
+        ]
+
+        for method in payment_methods:
+            existing = db.get_record_by_clause(
+                "payment_methods", "method_name = ?", method["method_name"]
+            )
+            if not (existing.get("success") and existing.get("record")):
+                db.add_record("payment_methods", method)
+
+        # Create banks if they don't exist
+        banks = [
+            {"name": "Banco Nación", "swift_code": "NACNAR01"},
+            {"name": "Banco Santander", "swift_code": "BSCHERAR"},
+        ]
+
+        for bank in banks:
+            existing = db.get_record_by_clause("banks", "name = ?", bank["name"])
+            if not (existing.get("success") and existing.get("record")):
+                db.add_record("banks", bank)
+
+        # Create bank-payment combinations
+        bank_records = db.get_all_records("banks")
+        payment_records = db.get_all_records("payment_methods")
+
+        bank_payment_id = None
+        if bank_records and payment_records:
+            combination = {
+                "bank_id": bank_records[0]["id"],
+                "payment_method_id": payment_records[0]["id"],
+                "amount": 0.00,
+            }
+            existing = db.get_all_records_by_clause(
+                "banks_payment_methods",
+                "bank_id = ? AND payment_method_id = ?",
+                (combination["bank_id"], combination["payment_method_id"]),
+            )
+            if not existing:
+                result = db.add_record("banks_payment_methods", combination)
+                if result.get("success"):
+                    bank_payment_id = result.get("rowid")
+            else:
+                bank_payment_id = existing[0]["id"]
+
+        # Create providers
+        providers = [
+            {
+                "entity_name": "Proveedor ABC S.A.",
+                "entity_type": "proveedor",
+                "razon_social": "ABC Sociedad Anónima",
+                "responsabilidad_iva": 1,
+                "domicilio_comercial": "Av. Corrientes 1234, CABA",
+                "cuit": "20-12345678-9",
+                "contact_name": "Juan Pérez",
+                "phone_number": "+54 11 1234-5678",
+                "email": "contacto@proveedorabc.com.ar",
+            }
+        ]
+
+        provider_id = None
+        for provider in providers:
+            existing = db.get_record_by_clause("entities", "cuit = ?", provider["cuit"])
+            if not (existing.get("success") and existing.get("record")):
+                result = db.add_record("entities", provider)
+                if result.get("success"):
+                    provider_id = result.get("rowid")
+            else:
+                provider_id = existing["record"]["id"]
+
+        # Create products
+        products = [
+            {
+                "product_name": "Jean Básico Azul",
+                "provider_code": "JBA001",
+                "description": "Jean básico color azul",
+                "cost": 15000.00,
+                "sale_price": 25000.00,
+                "provider_id": provider_id,
+                "state": "activo",
+            }
+        ]
+
+        product_id = None
+        for product in products:
+            existing = db.get_record_by_clause(
+                "products", "provider_code = ?", product["provider_code"]
+            )
+            if not (existing.get("success") and existing.get("record")):
+                result = db.add_record("products", product)
+                if result.get("success"):
+                    product_id = result.get("rowid")
+            else:
+                product_id = existing["record"]["id"]
+
+        # Create sample purchases
+        if provider_id and product_id:
+            statuses = ["Pendiente de entrega", "Recibido", "Cancelado"]
+            base_date = datetime.now() - timedelta(days=60)
+
+            for i in range(3):
+                purchase_date = base_date + timedelta(days=i * 20)
+                status = statuses[i]
+
+                subtotal = 45000.00
+                discount = 2250.00 if i == 0 else 0.00
+                total = subtotal - discount
+
+                purchase_data = {
+                    "entity_id": provider_id,
+                    "purchase_date": purchase_date.isoformat(),
+                    "subtotal": subtotal,
+                    "discount": discount,
+                    "total": total,
+                    "invoice_number": f"FAC-{2024000 + i + 1}",
+                    "transaction_number": f"TXN{purchase_date.strftime('%Y%m%d')}{i:03d}",
+                    "notes": f"Compra de prueba #{i + 1} - {status}",
+                    "status": status,
+                }
+
+                # Only add payment method if we have one
+                if bank_payment_id:
+                    purchase_data["payment_method"] = bank_payment_id
+
+                if status == "Recibido":
+                    purchase_data["delivery_date"] = (
+                        purchase_date + timedelta(days=7)
+                    ).isoformat()
+
+                # Check if purchase already exists
+                existing = db.get_record_by_clause(
+                    "purchases", "invoice_number = ?", purchase_data["invoice_number"]
+                )
+                if not (existing.get("success") and existing.get("record")):
+                    result = db.add_record("purchases", purchase_data)
+                    if result.get("success"):
+                        purchase_id = result.get("rowid")
+
+                        # Add purchase detail
+                        detail_data = {
+                            "purchase_id": purchase_id,
+                            "product_id": product_id,
+                            "cost_price": 15000.00,
+                            "quantity": 3,
+                            "discount": 0.0,
+                            "subtotal": 45000.00,
+                        }
+
+                        db.add_record("purchases_detail", detail_data)
+
+        return jsonify(
+            {"status": "success", "message": "Sample data created successfully"}
+        ), 200
+
+    except Exception as e:
+        print(f"Error creating sample data: {e}")
+        return jsonify(
+            {"status": "error", "message": f"Error creating sample data: {str(e)}"}
         ), 500

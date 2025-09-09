@@ -150,3 +150,14 @@ export async function generateBarcodes(purchaseId) {
         throw error
     }
 }
+
+// Obtener resumen estadístico de compras
+export async function fetchPurchasesSummary() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/summary`)
+        return response.data
+    } catch (error) {
+        console.error('Error fetching purchases summary:', error)
+        throw error
+    }
+}
