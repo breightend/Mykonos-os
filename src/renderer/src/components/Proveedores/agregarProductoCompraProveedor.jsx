@@ -117,14 +117,24 @@ export default function NuevoProductoDeProveedor() {
                 )
                 // Group variants by size
                 const sizeGroups = {}
-                product.stock_variants.forEach((variant) => {
+                product.stock_variants.forEach((variant, index) => {
+                  console.log(`🔍 Processing variant ${index}:`, {
+                    size_name: variant.size_name,
+                    color_name: variant.color_name,
+                    quantity: variant.quantity,
+                    quantity_type: typeof variant.quantity
+                  })
+
                   const sizeName = variant.size_name || ''
                   if (!sizeGroups[sizeName]) {
                     sizeGroups[sizeName] = []
                   }
+                  const cantidad = variant.quantity?.toString() || ''
+                  console.log(`📝 Adding color: ${variant.color_name} with cantidad: '${cantidad}'`)
+
                   sizeGroups[sizeName].push({
                     color: variant.color_name || '',
-                    cantidad: variant.quantity?.toString() || ''
+                    cantidad: cantidad
                   })
                 })
 
@@ -196,6 +206,11 @@ export default function NuevoProductoDeProveedor() {
       }
     }
   }, [productData?.products])
+
+  // Recalculate total quantity whenever productos changes
+  useEffect(() => {
+    handleCantidadTotal()
+  }, [productos])
 
   // Estados para el formulario
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
@@ -329,13 +344,21 @@ export default function NuevoProductoDeProveedor() {
 
   const handleCantidadTotal = () => {
     let total = 0
-    productos.forEach((product) => {
-      product.talles.forEach((talle) => {
-        talle.colores.forEach((color) => {
-          total += parseInt(color.cantidad || 0, 10)
+    console.log('🔢 Calculating total quantity for productos:', productos.length)
+
+    productos.forEach((product, productIndex) => {
+      let productTotal = 0
+      product.talles.forEach((talle, talleIndex) => {
+        talle.colores.forEach((color, colorIndex) => {
+          const quantity = parseInt(color.cantidad || 0, 10)
+          productTotal += quantity
+          total += quantity
         })
       })
+      console.log(`📦 Product ${productIndex + 1} (${product.product_name}) total:`, productTotal)
     })
+
+    console.log('✅ Total calculated quantity:', total)
     setCantidadTotal(total)
   }
 
