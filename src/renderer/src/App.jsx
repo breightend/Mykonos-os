@@ -23,7 +23,7 @@ import NuevaSucursal from './creats/nuevaSucursal'
 import InfoSucursal from './components/infoSucursal'
 import CreateUser from './creats/createUser'
 import InfoProducto from './components/inventory/infoInventory'
-import Estadisticas from './components/stadistics/estadisticas'
+import ComprehensiveStatistics from './components/stadistics/comprehensive-statistics'
 import MoveInventory from './components/Inventory/moveInventory'
 import TestColorPage from './test/TestColorPage'
 import TestDaisyUI from './test/TestDaisyUI'
@@ -163,7 +163,7 @@ function App() {
         </Route>
         <Route path="/estadisticas">
           <ProtectedRoute>
-            <Estadisticas />
+            <ComprehensiveStatistics />
           </ProtectedRoute>
         </Route>
         <Route path="/moveInventory">

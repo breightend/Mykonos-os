@@ -841,7 +841,7 @@ export default function RegistroVentas() {
         {/* Modal de Detalles de Venta */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-white shadow-2xl">
+            <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg p-2 bg-white shadow-2xl">
               {/* Sticky header */}
               <div>
                 <div className="sticky top-0 z-10 border-b border-base-300 bg-white p-6">

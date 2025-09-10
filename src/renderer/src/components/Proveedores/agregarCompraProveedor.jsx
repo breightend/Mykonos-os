@@ -81,7 +81,6 @@ export default function AgregarCompraProveedor({ provider }) {
 
   const [paymentMethods, setPaymentMethods] = useState([]) // Keep for compatibility
   const [banks, setBanks] = useState([])
-  const [basicPaymentMethods, setBasicPaymentMethods] = useState([])
   const [bankPaymentCombinations, setBankPaymentCombinations] = useState([])
   const [invoiceFile, setInvoiceFile] = useState(null)
 
