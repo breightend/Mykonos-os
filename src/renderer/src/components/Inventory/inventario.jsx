@@ -13,6 +13,7 @@ import { fetchSucursales } from '../../services/sucursales/sucursalesService'
 import { useSession } from '../../contexts/SessionContext'
 import '../../assets/modal-improvements.css'
 pinwheel.register()
+
 //TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
 export default function Inventario() {
   const [, setLocation] = useLocation()

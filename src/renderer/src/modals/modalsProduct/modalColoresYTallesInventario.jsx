@@ -10,6 +10,7 @@ import {
   deleteSize,
   fetchSize
 } from '../../services/products/sizeService'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function ModalColoresYTalles({ onRefresh }) {
   const [colors, setColors] = useState([])
@@ -103,6 +104,11 @@ export default function ModalColoresYTalles({ onRefresh }) {
   const handleSubmitCategory = async (e) => {
     e.preventDefault()
     try {
+      if (!formDataCategory.category_name.trim()) {
+        setError('El nombre de la categoría no puede estar vacío')
+        toast.error('El nombre de la categoría no puede estar vacío')
+        return
+      }
       const response = await postDataCategory(formDataCategory)
       console.log('Categoría agregada:', response)
       const updatedCategories = await fetchCategorySize()
@@ -597,6 +603,7 @@ export default function ModalColoresYTalles({ onRefresh }) {
           )}
         </div>
       </dialog>
+      <Toaster position="center" />
     </>
   )
 }

@@ -65,7 +65,6 @@ export default function ModalSize({ onRefresh }) {
       const response = await postDataSize(formData)
       console.log('Talle agregado:', response)
 
-      // Limpiar formulario
       setFormData({
         ...formData,
         size_name: '',
@@ -73,12 +72,10 @@ export default function ModalSize({ onRefresh }) {
         description: ''
       })
 
-      // Refrescar la lista de talles
       const updatedSizes = await fetchSize()
       setSizes(updatedSizes)
       console.log('Talles actualizados:', updatedSizes)
 
-      // Llamar a onRefresh si está disponible para actualizar el componente padre
       if (onRefresh) {
         onRefresh()
       }
@@ -90,14 +87,18 @@ export default function ModalSize({ onRefresh }) {
 
   const handleSubmitCategorySize = async (e) => {
     e.preventDefault()
-    setError('') // Clear previous error
+    setError('') 
     const { category_name } = formData
 
-    // Check if the category name already exists
+    
     const categoryExists = category.some(
       (cat) => cat.category_name.toLowerCase() === category_name.toLowerCase()
     )
-
+    if (category_name.trim() === '') {
+      setError('El nombre de la categoría no puede estar vacío.')
+      return
+    }
+    
     if (categoryExists) {
       setError(`La categoría "${category_name}" ya existe.`)
       return
