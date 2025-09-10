@@ -43,7 +43,7 @@ export default function NuevoProductoDeProveedor() {
   const currentUser = getCurrentUser()
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
-  const { addProduct, productData } = useProductContext()
+  const { addProduct, productData, setProductData } = useProductContext()
 
   useEffect(() => {
     if (providerId) {
@@ -87,40 +87,89 @@ export default function NuevoProductoDeProveedor() {
 
   // Transform context products to form format
   const transformContextProductsToFormFormat = (contextProducts) => {
-    return contextProducts.map((product) => ({
-      id: product.id,
-      provider_code: product.provider_code || '',
-      product_name: product.product_name || '',
-      group_id: product.group_id || '',
-      provider_id: product.provider_id || providerId,
-      description: '',
-      cost: product.cost_price?.toString() || '',
-      sale_price: product.sale_price?.toString() || '',
-      original_price: '',
-      tax: '',
-      discount: '',
-      comments: '',
-      user_id: currentUser?.id || 1,
-      images_ids: null,
-      brand_id: product.brand_id || '',
-      creation_date: new Date().toISOString(),
-      last_modified_date: new Date().toISOString(),
-      state: 'guardado', // Mark as saved since they come from context
-      talles:
-        product.stock_variants?.length > 0
-          ? product.stock_variants.map((variant) => ({
-              talle: variant.size_name || '',
-              colores: [
-                { color: variant.color_name || '', cantidad: variant.quantity?.toString() || '' }
-              ]
-            }))
-          : [{ talle: '', colores: [{ color: '', cantidad: product.quantity?.toString() || '' }] }],
-      product_image: '',
-      initial_quantity: product.quantity || 0,
-      errors: {},
-      useAutoCalculation: settings.autoCalculatePrice,
-      _isFromContext: true // Flag to identify context products
-    }))
+    console.log('🔄 Transforming context products:', contextProducts)
+    return contextProducts.map((product) => {
+      const transformed = {
+        id: product.id,
+        provider_code: product.provider_code || '',
+        product_name: product.product_name || '',
+        group_id: product.group_id?.toString() || '', // Ensure it's a string
+        provider_id: product.provider_id || providerId,
+        description: product.description || '',
+        cost: product.cost_price?.toString() || '',
+        sale_price: product.sale_price?.toString() || '',
+        original_price: product.original_price?.toString() || '',
+        tax: product.tax?.toString() || '',
+        discount: product.discount?.toString() || '',
+        comments: product.comments || '',
+        user_id: currentUser?.id || 1,
+        images_ids: product.images_ids || null,
+        brand_id: product.brand_id?.toString() || '',
+        creation_date: product.creation_date || new Date().toISOString(),
+        last_modified_date: new Date().toISOString(),
+        state: 'guardado', // Mark as saved since they come from context
+        talles:
+          product.stock_variants?.length > 0
+            ? (() => {
+                console.log(
+                  `📐 Processing stock_variants for ${product.product_name}:`,
+                  product.stock_variants
+                )
+                // Group variants by size
+                const sizeGroups = {}
+                product.stock_variants.forEach((variant) => {
+                  const sizeName = variant.size_name || ''
+                  if (!sizeGroups[sizeName]) {
+                    sizeGroups[sizeName] = []
+                  }
+                  sizeGroups[sizeName].push({
+                    color: variant.color_name || '',
+                    cantidad: variant.quantity?.toString() || ''
+                  })
+                })
+
+                // Convert to the expected format
+                const result = Object.entries(sizeGroups).map(([sizeName, colors]) => ({
+                  talle: sizeName,
+                  colores: colors
+                }))
+
+                console.log(`✅ Final talles for ${product.product_name}:`, result)
+                return result
+              })()
+            : [
+                {
+                  talle: '',
+                  colores: [{ color: '', cantidad: product.quantity?.toString() || '' }]
+                }
+              ],
+        product_image: (() => {
+          const originalImage = product.product_image
+          let processedImage = ''
+
+          if (originalImage) {
+            if (originalImage.startsWith('data:')) {
+              processedImage = originalImage
+            } else {
+              processedImage = `data:image/jpeg;base64,${originalImage}`
+            }
+          }
+
+          console.log(`🖼️ Image processing for ${product.product_name}:`, {
+            original: originalImage ? `${originalImage.substring(0, 50)}...` : 'none',
+            processed: processedImage ? `${processedImage.substring(0, 50)}...` : 'none'
+          })
+
+          return processedImage
+        })(),
+        initial_quantity: product.quantity || 0,
+        errors: {},
+        useAutoCalculation: settings.autoCalculatePrice,
+        _isFromContext: true
+      }
+
+      return transformed
+    })
   }
 
   // Initialize productos with context products + one new empty product
@@ -134,6 +183,19 @@ export default function NuevoProductoDeProveedor() {
   }
 
   const [productos, setProductos] = useState(initializeProducts())
+
+  // Re-initialize products when productData changes (e.g., when coming back to edit)
+  useEffect(() => {
+    console.log('🔄 ProductData changed:', productData)
+    if (productData?.products?.length > 0) {
+      console.log('📦 Re-initializing products from context:', productData.products)
+      const contextProductsInFormFormat = transformContextProductsToFormFormat(productData.products)
+      if (contextProductsInFormFormat.length > 0) {
+        console.log('✅ Setting productos with context data:', contextProductsInFormFormat)
+        setProductos([...contextProductsInFormFormat, getInitialProductState()])
+      }
+    }
+  }, [productData?.products])
 
   // Estados para el formulario
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
@@ -326,10 +388,14 @@ export default function NuevoProductoDeProveedor() {
 
   const eliminarProducto = (index) => {
     if (productos.length === 1) {
-      alert('No puedes eliminar el único formulario de productos.')
+      // Instead of preventing deletion, reset to initial state
+      const newEmptyProduct = getInitialProductState()
+      setProductos([newEmptyProduct])
+      toast.success('Producto reiniciado')
       return
     }
     setProductos(productos.filter((_, i) => i !== index))
+    toast.success('Producto eliminado')
   }
 
   const handleColorChange = (productIndex, talleIndex, colorIndex, field, value) => {
@@ -403,8 +469,21 @@ export default function NuevoProductoDeProveedor() {
 
     let imageToSend = null
     if (product.product_image && product.product_image.startsWith('data:')) {
+      // For new products, we send just the base64 part to the API
       imageToSend = product.product_image.split(',')[1]
+      console.log(`🖼️ Processing new product image: data URL -> base64`)
+    } else if (product.product_image && !product.product_image.startsWith('data:')) {
+      // For products from context, the image might already be in base64 format
+      imageToSend = product.product_image
+      console.log(`🖼️ Processing context product image: already base64`)
     }
+
+    const finalImage = product._isFromContext ? product.product_image : imageToSend
+    console.log(`🖼️ Final image for ${product.product_name}:`, {
+      isFromContext: product._isFromContext,
+      hasImage: !!finalImage,
+      imageType: finalImage?.startsWith('data:') ? 'data URL' : 'base64'
+    })
 
     return {
       provider_code: product.provider_code,
@@ -417,7 +496,7 @@ export default function NuevoProductoDeProveedor() {
       comments: product.comments || null,
       user_id: currentUser?.id || 1,
       brand_id: product.brand_id,
-      product_image: imageToSend,
+      product_image: product._isFromContext ? product.product_image : imageToSend, // Keep full image for context products
       storage_id: currentStorage?.id || null,
       state: 'esperandoArribo',
       initial_quantity: cantidadTotal,
@@ -430,7 +509,9 @@ export default function NuevoProductoDeProveedor() {
             const colorData = colors.find((c) => c.color_name === color.color)
             return {
               size_id: sizeData.id,
+              size_name: sizeData.size_name, // Include the name for later retrieval
               color_id: colorData ? colorData.id : null,
+              color_name: colorData ? colorData.color_name : color.color, // Include the name
               quantity: parseInt(color.cantidad) || 0
             }
           })
@@ -471,6 +552,152 @@ export default function NuevoProductoDeProveedor() {
     return Object.keys(newErrors).length === 0
   }
 
+  // Helper function to check if a product from context was modified
+  const isProductModified = (product) => {
+    // Find the original product in the context
+    const originalProduct = productData?.products?.find((p) => p.id === product.id)
+    if (!originalProduct) return true // If not found, consider it modified
+
+    // Check if key fields have changed
+    const fieldsToCheck = [
+      'product_name',
+      'provider_code',
+      'group_id',
+      'description',
+      'cost',
+      'sale_price',
+      'original_price',
+      'tax',
+      'discount',
+      'comments',
+      'brand_id'
+    ]
+
+    for (const field of fieldsToCheck) {
+      if (product[field]?.toString() !== originalProduct[field]?.toString()) {
+        return true
+      }
+    }
+
+    // Check if variants/stock have changed (comprehensive check)
+    const originalQuantity = originalProduct.quantity || 0
+    const currentQuantity =
+      product.talles?.reduce(
+        (total, talle) =>
+          total +
+          talle.colores.reduce(
+            (talleTotal, color) => talleTotal + (parseInt(color.cantidad) || 0),
+            0
+          ),
+        0
+      ) || 0
+
+    // Check if quantities changed
+    if (originalQuantity !== currentQuantity) {
+      return true
+    }
+
+    // Check if sizes and colors have changed
+    const originalVariants = originalProduct.stock_variants || []
+    const currentVariants = product.talles || []
+
+    // Compare number of variants
+    if (originalVariants.length !== currentVariants.length) {
+      return true
+    }
+
+    // Create normalized arrays for comparison
+    const originalSizeColors = originalVariants
+      .map((variant) => ({
+        size: variant.size_name || '',
+        color: variant.color_name || '',
+        quantity: variant.quantity || 0
+      }))
+      .sort((a, b) => `${a.size}-${a.color}`.localeCompare(`${b.size}-${b.color}`))
+
+    const currentSizeColors = []
+    currentVariants.forEach((talle) => {
+      talle.colores.forEach((color) => {
+        currentSizeColors.push({
+          size: talle.talle || '',
+          color: color.color || '',
+          quantity: parseInt(color.cantidad) || 0
+        })
+      })
+    })
+    currentSizeColors.sort((a, b) => `${a.size}-${a.color}`.localeCompare(`${b.size}-${b.color}`))
+
+    // Compare each variant
+    for (let i = 0; i < originalSizeColors.length; i++) {
+      const original = originalSizeColors[i]
+      const current = currentSizeColors[i]
+
+      if (
+        !current ||
+        original.size !== current.size ||
+        original.color !== current.color ||
+        original.quantity !== current.quantity
+      ) {
+        console.log(`🔄 Product ${product.id} has size/color changes:`, {
+          original: originalSizeColors,
+          current: currentSizeColors
+        })
+        return true
+      }
+    }
+
+    return false
+  }
+
+  // Helper function to update product in context
+  const updateProductInContext = (productId, updatedData) => {
+    console.log(`🔄 Updating product ${productId} in context with data:`, updatedData)
+
+    // Update the product data in the context
+    setProductData((prev) => {
+      const updatedProducts = prev.products.map((product) => {
+        if (product.id === productId) {
+          const updatedProduct = {
+            ...product,
+            ...updatedData,
+            id: productId, // Ensure ID is preserved
+            product_id: productId, // Also preserve product_id
+            // Update the cost_price and sale_price to match the context format
+            cost_price: updatedData.cost || product.cost_price,
+            sale_price: updatedData.sale_price || product.sale_price,
+            // Update quantity based on stock_variants
+            quantity: updatedData.initial_quantity || product.quantity,
+            // Handle image properly - keep the full data URL format for display
+            product_image: updatedData.product_image || product.product_image,
+            // Recalculate subtotal
+            subtotal:
+              (parseFloat(updatedData.cost) || parseFloat(product.cost_price) || 0) *
+              (updatedData.initial_quantity || product.quantity || 0)
+          }
+          console.log(`✅ Updated product in context:`, {
+            ...updatedProduct,
+            product_image: updatedProduct.product_image
+              ? `${updatedProduct.product_image.substring(0, 50)}...`
+              : 'none'
+          })
+          return updatedProduct
+        }
+        return product
+      })
+
+      // Recalculate total
+      const newTotal = updatedProducts.reduce((acc, product) => acc + (product.subtotal || 0), 0)
+
+      console.log(`📊 Updated context total:`, newTotal)
+
+      return {
+        ...prev,
+        products: updatedProducts,
+        total: newTotal
+      }
+    })
+  }
+
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
     let allValid = true
@@ -484,9 +711,11 @@ export default function NuevoProductoDeProveedor() {
 
     setIsSubmitting(true)
     try {
-      // Only add products that are NOT from context (new products only)
+      // Separate new products from updated products
       const newProducts = productos.filter((product) => !product._isFromContext)
+      const updatedProducts = productos.filter((product) => product._isFromContext)
 
+      // Handle new products
       newProducts.forEach((product, index) => {
         const productData = prepareProductData(product)
         console.log(`🔍 DATOS DEL PRODUCTO NUEVO ${index + 1} PREPARADOS:`, productData)
@@ -500,10 +729,31 @@ export default function NuevoProductoDeProveedor() {
         console.log(`✅ Producto nuevo ${index + 1} guardado exitosamente:`, productData)
       })
 
-      if (newProducts.length > 0) {
-        toast.success(`${newProducts.length} producto(s) nuevo(s) agregado(s) a la compra`)
+      // Handle updated products (products from context that were modified)
+      updatedProducts.forEach((product, index) => {
+        // Check if the product was actually modified
+        if (isProductModified(product)) {
+          const productData = prepareProductData(product)
+          console.log(`🔍 DATOS DEL PRODUCTO MODIFICADO ${index + 1} PREPARADOS:`, productData)
+          console.log(`🔍 FORM PRODUCT TALLES ${index + 1}:`, product.talles)
+          console.log(
+            `🔍 ORIGINAL PRODUCT FROM CONTEXT ${index + 1}:`,
+            productData?.products?.find((p) => p.id === product.id)
+          )
+          console.log(`🔍 STOCK VARIANTS MODIFICADO ${index + 1}:`, productData.stock_variants)
+
+          // Update the product in the context
+          updateProductInContext(product.id, productData)
+          console.log(`✅ Producto ${index + 1} actualizado exitosamente:`, productData)
+        }
+      })
+
+      const totalProcessed = newProducts.length + updatedProducts.filter(isProductModified).length
+
+      if (totalProcessed > 0) {
+        toast.success(`${totalProcessed} producto(s) procesado(s) exitosamente`)
       } else {
-        toast.info('No hay productos nuevos para agregar')
+        toast('No hay cambios para guardar', { icon: 'ℹ️' })
       }
 
       setLocation(`/agregandoCompraProveedor?id=${providerId}`)
@@ -640,7 +890,6 @@ export default function NuevoProductoDeProveedor() {
           </div>
         </div>
       </div>
-      {/* Container sticky que contiene las stats */}
       <div className="bg-base-100/95 sticky top-0 z-10 border-b border-base-300 p-4 shadow-lg backdrop-blur-lg">
         <div className="card card-body">
           <div className="grid grid-cols-3">
@@ -653,10 +902,6 @@ export default function NuevoProductoDeProveedor() {
               <label htmlFor="" className="text-xl font-bold">
                 Total artículos: {productos.length}
               </label>
-              <div className="text-base-content/70 text-sm">
-                {productos.filter((p) => p._isFromContext).length} ya en compra +{' '}
-                {productos.filter((p) => !p._isFromContext).length} nuevos
-              </div>
             </div>
             <div>
               <label htmlFor="" className="text-xl font-bold">
@@ -749,17 +994,25 @@ export default function NuevoProductoDeProveedor() {
                             key={prod.id}
                             className={`card-compact card w-full shadow-md ${
                               prod._isFromContext
-                                ? 'bg-success/10 border-success/30 border-2'
+                                ? isProductModified(prod)
+                                  ? 'bg-warning/10 border-warning/30 border-2'
+                                  : 'bg-success/10 border-success/30 border-2'
                                 : 'bg-base-200'
                             }`}
                           >
                             <div className="card-body">
                               {prod._isFromContext && (
-                                <div className="mb-2 flex items-center gap-2">
+                                <div className="mb-2 flex flex-wrap items-center gap-2">
                                   <div className="badge badge-success gap-2">
                                     <Boxes className="h-3 w-3" />
                                     Ya agregado a la compra
                                   </div>
+                                  {isProductModified(prod) && (
+                                    <div className="badge badge-warning gap-2">
+                                      <span className="text-warning-content">●</span>
+                                      Modificado
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               <div className="flex flex-col gap-6 md:flex-row">
@@ -783,8 +1036,15 @@ export default function NuevoProductoDeProveedor() {
                                         Artículo #{idx + 1}
                                       </div>
                                       {prod._isFromContext && (
-                                        <div className="text-xs font-medium text-success">
-                                          ✓ Guardado en compra
+                                        <div className="flex items-center gap-2">
+                                          <div className="text-xs font-medium text-success">
+                                            ✓ Guardado en compra
+                                          </div>
+                                          {isProductModified(prod) && (
+                                            <div className="text-xs font-medium text-warning">
+                                              ● Modificado
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -872,16 +1132,18 @@ export default function NuevoProductoDeProveedor() {
                           >
                             <div className="mb-4 flex items-center justify-between">
                               <h2 className="card-title text-2xl">Artículo {idx + 1}</h2>
-                              {productos.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => eliminarProducto(idx)}
-                                  className="btn btn-error"
-                                  title="Eliminar este productos"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() => eliminarProducto(idx)}
+                                className="btn btn-error"
+                                title={
+                                  productos.length === 1
+                                    ? 'Reiniciar este producto'
+                                    : 'Eliminar este producto'
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                             <div className="card border border-base-300 bg-base-100 shadow-xl">
                               <div className="card-body">
@@ -1674,7 +1936,24 @@ export default function NuevoProductoDeProveedor() {
                 ) : (
                   <Save className="h-5 w-5" />
                 )}
-                {isSubmitting ? 'Guardando...' : 'Guardar'}
+                {isSubmitting
+                  ? 'Guardando...'
+                  : (() => {
+                      const newProducts = productos.filter((p) => !p._isFromContext).length
+                      const modifiedProducts = productos.filter(
+                        (p) => p._isFromContext && isProductModified(p)
+                      ).length
+
+                      if (newProducts > 0 && modifiedProducts > 0) {
+                        return `Guardar ${newProducts} nuevo(s) y ${modifiedProducts} modificado(s)`
+                      } else if (newProducts > 0) {
+                        return `Guardar ${newProducts} producto(s) nuevo(s)`
+                      } else if (modifiedProducts > 0) {
+                        return `Actualizar ${modifiedProducts} producto(s)`
+                      } else {
+                        return 'Guardar cambios'
+                      }
+                    })()}
               </button>
             </div>
           </div>

@@ -39,7 +39,10 @@ export const ProductProvider = ({ children }) => {
       brand_id: product.brand_id,
       group_id: product.group_id,
       stock_variants: product.stock_variants || [],
-      provider_id: product.provider_id
+      provider_id: product.provider_id,
+      product_image: product.product_image || null, // Add the image field
+      description: product.description || '',
+      comments: product.comments || ''
     }
 
     setProductData((prev) => ({
