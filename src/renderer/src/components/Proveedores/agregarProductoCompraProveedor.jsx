@@ -43,6 +43,7 @@ export default function NuevoProductoDeProveedor() {
   const currentUser = getCurrentUser()
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
+  const { addProduct, productData } = useProductContext()
 
   useEffect(() => {
     if (providerId) {
@@ -124,7 +125,9 @@ export default function NuevoProductoDeProveedor() {
 
   // Initialize productos with context products + one new empty product
   const initializeProducts = () => {
-    const contextProductsInFormFormat = transformContextProductsToFormFormat(productData.products)
+    const contextProductsInFormFormat = transformContextProductsToFormFormat(
+      productData?.products || []
+    )
     return contextProductsInFormFormat.length > 0
       ? [...contextProductsInFormFormat, getInitialProductState()]
       : [getInitialProductState()]
@@ -467,8 +470,6 @@ export default function NuevoProductoDeProveedor() {
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-
-  const { addProduct, productData } = useProductContext()
 
   const handleSubmitGuardar = async (e) => {
     e.preventDefault()
