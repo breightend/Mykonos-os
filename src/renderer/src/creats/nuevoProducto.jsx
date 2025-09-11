@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { ArrowLeft, LoaderCircle, Save, Trash2, PackagePlus, Menu } from 'lucide-react'
+import {
+  ArrowLeft,
+  LoaderCircle,
+  Save,
+  Trash2,
+  PackagePlus,
+  Menu,
+  Lock,
+  Unlock
+} from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from '../contexts/SessionContext'
 import { useSettings } from '../contexts/settingsContext'
@@ -18,7 +27,6 @@ import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 import ColorSelect from '../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 
-//BUG: El color ahora tiene bug.
 //TODO: agregar cargar por grupo y por marca
 export default function NuevoProducto() {
   pinwheel.register()
@@ -453,7 +461,7 @@ export default function NuevoProducto() {
     let imageToSend = null
     if (productImage) {
       if (productImage.startsWith('data:')) {
-        imageToSend = productImage.split(',')[1] 
+        imageToSend = productImage.split(',')[1]
         console.log('🖼️ Preparando imagen para envío:')
         console.log('  - Imagen original:', productImage.substring(0, 100) + '...')
         console.log('  - Tipo MIME detectado:', productImage.split(',')[0])
@@ -667,6 +675,16 @@ export default function NuevoProducto() {
       setIsSubmitting(false)
     }
   }
+  const [lockProvider, setLockProvider] = useState(false)
+  const [lockGroup, setLockGroup] = useState(false)
+
+  const handleLockProviders = () => {
+    setLockProvider(!lockProvider)
+  }
+
+  const handleLockGroup = () => {
+    setLockGroup(!lockGroup)
+  }
 
   if (loadingData) {
     return (
@@ -853,6 +871,23 @@ export default function NuevoProducto() {
                 <label className="label">
                   <span className="label-text font-semibold">Grupo de Producto</span>
                   <span className="label-text-alt text-error">*</span>
+                  {lockGroup ? (
+                    <>
+                      <Lock
+                        onClick={() => handleLockGroup()}
+                        className="tooltip ml-2 inline-block h-4 w-4 text-error hover:scale-150 hover:cursor-pointer"
+                        data-tip="No guardar grupo"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Unlock
+                        onClick={() => handleLockGroup()}
+                        className="tooltip ml-2 inline-block h-4 w-4 text-success hover:scale-150 hover:cursor-pointer"
+                        data-tip="No guardar grupo"
+                      />
+                    </>
+                  )}
                 </label>
                 <div className="flex gap-2">
                   <GroupTreeSelector
@@ -886,6 +921,23 @@ export default function NuevoProducto() {
                     <span className="label-text font-semibold">Proveedor</span>
                     <span className="label-text-alt text-error">*</span>
                   </label>
+                  {lockProvider ? (
+                    <>
+                      <Lock
+                        onClick={() => handleLockProviders()}
+                        className="tooltip ml-2 inline-block h-4 w-4 text-error hover:scale-150 hover:cursor-pointer"
+                        data-tip="No guardar grupo"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Unlock
+                        onClick={() => handleLockProviders()}
+                        className="tooltip ml-2 inline-block h-4 w-4 text-success hover:scale-150 hover:cursor-pointer"
+                        data-tip="No guardar grupo"
+                      />
+                    </>
+                  )}
                   <select
                     value={selectedProvider}
                     onChange={handleProviderChange}
@@ -1274,14 +1326,15 @@ export default function NuevoProducto() {
                             >
                               <div className="flex-1">
                                 <ColorSelect
-                                  colors={
+                                  allColors={colors}
+                                  availableColors={
                                     coloresDisponiblesPorTalle[talle.talle] !== undefined
                                       ? colors.filter((colorItem) =>
                                           coloresDisponiblesPorTalle[talle.talle]?.includes(
                                             colorItem.color_name
                                           )
                                         )
-                                      : []
+                                      : colors
                                   }
                                   value={color.color || ''}
                                   onChange={(selectedColorName) => {
@@ -1330,7 +1383,7 @@ export default function NuevoProducto() {
                                 <div className="tooltip" data-tip="Eliminar color">
                                   <button
                                     type="button"
-                                    className="btn btn-error "
+                                    className="btn btn-error"
                                     onClick={() => handleDeleteColor(talleIndex, colorIndex)}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -1433,7 +1486,6 @@ export default function NuevoProducto() {
 
                 {/* Botones de acción */}
                 <div className="flex flex-col gap-3">
-                  {/* Mensajes de estado */}
                   {errors.submit && (
                     <div className="alert alert-error">
                       <svg
