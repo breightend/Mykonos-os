@@ -68,7 +68,6 @@ export default function PrintBarcodeModal({
     }
   }
 
-  // Guardar configuraciones
   const savePrintSettings = async () => {
     try {
       setSettingsSaving(true)

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { pinwheel } from 'ldrs'
 import inventoryService from '../../services/inventory/inventoryService'
 import { salesService } from '../../services/salesService'
@@ -24,16 +24,15 @@ import {
 import { useSession } from '../../contexts/SessionContext'
 
 pinwheel.register()
-//TODO: hacer que ande! Y que se conecten entre sucursales
 export default function MoveInventory() {
-  const [storageList, setStorageList] = useState([]) // Lista de sucursales
-  const [selectedVariants, setSelectedVariants] = useState([]) // Variantes seleccionadas para mover
-  const [selectedDestination, setSelectedDestination] = useState('') // Sucursal seleccionada
+  const [storageList, setStorageList] = useState([])
+  const [selectedVariants, setSelectedVariants] = useState([])
+  const [selectedDestination, setSelectedDestination] = useState('')
   const [, setLocation] = useLocation()
   const [loading, setLoading] = useState(true)
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [error, setError] = useState(null)
-  const [step, setStep] = useState(1) // 1: Seleccionar productos, 2: Seleccionar destino
+  const [step, setStep] = useState(1)
   const [showPendingShipments, setShowPendingShipments] = useState(false)
   const [showSentShipments, setShowSentShipments] = useState(false)
   const [pendingShipments, setPendingShipments] = useState([])
@@ -41,27 +40,25 @@ export default function MoveInventory() {
   const [loadingShipments, setLoadingShipments] = useState(false)
   const [barcodeInput, setBarcodeInput] = useState('')
   const [searchingBarcode, setSearchingBarcode] = useState(false)
-  const [availableVariants, setAvailableVariants] = useState([]) // Variantes disponibles del producto actual
+  const [availableVariants, setAvailableVariants] = useState([])
 
-  // Estados para el modal de productos
+  // Ref para prevenir procesamientos duplicados
+  const lastProcessedRef = useRef({ barcode: '', executionId: '', timestamp: 0, processed: false })
+
   const [showProductModal, setShowProductModal] = useState(false)
   const [selectedShipmentProducts, setSelectedShipmentProducts] = useState([])
   const [selectedShipmentInfo, setSelectedShipmentInfo] = useState(null)
 
-  // Estado para manejar filas expandidas en envíos realizados
   const [expandedSentShipments, setExpandedSentShipments] = useState(new Set())
 
   const { getCurrentStorage } = useSession()
   const currentStorage = getCurrentStorage()
 
-  // Función para limpiar y validar el color hex (similar a ProductDetailModal)
   const getValidHexColor = (hexValue) => {
-    if (!hexValue) return '#6B7280' // fallback gris
+    if (!hexValue) return '#6B7280'
 
-    // Limpiar espacios y caracteres invisibles
     const cleanHex = hexValue.toString().trim()
 
-    // Verificar si es un formato hex válido
     const hexRegex = /^#[0-9A-Fa-f]{6}$/
 
     if (hexRegex.test(cleanHex)) {
@@ -82,9 +79,42 @@ export default function MoveInventory() {
   const searchByBarcode = async (barcode) => {
     if (!barcode.trim()) return
 
+    // Generar ID único para esta ejecución
+    const executionId = Date.now() + Math.random()
+    const currentTime = Date.now()
+
+    console.log(`🆔 Iniciando búsqueda ${executionId} para código: ${barcode}`)
+
+    // Verificar si es un procesamiento duplicado reciente (menos de 1 segundo)
+    if (
+      lastProcessedRef.current.barcode === barcode &&
+      lastProcessedRef.current.executionId &&
+      currentTime - lastProcessedRef.current.timestamp < 1000
+    ) {
+      console.log(
+        `🚫 Procesamiento duplicado detectado para ${barcode}, ignorando ejecución ${executionId}`
+      )
+      return
+    }
+
+    // Prevenir múltiples ejecuciones simultáneas
+    if (searchingBarcode) {
+      console.log(`🔄 Ya hay una búsqueda en progreso, ignorando ejecución ${executionId}`)
+      return
+    }
+
+    // Marcar como procesado (pero aún no processed)
+    lastProcessedRef.current = {
+      barcode: barcode,
+      executionId: executionId,
+      timestamp: currentTime,
+      processed: false
+    }
+
     try {
       setSearchingBarcode(true)
-      console.log('🔍 Buscando por código de barras:', barcode)
+      setBarcodeInput('') // Limpiar inmediatamente para prevenir re-ejecuciones
+      console.log(`🔍 Ejecutando búsqueda ${executionId} por código de barras:`, barcode)
 
       const response = await salesService.getProductByVariantBarcode(barcode)
 
@@ -93,20 +123,84 @@ export default function MoveInventory() {
 
         // Verificar que la variante pertenece a la sucursal actual
         if (variantData.sucursal_id !== currentStorage?.id) {
-          alert(
-            `❌ Esta variante pertenece a la sucursal "${variantData.sucursal_nombre}", no a la actual`
+          toast.error(
+            `Esta variante pertenece a "${variantData.sucursal_nombre}", no a la actual`,
+            {
+              duration: 3000,
+              position: 'top-center'
+            }
           )
           return
         }
 
         // Verificar si ya está seleccionada
-        const isAlreadySelected = selectedVariants.find(
+        const existingVariantIndex = selectedVariants.findIndex(
           (v) => v.variant_id === variantData.variant_id
         )
 
-        if (isAlreadySelected) {
-          alert('⚠️ Esta variante ya está seleccionada')
-          return
+        if (existingVariantIndex !== -1) {
+          // Si ya existe, incrementar la cantidad en 1
+          console.log(
+            `🔄 Variante existente encontrada, incrementando cantidad para ejecución ${executionId}...`
+          )
+
+          // Verificar si ya procesamos este incremento para esta ejecución
+          if (
+            lastProcessedRef.current.executionId === executionId &&
+            lastProcessedRef.current.processed
+          ) {
+            console.log(`🚫 Incremento ya procesado para ejecución ${executionId}, saltando...`)
+            return
+          }
+
+          // Marcar como procesado para esta ejecución
+          lastProcessedRef.current.processed = true
+
+          // Calcular la nueva cantidad directamente sin usar setSelectedVariants callback múltiple
+          const currentVariant = selectedVariants[existingVariantIndex]
+          const currentQuantity = currentVariant.move_quantity
+          const maxStock = currentVariant.available_stock
+
+          console.log(`🔍 Debug - Cantidad actual: ${currentQuantity}, Stock máximo: ${maxStock}`)
+
+          if (currentQuantity < maxStock) {
+            const newQuantity = currentQuantity + 1
+
+            // Crear el array actualizado de una sola vez
+            const updatedVariants = [...selectedVariants]
+            updatedVariants[existingVariantIndex] = {
+              ...updatedVariants[existingVariantIndex],
+              move_quantity: newQuantity
+            }
+
+            // Actualizar el estado de una sola vez
+            setSelectedVariants(updatedVariants)
+
+            console.log(
+              `✅ Cantidad incrementada para ${variantData.product_name} (${variantData.size_name}-${variantData.color_name}): ${currentQuantity} → ${newQuantity}`
+            )
+
+            // Mostrar toast
+            setTimeout(() => {
+              toast.success(`Cantidad: ${newQuantity}`, {
+                duration: 1000,
+                position: 'top-center'
+              })
+            }, 100)
+          } else {
+            console.log(
+              `⚠️ Stock máximo alcanzado para ${variantData.product_name} (${variantData.size_name}-${variantData.color_name}): ${maxStock}`
+            )
+            setTimeout(() => {
+              toast.error(`Stock máximo: ${maxStock}`, {
+                duration: 1500,
+                position: 'top-center'
+              })
+            }, 100)
+          }
+
+          console.log(`🏁 Finalizando procesamiento de incremento para ejecución ${executionId}`)
+          return // Exit early after updating quantity
         }
 
         // Agregar a variantes seleccionadas
@@ -126,15 +220,27 @@ export default function MoveInventory() {
         }
 
         setSelectedVariants((prev) => [...prev, newVariant])
-        setBarcodeInput('')
         console.log('✅ Variante agregada:', newVariant)
+        toast.success(
+          `Agregado: ${variantData.product_name} (${variantData.size_name}-${variantData.color_name})`,
+          {
+            duration: 1500,
+            position: 'top-center'
+          }
+        )
       }
     } catch (error) {
       console.error('❌ Error buscando por código de barras:', error)
       if (error.message.includes('404')) {
-        alert('❌ Producto no encontrado o sin stock disponible')
+        toast.error('Producto no encontrado o sin stock disponible', {
+          duration: 2500,
+          position: 'top-center'
+        })
       } else {
-        alert('❌ Error al buscar el producto: ' + error.message)
+        toast.error('Error al buscar el producto: ' + error.message, {
+          duration: 3000,
+          position: 'top-center'
+        })
       }
     } finally {
       setSearchingBarcode(false)
@@ -146,9 +252,9 @@ export default function MoveInventory() {
     const value = e.target.value
     setBarcodeInput(value)
 
-    // Auto-buscar cuando se presiona Enter o se completa un código típico
-    if (e.key === 'Enter' || (value.length >= 10 && value.startsWith('VAR'))) {
-      searchByBarcode(value)
+    // Auto-buscar solo cuando se presiona Enter
+    if (e.key === 'Enter' && value.trim()) {
+      searchByBarcode(value.trim())
     }
   }
 
