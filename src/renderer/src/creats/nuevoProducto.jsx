@@ -8,7 +8,8 @@ import {
   PackagePlus,
   Menu,
   Lock,
-  Unlock
+  Unlock,
+  Printer
 } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from '../contexts/SessionContext'
@@ -25,9 +26,9 @@ import { fetchFamilyProductsTree } from '../services/products/familyService'
 import GroupTreeSelector from '../components/GroupTreeSelector'
 import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 import ColorSelect from '../components/ColorSelect'
+import PrintBarcodeModal from '../modals/modalsInventory/printBarcodeModal'
 import { pinwheel } from 'ldrs'
 
-//TODO: agregar cargar por grupo y por marca
 export default function NuevoProducto() {
   pinwheel.register()
   // Contexto de sesión para obtener el storage actual
@@ -66,6 +67,13 @@ export default function NuevoProducto() {
   const [errors, setErrors] = useState({})
   const [showGroupTreeModal, setShowGroupTreeModal] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  // Estados para impresión de códigos de barras
+  const [showPrintBarcodeModal, setShowPrintBarcodeModal] = useState(false)
+  const [lastCreatedProductId, setLastCreatedProductId] = useState(null)
+  const [showPrintPrompt, setShowPrintPrompt] = useState(false)
+  const [submitAction, setSubmitAction] = useState('') // 'save' or 'addAnother'
+  const [createdVariants, setCreatedVariants] = useState([]) // Variantes creadas con sus cantidades
 
   // Función para refrescar los datos después de crear nuevos talles/colores
   const refreshData = () => {
@@ -120,7 +128,6 @@ export default function NuevoProducto() {
           setGrupoTree([])
         }
 
-        // Configurar colores disponibles por talle SOLO si ambos están disponibles
         if (
           sizesResponse.status === 'fulfilled' &&
           sizesResponse.value &&
@@ -150,7 +157,6 @@ export default function NuevoProducto() {
     fetchData()
   }, [refreshTrigger])
 
-  // Sincronizar el estado local con la configuración global
   useEffect(() => {
     setUseAutoCalculation(settings.autoCalculatePrice)
   }, [settings.autoCalculatePrice])
@@ -553,7 +559,6 @@ export default function NuevoProducto() {
 
   const clearForm = () => {
     setProductName('')
-    setTipo('')
     setCost('')
     setSalePrice('')
     setComments('')
@@ -570,6 +575,14 @@ export default function NuevoProducto() {
         coloresDisponibles[talle.size_name] = colors.map((color) => color.color_name)
       })
       setColoresDisponiblesPorTalle(coloresDisponibles)
+    }
+    if (!lockProvider) {
+      setSelectedProvider('')
+      setBrandByProvider([])
+      setMarca('')
+    }
+    if (!lockGroup) {
+      setTipo('')
     }
   }
 
@@ -613,8 +626,22 @@ export default function NuevoProducto() {
       if (productImage && response.image_id) {
         console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
       }
+      setLastCreatedProductId(response.product_id)
 
-      setLocation('/inventario')
+      // Guardar las variantes creadas con sus cantidades para la impresión
+      console.log('🎯 Variantes creadas para impresión (Guardar):', productData.stock_variants)
+      setCreatedVariants(productData.stock_variants)
+
+      // Preguntar al usuario si quiere imprimir códigos de barras
+      if (response.product_id && productData.stock_variants.length > 0) {
+        setSubmitAction('save')
+        setShowPrintPrompt(true)
+      } else {
+        // Si no hay variantes, ir directamente al inventario
+        setTimeout(() => {
+          setLocation('/inventario')
+        }, 500)
+      }
     } catch (error) {
       console.error('Error al guardar el producto:', error)
       setErrors({ submit: 'Error al guardar el producto. Intente nuevamente.' })
@@ -660,14 +687,26 @@ export default function NuevoProducto() {
         console.log('✅ Imagen subida exitosamente con ID:', response.image_id)
       }
 
-      clearForm()
+      // Guardar el ID del producto creado para impresión de códigos de barras
+      setLastCreatedProductId(response.product_id)
 
-      const successMessage = productImage
-        ? 'Producto e imagen agregados exitosamente. Puede agregar otro.'
-        : 'Producto agregado exitosamente. Puede agregar otro.'
+      // Guardar las variantes creadas con sus cantidades para la impresión
+      console.log('🎯 Variantes creadas para impresión (Agregar):', productData.stock_variants)
+      setCreatedVariants(productData.stock_variants)
 
-      setErrors({ success: successMessage })
-      setTimeout(() => setErrors({}), 3000)
+      // Preguntar al usuario si quiere imprimir códigos de barras
+      if (response.product_id && productData.stock_variants.length > 0) {
+        setSubmitAction('addAnother')
+        setShowPrintPrompt(true)
+      } else {
+        // Si no hay variantes, limpiar el formulario directamente
+        clearForm()
+        const successMessage = productImage
+          ? 'Producto e imagen agregados exitosamente. Puede agregar otro.'
+          : 'Producto agregado exitosamente. Puede agregar otro.'
+        setErrors({ success: successMessage })
+        setTimeout(() => setErrors({}), 3000)
+      }
     } catch (error) {
       console.error('Error al agregar el producto:', error)
       setErrors({ submit: 'Error al agregar el producto. Intente nuevamente.' })
@@ -684,6 +723,56 @@ export default function NuevoProducto() {
 
   const handleLockGroup = () => {
     setLockGroup(!lockGroup)
+  }
+
+  // Handlers para impresión de códigos de barras
+  const handlePrintBarcodes = () => {
+    setShowPrintPrompt(false)
+    setShowPrintBarcodeModal(true)
+  }
+
+  const handleSkipPrint = () => {
+    setShowPrintPrompt(false)
+    setLastCreatedProductId(null)
+    setCreatedVariants([])
+
+    if (submitAction === 'save') {
+      // Para "Guardar y Finalizar", ir al inventario
+      setTimeout(() => {
+        setLocation('/inventario')
+      }, 500)
+    } else {
+      // Para "Agregar Otra Prenda", limpiar formulario
+      clearForm()
+      const successMessage = productImage
+        ? 'Producto e imagen agregados exitosamente. Puede agregar otro.'
+        : 'Producto agregado exitosamente. Puede agregar otro.'
+      setErrors({ success: successMessage })
+      setTimeout(() => setErrors({}), 3000)
+    }
+
+    setSubmitAction('')
+  }
+
+  const handleClosePrintModal = () => {
+    setShowPrintBarcodeModal(false)
+    setLastCreatedProductId(null)
+    setCreatedVariants([])
+
+    if (submitAction === 'save') {
+      // Para "Guardar y Finalizar", ir al inventario
+      setTimeout(() => {
+        setLocation('/inventario')
+      }, 500)
+    } else {
+      // Para "Agregar Otra Prenda", limpiar formulario
+      clearForm()
+      const successMessage = 'Producto agregado exitosamente. Puede agregar otro.'
+      setErrors({ success: successMessage })
+      setTimeout(() => setErrors({}), 3000)
+    }
+
+    setSubmitAction('')
   }
 
   if (loadingData) {
@@ -1565,6 +1654,41 @@ export default function NuevoProducto() {
         groups={grupoTree}
         isOpen={showGroupTreeModal}
         onClose={() => setShowGroupTreeModal(false)}
+      />
+
+      {/* Modal de pregunta para imprimir códigos de barras */}
+      {showPrintPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md rounded-lg bg-base-100 p-6 shadow-xl">
+            <div className="text-center">
+              <div className="bg-success/20 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+                <Printer className="h-8 w-8 text-success" />
+              </div>
+              <h3 className="mb-2 text-lg font-bold">¡Producto creado exitosamente!</h3>
+              <p className="mb-6 text-sm text-gray-600">
+                ¿Deseas imprimir códigos de barras para las variantes de este producto?
+              </p>
+              <div className="flex gap-3">
+                <button onClick={handleSkipPrint} className="btn btn-ghost flex-1">
+                  {submitAction === 'save' ? 'Ir al inventario' : 'Continuar sin imprimir'}
+                </button>
+                <button onClick={handlePrintBarcodes} className="btn btn-primary flex-1 gap-2">
+                  <Printer className="h-4 w-4" />
+                  Imprimir códigos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de impresión de códigos de barras */}
+      <PrintBarcodeModal
+        isOpen={showPrintBarcodeModal}
+        onClose={handleClosePrintModal}
+        productId={lastCreatedProductId}
+        currentStorageId={currentStorage?.id}
+        initialVariantQuantities={createdVariants}
       />
     </div>
   )

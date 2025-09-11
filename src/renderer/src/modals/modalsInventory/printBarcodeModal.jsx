@@ -9,7 +9,13 @@ import '../../assets/modal-improvements.css'
 
 pinwheel.register()
 
-export default function PrintBarcodeModal({ isOpen, onClose, productId, currentStorageId }) {
+export default function PrintBarcodeModal({
+  isOpen,
+  onClose,
+  productId,
+  currentStorageId,
+  initialVariantQuantities = []
+}) {
   const [product, setProduct] = useState(null)
   const [variants, setVariants] = useState([])
   const [loading, setLoading] = useState(false)
@@ -194,16 +200,30 @@ export default function PrintBarcodeModal({ isOpen, onClose, productId, currentS
         setVariants(variantsList)
 
         console.log(`✅ Cargadas ${variantsList.length} variantes de la sucursal actual`)
+        console.log('🎯 Cantidades iniciales recibidas:', initialVariantQuantities)
 
         if (variantsList.length === 0) {
           setError('No hay variantes con stock disponible en esta sucursal')
         }
 
-        // Inicializar cantidades en 0 para cada variante
+        // Inicializar cantidades
         const initialQuantities = {}
         variantsList.forEach((variant) => {
-          initialQuantities[variant.id] = 0
+          // Buscar si hay una cantidad inicial para esta variante
+          const initialVariant = initialVariantQuantities.find(
+            (initial) =>
+              initial.size_name === variant.size_name && initial.color_name === variant.color_name
+          )
+          // Si hay cantidad inicial, usarla; de lo contrario, usar 0
+          initialQuantities[variant.id] = initialVariant ? initialVariant.quantity : 0
+
+          if (initialVariant) {
+            console.log(
+              `🎯 Variante encontrada: ${variant.size_name} - ${variant.color_name} = ${initialVariant.quantity}`
+            )
+          }
         })
+        console.log('🎯 Cantidades finales aplicadas:', initialQuantities)
         setQuantities(initialQuantities)
 
         // Establecer primera variante como vista previa por defecto
