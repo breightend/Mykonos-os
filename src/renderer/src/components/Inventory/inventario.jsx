@@ -1,6 +1,16 @@
-import { PackagePlus, Search, Edit, Boxes, Truck, ListPlus, Printer, Loader } from 'lucide-react'
+import {
+  PackagePlus,
+  Search,
+  Edit,
+  Boxes,
+  Truck,
+  ListPlus,
+  Printer,
+  Loader,
+  Scan
+} from 'lucide-react'
 import { useLocation } from 'wouter'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
@@ -10,7 +20,9 @@ import PrintBarcodeModal from '../../modals/modalsInventory/printBarcodeModal'
 import ModalColoresYTalles from '../../modals/modalsProduct/modalColoresYTallesInventario'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { fetchSucursales } from '../../services/sucursales/sucursalesService'
+import { salesService } from '../../services/salesService'
 import { useSession } from '../../contexts/SessionContext'
+import toast from 'react-hot-toast'
 import '../../assets/modal-improvements.css'
 pinwheel.register()
 
@@ -22,6 +34,16 @@ export default function Inventario() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editedData, setEditedData] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
+
+  // Estados para búsqueda por código de barras
+  const [barcodeSearch, setBarcodeSearch] = useState('')
+  const [searchingBarcode, setSearchingBarcode] = useState(false)
+  const [highlightedProductId, setHighlightedProductId] = useState(null)
+  const [barcodeFilteredProductId, setBarcodeFilteredProductId] = useState(null)
+
+  // Refs para funcionalidad de barcode
+  const barcodeInputRef = useRef(null)
+  const autoSearchTimeoutRef = useRef(null)
 
   // Nuevo estado para el modal de detalles
   const [productDetailModalOpen, setProductDetailModalOpen] = useState(false)
@@ -127,6 +149,15 @@ export default function Inventario() {
     }
   }, [selectedStorage, loadInventoryData, currentStorage?.id, storageList.length])
 
+  // Cleanup timeout cuando el componente se desmonta
+  useEffect(() => {
+    return () => {
+      if (autoSearchTimeoutRef.current) {
+        clearTimeout(autoSearchTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const getAllGroupIds = (groupData, targetGroupId) => {
     if (!groupData) return [targetGroupId]
 
@@ -151,6 +182,11 @@ export default function Inventario() {
   }
 
   const filteredData = inventoryData.filter((row) => {
+    // Si hay un producto filtrado por código de barras, mostrar solo ese
+    if (barcodeFilteredProductId !== null) {
+      return row.id === barcodeFilteredProductId
+    }
+
     let matchesSearch = true
     if (searchTerm) {
       matchesSearch =
@@ -209,6 +245,8 @@ export default function Inventario() {
   const handleGroupSelect = (groupId, groupName, groupData = null) => {
     setSelectedGroup(groupId ? groupId.toString() : '')
     setSelectedGroupData(groupData)
+    // Limpiar filtro de código de barras al seleccionar grupo
+    setBarcodeFilteredProductId(null)
   }
 
   const handleMoveInventoryClick = () => {
@@ -219,6 +257,119 @@ export default function Inventario() {
     if (selectedRow) {
       setSelectedProductForPrint(selectedRow)
       setPrintBarcodeModalOpen(true)
+    }
+  }
+
+  // Función para buscar productos por código de barras
+  const searchByBarcode = async (barcode) => {
+    if (!barcode.trim()) return
+
+    try {
+      setSearchingBarcode(true)
+      setBarcodeSearch('') // Limpiar inmediatamente para próximo escaneo
+      console.log('🔍 Buscando producto por código de barras:', barcode)
+
+      const response = await salesService.getProductByVariantBarcodeForExchange(barcode)
+
+      if (response.status === 'success' && response.data) {
+        const variantData = response.data
+
+        // Buscar el producto en la lista actual usando el product_id
+        const foundProduct = inventoryData.find((product) => product.id === variantData.product_id)
+
+        if (foundProduct) {
+          // Limpiar otros filtros
+          setSearchTerm('')
+          setSelectedGroup('')
+          setSelectedGroupData(null)
+
+          // Filtrar tabla para mostrar solo este producto
+          setBarcodeFilteredProductId(foundProduct.id)
+          setSelectedRow(foundProduct)
+
+          // Resaltar el producto encontrado
+          setHighlightedProductId(foundProduct.id)
+
+          // Quitar el resaltado después de 3 segundos pero mantener el filtro
+          setTimeout(() => {
+            setHighlightedProductId(null)
+          }, 3000)
+
+          toast.success(
+            `Producto encontrado: ${variantData.product_name} (${variantData.size_name}-${variantData.color_name})`,
+            {
+              duration: 3000,
+              position: 'top-center'
+            }
+          )
+
+          console.log('✅ Producto encontrado:', foundProduct)
+        } else {
+          toast.error(
+            `Producto encontrado pero no está en la sucursal actual: ${variantData.product_name}`,
+            {
+              duration: 3000,
+              position: 'top-center'
+            }
+          )
+        }
+      } else {
+        toast.error('Producto no encontrado', {
+          duration: 2500,
+          position: 'top-center'
+        })
+      }
+    } catch (error) {
+      console.error('❌ Error buscando por código de barras:', error)
+      if (error.response?.status === 404) {
+        toast.error('Producto no encontrado', {
+          duration: 2500,
+          position: 'top-center'
+        })
+      } else {
+        toast.error('Error al buscar el producto: ' + error.message, {
+          duration: 3000,
+          position: 'top-center'
+        })
+      }
+    } finally {
+      setSearchingBarcode(false)
+
+      // Refocus el input para próximo escaneo
+      setTimeout(() => {
+        if (barcodeInputRef.current) {
+          barcodeInputRef.current.focus()
+        }
+      }, 100)
+    }
+  }
+
+  // Manejar input de código de barras
+  const handleBarcodeInput = (e) => {
+    const value = e.target.value
+    setBarcodeSearch(value)
+
+    // Limpiar timeout anterior si existe
+    if (autoSearchTimeoutRef.current) {
+      clearTimeout(autoSearchTimeoutRef.current)
+    }
+
+    // Si se presiona Enter, buscar inmediatamente
+    if (e.key === 'Enter' && value.trim()) {
+      searchByBarcode(value.trim())
+      return
+    }
+
+    // Auto-búsqueda después de que el scanner termine de escribir
+    // Los scanners suelen escribir muy rápido, así que esperamos 150ms sin nuevos caracteres
+    if (value.trim() && value.length >= 8) {
+      // Mínimo 8 caracteres para un código válido
+      autoSearchTimeoutRef.current = setTimeout(() => {
+        if (value.trim() === barcodeSearch.trim()) {
+          // Verificar que no cambió mientras esperábamos
+          searchByBarcode(value.trim())
+        }
+      }, 150) // 150ms de espera después del último carácter
     }
   }
   const formatCurrency = (value) => {
@@ -297,94 +448,97 @@ export default function Inventario() {
         )}
 
         {/* Barra de navegación */}
-        <div className="mb-6 flex items-center justify-between">
-          <ul className="menu menu-horizontal gap-3 rounded-box bg-base-200 p-2">
-            <li>
-              <button
-                className="tooltip tooltip-bottom btn btn-ghost btn-md"
-                data-tip="Grupos"
-                onClick={() => document.getElementById('productsFamily').showModal()}
-              >
-                <Boxes className="h-6 w-6" />
-              </button>
-            </li>
-            <li>
-              <button
-                className="tooltip tooltip-bottom btn btn-ghost btn-md"
-                data-tip="Editar producto"
-                onClick={handleEditClick}
-                disabled={!selectedRow}
-              >
-                <Edit className="h-6 w-6" />
-              </button>
-            </li>
-            <li>
-              <button
-                className="tooltip tooltip-bottom btn btn-ghost btn-md"
-                data-tip="Imprimir código de barras"
-                onClick={handlePrintBarcodeClick}
-                disabled={!selectedRow}
-              >
-                <Printer className="h-6 w-6" />
-              </button>
-            </li>
-            <li>
-              <button
-                className="tooltip tooltip-bottom btn btn-ghost btn-md"
-                data-tip="Nuevo producto"
-                onClick={() => setLocation('/nuevoProducto')}
-              >
-                <PackagePlus className="h-6 w-6" />
-              </button>
-            </li>
+        <div>
+          <div className="mb-6 flex items-center justify-between">
+            <ul className="menu menu-horizontal gap-3 rounded-box bg-base-200 p-2">
+              <li>
+                <button
+                  className="tooltip tooltip-bottom btn btn-ghost btn-md"
+                  data-tip="Grupos"
+                  onClick={() => document.getElementById('productsFamily').showModal()}
+                >
+                  <Boxes className="h-6 w-6" />
+                </button>
+              </li>
+              <li>
+                <button
+                  className="tooltip tooltip-bottom btn btn-ghost btn-md"
+                  data-tip="Editar producto"
+                  onClick={handleEditClick}
+                  disabled={!selectedRow}
+                >
+                  <Edit className="h-6 w-6" />
+                </button>
+              </li>
+              <li>
+                <button
+                  className="tooltip tooltip-bottom btn btn-ghost btn-md"
+                  data-tip="Imprimir código de barras"
+                  onClick={handlePrintBarcodeClick}
+                  disabled={!selectedRow}
+                >
+                  <Printer className="h-6 w-6" />
+                </button>
+              </li>
+              <li>
+                <button
+                  className="tooltip tooltip-bottom btn btn-ghost btn-md"
+                  data-tip="Nuevo producto"
+                  onClick={() => setLocation('/nuevoProducto')}
+                >
+                  <PackagePlus className="h-6 w-6" />
+                </button>
+              </li>
 
-            <li>
-              <button
-                className="tooltip tooltip-bottom btn btn-ghost btn-md"
-                data-tip="Mover producto entre sucursales"
-                onClick={handleMoveInventoryClick}
-              >
-                <Truck className="h-6 w-6" />
-              </button>
-            </li>
-            <li>
-              <button
-                className="tooltip tooltip-bottom btn btn-ghost btn-md"
-                data-tip="Agregar colores y talles"
-                onClick={() => document.getElementById('sizeColorModal').showModal()}
-              >
-                <ListPlus className="h-6 w-6" />
-              </button>
-            </li>
-          </ul>
+              <li>
+                <button
+                  className="tooltip tooltip-bottom btn btn-ghost btn-md"
+                  data-tip="Mover producto entre sucursales"
+                  onClick={handleMoveInventoryClick}
+                >
+                  <Truck className="h-6 w-6" />
+                </button>
+              </li>
+              <li>
+                <button
+                  className="tooltip tooltip-bottom btn btn-ghost btn-md"
+                  data-tip="Agregar colores y talles"
+                  onClick={() => document.getElementById('sizeColorModal').showModal()}
+                >
+                  <ListPlus className="h-6 w-6" />
+                </button>
+              </li>
+            </ul>
+            <div className="flex items-center gap-2">
+              {/* Selector de sucursal */}
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium text-gray-600">Sucursal:</span>
+                <select
+                  className="select-enhanced"
+                  value={selectedStorage}
+                  onChange={handleStorageChange}
+                >
+                  <option value="">Todas las sucursales</option>
+                  {currentStorage && (
+                    <option value={currentStorage.id} className="font-semibold">
+                      {currentStorage.name} (Mi sucursal)
+                    </option>
+                  )}
+                  {storageList &&
+                    storageList
+                      .filter((storage) => storage.id !== currentStorage?.id)
+                      .map((storage) => (
+                        <option key={storage.id} value={storage.id}>
+                          {storage.name}
+                        </option>
+                      ))}
+                </select>
+              </div>
+            </div>
+          </div>
 
           {/* Filtros y búsqueda */}
-          <div className="flex items-center gap-2">
-            {/* Selector de sucursal */}
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-medium text-gray-600">Sucursal:</span>
-              <select
-                className="select-enhanced"
-                value={selectedStorage}
-                onChange={handleStorageChange}
-              >
-                <option value="">Todas las sucursales</option>
-                {currentStorage && (
-                  <option value={currentStorage.id} className="font-semibold">
-                    {currentStorage.name} (Mi sucursal)
-                  </option>
-                )}
-                {storageList &&
-                  storageList
-                    .filter((storage) => storage.id !== currentStorage?.id)
-                    .map((storage) => (
-                      <option key={storage.id} value={storage.id}>
-                        {storage.name}
-                      </option>
-                    ))}
-              </select>
-            </div>
-
+          <div>
             {/* Filtro de grupo mejorado y compacto */}
             {selectedGroup ? (
               <div className="flex items-center gap-1">
@@ -423,18 +577,69 @@ export default function Inventario() {
               </div>
             )}
 
-            {/* Barra de búsqueda más compacta */}
-            <div className="flex items-center gap-1">
+            {/* Barras de búsqueda */}
+            <div className="flex items-center gap-2">
+              {/* Búsqueda por texto */}
               <label className="search-enhanced input-bordered input flex items-center gap-2">
                 <input
                   type="text"
                   placeholder="Buscar productos, marcas o grupos..."
                   className="grow text-sm"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    // Limpiar filtro de código de barras al usar búsqueda normal
+                    setBarcodeFilteredProductId(null)
+                  }}
                 />
                 <Search className="h-4 w-4 opacity-70" />
               </label>
+
+              {/* Búsqueda por código de barras */}
+              <label className="input-bordered input flex items-center gap-2 border-primary/30 bg-primary/10">
+                <input
+                  ref={barcodeInputRef}
+                  type="text"
+                  placeholder={searchingBarcode ? 'Procesando...' : 'Escanear código...'}
+                  className="grow bg-transparent text-sm"
+                  value={barcodeSearch}
+                  onChange={(e) => setBarcodeSearch(e.target.value)}
+                  onKeyDown={handleBarcodeInput}
+                  disabled={searchingBarcode}
+                />
+                {searchingBarcode ? (
+                  <l-pinwheel size="16" stroke="2" speed="0.9" color="currentColor"></l-pinwheel>
+                ) : (
+                  <Scan className="h-4 w-4 opacity-70" />
+                )}
+              </label>
+            </div>
+
+            {/* Texto de ayuda para búsqueda por código de barras */}
+            <div className="mt-1 flex items-center gap-4 text-xs text-gray-500">
+              {highlightedProductId && (
+                <span className="animate-bounce font-medium text-success">
+                  ✅ Producto encontrado y resaltado
+                </span>
+              )}
+              {barcodeFilteredProductId && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-info">
+                    🔍 Mostrando solo producto escaneado
+                  </span>
+                  <button
+                    onClick={() => {
+                      setBarcodeFilteredProductId(null)
+                      setHighlightedProductId(null)
+                      setBarcodeSearch('')
+                    }}
+                    className="btn btn-ghost btn-xs text-info hover:text-info-content"
+                    title="Mostrar todos los productos"
+                  >
+                    ✕ Limpiar filtro
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -481,13 +686,13 @@ export default function Inventario() {
                         <div>
                           <p className="text-lg font-semibold">No hay productos disponibles</p>
                           <p className="mt-1 text-sm text-gray-500">
-                            {searchTerm
+                            {searchTerm || barcodeSearch || barcodeFilteredProductId
                               ? 'No se encontraron productos que coincidan con tu búsqueda'
                               : selectedStorage
                                 ? 'Esta sucursal no tiene productos en stock'
                                 : 'No hay productos cargados en el sistema'}
                           </p>
-                          {!searchTerm && (
+                          {!searchTerm && !barcodeSearch && !barcodeFilteredProductId && (
                             <button
                               className="btn btn-warning btn-sm mt-3"
                               onClick={() => loadInitialData()}
@@ -503,7 +708,7 @@ export default function Inventario() {
                   sortedData.map((row) => (
                     <tr
                       key={row.id}
-                      className={`cursor-pointer ${selectedRow === row.id ? 'selected' : ''} ${row.cantidad_total === 0 ? 'row-out-of-stock' : ''}`}
+                      className={`cursor-pointer ${selectedRow === row.id ? 'selected' : ''} ${row.cantidad_total === 0 ? 'row-out-of-stock' : ''} ${highlightedProductId === row.id ? 'bg-success/20 animate-pulse border-l-4 border-success' : ''}`}
                       onClick={() => handleRowClick(row)}
                       onDoubleClick={() => handleRowDoubleClick(row)}
                       title="Doble clic para ver detalles completos"

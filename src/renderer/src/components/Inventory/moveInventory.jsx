@@ -45,6 +45,12 @@ export default function MoveInventory() {
   // Ref para prevenir procesamientos duplicados
   const lastProcessedRef = useRef({ barcode: '', executionId: '', timestamp: 0, processed: false })
 
+  // Ref para el timeout de auto-búsqueda
+  const autoSearchTimeoutRef = useRef(null)
+
+  // Ref para el input de código de barras
+  const barcodeInputRef = useRef(null)
+
   const [showProductModal, setShowProductModal] = useState(false)
   const [selectedShipmentProducts, setSelectedShipmentProducts] = useState([])
   const [selectedShipmentInfo, setSelectedShipmentInfo] = useState(null)
@@ -244,6 +250,13 @@ export default function MoveInventory() {
       }
     } finally {
       setSearchingBarcode(false)
+
+      // Refocus input for next scan after a short delay
+      setTimeout(() => {
+        if (barcodeInputRef.current) {
+          barcodeInputRef.current.focus()
+        }
+      }, 100)
     }
   }
 
@@ -252,9 +265,27 @@ export default function MoveInventory() {
     const value = e.target.value
     setBarcodeInput(value)
 
-    // Auto-buscar solo cuando se presiona Enter
+    // Limpiar timeout anterior si existe
+    if (autoSearchTimeoutRef.current) {
+      clearTimeout(autoSearchTimeoutRef.current)
+    }
+
+    // Si se presiona Enter, buscar inmediatamente
     if (e.key === 'Enter' && value.trim()) {
       searchByBarcode(value.trim())
+      return
+    }
+
+    // Auto-búsqueda después de que el scanner termine de escribir
+    // Los scanners suelen escribir muy rápido, así que esperamos 150ms sin nuevos caracteres
+    if (value.trim() && value.length >= 8) {
+      // Mínimo 8 caracteres para un código válido
+      autoSearchTimeoutRef.current = setTimeout(() => {
+        if (value.trim() === barcodeInput.trim()) {
+          // Verificar que no cambió mientras esperábamos
+          searchByBarcode(value.trim())
+        }
+      }, 150) // 150ms de espera después del último carácter
     }
   }
 
@@ -819,6 +850,15 @@ export default function MoveInventory() {
 
     loadInitialData()
   }, [currentStorage?.id]) // Recargar cuando cambie la sucursal actual
+
+  // Cleanup timeout cuando el componente se desmonta
+  useEffect(() => {
+    return () => {
+      if (autoSearchTimeoutRef.current) {
+        clearTimeout(autoSearchTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleBackClick = () => {
     setLocation('/inventario')
@@ -1420,13 +1460,19 @@ export default function MoveInventory() {
                       <div className="form-control">
                         <div className="input-group">
                           <input
+                            ref={barcodeInputRef}
                             type="text"
-                            placeholder="Escanear o escribir código de barras..."
-                            className="input-bordered input flex-1"
+                            placeholder={
+                              searchingBarcode
+                                ? 'Procesando...'
+                                : 'Escanear código (automático) o escribir...'
+                            }
+                            className={`input-bordered input flex-1 ${!searchingBarcode ? 'focus:border-success' : ''}`}
                             value={barcodeInput}
                             onChange={(e) => setBarcodeInput(e.target.value)}
                             onKeyDown={handleBarcodeInput}
                             disabled={searchingBarcode}
+                            autoFocus
                           />
                           <button
                             className="btn btn-primary"
@@ -1447,8 +1493,11 @@ export default function MoveInventory() {
                         </div>
                         <label className="label">
                           <span className="label-text-alt">
-                            Código formato: VAR + 4 dígitos producto + 3 dígitos talle + 3 dígitos
-                            color
+                            🚀 Escaneado automático activado - Solo apunta y escanea
+                            <br />
+                            📝 También puedes escribir manualmente y presionar Enter
+                            <br />
+                            📋 Formato: VAR + 4 dígitos producto + 3 dígitos talle + 3 dígitos color
                           </span>
                         </label>
                       </div>
