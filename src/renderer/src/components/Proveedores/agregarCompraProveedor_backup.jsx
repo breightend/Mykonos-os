@@ -10,7 +10,7 @@ import {
   Calendar,
   Check,
   Trash2,
-  CreditCard
+  Edit
 } from 'lucide-react'
 import { fetchProductos } from '../../services/products/productService'
 import { createPurchase } from '../../services/proveedores/purchaseService'
@@ -27,7 +27,7 @@ export default function AgregarCompraProveedor({ provider }) {
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
-
+  
   const [purchaseData, setPurchaseData] = useState({
     subtotal: 0,
     discount: 0,
@@ -96,17 +96,17 @@ export default function AgregarCompraProveedor({ provider }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (productData.products.length === 0) {
-      toast.error('Debe agregar al menos un producto antes de continuar')
-      return
-    }
-    // Open payment modal instead of directly submitting
+    // This will open the payment modal instead of directly submitting
     setShowPaymentModal(true)
   }
 
   const handlePaymentComplete = async (paymentData) => {
     if (!provider?.id) {
       toast.error('No se ha seleccionado un proveedor')
+      return
+    }
+    if (productData.products.length === 0) {
+      toast.error('Debe agregar al menos un producto')
       return
     }
 
@@ -152,7 +152,6 @@ export default function AgregarCompraProveedor({ provider }) {
         toast.success('Compra creada exitosamente')
         setLocation(`/infoProvider?id=${providerId}`)
         resetForm()
-        setShowPaymentModal(false)
       } else {
         toast.error('Error al crear la compra')
       }
@@ -201,7 +200,7 @@ export default function AgregarCompraProveedor({ provider }) {
   }
 
   const getLabel = () => {
-    if (!delivery_date) return 'Selecciona día de arribo de mercadería'
+    if (!delivery_date) return 'Selecciona dia de arribo de mercadería'
     else return delivery_date.toLocaleDateString('es-ES', { dateStyle: 'medium' })
   }
 
@@ -243,6 +242,234 @@ export default function AgregarCompraProveedor({ provider }) {
                   className="textarea-bordered textarea w-full"
                   placeholder="Notas adicionales sobre la compra"
                   rows="3"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Calendar Modal */}
+          {showCalendar && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowCalendar(false)
+                }
+              }}
+            >
+              <div className="animate-in fade-in-0 zoom-in-95 relative mx-4 w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl duration-200">
+                {/* Modal Header */}
+                <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    <h3 className="text-xl font-bold text-gray-800">
+                      Seleccionar Fecha de Entrega
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm btn-circle text-gray-500 hover:bg-red-50 hover:text-red-500"
+                    onClick={() => setShowCalendar(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Calendar */}
+                <div className="flex justify-center">
+                  <DayPicker
+                    classNames={{
+                      day: 'h-9 w-9 p-4 font-medium hover:bg-primary/10 hover:text-primary rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+                      selected:
+                        'bg-primary text-white hover:bg-primary hover:text-white focus:bg-primary focus:text-white rounded-md font-bold shadow-sm',
+                      today: 'bg-secondary text-white font-bold rounded-md',
+                      outside: 'text-gray-300 opacity-50',
+                      disabled: 'text-gray-300 opacity-30 cursor-not-allowed',
+                      hidden: 'invisible',
+                      months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
+                      month: 'space-y-4',
+                      caption_label: 'text-lg font-bold text-gray-800',
+                      caption:
+                        'flex justify-center items-center text-lg font-bold text-gray-800 mb-4 relative',
+                      nav: 'flex items-center absolute left-0 right-0 justify-between px-2',
+                      nav_button:
+                        'h-8 w-8 bg-transparent p-0 rounded-full transition-colors border border-base-300 text-base-content hover:bg-primary hover:text-white',
+                      nav_button_previous: '',
+                      nav_button_next: ''
+                    }}
+                    mode="single"
+                    selected={delivery_date}
+                    onSelect={setDeliveryDate}
+                    locale={es}
+                    disabled={{ before: new Date() }}
+                    showOutsideDays={false}
+                    fixedWeeks={false}
+                    numberOfMonths={1}
+                  />
+                </div>
+
+                {/* Selected date info */}
+                {delivery_date && (
+                  <div className="mt-6 rounded-xl border border-primary/10 bg-gradient-to-r from-primary/5 to-secondary/5 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-semibold text-primary">Fecha seleccionada:</p>
+                    </div>
+                    <p className="text-lg font-bold text-gray-800">
+                      {delivery_date.toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="mt-6 flex justify-between gap-3">
+                  <button
+                    type="button"
+                    className="btn btn-error btn-outline flex-1"
+                    onClick={() => {
+                      setDeliveryDate(null)
+                      setShowCalendar(false)
+                    }}
+                  >
+                    <FilterX className="mr-2 h-4 w-4" />
+                    Limpiar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary flex-1"
+                    onClick={() => setShowCalendar(false)}
+                    disabled={!delivery_date}
+                  >
+                    <Check className="mr-2 h-4 w-4" />
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                      setShowCalendar(false)
+                    }
+                  }}
+                >
+                  <div className="animate-in fade-in-0 zoom-in-95 relative mx-4 w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl duration-200">
+                    {/* Modal Header */}
+                    <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        <h3 className="text-xl font-bold text-gray-800">
+                          Seleccionar Fecha de Entrega
+                        </h3>{' '}
+                        {/* More specific title */}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm btn-circle text-gray-500 hover:bg-red-50 hover:text-red-500" // Added text-gray-500 for initial color
+                        onClick={() => setShowCalendar(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Calendario con estilos mejorados */}
+                    <div className="flex justify-center">
+                      <DayPicker
+                        classNames={{
+                          day: 'h-9 w-9 p-4 font-medium hover:bg-primary/10 hover:text-primary rounded-md transition-colors  focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+                          selected:
+                            'bg-primary text-white hover:bg-primary hover:text-white focus:bg-primary focus:text-white rounded-md font-bold shadow-sm',
+                          today: 'bg-secondary text-white font-bold rounded-md',
+                          outside: 'text-gray-300 opacity-50',
+                          disabled: 'text-gray-300 opacity-30 cursor-not-allowed',
+                          hidden: 'invisible',
+                          months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
+                          month: 'space-y-4',
+
+                          caption_label: 'text-lg font-bold text-gray-800',
+                          caption:
+                            'flex justify-center items-center text-lg font-bold text-gray-800 mb-4 relative',
+
+                          nav: 'flex items-center absolute left-0 right-0 justify-between px-2',
+                          nav_button:
+                            'h-8 w-8 bg-transparent p-0 rounded-full transition-colors border border-base-300 text-base-content hover:bg-primary hover:text-white', // Consistent styling
+                          nav_button_previous: '',
+                          nav_button_next: ''
+                        }}
+                        mode="single"
+                        selected={delivery_date}
+                        onSelect={setDeliveryDate}
+                        locale={es}
+                        disabled={{ before: new Date() }}
+                        showOutsideDays={false}
+                        fixedWeeks={false}
+                        numberOfMonths={1}
+                      />
+                    </div>
+
+                    {/* Información del día seleccionado con mejor diseño */}
+                    {delivery_date && (
+                      <div className="mt-6 rounded-xl border border-primary/10 bg-gradient-to-r from-primary/5 to-secondary/5 p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          <p className="text-sm font-semibold text-primary">Fecha seleccionada:</p>
+                        </div>
+                        <p className="text-lg font-bold text-gray-800">
+                          {delivery_date.toLocaleDateString('es-ES', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Botones de acción mejorados */}
+                    <div className="mt-6 flex justify-between gap-3">
+                      <button
+                        type="button"
+                        className="btn btn-error btn-outline flex-1"
+                        onClick={() => {
+                          setDeliveryDate(null)
+                          setShowCalendar(false)
+                        }}
+                      >
+                        <FilterX className="mr-2 h-4 w-4" />
+                        Limpiar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary flex-1"
+                        onClick={() => setShowCalendar(false)}
+                        disabled={!delivery_date}
+                      >
+                        <Check className="mr-2 h-4 w-4" /> {/* Changed icon for "Confirm" */}
+                        Confirmar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="lg:col-span-3">
+                <label className="label">
+                  <span className="label-text font-medium text-gray-600">Notas</span>
+                </label>
+                <textarea
+                  name="notes"
+                  value={purchaseData.notes}
+                  onChange={handlePurchaseInputChange}
+                  className="textarea-bordered textarea w-full"
+                  placeholder="Notas adicionales sobre la compra"
+                  rows="2"
                 />
               </div>
             </div>
@@ -427,134 +654,14 @@ export default function AgregarCompraProveedor({ provider }) {
             </button>
             <button
               type="submit"
-              className="btn btn-primary flex items-center gap-2"
+              className="btn btn-primary"
               disabled={loading || productData.products.length === 0}
             >
-              <CreditCard className="h-4 w-4" />
-              {loading ? 'Procesando...' : 'Continuar a Pago'}
+              {loading ? 'Creando...' : 'Crear Compra'}
             </button>
           </div>
         </form>
       </div>
-
-      {/* Calendar Modal */}
-      {showCalendar && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowCalendar(false)
-            }
-          }}
-        >
-          <div className="animate-in fade-in-0 zoom-in-95 relative mx-4 w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl duration-200">
-            {/* Modal Header */}
-            <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                <h3 className="text-xl font-bold text-gray-800">Seleccionar Fecha de Entrega</h3>
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm btn-circle text-gray-500 hover:bg-red-50 hover:text-red-500"
-                onClick={() => setShowCalendar(false)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Calendar */}
-            <div className="flex justify-center">
-              <DayPicker
-                classNames={{
-                  day: 'h-9 w-9 p-4 font-medium hover:bg-primary/10 hover:text-primary rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-                  selected:
-                    'bg-primary text-white hover:bg-primary hover:text-white focus:bg-primary focus:text-white rounded-md font-bold shadow-sm',
-                  today: 'bg-secondary text-white font-bold rounded-md',
-                  outside: 'text-gray-300 opacity-50',
-                  disabled: 'text-gray-300 opacity-30 cursor-not-allowed',
-                  hidden: 'invisible',
-                  months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
-                  month: 'space-y-4',
-                  caption_label: 'text-lg font-bold text-gray-800',
-                  caption:
-                    'flex justify-center items-center text-lg font-bold text-gray-800 mb-4 relative',
-                  nav: 'flex items-center absolute left-0 right-0 justify-between px-2',
-                  nav_button:
-                    'h-8 w-8 bg-transparent p-0 rounded-full transition-colors border border-base-300 text-base-content hover:bg-primary hover:text-white',
-                  nav_button_previous: '',
-                  nav_button_next: ''
-                }}
-                mode="single"
-                selected={delivery_date}
-                onSelect={setDeliveryDate}
-                locale={es}
-                disabled={{ before: new Date() }}
-                showOutsideDays={false}
-                fixedWeeks={false}
-                numberOfMonths={1}
-              />
-            </div>
-
-            {/* Selected date info */}
-            {delivery_date && (
-              <div className="mt-6 rounded-xl border border-primary/10 bg-gradient-to-r from-primary/5 to-secondary/5 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold text-primary">Fecha seleccionada:</p>
-                </div>
-                <p className="text-lg font-bold text-gray-800">
-                  {delivery_date.toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="mt-6 flex justify-between gap-3">
-              <button
-                type="button"
-                className="btn btn-error btn-outline flex-1"
-                onClick={() => {
-                  setDeliveryDate(null)
-                  setShowCalendar(false)
-                }}
-              >
-                <FilterX className="mr-2 h-4 w-4" />
-                Limpiar
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary flex-1"
-                onClick={() => setShowCalendar(false)}
-                disabled={!delivery_date}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <AgregarPagoModal
-          provider={provider}
-          purchaseData={{
-            subtotal: parseFloat(purchaseData.subtotal),
-            total: parseFloat(purchaseData.total),
-            products: productData.products
-          }}
-          onPurchasePaymentComplete={handlePaymentComplete}
-          onCancel={() => setShowPaymentModal(false)}
-          isForPurchase={true}
-        />
-      )}
     </div>
   )
 }

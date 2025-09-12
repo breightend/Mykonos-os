@@ -2,32 +2,68 @@ import { useState, useEffect } from 'react'
 import { DollarSign, Upload, X, Check, AlertTriangle } from 'lucide-react'
 import { providerPaymentService } from '../../services/proveedores/providerPaymentService'
 import toast from 'react-hot-toast'
+import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService'
+import { getBancos } from '../../services/paymentsServices/banksService'
 
-function AgregarPagoModal({ provider, onPaymentAdded }) {
+function AgregarPagoModal({
+  provider,
+  onPaymentAdded,
+  purchaseData,
+  onPaymentComplete,
+  onPurchasePaymentComplete,
+  onCancel,
+  isForPurchase = false
+}) {
   const [formData, setFormData] = useState({
     monto: '',
     forma_pago: '',
     descripcion: '',
     numero_comprobante: '',
     comprobante_image: null,
+    transaction_number: '',
+    invoice_number: '',
+    bank_id: '',
+    echeq_time: ''
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethods, setPaymentMethods] = useState([])
   const [loadingMethods, setLoadingMethods] = useState(false)
+  const [banks, setBanks] = useState([])
+  const [invoiceFile, setInvoiceFile] = useState(null)
 
   useEffect(() => {
     loadPaymentMethods()
-  }, [])
+
+    if (isForPurchase && purchaseData?.total) {
+      const amount = purchaseData.total.toString()
+      const formattedAmount = formatCurrency(amount)
+      setFormData((prev) => ({
+        ...prev,
+        monto: formattedAmount,
+        monto_raw: amount
+      }))
+    }
+  }, [isForPurchase, purchaseData])
+
+  const formatCurrency = (value) => {
+    const numericValue = parseFloat(value) || 0
+    return numericValue.toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+  }
 
   const loadPaymentMethods = async () => {
     try {
       setLoadingMethods(true)
-      const methods = await providerPaymentService.getAvailablePaymentMethods()
-      setPaymentMethods(methods)
+      const methods = await paymentMethodsService.getProviderPaymentMethods()
+      setPaymentMethods(methods.payment_methods)
+
+      const banksData = await getBancos()
+      setBanks(banksData.banks)
     } catch (error) {
       console.error('Error loading payment methods:', error)
-      // Use fallback methods if there's an error
-      setPaymentMethods(providerPaymentService.getFallbackPaymentMethods())
+      toast.error('Error al cargar los métodos de pago')
     } finally {
       setLoadingMethods(false)
     }
@@ -44,43 +80,30 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
   const handleNumericInputChange = (e) => {
     const { name, value } = e.target
 
-    // Remove all non-numeric characters except comma (for decimal separator)
     let numericValue = value.replace(/[^0-9,]/g, '')
 
     const parts = numericValue.split(',')
     let integerPart = parts[0] || ''
     let decimalPart = parts.length > 1 ? parts[1].slice(0, 2) : '' // Limit to 2 decimal places
 
-    // Remove leading zeros but keep at least one digit
     integerPart = integerPart.replace(/^0+/, '') || '0'
 
-    // Format integer part with dots for thousands
     if (integerPart.length > 3) {
       integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
     }
 
-    // Build the final formatted value
     let formattedValue = integerPart
     if (decimalPart !== '') {
       formattedValue += ',' + decimalPart
     } else if (numericValue.includes(',')) {
       formattedValue += ','
     }
-
-    // Store the raw numeric value (without formatting) for calculations
     const rawValue = (parts[0] || '0') + (parts.length > 1 ? '.' + decimalPart : '')
 
     setFormData((prev) => ({
       ...prev,
       [name]: formattedValue,
-      [`${name}_raw`]: rawValue // Store raw value for calculations
-    }))
-  }
-
-  const handleFileChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      comprobante_image: e.target.files[0]
+      [`${name}_raw`]: rawValue
     }))
   }
 
@@ -90,8 +113,35 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
       forma_pago: '',
       descripcion: '',
       numero_comprobante: '',
-      comprobante_image: null
+      comprobante_image: null,
+      transaction_number: '',
+      invoice_number: '',
+      bank_id: '',
+      echeq_time: ''
     })
+  }
+
+  const isBankFieldVisible = () => {
+    const selectedMethodId = parseInt(formData.forma_pago)
+    return [7, 6, 2].includes(selectedMethodId)
+  }
+
+  const isEcheqTimeVisible = () => {
+    const selectedMethodId = parseInt(formData.forma_pago)
+    return selectedMethodId === 3
+  }
+
+  const getPaymentMethodId = () => {
+    const basicMethod = formData.forma_pago
+    const bankId = formData.bank_id
+
+    if (basicMethod && bankId) {
+      // This would need to be implemented based on your bank/payment combinations
+      return basicMethod
+    } else if (basicMethod) {
+      return basicMethod
+    }
+    return null
   }
 
   const handleSubmit = async (e) => {
@@ -125,15 +175,33 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
         formData.descripcion ||
         `Pago a proveedor (${providerPaymentService.getPaymentMethodNameSync(formData.forma_pago)})`
 
-      // Create credit movement (payment to provider)
-      const result = await providerPaymentService.createProviderPayment({
+      // Prepare payment data with additional fields
+      const paymentData = {
         entity_id: provider.id,
         amount: amount,
         description: paymentDescription,
         medio_pago: formData.forma_pago,
         numero_de_comprobante: formData.numero_comprobante || undefined,
-        comprobante_image: formData.comprobante_image || undefined
-      })
+        comprobante_image: formData.comprobante_image || undefined,
+        banks: banks || [],
+        invoice_file: invoiceFile || null,
+        invoice_number: formData.invoice_number || null
+      }
+
+      // Add additional fields if they exist
+      if (formData.transaction_number) {
+        paymentData.transaction_number = formData.transaction_number
+      }
+
+      if (formData.bank_id) {
+        paymentData.bank_id = formData.bank_id
+      }
+
+      if (formData.echeq_time) {
+        paymentData.echeq_time = formData.echeq_time
+      }
+
+      const result = await providerPaymentService.createProviderPayment(paymentData)
 
       if (result.success) {
         toast.success(
@@ -141,15 +209,18 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
           { duration: 4000 }
         )
 
-        // Reset form
         resetForm()
 
-        // Call the callback to refresh data
-        if (onPaymentAdded) {
+        // If this is a purchase payment, call the completion handler
+        if (purchaseData && onPurchasePaymentComplete) {
+          onPurchasePaymentComplete({
+            ...paymentData,
+            payment_id: result.payment_id
+          })
+        } else if (onPaymentAdded) {
           onPaymentAdded()
         }
 
-        // Close modal
         document.getElementById('agregandoPago').close()
       } else {
         toast.error(`Error al registrar el pago: ${result.message}`)
@@ -160,6 +231,19 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handleFileChange = (e) => {
+    const uploadedFile = e.target.files[0]
+    if (uploadedFile && uploadedFile.type === 'application/pdf') {
+      setInvoiceFile(uploadedFile)
+    } else {
+      setInvoiceFile(null)
+      alert('Por favor, sube un archivo PDF.')
+    }
+  }
+  const handleRemoveFile = () => {
+    setInvoiceFile(null)
   }
 
   const handleCancel = () => {
@@ -196,7 +280,6 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
             </form>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Monto */}
             <div className="form-control">
@@ -223,27 +306,67 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
 
             {/* Forma de pago */}
             <div className="form-control">
-              <label htmlFor="forma_pago" className="label">
-                <span className="label-text font-medium text-base-content">Método de Pago *</span>
-              </label>
-              <select
-                id="forma_pago"
-                name="forma_pago"
-                value={formData.forma_pago}
-                onChange={handleInputChange}
-                className="select-bordered select w-full border-base-300 bg-base-100 focus:border-primary focus:outline-none"
-                required
-                disabled={loadingMethods}
-              >
-                <option value="">
-                  {loadingMethods ? 'Cargando métodos...' : 'Seleccionar método'}
-                </option>
-                {paymentMethods.map((method) => (
-                  <option key={method.id} value={method.id}>
-                    {method.label}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="label">
+                  <span className="label-text font-medium text-gray-600">Método de Pago *</span>
+                </label>
+                <select
+                  name="forma_pago"
+                  value={formData.forma_pago}
+                  onChange={handleInputChange}
+                  className="select-bordered select w-full"
+                  required
+                >
+                  <option value="">Seleccionar método...</option>
+                  {paymentMethods.map((method) => (
+                    <option key={method.id} value={method.id}>
+                      {method.display_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {isBankFieldVisible() && (
+                <div>
+                  <label htmlFor="" className="label">
+                    <span className="label-text font-medium text-gray-600">Banco *</span>
+                  </label>
+                  <select
+                    name="bank_id"
+                    value={formData.bank_id}
+                    onChange={handleInputChange}
+                    className="select-bordered select w-full"
+                    required
+                  >
+                    <option value="">Seleccionar banco...</option>
+                    {banks.map((bank) => (
+                      <option key={bank.id} value={bank.id}>
+                        {bank.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {isEcheqTimeVisible() && (
+                <div>
+                  <label htmlFor="" className="label">
+                    <span className="label-text font-medium text-gray-600">Tiempo: </span>
+                  </label>
+                  <select
+                    name="echeq_time"
+                    value={formData.echeq_time}
+                    onChange={handleInputChange}
+                    className="select-bordered select w-full"
+                    required
+                  >
+                    <option value="">Seleccionar a dias...</option>
+                    <option value={30}>30 días</option>
+                    <option value={60}>60 días</option>
+                    <option value={90}>90 días</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Descripción */}
@@ -261,6 +384,34 @@ function AgregarPagoModal({ provider, onPaymentAdded }) {
                 placeholder="Concepto del pago, observaciones, etc."
                 rows="3"
                 disabled={isProcessing}
+              />
+            </div>
+
+            <div>
+              <label className="label">
+                <span className="label-text font-medium text-gray-600">Número de Transacción</span>
+              </label>
+              <input
+                type="text"
+                name="transaction_number"
+                value={formData.transaction_number}
+                onChange={handleInputChange}
+                className="input-bordered input w-full"
+                placeholder="Número de comprobante"
+              />
+            </div>
+
+            <div>
+              <label className="label">
+                <span className="label-text font-medium text-gray-600">Número de Factura</span>
+              </label>
+              <input
+                type="text"
+                name="invoice_number"
+                value={formData.invoice_number}
+                onChange={handleInputChange}
+                className="input-bordered input w-full"
+                placeholder="Número de factura"
               />
             </div>
 

@@ -550,7 +550,7 @@ export default function AgregarCompraProveedor({ provider }) {
             total: parseFloat(purchaseData.total),
             products: productData.products
           }}
-          onPurchasePaymentComplete={handlePaymentComplete}
+          onPaymentComplete={handlePaymentComplete}
           onCancel={() => setShowPaymentModal(false)}
           isForPurchase={true}
         />

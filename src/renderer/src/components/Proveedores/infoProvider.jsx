@@ -854,7 +854,11 @@ export default function InfoProvider() {
 
         {/* Modals */}
         <EditarProveedorModal provider={provider} />
-        <AgregarPagoModal provider={provider} onPaymentAdded={handlePurchaseUpdate} />
+        <AgregarPagoModal
+          provider={provider}
+          onPaymentAdded={handlePurchaseUpdate}
+          isForPurchase={false}
+        />
         <EliminarProveedorModal provider={provider} />
 
         {/* Crear Marca */}
