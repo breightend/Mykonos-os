@@ -25,10 +25,22 @@ export const ProductProvider = ({ children }) => {
   })
 
   const addProduct = (product) => {
+    // If product doesn't have an ID (new product), assign a temporary one
+    let productId = product.id
+    let isNewProduct = false
+    if (!productId || productId <= 0) {
+      productId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      isNewProduct = true
+      console.log('Assigning temporary ID to new product:', productId)
+    }
+
     // Transform the product data to match the purchase page requirements
     const purchaseProduct = {
-      id: product.id || Date.now(),
-      product_id: product.id || Date.now(),
+      id: productId,
+      product_id: productId,
+      is_new_product: isNewProduct, // Flag to identify new products for purchase creation
+      // Store original product data for creating in database if needed
+      original_product_data: isNewProduct ? { ...product } : null,
       product_name: product.product_name,
       provider_code: product.provider_code,
       cost_price: parseFloat(product.cost) || 0,
