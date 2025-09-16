@@ -578,16 +578,15 @@ export default function AgregarCompraProveedor() {
               </div>
               <div className="flex flex-col items-center md:w-1/3 md:items-end">
                 <label className="label">
-                  <span className="label-text text-lg font-bold text-gray-800">TOTAL</span>
+                  <span className="label-text  font-bold text-gray-800">TOTAL</span>
                 </label>
                 <div className="relative w-full">
                   <input
                     type="text"
                     value={formatCurrency(purchaseData.total)}
-                    className="input-bordered to-primary-focus input w-full border-2 border-primary text-right text-xl font-extrabold text-black shadow-lg"
+                    className="input-bordered  input w-full border-2 border-primary text-right text-xl font-mono text-black shadow-sm"
                     readOnly
                   />
-                  <div className="absolute -right-1 -top-1 h-3 w-3"></div>
                 </div>
               </div>
             </section>
