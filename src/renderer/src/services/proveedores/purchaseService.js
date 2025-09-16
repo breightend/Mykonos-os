@@ -6,10 +6,16 @@ const API_BASE_URL = 'http://localhost:5000/api/purchases'
 // Crear una nueva compra
 export async function createPurchase(purchaseData) {
     try {
-        const response = await axios.post(API_BASE_URL, purchaseData)
+        console.log('🔄 Making purchase API call to:', `${API_BASE_URL}/`)
+        console.log('🔄 Purchase data being sent:', purchaseData)
+
+        const response = await axios.post(`${API_BASE_URL}/`, purchaseData)
+
+        console.log('✅ Purchase API response:', response.data)
         return response.data
     } catch (error) {
-        console.error('Error creating purchase:', error)
+        console.error('❌ Error creating purchase:', error)
+        console.error('❌ Error details:', error.response?.data || error.message)
         throw error
     }
 }

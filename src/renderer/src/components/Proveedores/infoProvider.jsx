@@ -385,6 +385,11 @@ export default function InfoProvider() {
     setShowOperationDetails(true)
   }
 
+  const handlePurchaseDoubleClick = (purchase) => {
+    // For now, we can reuse the purchase details modal
+    handleViewPurchaseDetails(purchase.id)
+  }
+
   const handleCloseOperationDetails = () => {
     setShowOperationDetails(false)
     setSelectedOperation(null)
@@ -730,7 +735,9 @@ export default function InfoProvider() {
                 </div>
 
                 <div className="overflow-x-auto rounded-lg">
-                  <h3 className="mb-4 text-lg font-semibold text-primary">Historial de Compras</h3>
+                  <h3 className="mb-4 text-lg font-semibold text-primary">
+                    Historial de Compras ({Array.isArray(purchases) ? purchases.length : 0})
+                  </h3>
                   {loadingPurchases ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="flex items-center gap-3">
@@ -744,89 +751,81 @@ export default function InfoProvider() {
                     <table className="table table-zebra w-full">
                       <thead>
                         <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
-                          <th className="text-slate-700 dark:text-slate-200">N° Op.</th>
+                          <th className="text-slate-700 dark:text-slate-200">ID</th>
                           <th className="text-slate-700 dark:text-slate-200">Fecha</th>
-                          <th className="text-slate-700 dark:text-slate-200">Tipo</th>
-                          <th className="text-slate-700 dark:text-slate-200">Descripción</th>
-                          <th className="text-slate-700 dark:text-slate-200">Debe</th>
-                          <th className="text-slate-700 dark:text-slate-200">Haber</th>
-                          <th className="text-slate-700 dark:text-slate-200">Saldo</th>
-                          <th className="text-slate-700 dark:text-slate-200">Método Pago</th>
-                          <th className="text-slate-700 dark:text-slate-200">Comprobante</th>
+                          <th className="text-slate-700 dark:text-slate-200">Estado</th>
+                          <th className="text-slate-700 dark:text-slate-200">Subtotal</th>
+                          <th className="text-slate-700 dark:text-slate-200">Descuento</th>
+                          <th className="text-slate-700 dark:text-slate-200">Total</th>
+                          <th className="text-slate-700 dark:text-slate-200">Fecha Entrega</th>
+                          <th className="text-slate-700 dark:text-slate-200">Notas</th>
+                          <th className="text-slate-700 dark:text-slate-200">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {Array.isArray(movements) && movements.length > 0 ? (
-                          movements.map((movement) => {
-                            const movementType = formatMovementType(movement)
-                            return (
-                              <tr
-                                key={movement.id}
-                                className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
-                                onDoubleClick={() => handleOperationDoubleClick(movement)}
-                              >
-                                <td className="font-mono font-medium">
-                                  #{movement.numero_operacion}
-                                </td>
-                                <td>
-                                  {movement.created_at
-                                    ? new Date(movement.created_at).toLocaleDateString('es-AR')
-                                    : 'N/A'}
-                                </td>
-                                <td>
-                                  <span className={`badge ${movementType.badge} badge-sm`}>
-                                    {movementType.label}
-                                  </span>
-                                </td>
-                                <td className="max-w-xs truncate">
-                                  {movement.descripcion || 'Sin descripción'}
-                                </td>
-                                <td className="text-right font-mono">
-                                  <span
-                                    className={
-                                      movement.debe > 0 ? 'font-bold text-red-600' : 'text-gray-400'
-                                    }
-                                  >
-                                    {formatCurrency(movement.debe)}
-                                  </span>
-                                </td>
-                                <td className="text-right font-mono">
-                                  <span
-                                    className={
-                                      movement.haber > 0
-                                        ? 'font-bold text-green-600'
-                                        : 'text-gray-400'
-                                    }
-                                  >
-                                    {formatCurrency(movement.haber)}
-                                  </span>
-                                </td>
-                                <td className="text-right font-mono font-bold">
-                                  <span
-                                    className={
-                                      movement.saldo > 0
-                                        ? 'text-red-600'
-                                        : movement.saldo < 0
-                                          ? 'text-green-600'
-                                          : 'text-gray-600'
-                                    }
-                                  >
-                                    {formatCurrency(movement.saldo)}
-                                  </span>
-                                </td>
-                                <td className="capitalize">{movement.medio_pago || 'N/A'}</td>
-                                <td className="font-mono text-sm">
-                                  {movement.numero_de_comprobante || '-'}
-                                </td>
-                              </tr>
-                            )
-                          })
+                        {Array.isArray(purchases) && purchases.length > 0 ? (
+                          purchases.map((purchase) => (
+                            <tr
+                              key={purchase.id}
+                              className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                              onDoubleClick={() =>
+                                handlePurchaseDoubleClick && handlePurchaseDoubleClick(purchase)
+                              }
+                            >
+                              <td className="font-mono font-medium">#{purchase.id}</td>
+                              <td>
+                                {purchase.purchase_date
+                                  ? new Date(purchase.purchase_date).toLocaleDateString('es-AR')
+                                  : 'N/A'}
+                              </td>
+                              <td>
+                                <span
+                                  className={`badge badge-sm ${
+                                    purchase.status === 'Pendiente de entrega'
+                                      ? 'badge-warning'
+                                      : purchase.status === 'Recibido'
+                                        ? 'badge-success'
+                                        : purchase.status === 'Cancelado'
+                                          ? 'badge-error'
+                                          : 'badge-neutral'
+                                  }`}
+                                >
+                                  {purchase.status}
+                                </span>
+                              </td>
+                              <td className="text-right font-mono">
+                                {formatCurrency(purchase.subtotal)}
+                              </td>
+                              <td className="text-right font-mono">
+                                {formatCurrency(purchase.discount || 0)}
+                              </td>
+                              <td className="text-right font-mono font-bold">
+                                {formatCurrency(purchase.total)}
+                              </td>
+                              <td>
+                                {purchase.delivery_date
+                                  ? new Date(purchase.delivery_date).toLocaleDateString('es-AR')
+                                  : 'No especificada'}
+                              </td>
+                              <td className="max-w-xs truncate">{purchase.notes || 'Sin notas'}</td>
+                              <td>
+                                <button
+                                  className="btn btn-ghost btn-xs"
+                                  onClick={() =>
+                                    handlePurchaseDoubleClick && handlePurchaseDoubleClick(purchase)
+                                  }
+                                >
+                                  Ver detalles
+                                </button>
+                              </td>
+                            </tr>
+                          ))
                         ) : (
                           <tr>
                             <td colSpan="9" className="py-8 text-center">
                               <div className="text-slate-500 dark:text-slate-400">
-                                <Receipt className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                                No hay movimientos registrados
+                                <ShoppingBasket className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                                No hay compras registradas
                               </div>
                             </td>
                           </tr>

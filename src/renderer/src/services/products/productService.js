@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:5000/api/product'
+const API_BASE_URL = 'http://localhost:5000/api/product/'
 
 // Crear un producto con sus relaciones de talles y colores
 export default async function postData(data) {

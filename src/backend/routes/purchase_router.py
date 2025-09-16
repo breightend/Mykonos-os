@@ -11,7 +11,10 @@ purchase_bp = Blueprint("purchase", __name__)
 def create_purchase():
     try:
         data = request.get_json()
-        print(f"Received purchase data: {data}")
+        print(f"🔍 Received purchase data: {data}")
+        print(f"🔍 Request headers: {dict(request.headers)}")
+        print(f"🔍 Request method: {request.method}")
+        print(f"🔍 Request URL: {request.url}")
 
         # Validar datos requeridos
         required_fields = ["entity_id", "subtotal", "total", "products"]
@@ -56,21 +59,15 @@ def create_purchase():
             "subtotal": data["subtotal"],
             "discount": data.get("discount", 0),
             "total": data["total"],
-            "payment_method": data.get("payment_method")
-            if data.get("payment_method")
-            else None,
-            "transaction_number": data.get("transaction_number", ""),
             "invoice_number": data.get("invoice_number", ""),
             "notes": data.get("notes", ""),
             "status": data.get("status", "Pendiente de entrega"),
             "file_id": file_id,
             "delivery_date": data.get("delivery_date"),
-            "echeq_time": data.get("echeq_time") if data.get("echeq_time") else None,
         }
 
-        # El payment_method ahora referencia directamente a BANKS_PAYMENT_METHODS.id
-        # que ya contiene tanto bank_id como payment_method_id
-        # No necesitamos manejar bank_id por separado ya que está en la relación
+        # Payment information will be handled separately later
+        # keeping payment_method, transaction_number as None for now
 
         # Filtrar valores None para campos opcionales
         purchase_data = {k: v for k, v in purchase_data.items() if v is not None}

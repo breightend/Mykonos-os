@@ -123,6 +123,7 @@ export default function AgregarCompraProveedor() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    console.log('🎯 handleSubmit called - Starting purchase creation process...')
     console.log('Starting purchase creation...')
     console.log('Provider:', provider)
     console.log('Products:', productData.products)
@@ -162,7 +163,11 @@ export default function AgregarCompraProveedor() {
       const processedProducts = []
       const createdProductIds = []
 
+      console.log(`🔄 Processing ${productData.products.length} products...`)
+
       for (const product of productData.products) {
+        console.log(`📦 Processing product: ${product.product_name || 'Unknown'}`)
+
         if (product.is_new_product) {
           console.log('Creating new product in database:', product.original_product_data)
           try {
@@ -172,12 +177,13 @@ export default function AgregarCompraProveedor() {
             }
 
             const newProductData = await postData(productDataWithState)
+            console.log('🔍 Product creation response:', newProductData)
 
-            if (newProductData.id) {
-              console.log('New product created with ID:', newProductData.id)
-              createdProductIds.push(newProductData.id)
+            if (newProductData.product_id) {
+              console.log('New product created with ID:', newProductData.product_id)
+              createdProductIds.push(newProductData.product_id)
               processedProducts.push({
-                product_id: newProductData.id,
+                product_id: newProductData.product_id,
                 cost_price: product.cost_price,
                 quantity: product.quantity,
                 discount: product.discount || 0,
@@ -193,7 +199,8 @@ export default function AgregarCompraProveedor() {
             console.error('Error creating new product:', error)
             toast.error('Error al crear el producto: ' + product.product_name)
 
-            return
+
+            throw error // Re-throw to be caught by the outer try-catch
           }
         } else {
           processedProducts.push({
@@ -207,6 +214,11 @@ export default function AgregarCompraProveedor() {
         }
       }
 
+      console.log(
+        `✅ Finished processing products. Created ${createdProductIds.length} new products.`
+      )
+      console.log(`📋 ProcessedProducts:`, processedProducts)
+
       const purchasePayload = {
         entity_id: provider.id,
         subtotal: parseFloat(purchaseData.subtotal),
@@ -214,27 +226,33 @@ export default function AgregarCompraProveedor() {
         total: parseFloat(purchaseData.total),
         delivery_date: formattedDeliveryDate,
         notes: purchaseData.notes || '',
-        status: 'Pendiente de pago',
+        status: 'Pendiente de entrega',
         products: processedProducts,
         invoice_file: fileBase64
       }
 
       console.log('Purchase payload:', purchasePayload)
+      console.log('🚀 About to call createPurchase API...')
 
-      const result = await createPurchase(purchasePayload)
-      console.log('Purchase creation result:', result)
+      try {
+        const result = await createPurchase(purchasePayload)
+        console.log('Purchase creation result:', result)
 
-      if (result.status === 'éxito') {
-        toast.success(
-          '¡Compra creada exitosamente!\nLos productos están marcados como "esperando arribo".\nPuedes agregar pagos desde la página del proveedor.',
-          { duration: 5000 }
-        )
-        setLocation(`/infoProvider?id=${providerId}`)
-        resetForm()
-      } else {
-        console.error('Purchase creation failed:', result)
-        // TODO: Here we should clean up the created products since the purchase failed
-        toast.error('Error al crear la compra: ' + (result.message || 'Error desconocido'))
+        if (result.status === 'éxito') {
+          toast.success(
+            '¡Compra creada exitosamente!\nLos productos están marcados como "esperando arribo".\nPodrás gestionar los pagos por separado.',
+            { duration: 5000 }
+          )
+          setLocation(`/infoProvider?id=${providerId}`)
+          resetForm()
+        } else {
+          console.error('Purchase creation failed:', result)
+          toast.error('Error al crear la compra: ' + (result.message || 'Error desconocido'))
+        }
+      } catch (purchaseError) {
+        console.error('💥 Exception during purchase creation:', purchaseError)
+        toast.error('Error al crear la compra: ' + purchaseError.message)
+        throw purchaseError
       }
     } catch (error) {
       console.error('Error creating purchase:', error)
@@ -578,13 +596,13 @@ export default function AgregarCompraProveedor() {
               </div>
               <div className="flex flex-col items-center md:w-1/3 md:items-end">
                 <label className="label">
-                  <span className="label-text  font-bold text-gray-800">TOTAL</span>
+                  <span className="label-text font-bold text-gray-800">TOTAL</span>
                 </label>
                 <div className="relative w-full">
                   <input
                     type="text"
                     value={formatCurrency(purchaseData.total)}
-                    className="input-bordered  input w-full border-2 border-primary text-right text-xl font-mono text-black shadow-sm"
+                    className="input-bordered input w-full border-2 border-primary text-right font-mono text-xl text-black shadow-sm"
                     readOnly
                   />
                 </div>

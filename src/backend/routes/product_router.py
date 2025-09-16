@@ -58,7 +58,7 @@ def recibir_datos():
             "description": description,
             "cost": cost,
             "sale_price": sale_price,
-            "original_price": original_price,  
+            "original_price": original_price,
             "tax": tax,
             "discount": discount,
             "comments": comments,
@@ -67,9 +67,7 @@ def recibir_datos():
             "brand_id": brand_id,
             "creation_date": creation_date,
             "last_modified_date": last_modified_date,
-            "state": data.get(
-                "state", "activo"
-            ),  
+            "state": data.get("state", "activo"),
         },
     )
 
@@ -114,7 +112,9 @@ def recibir_datos():
             db.add_product_color_relationship(product_id, color_id)
 
         # Crear stock inicial si se especifica una sucursal y cantidad
-        if storage_id and initial_quantity > 0:
+        # PERO SOLO si el producto NO está esperando arribo (para compras)
+        product_state = data.get("state", "activo")
+        if storage_id and initial_quantity > 0 and product_state != "esperandoArribo":
             stock_result = db.set_initial_stock(
                 product_id, storage_id, initial_quantity
             )
@@ -191,6 +191,13 @@ def recibir_datos():
                 print(
                     "⚠️ No se crearon registros de stock por variantes: no hay talles o colores definidos"
                 )
+        elif storage_id and product_state == "esperandoArribo":
+            print(
+                f"📦 Producto creado en estado 'esperandoArribo' - NO se agregó stock al inventario"
+            )
+            print(
+                f"   El stock se agregará cuando el producto llegue y cambie de estado"
+            )
 
         return jsonify(
             {
