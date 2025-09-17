@@ -1,4 +1,4 @@
-import { X, Download, FileText, Calendar, DollarSign, CreditCard } from 'lucide-react'
+import { X, Download, FileText, Calendar, DollarSign, CreditCard, Check } from 'lucide-react'
 import { formatCurrency, formatMovementType } from '../services/proveedores/accountMovementsService'
 
 export default function OperationDetailsModal({ operation, isOpen, onClose }) {
@@ -94,6 +94,139 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
             </div>
           </div>
 
+          {/* Purchase Details (if available) */}
+          {operation.purchase_id && (
+            <div className="rounded-lg bg-purple-50 p-4">
+              <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-purple-700">
+                <FileText className="h-5 w-5" />
+                Detalles de la Compra Relacionada
+              </h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">ID de Compra</label>
+                  <p className="font-mono text-purple-600">#{operation.purchase_id}</p>
+                </div>
+                {operation.purchase_status && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Estado de la Compra</label>
+                    <span className="badge badge-secondary">{operation.purchase_status}</span>
+                  </div>
+                )}
+                {operation.purchase_subtotal && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Subtotal de la Compra
+                    </label>
+                    <p className="font-semibold text-gray-900">
+                      {formatCurrency(operation.purchase_subtotal)}
+                    </p>
+                  </div>
+                )}
+                {operation.purchase_total && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Total de la Compra</label>
+                    <p className="font-semibold text-gray-900">
+                      {formatCurrency(operation.purchase_total)}
+                    </p>
+                  </div>
+                )}
+                {operation.purchase_date && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Fecha de Compra</label>
+                    <p className="text-gray-900">
+                      {new Date(operation.purchase_date).toLocaleDateString('es-AR')}
+                    </p>
+                  </div>
+                )}
+                {operation.purchase_delivery_date && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Fecha de Entrega</label>
+                    <p className="text-gray-900">
+                      {new Date(operation.purchase_delivery_date).toLocaleDateString('es-AR')}
+                    </p>
+                  </div>
+                )}
+                {operation.purchase_invoice_number && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Número de Factura</label>
+                    <p className="font-mono text-gray-900">{operation.purchase_invoice_number}</p>
+                  </div>
+                )}
+                {operation.purchase_notes && (
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium text-gray-500">Notas de la Compra</label>
+                    <p className="text-gray-900">{operation.purchase_notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Payment Information (if available) */}
+          {operation.purchase_id && (operation.total_payments || operation.payment_count) && (
+            <div className="rounded-lg bg-green-50 p-4">
+              <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-green-700">
+                <DollarSign className="h-5 w-5" />
+                Información de Pagos de la Compra
+              </h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {operation.total_payments && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Total Pagado</label>
+                    <p className="font-semibold text-green-600">
+                      {formatCurrency(operation.total_payments)}
+                    </p>
+                  </div>
+                )}
+                {operation.payment_count && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Número de Pagos</label>
+                    <p className="font-semibold text-gray-900">{operation.payment_count}</p>
+                  </div>
+                )}
+                {operation.last_payment_date && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Último Pago</label>
+                    <p className="text-gray-900">
+                      {new Date(operation.last_payment_date).toLocaleDateString('es-AR')}
+                    </p>
+                  </div>
+                )}
+                {operation.payment_methods && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Métodos de Pago</label>
+                    <p className="text-gray-900">{operation.payment_methods}</p>
+                  </div>
+                )}
+                {/* Payment Status */}
+                {operation.purchase_total && operation.total_payments && (
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium text-gray-500">Estado de Pago</label>
+                    <div className="flex items-center gap-2">
+                      {operation.total_payments >= operation.purchase_total ? (
+                        <span className="badge badge-success gap-1">
+                          <Check className="h-3 w-3" />
+                          Pagado Completamente
+                        </span>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <span className="badge badge-warning gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            Pago Parcial
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            Pendiente:{' '}
+                            {formatCurrency(operation.purchase_total - operation.total_payments)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Dates and References */}
           <div className="rounded-lg bg-yellow-50 p-4">
             <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-yellow-700">
@@ -148,13 +281,20 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                 {operation.purchase_id && (
                   <button
                     onClick={() => {
-                      // Navegar a los detalles de la compra
-                      console.log('Navigate to purchase details:', operation.purchase_id)
+                      // Show more purchase info or navigate to purchase details
+                      console.log('Purchase details available in operation data:', {
+                        id: operation.purchase_id,
+                        status: operation.purchase_status,
+                        total: operation.purchase_total,
+                        date: operation.purchase_date
+                      })
+                      // You can implement navigation or show additional details here
                     }}
                     className="btn btn-primary btn-sm gap-2"
+                    title="Información de la compra disponible arriba"
                   >
                     <FileText className="h-4 w-4" />
-                    Ver Compra Relacionada
+                    Ver Compra #{operation.purchase_id}
                   </button>
                 )}
               </div>

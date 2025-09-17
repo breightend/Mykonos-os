@@ -158,7 +158,7 @@ def create_provider_credit_movement():
                 {"success": False, "message": "entity_id y amount son requeridos"}
             ), 400
 
-        print(f"🔍 Creating AccountMovementsService...")
+        print("🔍 Creating AccountMovementsService...")
         service = AccountMovementsService()
 
         print(
@@ -263,20 +263,51 @@ def get_all_movements():
     try:
         service = AccountMovementsService()
 
-        # Get all movements with client names
+        # Get all movements with client names, purchase details, and payment information
         query = """
         SELECT 
             am.*,
             e.entity_name as client_name,
-            e.cuit as client_cuit
+            e.cuit as client_cuit,
+            p.id as purchase_info_id,
+            p.subtotal as purchase_subtotal,
+            p.discount as purchase_discount,
+            p.total as purchase_total,
+            p.status as purchase_status,
+            p.delivery_date as purchase_delivery_date,
+            p.notes as purchase_notes,
+            p.invoice_number as purchase_invoice_number,
+            p.purchase_date as purchase_date,
+            -- Purchase payments summary
+            pp_summary.total_payments,
+            pp_summary.payment_count,
+            pp_summary.last_payment_date,
+            pp_summary.payment_methods
         FROM account_movements am
         JOIN entities e ON am.entity_id = e.id
+        LEFT JOIN purchases p ON am.purchase_id = p.id
+        LEFT JOIN (
+            SELECT 
+                purchase_id,
+                SUM(amount) as total_payments,
+                COUNT(*) as payment_count,
+                MAX(payment_date) as last_payment_date,
+                STRING_AGG(DISTINCT payment_method, ', ') as payment_methods
+            FROM purchases_payments 
+            GROUP BY purchase_id
+        ) pp_summary ON p.id = pp_summary.purchase_id
         ORDER BY am.created_at DESC
         """
 
-        movements = service.db.execute_query(query)
+        result = service.db.execute_query(query)
 
-        return jsonify({"success": True, "movements": movements}), 200
+        if result.get("success"):
+            movements = result.get("data", [])
+            return jsonify({"success": True, "movements": movements}), 200
+        else:
+            return jsonify(
+                {"success": False, "message": "Error fetching movements"}
+            ), 500
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error en el servidor: {e}"}), 500

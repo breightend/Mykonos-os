@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react'
-import { X, Package, Check, Printer, Calendar } from 'lucide-react'
+import { X, Package, Check, Printer, Calendar, DollarSign, Plus, CreditCard } from 'lucide-react'
 import {
   fetchPurchaseById,
   receivePurchase,
   generateBarcodes
 } from '../services/proveedores/purchaseService'
+import {
+  getPurchasePayments,
+  createPurchasePayment,
+  deletePurchasePayment
+} from '../services/proveedores/paymentService'
 import { fetchStorages } from '../services/sucursales/sucursalesService'
 import toast from 'react-hot-toast'
 
@@ -15,10 +20,22 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
   const [selectedStorage, setSelectedStorage] = useState('')
   const [showReceiveModal, setShowReceiveModal] = useState(false)
 
+  // Payment management state
+  const [payments, setPayments] = useState([])
+  const [loadingPayments, setLoadingPayments] = useState(false)
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [newPayment, setNewPayment] = useState({
+    payment_method: '',
+    amount: '',
+    payment_date: new Date().toISOString().split('T')[0],
+    notes: ''
+  })
+
   useEffect(() => {
     if (isOpen && purchaseId) {
       loadPurchaseDetails()
       loadStorages()
+      loadPurchasePayments()
     }
   }, [isOpen, purchaseId])
 
@@ -43,6 +60,93 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
       console.error('Error loading storages:', error)
       toast.error('Error al cargar las sucursales')
     }
+  }
+
+  const loadPurchasePayments = async () => {
+    if (!purchaseId) return
+
+    try {
+      setLoadingPayments(true)
+      const data = await getPurchasePayments(purchaseId)
+      if (data.status === 'success') {
+        setPayments(data.payments || [])
+      }
+    } catch (error) {
+      console.error('Error loading purchase payments:', error)
+      toast.error('Error al cargar los pagos de la compra')
+    } finally {
+      setLoadingPayments(false)
+    }
+  }
+
+  const handleCreatePayment = async () => {
+    if (!newPayment.payment_method || !newPayment.amount || parseFloat(newPayment.amount) <= 0) {
+      toast.error('Por favor complete todos los campos requeridos')
+      return
+    }
+
+    try {
+      const paymentData = {
+        ...newPayment,
+        amount: parseFloat(newPayment.amount)
+      }
+
+      const result = await createPurchasePayment(purchaseId, paymentData)
+
+      if (result.status === 'success') {
+        toast.success('Pago registrado exitosamente')
+        setNewPayment({
+          payment_method: '',
+          amount: '',
+          payment_date: new Date().toISOString().split('T')[0],
+          notes: ''
+        })
+        setShowPaymentForm(false)
+        loadPurchasePayments()
+      } else {
+        toast.error(result.message || 'Error al registrar el pago')
+      }
+    } catch (error) {
+      console.error('Error creating payment:', error)
+      toast.error('Error al registrar el pago')
+    }
+  }
+
+  const handleDeletePayment = async (paymentId) => {
+    if (!confirm('¿Está seguro de que desea eliminar este pago?')) {
+      return
+    }
+
+    try {
+      const result = await deletePurchasePayment(purchaseId, paymentId)
+
+      if (result.status === 'success') {
+        toast.success('Pago eliminado exitosamente')
+        loadPurchasePayments()
+      } else {
+        toast.error(result.message || 'Error al eliminar el pago')
+      }
+    } catch (error) {
+      console.error('Error deleting payment:', error)
+      toast.error('Error al eliminar el pago')
+    }
+  }
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS'
+    }).format(amount)
+  }
+
+  const getTotalPaid = () => {
+    return payments.reduce((total, payment) => total + parseFloat(payment.amount || 0), 0)
+  }
+
+  const getRemainingAmount = () => {
+    const totalPaid = getTotalPaid()
+    const purchaseTotal = parseFloat(purchase?.total || 0)
+    return Math.max(0, purchaseTotal - totalPaid)
   }
 
   const handleReceivePurchase = async () => {
@@ -259,6 +363,181 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Payment Management */}
+            <div className="rounded-lg bg-base-200 p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <h4 className="font-semibold">Gestión de Pagos</h4>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowPaymentForm(!showPaymentForm)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar Pago
+                </button>
+              </div>
+
+              {/* Payment Summary */}
+              <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded bg-green-100 p-3">
+                  <label className="label">
+                    <span className="label-text font-semibold text-green-700">Total Pagado</span>
+                  </label>
+                  <p className="text-lg font-bold text-green-700">
+                    {formatCurrency(getTotalPaid())}
+                  </p>
+                </div>
+                <div className="rounded bg-orange-100 p-3">
+                  <label className="label">
+                    <span className="label-text font-semibold text-orange-700">Pendiente</span>
+                  </label>
+                  <p className="text-lg font-bold text-orange-700">
+                    {formatCurrency(getRemainingAmount())}
+                  </p>
+                </div>
+                <div className="rounded bg-blue-100 p-3">
+                  <label className="label">
+                    <span className="label-text font-semibold text-blue-700">Estado</span>
+                  </label>
+                  <span
+                    className={`badge ${getRemainingAmount() <= 0 ? 'badge-success' : 'badge-warning'}`}
+                  >
+                    {getRemainingAmount() <= 0 ? 'Pagado Completo' : 'Pago Pendiente'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payment Form */}
+              {showPaymentForm && (
+                <div className="mb-4 rounded-lg bg-base-100 p-4">
+                  <h5 className="mb-3 font-semibold">Nuevo Pago</h5>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">Método de Pago</span>
+                      </label>
+                      <select
+                        className="select-bordered select"
+                        value={newPayment.payment_method}
+                        onChange={(e) =>
+                          setNewPayment({ ...newPayment, payment_method: e.target.value })
+                        }
+                      >
+                        <option value="">Seleccionar método</option>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="tarjeta">Tarjeta</option>
+                      </select>
+                    </div>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">Monto</span>
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="input-bordered input"
+                        value={newPayment.amount}
+                        onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">Fecha de Pago</span>
+                      </label>
+                      <input
+                        type="date"
+                        className="input-bordered input"
+                        value={newPayment.payment_date}
+                        onChange={(e) =>
+                          setNewPayment({ ...newPayment, payment_date: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">Notas</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input-bordered input"
+                        value={newPayment.notes}
+                        onChange={(e) => setNewPayment({ ...newPayment, notes: e.target.value })}
+                        placeholder="Notas adicionales"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleCreatePayment}
+                      disabled={!newPayment.payment_method || !newPayment.amount}
+                    >
+                      <DollarSign className="h-4 w-4" />
+                      Registrar Pago
+                    </button>
+                    <button className="btn btn-ghost" onClick={() => setShowPaymentForm(false)}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Payments List */}
+              {loadingPayments ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="loading loading-spinner"></div>
+                  <span className="ml-2">Cargando pagos...</span>
+                </div>
+              ) : payments.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="table table-zebra">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Método</th>
+                        <th>Monto</th>
+                        <th>Notas</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map((payment) => (
+                        <tr key={payment.id}>
+                          <td>
+                            {payment.payment_date
+                              ? new Date(payment.payment_date).toLocaleDateString('es-AR')
+                              : 'N/A'}
+                          </td>
+                          <td>
+                            <span className="badge badge-outline">{payment.payment_method}</span>
+                          </td>
+                          <td className="font-semibold text-green-600">
+                            {formatCurrency(payment.amount)}
+                          </td>
+                          <td>{payment.notes || '-'}</td>
+                          <td>
+                            <button
+                              className="btn btn-error btn-xs"
+                              onClick={() => handleDeletePayment(payment.id)}
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-4 text-center text-gray-500">
+                  <CreditCard className="mx-auto mb-2 h-12 w-12 text-gray-300" />
+                  <p>No hay pagos registrados para esta compra</p>
+                </div>
+              )}
             </div>
 
             {/* Acciones */}

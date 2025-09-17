@@ -10,7 +10,7 @@ import EliminarClienteModal from '../modals/modalsCliente/eliminarClienteModal'
 import { accountMovementsService } from '../services/accountMovements/accountMovementsService'
 import { clientSalesService } from '../services/clientSales/clientSalesService'
 import { toast } from 'react-hot-toast'
-//TODO: ver operaciones va a ser con doble click
+
 export default function InfoClientes() {
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()

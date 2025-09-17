@@ -140,7 +140,7 @@ DATABASE_TABLES = {
             },
             {
                 "column": "payment_method",
-                "reference_table": TABLES.PAYMENT_METHODS,
+                "reference_table": TABLES.BANKS_PAYMENT_METHODS,
                 "reference_column": "id",
                 "export_column_name": "payment_method_name",
             },

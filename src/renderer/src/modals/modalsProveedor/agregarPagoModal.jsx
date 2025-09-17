@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DollarSign, Upload, X, Check, AlertTriangle } from 'lucide-react'
 import { providerPaymentService } from '../../services/proveedores/providerPaymentService'
+import { createPurchasePayment } from '../../services/proveedores/paymentService'
 import toast from 'react-hot-toast'
 import paymentMethodsService from '../../services/paymentsServices/paymentMethodsService'
 import { getBancos } from '../../services/paymentsServices/banksService'
@@ -171,6 +172,51 @@ function AgregarPagoModal({
       const amount = parseFloat(
         formData.monto_raw || formData.monto.replace(/\./g, '').replace(',', '.')
       )
+
+      let result
+
+      // Check if this is a purchase-specific payment
+      if (isForPurchase && purchaseData?.id) {
+        // Use the new purchase payment system
+        const purchasePaymentData = {
+          payment_method: formData.forma_pago,
+          amount: amount,
+          payment_date: new Date().toISOString().split('T')[0], // Current date
+          notes: formData.descripcion || `Pago para compra #${purchaseData.id}`
+        }
+
+        try {
+          result = await createPurchasePayment(purchaseData.id, purchasePaymentData)
+
+          if (result.status === 'success') {
+            toast.success(
+              `¡Pago de compra registrado exitosamente!\n• Monto: ${providerPaymentService.formatCurrency(amount)}\n• Compra: #${purchaseData.id}\n• Método: ${providerPaymentService.getPaymentMethodNameSync(formData.forma_pago)}`,
+              { duration: 4000 }
+            )
+
+            resetForm()
+
+            if (onPurchasePaymentComplete) {
+              onPurchasePaymentComplete({
+                ...purchasePaymentData,
+                payment_id: result.payment_id,
+                purchase_id: purchaseData.id
+              })
+            }
+
+            document.getElementById('agregandoPago').close()
+            return
+          } else {
+            throw new Error(result.message || 'Error creating purchase payment')
+          }
+        } catch (error) {
+          console.error('Error creating purchase payment:', error)
+          // Fall back to general provider payment if purchase payment fails
+          toast.error('Error en pago específico de compra, intentando pago general...')
+        }
+      }
+
+      // General provider payment (original logic)
       const paymentDescription =
         formData.descripcion ||
         `Pago a proveedor (${providerPaymentService.getPaymentMethodNameSync(formData.forma_pago)})`
@@ -185,7 +231,8 @@ function AgregarPagoModal({
         comprobante_image: formData.comprobante_image || undefined,
         banks: banks || [],
         invoice_file: invoiceFile || null,
-        invoice_number: formData.invoice_number || null
+        invoice_number: formData.invoice_number || null,
+        purchase_id: purchaseData?.id || null // Link to purchase if available
       }
 
       // Add additional fields if they exist
@@ -201,11 +248,12 @@ function AgregarPagoModal({
         paymentData.echeq_time = formData.echeq_time
       }
 
-      const result = await providerPaymentService.createProviderPayment(paymentData)
+      result = await providerPaymentService.createProviderPayment(paymentData)
 
       if (result.success) {
+        const paymentTypeMsg = isForPurchase ? 'compra' : 'proveedor'
         toast.success(
-          `¡Pago registrado exitosamente!\n• Monto: ${providerPaymentService.formatCurrency(amount)}\n• Método: ${providerPaymentService.getPaymentMethodNameSync(formData.forma_pago)}\n• Nuevo saldo: ${providerPaymentService.formatCurrency(result.new_balance)}`,
+          `¡Pago de ${paymentTypeMsg} registrado exitosamente!\n• Monto: ${providerPaymentService.formatCurrency(amount)}\n• Método: ${providerPaymentService.getPaymentMethodNameSync(formData.forma_pago)}\n• Nuevo saldo: ${providerPaymentService.formatCurrency(result.new_balance)}`,
           { duration: 4000 }
         )
 
