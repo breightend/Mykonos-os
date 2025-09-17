@@ -21,6 +21,22 @@ from routes.banks_router import banks_router
 from routes.statistics_router import statistics_bp
 
 app = Flask(__name__)
+
+
+# Add request logging
+@app.before_request
+def before_request():
+    print(f"🌐 INCOMING REQUEST: {request.method} {request.url}")
+    print(f"🌐 Headers: {dict(request.headers)}")
+
+
+# Add response logging
+@app.after_request
+def after_request(response):
+    print(f"🌐 OUTGOING RESPONSE: {response.status_code}")
+    return response
+
+
 # Comprehensive CORS configuration to handle all preflight requests
 CORS(
     app,

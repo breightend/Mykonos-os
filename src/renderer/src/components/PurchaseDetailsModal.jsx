@@ -79,7 +79,6 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
 
       if (result.status === 'éxito') {
         toast.success('Códigos de barras generados exitosamente')
-        // Aquí podrías abrir una ventana para imprimir o descargar los códigos
         console.log('Barcodes to print:', result.barcodes)
       }
     } catch (error) {
@@ -213,10 +212,12 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                         <tr key={index}>
                           <td className="font-medium">{product.product_name}</td>
                           <td>{product.barcode}</td>
-                          <td>${product.cost_price?.toFixed(2)}</td>
+                          <td>${parseFloat(product.cost_price || 0).toFixed(2)}</td>
                           <td>{product.quantity}</td>
-                          <td>${product.discount?.toFixed(2) || '0.00'}</td>
-                          <td className="font-semibold">${product.subtotal?.toFixed(2)}</td>
+                          <td>${parseFloat(product.discount || 0).toFixed(2)}</td>
+                          <td className="font-semibold">
+                            ${parseFloat(product.subtotal || 0).toFixed(2)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -235,7 +236,9 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                   <label className="label">
                     <span className="label-text">Subtotal</span>
                   </label>
-                  <p className="text-lg font-semibold">${purchase.subtotal?.toFixed(2)}</p>
+                  <p className="text-lg font-semibold">
+                    ${parseFloat(purchase.subtotal || 0).toFixed(2)}
+                  </p>
                 </div>
 
                 <div>
@@ -243,7 +246,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                     <span className="label-text">Descuento</span>
                   </label>
                   <p className="text-lg font-semibold">
-                    ${purchase.discount?.toFixed(2) || '0.00'}
+                    ${parseFloat(purchase.discount || 0).toFixed(2)}
                   </p>
                 </div>
 
@@ -251,7 +254,9 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                   <label className="label">
                     <span className="label-text font-bold">Total</span>
                   </label>
-                  <p className="text-xl font-bold text-primary">${purchase.total?.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-primary">
+                    ${parseFloat(purchase.total || 0).toFixed(2)}
+                  </p>
                 </div>
               </div>
             </div>

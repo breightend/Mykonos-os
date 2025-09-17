@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from commons.tools import print_debug  # noqa: F401
 from config.config import Config
+from tkinter.tix import INTEGER
 
 
 class TABLES(Enum):
@@ -45,9 +46,10 @@ class TABLES(Enum):
     PAYMENT_METHODS = "payment_methods"
     BANKS = "banks"
     BANKS_PAYMENT_METHODS = "bank_payment_methods"
-    SALES_PAYMENTS = (
+    SALES_PAYMENT = (
         "sales_payments"  # Relación muchos a muchos entre bancos y métodos de pago
     )
+    PURCHASE_PAYMENTS = "puchase_payments"
 
 
 DATABASE_TABLES = {
@@ -243,7 +245,7 @@ DATABASE_TABLES = {
             "brand_id": "INTEGER",  # ID de la marca del producto.
             "creation_date": "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",  # Fecha de creación del producto, se establece por defecto a la fecha y hora actuales.
             "last_modified_date": "TEXT",  # Fecha de la última modificación del producto.
-            "state": "TEXT DEFAULT 'activo'"  # Estado del producto posibles: (enTienda, sinStock, esperandoArribo).
+            "state": "TEXT DEFAULT 'activo'",  # Estado del producto posibles: (enTienda, sinStock, esperandoArribo).
         },
         "foreign_keys": [
             {  # Relación con la tabla de usuarios.
@@ -332,7 +334,7 @@ DATABASE_TABLES = {
             "branch_id": "INTEGER NOT NULL",  # Identificador de la sucursal que almacena el producto.
             "quantity": "INTEGER NOT NULL CHECK (quantity >= 0)",  # Cantidad actual del producto en la sucursal, no puede ser negativo.
             "last_updated": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de la última actualización del stock.
-            "provider_id" : "INTEGER NOT NULL"
+            "provider_id": "INTEGER NOT NULL",
         },
         "foreign_keys": [
             {  # Relación con la tabla de productos.
@@ -352,7 +354,7 @@ DATABASE_TABLES = {
                 "reference_table": TABLES.ENTITIES,
                 "reference_column": "id",
                 "export_column_name": "name",
-            }
+            },
         ],
     },
     TABLES.WAREHOUSE_STOCK_VARIANTS: {
@@ -541,6 +543,35 @@ DATABASE_TABLES = {
             },
         ],
     },
+    TABLES.PURCHASE_PAYMENTS: {
+        "columns": {
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+            "payment_method_id": "INTEGER NOT NULL",
+            "provider_id": "INTEGER NOT NULL",
+            "amount": "INTEGER NOT NULL",
+            "file_id": "INTEGER",
+        },
+        "foreign_keys": [
+            {
+                "column": "payment_method_id",
+                "reference_table": TABLES.BANKS_PAYMENT_METHODS,
+                "reference_column": "id",
+                "export_column_name": "payment_method_name",
+            },
+            {
+                "column": "provider_id",
+                "reference_table": TABLES.ENTITIES,
+                "reference_column": "id",
+                "export_column_name": "entity_name",
+            },
+            {
+                "column": "file_id",
+                "reference_table": TABLES.FILE_ATTACHMENTS,
+                "reference_column": "id",
+                "export_column_name": "file_name",
+            },
+        ],
+    },
     TABLES.SALES: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único de la venta
@@ -697,7 +728,7 @@ DATABASE_TABLES = {
             "created_at": "TEXT DEFAULT CURRENT_TIMESTAMP",
             "updated_at": "TEXT DEFAULT CURRENT_TIMESTAMP",
             "provider_use_it": "BOOLEAN",
-            "client_use_it": "BOOLEAN"
+            "client_use_it": "BOOLEAN",
         },
         "foreign_keys": [],
     },

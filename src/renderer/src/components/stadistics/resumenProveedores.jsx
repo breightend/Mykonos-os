@@ -66,55 +66,55 @@ export default function ResumenProveedores() {
 
       {/* Product Summary Stats */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-5">
-        <div className="stat rounded-box bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <div className="stat-figure text-blue-200">
+        <div className="stat rounded-box bg-gradient-to-br from-primary/30 to-primary/50 text-white">
+          <div className=" ">
             <Package className="h-8 w-8" />
           </div>
-          <div className="stat-title text-blue-100">Productos Únicos</div>
+          <div className="font-semibold text-black">Productos Únicos</div>
           <div className="stat-value">
             {productStats.product_summary?.total_unique_products || 0}
           </div>
-          <div className="stat-desc text-blue-200">Diferentes productos comprados</div>
+          <div className="text-xs text-black">Diferentes productos comprados</div>
         </div>
 
-        <div className="stat rounded-box bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <div className="stat-figure text-green-200">
+        <div className="stat rounded-box bg-gradient-to-br from-primary/30 to-primary/50 text-white">
+          <div className="">
             <Tag className="h-8 w-8" />
           </div>
-          <div className="stat-title text-green-100">Grupos de Productos</div>
+          <div className="font-semibold text-black">Grupos de Productos</div>
           <div className="stat-value">{productStats.product_summary?.total_groups || 0}</div>
-          <div className="stat-desc text-green-200">Categorías (Pantalones, Remeras, etc.)</div>
+          <div className="text-xs text-black">Categorías (Pantalones, Remeras, etc.)</div>
         </div>
 
-        <div className="stat rounded-box bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <div className="stat-figure text-purple-200">
+        <div className="stat rounded-box bg-gradient-to-br from-primary/30 to-primary/50 text-white">
+          <div className="">
             <Star className="h-8 w-8" />
           </div>
-          <div className="stat-title text-purple-100">Marcas</div>
+          <div className="font-semibold text-black">Marcas</div>
           <div className="stat-value">{productStats.product_summary?.total_brands || 0}</div>
-          <div className="stat-desc text-purple-200">Marcas diferentes</div>
+          <div className="text-xs text-black">Marcas diferentes</div>
         </div>
 
-        <div className="stat rounded-box bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-          <div className="stat-figure text-orange-200">
+        <div className="stat rounded-box bg-gradient-to-br from-primary/30 to-primary/50 text-white">
+          <div className=" ">
             <ShoppingBag className="h-8 w-8" />
           </div>
-          <div className="stat-title text-orange-100">Total Unidades</div>
+          <div className="font-semibold text-black">Total Unidades</div>
           <div className="stat-value">
             {productStats.product_summary?.total_products_purchased || 0}
           </div>
-          <div className="stat-desc text-orange-200">Unidades compradas en total</div>
+          <div className="text-xs text-black">Unidades compradas en total</div>
         </div>
 
-        <div className="stat rounded-box bg-gradient-to-br from-red-500 to-red-600 text-white">
-          <div className="stat-figure text-red-200">
+        <div className="stat rounded-box bg-gradient-to-br from-primary/30 to-primary/50 text-white">
+          <div className=" ">
             <DollarSign className="h-8 w-8" />
           </div>
-          <div className="stat-title text-red-100">Valor Total</div>
+          <div className="font-semibold text-black">Valor Total</div>
           <div className="stat-value text-lg">
             {formatCurrency(productStats.product_summary?.total_products_value || 0)}
           </div>
-          <div className="stat-desc text-red-200">Dinero invertido en productos</div>
+          <div className="text-xs text-black">Dinero invertido en productos</div>
         </div>
       </div>
 
@@ -141,7 +141,7 @@ export default function ResumenProveedores() {
                     <div className="card-body">
                       <h3 className="card-title flex items-center justify-between text-lg text-primary">
                         {group.group_name}
-                        <div className="badge badge-primary badge-lg">{group.total_quantity}</div>
+                        <div className="badge badge-primary px-2 badge-lg">{group.total_quantity}</div>
                       </h3>
 
                       <div className="space-y-2">
@@ -290,7 +290,7 @@ export default function ResumenProveedores() {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="font-bold">{brand.total_quantity} uds</div>
+                                <div className="font-bold">{brand.total_quantity} unidades</div>
                                 <div className="text-xs text-success">
                                   {formatCurrency(brand.total_spent)}
                                 </div>

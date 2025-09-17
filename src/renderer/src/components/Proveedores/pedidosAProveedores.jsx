@@ -225,16 +225,16 @@ export default function PedidosAProveedores() {
 
       {/* Stats Cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="stat rounded-box bg-base-200">
-          <div className="stat-figure text-primary">
+        <div className="stat rounded-box bg-gradient-to-br from-secondary/10 to-secondary/30">
+          <div className=" text-primary">
             <Package className="h-8 w-8" />
           </div>
           <div className="stat-title">Total Compras</div>
           <div className="stat-value text-primary">{summary.summary?.total_purchases || 0}</div>
         </div>
 
-        <div className="stat rounded-box bg-base-200">
-          <div className="stat-figure text-success">
+        <div className="stat rounded-box bg-gradient-to-br from-secondary/10 to-secondary/30">
+          <div className="text-success">
             <TrendingUp className="h-8 w-8" />
           </div>
           <div className="stat-title">Monto Total</div>
@@ -243,16 +243,16 @@ export default function PedidosAProveedores() {
           </div>
         </div>
 
-        <div className="stat rounded-box bg-base-200">
-          <div className="stat-figure text-warning">
+        <div className="stat rounded-box bg-gradient-to-br from-secondary/10 to-secondary/30">
+          <div className=" text-warning">
             <Clock className="h-8 w-8" />
           </div>
           <div className="stat-title">Pendientes</div>
           <div className="stat-value text-warning">{summary.summary?.pending_purchases || 0}</div>
         </div>
 
-        <div className="stat rounded-box bg-base-200">
-          <div className="stat-figure text-info">
+        <div className="stat rounded-box bg-gradient-to-br from-secondary/10 to-secondary/30">
+          <div className=" text-info">
             <CheckCircle className="h-8 w-8" />
           </div>
           <div className="stat-title">Recibidas</div>
@@ -294,7 +294,7 @@ export default function PedidosAProveedores() {
           </div>
 
           {/* Products by Group */}
-          <div className="card bg-base-200">
+          <div className="card from-secondary/10 to-secondary/30">
             <div className="card-body">
               <h3 className="card-title flex items-center gap-2">
                 <Package className="h-6 w-6" />
@@ -331,7 +331,7 @@ export default function PedidosAProveedores() {
           </div>
 
           {/* Top Products */}
-          <div className="card bg-base-200">
+          <div className="card from-secondary/10 to-secondary/30">
             <div className="card-body">
               <h3 className="card-title flex items-center gap-2">
                 <TrendingUp className="h-6 w-6" />
@@ -369,7 +369,7 @@ export default function PedidosAProveedores() {
           </div>
 
           {/* Brands by Group */}
-          <div className="card bg-base-200">
+          <div className="card from-secondary/10 to-secondary/30">
             <div className="card-body">
               <h3 className="card-title flex items-center gap-2">
                 <BarChart3 className="h-6 w-6" />
@@ -422,7 +422,7 @@ export default function PedidosAProveedores() {
       {!showProductStats && (
         <>
           {/* Filters */}
-          <div className="card mb-6 bg-base-200 p-4">
+          <div className="card mb-6 from-secondary/10 to-secondary/30 p-4">
             <h2 className="mb-4 text-xl font-semibold">Filtros</h2>
             <div className="flex flex-wrap gap-4">
               <div className="form-control">
@@ -466,7 +466,16 @@ export default function PedidosAProveedores() {
             <div className="card-body">
               <h2 className="card-title mb-4">
                 Información de Compras
-                <div className="badge badge-secondary">{filteredPurchases.length} compras</div>
+              
+                <div className="badge badge-secondary px-2">
+                  {filteredPurchases.length > 0 ? (filteredPurchases.length === 1 ? (
+                    <span>1 compra</span>
+                  ) : (
+                    <span>{filteredPurchases.length} compras</span>
+                  )) : (  
+                    <span>No hay compras</span>
+                  )}
+                </div>
               </h2>
 
               <div className="overflow-x-auto">
@@ -577,8 +586,8 @@ export default function PedidosAProveedores() {
               selectedPurchase && (
                 <div className="space-y-6">
                   {/* Purchase Info */}
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="card bg-base-200">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div className="card from-secondary/10 to-secondary/30">
                       <div className="card-body">
                         <h4 className="card-title text-sm">Información de la Compra</h4>
                         <div className="space-y-2 text-sm">
@@ -617,7 +626,7 @@ export default function PedidosAProveedores() {
                       </div>
                     </div>
 
-                    <div className="card bg-base-200">
+                    <div className="card from-secondary/10 to-secondary/30">
                       <div className="card-body">
                         <h4 className="card-title text-sm">Información del Proveedor</h4>
                         <div className="space-y-2 text-sm">
@@ -651,7 +660,7 @@ export default function PedidosAProveedores() {
 
                   {/* Payment Info */}
                   {(selectedPurchase.payment_method_name || selectedPurchase.bank_name) && (
-                    <div className="card bg-base-200">
+                    <div className="card from-secondary/10 to-secondary/30">
                       <div className="card-body">
                         <h4 className="card-title text-sm">Información de Pago</h4>
                         <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
@@ -678,7 +687,7 @@ export default function PedidosAProveedores() {
                   )}
 
                   {/* Products Table */}
-                  <div className="card bg-base-200">
+                  <div className="card from-secondary/10 to-secondary/30">
                     <div className="card-body">
                       <h4 className="card-title text-sm">Productos Comprados</h4>
                       <div className="overflow-x-auto">
@@ -690,7 +699,6 @@ export default function PedidosAProveedores() {
                               <th>Código</th>
                               <th>Cantidad</th>
                               <th>Precio Costo</th>
-                              <th>Descuento</th>
                               <th>Subtotal</th>
                             </tr>
                           </thead>
@@ -702,7 +710,6 @@ export default function PedidosAProveedores() {
                                 <td>{product.provider_code || 'N/A'}</td>
                                 <td>{product.quantity}</td>
                                 <td>{formatCurrency(product.cost_price)}</td>
-                                <td>{formatCurrency(product.discount)}</td>
                                 <td className="font-semibold">
                                   {formatCurrency(product.subtotal)}
                                 </td>
@@ -711,7 +718,7 @@ export default function PedidosAProveedores() {
                           </tbody>
                           <tfoot>
                             <tr className="font-bold">
-                              <td colSpan="6">Total:</td>
+                              <td colSpan="5">Total:</td>
                               <td>{formatCurrency(selectedPurchase.total)}</td>
                             </tr>
                           </tfoot>
@@ -722,7 +729,7 @@ export default function PedidosAProveedores() {
 
                   {/* Notes */}
                   {selectedPurchase.notes && (
-                    <div className="card bg-base-200">
+                    <div className="card from-secondary/10 to-secondary/30">
                       <div className="card-body">
                         <h4 className="card-title text-sm">Notas</h4>
                         <p className="text-sm">{selectedPurchase.notes}</p>
@@ -732,7 +739,7 @@ export default function PedidosAProveedores() {
 
                   {/* Attachments */}
                   {selectedPurchase.invoice_file_name && (
-                    <div className="card bg-base-200">
+                    <div className="card from-secondary/10 to-secondary/30">
                       <div className="card-body">
                         <h4 className="card-title text-sm">Archivos Adjuntos</h4>
                         <div className="flex items-center gap-2">

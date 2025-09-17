@@ -2,8 +2,16 @@ from flask import Blueprint, request, jsonify
 from database.database import Database
 from datetime import datetime
 import base64
+import traceback
 
 purchase_bp = Blueprint("purchase", __name__)
+
+
+# Simple test route
+@purchase_bp.route("/test", methods=["GET"])
+def test_route():
+    print(f"🟢 TEST ROUTE HIT: /api/purchases/test")
+    return jsonify({"status": "success", "message": "Purchase router is working!"}), 200
 
 
 # Crear una nueva compra con sus productos
@@ -80,9 +88,14 @@ def create_purchase():
             ), 500
 
         purchase_id = purchase_result.get("rowid")
+        print(f"DEBUG: Created purchase with ID: {purchase_id}")
 
         # Agregar los productos de la compra
         for product in data["products"]:
+            print(
+                f"DEBUG: Processing product - ID: {product.get('product_id')}, Quantity: {product.get('quantity')}, Cost: {product.get('cost_price')}"
+            )
+
             product_detail = {
                 "purchase_id": purchase_id,
                 "product_id": product["product_id"],
@@ -97,6 +110,10 @@ def create_purchase():
                 product_detail["metadata"] = str(product["stock_variants"])
 
             detail_result = db.add_record("purchases_detail", product_detail)
+            print(
+                f"DEBUG: Product detail save result - Success: {detail_result.get('success')}, ID: {detail_result.get('rowid')}"
+            )
+
             if not detail_result.get("success"):
                 # Si falla algún detalle, eliminar la compra y el archivo
                 db.delete_record("purchases", "id = ?", (purchase_id,))
@@ -195,72 +212,150 @@ def get_purchases_by_provider(provider_id):
 # Obtener una compra por ID con sus detalles completos
 @purchase_bp.route("/<int:purchase_id>", methods=["GET"])
 def get_purchase_by_id(purchase_id):
+    print(f"🔍 API CALL: GET /api/purchases/{purchase_id}")
+    print(f"🔍 Request method: {request.method}")
+    print(f"🔍 Request URL: {request.url}")
+    print(f"DEBUG: Fetching purchase with ID: {purchase_id}")
     try:
         db = Database()
 
-        # Obtener datos de la compra con todas las relaciones
+        # Simple purchase query first
         purchase_query = """
         SELECT 
-            p.*,
+            p.id, p.entity_id, p.purchase_date, p.subtotal, p.discount, p.total,
+            p.payment_method, p.transaction_number, p.invoice_number, p.notes,
+            p.file_id, p.status, p.delivery_date,
             e.entity_name as provider_name,
-            e.cuit as provider_cuit,
-            e.razon_social as provider_razon_social,
-            e.domicilio_comercial as provider_address,
-            e.phone_number as provider_phone,
-            e.email as provider_email,
-            bpm.amount as payment_method_amount,
-            b.name as bank_name,
-            b.code as bank_code,
-            pm.method_name as payment_method_name,
-            fa.file_name as invoice_file_name,
-            fa.file_extension as invoice_file_extension,
-            fa.file_content as invoice_file_content
+            e.cuit as provider_cuit
         FROM purchases p
         LEFT JOIN entities e ON p.entity_id = e.id
-        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
-        LEFT JOIN banks b ON bpm.bank_id = b.id
-        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
-        LEFT JOIN file_attachments fa ON p.file_id = fa.id
-        WHERE p.id = ?
+        WHERE p.id = %s
         """
+        print(f"DEBUG: Executing purchase query for ID: {purchase_id}")
         purchase = db.execute_query(purchase_query, (purchase_id,))
+        print(
+            f"DEBUG: Purchase query returned {len(purchase) if purchase else 0} results"
+        )
+
+        if purchase:
+            print(f"DEBUG: Purchase data type: {type(purchase[0])}")
+            print(f"DEBUG: Purchase data: {purchase[0]}")
 
         if not purchase:
             return jsonify({"status": "error", "message": "Compra no encontrada"}), 404
 
-        # Obtener detalles de los productos con información completa
+        # Handle both dictionary and tuple formats
+        purchase_row = purchase[0]
+        if isinstance(purchase_row, dict):
+            # If it's a dictionary, access by key names
+            purchase_data = {
+                "id": purchase_row.get("id"),
+                "entity_id": purchase_row.get("entity_id"),
+                "purchase_date": purchase_row.get("purchase_date"),
+                "subtotal": purchase_row.get("subtotal"),
+                "discount": purchase_row.get("discount"),
+                "total": purchase_row.get("total"),
+                "payment_method": purchase_row.get("payment_method"),
+                "transaction_number": purchase_row.get("transaction_number"),
+                "invoice_number": purchase_row.get("invoice_number"),
+                "notes": purchase_row.get("notes"),
+                "file_id": purchase_row.get("file_id"),
+                "status": purchase_row.get("status"),
+                "delivery_date": purchase_row.get("delivery_date"),
+                "provider_name": purchase_row.get("provider_name"),
+                "provider_cuit": purchase_row.get("provider_cuit"),
+            }
+        else:
+            # If it's a tuple/list, access by index
+            purchase_data = {
+                "id": purchase_row[0],
+                "entity_id": purchase_row[1],
+                "purchase_date": purchase_row[2],
+                "subtotal": purchase_row[3],
+                "discount": purchase_row[4],
+                "total": purchase_row[5],
+                "payment_method": purchase_row[6],
+                "transaction_number": purchase_row[7],
+                "invoice_number": purchase_row[8],
+                "notes": purchase_row[9],
+                "file_id": purchase_row[10],
+                "status": purchase_row[11],
+                "delivery_date": purchase_row[12],
+                "provider_name": purchase_row[13],
+                "provider_cuit": purchase_row[14],
+            }
+
+        # Get purchase details
         details_query = """
         SELECT 
-            pd.*,
-            pr.product_name,
-            pr.provider_code,
-            pr.cost as current_cost,
-            pr.sale_price as current_sale_price,
-            b.brand_name,
-            g.group_name
+            pd.id, pd.purchase_id, pd.product_id, pd.cost_price, pd.quantity, 
+            pd.discount, pd.subtotal, pd.metadata,
+            pr.product_name, pr.provider_code, pr.cost as current_cost, pr.sale_price as current_sale_price,
+            b.brand_name, g.group_name
         FROM purchases_detail pd
         LEFT JOIN products pr ON pd.product_id = pr.id
         LEFT JOIN brands b ON pr.brand_id = b.id
-        LEFT JOIN [group] g ON pr.group_id = g.id
-        WHERE pd.purchase_id = ?
+        LEFT JOIN groups g ON pr.group_id = g.id
+        WHERE pd.purchase_id = %s
         """
         details = db.execute_query(details_query, (purchase_id,))
 
-        purchase_data = purchase[0]
-        purchase_data["products"] = details
+        print(
+            f"DEBUG: Purchase ID {purchase_id} details query returned {len(details)} products"
+        )
 
-        # Convertir file_content a base64 si existe para envío seguro
-        if purchase_data.get("invoice_file_content"):
-            purchase_data["invoice_file_content_base64"] = base64.b64encode(
-                purchase_data["invoice_file_content"]
-            ).decode("utf-8")
-            # Remover el contenido binario original
-            del purchase_data["invoice_file_content"]
+        # Convert details to list of dictionaries
+        products = []
+        for detail in details:
+            if isinstance(detail, dict):
+                # If it's a dictionary, access by key names
+                products.append(
+                    {
+                        "id": detail.get("id"),
+                        "purchase_id": detail.get("purchase_id"),
+                        "product_id": detail.get("product_id"),
+                        "cost_price": detail.get("cost_price"),
+                        "quantity": detail.get("quantity"),
+                        "discount": detail.get("discount"),
+                        "subtotal": detail.get("subtotal"),
+                        "metadata": detail.get("metadata"),
+                        "product_name": detail.get("product_name"),
+                        "provider_code": detail.get("provider_code"),
+                        "current_cost": detail.get("current_cost"),
+                        "current_sale_price": detail.get("current_sale_price"),
+                        "brand_name": detail.get("brand_name"),
+                        "group_name": detail.get("group_name"),
+                    }
+                )
+            else:
+                # If it's a tuple/list, access by index
+                products.append(
+                    {
+                        "id": detail[0],
+                        "purchase_id": detail[1],
+                        "product_id": detail[2],
+                        "cost_price": detail[3],
+                        "quantity": detail[4],
+                        "discount": detail[5],
+                        "subtotal": detail[6],
+                        "metadata": detail[7],
+                        "product_name": detail[8],
+                        "provider_code": detail[9],
+                        "current_cost": detail[10],
+                        "current_sale_price": detail[11],
+                        "brand_name": detail[12],
+                        "group_name": detail[13],
+                    }
+                )
 
+        purchase_data["products"] = products
+
+        print(f"DEBUG: Returning purchase with {len(products)} products")
         return jsonify(purchase_data), 200
 
     except Exception as e:
-        print(f"Error fetching purchase by ID: {e}")
+        print(f"Error fetching purchase by ID {purchase_id}: {e}")
+        print(f"Full traceback: {traceback.format_exc()}")
         return jsonify(
             {"status": "error", "message": "Error al obtener la compra"}
         ), 500
@@ -278,22 +373,20 @@ def get_payment_info():
             bpm.id,
             bpm.amount,
             b.name as bank_name,
-            b.code as bank_code,
+            b.swift_code as bank_code,
             pm.method_name as payment_method_name,
             pm.method_name || ' - ' || b.name as display_name
         FROM banks_payment_methods bpm
         LEFT JOIN banks b ON bpm.bank_id = b.id
         LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
-        WHERE b.is_active = 1
         ORDER BY pm.method_name, b.name
         """
         payment_methods = db.execute_query(payment_methods_query)
 
         # También obtener bancos separados por si se necesitan
         banks_query = """
-        SELECT id, name, code 
+        SELECT id, name, swift_code as code 
         FROM banks 
-        WHERE is_active = 1
         ORDER BY name
         """
         banks = db.execute_query(banks_query)

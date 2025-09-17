@@ -108,15 +108,20 @@ def create_provider_debit_movement():
         # Validate required fields
         if not data.get("entity_id") or not data.get("amount"):
             return jsonify(
-                {"success": False, "message": "entity_id y amount son requeridos"}), 400
+                {"success": False, "message": "entity_id y amount son requeridos"}
+            ), 400
         service = AccountMovementsService()
-        result = service.create_debit_movement(
+        result = service.create_provider_debit_movement(
             entity_id=data.get("entity_id"),
             amount=float(data.get("amount")),
             description=data.get("description", "Compra a proveedor - deuda pendiente"),
             purchase_id=data.get("purchase_id"),
             partial_payment=float(data.get("partial_payment", 0.0)),
             partial_payment_method=data.get("partial_payment_method", "efectivo"),
+            bank_id=data.get("bank_id"),
+            transaction_number=data.get("transaction_number"),
+            echeq_time=data.get("echeq_time"),
+            invoice_number=data.get("invoice_number"),
         )
         if result["success"]:
             return jsonify(result), 200
@@ -136,23 +141,44 @@ def create_provider_credit_movement():
         "amount": float,
         "description": str (optional),
         "medio_pago": str (optional),
-        "numero_de_comprobante": str (optional)
+        "numero_de_comprobante": str (optional),
+        "bank_id": int (optional),
+        "transaction_number": str (optional),
+        "echeq_time": str (optional),
+        "invoice_number": str (optional),
+        "invoice_file": file (optional)
     }
     """
     try:
         data = request.json
+        print(f"🔍 Received data: {data}")
+
         if not data.get("entity_id") or not data.get("amount"):
             return jsonify(
                 {"success": False, "message": "entity_id y amount son requeridos"}
             ), 400
+
+        print(f"🔍 Creating AccountMovementsService...")
         service = AccountMovementsService()
-        result = service.create_credit_movement(
+
+        print(
+            f"🔍 Calling create_provider_credit_movement with entity_id={data.get('entity_id')}, amount={data.get('amount')}"
+        )
+        result = service.create_provider_credit_movement(
             entity_id=data.get("entity_id"),
             amount=float(data.get("amount")),
             description=data.get("description", "Pago a proveedor"),
             medio_pago=data.get("medio_pago", "efectivo"),
             numero_de_comprobante=data.get("numero_de_comprobante"),
+            bank_id=data.get("bank_id"),
+            transaction_number=data.get("transaction_number"),
+            echeq_time=data.get("echeq_time"),
+            invoice_number=data.get("invoice_number"),
+            invoice_file=data.get("invoice_file"),
         )
+
+        print(f"🔍 Service result: {result}")
+
         if result["success"]:
             return jsonify(result), 200
         else:
@@ -177,6 +203,7 @@ def get_client_balance(entity_id):
     except Exception as e:
         return jsonify({"success": False, "message": f"Error en el servidor: {e}"}), 500
 
+
 @account_movements_router.route("/provider/balance/<int:entity_id>", methods=["GET"])
 def get_provider_balance(entity_id):
     """
@@ -184,7 +211,7 @@ def get_provider_balance(entity_id):
     """
     try:
         service = AccountMovementsService()
-        balance = service.get_client_balance(entity_id)
+        balance = service.get_provider_balance(entity_id)
 
         return jsonify(
             {"success": True, "entity_id": entity_id, "balance": balance}
@@ -192,6 +219,7 @@ def get_provider_balance(entity_id):
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error en el servidor: {e}"}), 500
+
 
 @account_movements_router.route("/movements/<int:entity_id>", methods=["GET"])
 def get_client_movements(entity_id):
@@ -208,7 +236,7 @@ def get_client_movements(entity_id):
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error en el servidor: {e}"}), 500
-    
+
 
 @account_movements_router.route("/provider/movements/<int:entity_id>", methods=["GET"])
 def get_provider_movements(entity_id):
@@ -225,6 +253,7 @@ def get_provider_movements(entity_id):
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error en el servidor: {e}"}), 500
+
 
 @account_movements_router.route("/all", methods=["GET"])
 def get_all_movements():
