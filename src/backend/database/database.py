@@ -241,7 +241,7 @@ DATABASE_TABLES = {
             "has_discount": "INTEGER DEFAULT 0",  # Indica si el producto tiene descuento aplicado.
             "comments": "TEXT",  # Comentarios adicionales sobre el producto.
             "user_id": "INTEGER",  # ID del usuario que creó o modificó el producto.
-            "images_ids": "TEXT",  # IDs de las imágenes asociadas al producto.
+            "images_ids": "INTEGER",  # IDs de las imágenes asociadas al producto.
             "brand_id": "INTEGER",  # ID de la marca del producto.
             "creation_date": "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",  # Fecha de creación del producto, se establece por defecto a la fecha y hora actuales.
             "last_modified_date": "TEXT",  # Fecha de la última modificación del producto.
@@ -266,6 +266,18 @@ DATABASE_TABLES = {
                 "reference_column": "id",
                 "export_column_name": "brand_name",
             },
+            {
+                "column": "provider_id",
+                "reference_table": TABLES.PROVIDERS,
+                "reference_column": "id",
+                "export_column_name": "provider_name",
+            },
+            {
+                "column": "images_ids",
+                "reference_table": TABLES.IMAGES,
+                "reference_column": "id",
+                "export_column_name": "image_data",
+            }
         ],
     },
     TABLES.IMAGES: {
@@ -488,8 +500,6 @@ DATABASE_TABLES = {
             "subtotal": "REAL NOT NULL",  # Suma total antes de descuentos
             "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
             "total": "REAL NOT NULL",  # Total final después de aplicar descuentos
-            "payment_method": "INTEGER",  # Medio de pago (efectivo, tarjeta, etc.)
-            "transaction_number": "TEXT",  # Número del comprobante te transferencia/ticket de la compra
             "invoice_number": "TEXT",  # Número de factura de la compra
             "notes": "TEXT",  # Nota de texto para dejar comentarios
             "file_id": "INTEGER",  # Id del archivo adjunto de la compra
@@ -543,13 +553,14 @@ DATABASE_TABLES = {
             },
         ],
     },
-    TABLES.PURCHASE_PAYMENTS: {
+    TABLES.PURCHASES_PAYMENTS: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "payment_method_id": "INTEGER NOT NULL",
             "provider_id": "INTEGER NOT NULL",
             "amount": "INTEGER NOT NULL",
             "file_id": "INTEGER",
+            "transaction_number": "INTEGER"
         },
         "foreign_keys": [
             {
