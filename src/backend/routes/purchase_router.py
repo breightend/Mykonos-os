@@ -64,6 +64,7 @@ def create_purchase():
         # Crear la compra principal
         purchase_data = {
             "entity_id": data["entity_id"],
+            "purchase_date": data.get("purchase_date"),  # Let DB set if not provided
             "subtotal": data["subtotal"],
             "discount": data.get("discount", 0),
             "total": data["total"],
@@ -73,9 +74,6 @@ def create_purchase():
             "file_id": file_id,
             "delivery_date": data.get("delivery_date"),
         }
-
-        # Payment information will be handled separately later
-        # keeping payment_method, transaction_number as None for now
 
         # Filtrar valores None para campos opcionales
         purchase_data = {k: v for k, v in purchase_data.items() if v is not None}
@@ -116,9 +114,9 @@ def create_purchase():
 
             if not detail_result.get("success"):
                 # Si falla algún detalle, eliminar la compra y el archivo
-                db.delete_record("purchases", "id = ?", (purchase_id,))
+                db.delete_record("purchases", "id = %s", (purchase_id,))
                 if file_id:
-                    db.delete_record("file_attachments", "id = ?", (file_id,))
+                    db.delete_record("file_attachments", "id = %s", (file_id,))
                 return jsonify(
                     {
                         "status": "error",
@@ -851,7 +849,7 @@ def delete_purchase(purchase_id):
         db.execute_query(delete_details_query, (purchase_id,))
 
         # Eliminar la compra
-        result = db.delete_record("purchases", "id = ?", (purchase_id,))
+        result = db.delete_record("purchases", "id = %s", (purchase_id,))
 
         if result.get("success"):
             return jsonify(
@@ -1049,4 +1047,269 @@ def create_sample_data():
         print(f"Error creating sample data: {e}")
         return jsonify(
             {"status": "error", "message": f"Error creating sample data: {str(e)}"}
+        ), 500
+
+
+# ============================================================================
+# PURCHASE PAYMENTS ENDPOINTS
+# ============================================================================
+
+
+@purchase_bp.route("/purchases/<int:purchase_id>/payments", methods=["POST"])
+def create_purchase_payment(purchase_id):
+    """Create a new payment for a purchase"""
+    try:
+        db = Database()
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ["payment_method", "amount"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify(
+                    {"status": "error", "message": f"Field '{field}' is required"}
+                ), 400
+
+        # Verify purchase exists
+        purchase_query = "SELECT id FROM purchases WHERE id = %s"
+        purchase_result = db.execute_query(purchase_query, (purchase_id,))
+
+        if not purchase_result.get("success") or not purchase_result.get("data"):
+            return jsonify({"status": "error", "message": "Purchase not found"}), 404
+
+        # Prepare payment data
+        payment_data = {
+            "purchase_id": purchase_id,
+            "payment_method": data["payment_method"],
+            "amount": data["amount"],
+            "payment_date": data.get(
+                "payment_date"
+            ),  # Optional, will use CURRENT_TIMESTAMP if not provided
+            "notes": data.get("notes", ""),
+        }
+
+        # Create payment record
+        result = db.add_record("purchases_payments", payment_data)
+
+        if result.get("success"):
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "Payment created successfully",
+                    "payment_id": result.get("id"),
+                }
+            ), 201
+        else:
+            return jsonify(
+                {"status": "error", "message": "Error creating payment"}
+            ), 500
+
+    except Exception as e:
+        print(f"Error creating purchase payment: {e}")
+        return jsonify(
+            {"status": "error", "message": f"Error creating payment: {str(e)}"}
+        ), 500
+
+
+@purchase_bp.route("/purchases/<int:purchase_id>/payments", methods=["GET"])
+def get_purchase_payments(purchase_id):
+    """Get all payments for a specific purchase"""
+    try:
+        db = Database()
+
+        # Verify purchase exists
+        purchase_query = "SELECT id FROM purchases WHERE id = %s"
+        purchase_result = db.execute_query(purchase_query, (purchase_id,))
+
+        if not purchase_result.get("success") or not purchase_result.get("data"):
+            return jsonify({"status": "error", "message": "Purchase not found"}), 404
+
+        # Get all payments for the purchase
+        payments_query = """
+        SELECT 
+            id,
+            purchase_id,
+            payment_method,
+            amount,
+            payment_date,
+            notes,
+            created_at
+        FROM purchases_payments 
+        WHERE purchase_id = %s 
+        ORDER BY payment_date DESC, created_at DESC
+        """
+
+        result = db.execute_query(payments_query, (purchase_id,))
+
+        if result.get("success"):
+            return jsonify(
+                {"status": "success", "payments": result.get("data", [])}
+            ), 200
+        else:
+            return jsonify(
+                {"status": "error", "message": "Error retrieving payments"}
+            ), 500
+
+    except Exception as e:
+        print(f"Error getting purchase payments: {e}")
+        return jsonify(
+            {"status": "error", "message": f"Error retrieving payments: {str(e)}"}
+        ), 500
+
+
+@purchase_bp.route(
+    "/purchases/<int:purchase_id>/payments/<int:payment_id>", methods=["PUT"]
+)
+def update_purchase_payment(purchase_id, payment_id):
+    """Update a specific payment"""
+    try:
+        db = Database()
+        data = request.get_json()
+
+        # Verify payment exists and belongs to the purchase
+        payment_query = """
+        SELECT id FROM purchases_payments 
+        WHERE id = %s AND purchase_id = %s
+        """
+        payment_result = db.execute_query(payment_query, (payment_id, purchase_id))
+
+        if not payment_result.get("success") or not payment_result.get("data"):
+            return jsonify({"status": "error", "message": "Payment not found"}), 404
+
+        # Prepare update data (only include fields that are provided)
+        update_data = {}
+        allowed_fields = ["payment_method", "amount", "payment_date", "notes"]
+
+        for field in allowed_fields:
+            if field in data:
+                update_data[field] = data[field]
+
+        if not update_data:
+            return jsonify(
+                {"status": "error", "message": "No valid fields to update"}
+            ), 400
+
+        # Update payment
+        result = db.update_record(
+            "purchases_payments", update_data, "id = %s", (payment_id,)
+        )
+
+        if result.get("success"):
+            return jsonify(
+                {"status": "success", "message": "Payment updated successfully"}
+            ), 200
+        else:
+            return jsonify(
+                {"status": "error", "message": "Error updating payment"}
+            ), 500
+
+    except Exception as e:
+        print(f"Error updating purchase payment: {e}")
+        return jsonify(
+            {"status": "error", "message": f"Error updating payment: {str(e)}"}
+        ), 500
+
+
+@purchase_bp.route(
+    "/purchases/<int:purchase_id>/payments/<int:payment_id>", methods=["DELETE"]
+)
+def delete_purchase_payment(purchase_id, payment_id):
+    """Delete a specific payment"""
+    try:
+        db = Database()
+
+        # Verify payment exists and belongs to the purchase
+        payment_query = """
+        SELECT id FROM purchases_payments 
+        WHERE id = %s AND purchase_id = %s
+        """
+        payment_result = db.execute_query(payment_query, (payment_id, purchase_id))
+
+        if not payment_result.get("success") or not payment_result.get("data"):
+            return jsonify({"status": "error", "message": "Payment not found"}), 404
+
+        # Delete payment
+        result = db.delete_record("purchases_payments", "id = %s", (payment_id,))
+
+        if result.get("success"):
+            return jsonify(
+                {"status": "success", "message": "Payment deleted successfully"}
+            ), 200
+        else:
+            return jsonify(
+                {"status": "error", "message": "Error deleting payment"}
+            ), 500
+
+    except Exception as e:
+        print(f"Error deleting purchase payment: {e}")
+        return jsonify(
+            {"status": "error", "message": f"Error deleting payment: {str(e)}"}
+        ), 500
+
+
+@purchase_bp.route("/payments", methods=["GET"])
+def get_all_payments():
+    """Get all payments across all purchases with filtering options"""
+    try:
+        db = Database()
+
+        # Get query parameters for filtering
+        payment_method = request.args.get("payment_method")
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        purchase_id = request.args.get("purchase_id")
+
+        # Build query with joins to get purchase information
+        base_query = """
+        SELECT 
+            pp.id,
+            pp.purchase_id,
+            pp.payment_method,
+            pp.amount,
+            pp.payment_date,
+            pp.notes,
+            pp.created_at,
+            p.supplier,
+            p.total_amount as purchase_total
+        FROM purchases_payments pp
+        JOIN purchases p ON pp.purchase_id = p.id
+        WHERE 1=1
+        """
+
+        params = []
+
+        # Add filters
+        if payment_method:
+            base_query += " AND pp.payment_method = %s"
+            params.append(payment_method)
+
+        if start_date:
+            base_query += " AND pp.payment_date >= %s"
+            params.append(start_date)
+
+        if end_date:
+            base_query += " AND pp.payment_date <= %s"
+            params.append(end_date)
+
+        if purchase_id:
+            base_query += " AND pp.purchase_id = %s"
+            params.append(purchase_id)
+
+        base_query += " ORDER BY pp.payment_date DESC, pp.created_at DESC"
+
+        result = db.execute_query(base_query, params)
+
+        if result.get("success"):
+            return jsonify(
+                {"status": "success", "payments": result.get("data", [])}
+            ), 200
+        else:
+            return jsonify(
+                {"status": "error", "message": "Error retrieving payments"}
+            ), 500
+
+    except Exception as e:
+        print(f"Error getting all payments: {e}")
+        return jsonify(
+            {"status": "error", "message": f"Error retrieving payments: {str(e)}"}
         ), 500

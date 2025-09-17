@@ -9,7 +9,6 @@ from datetime import datetime
 from enum import Enum
 from commons.tools import print_debug  # noqa: F401
 from config.config import Config
-from tkinter.tix import INTEGER
 
 
 class TABLES(Enum):
@@ -46,10 +45,10 @@ class TABLES(Enum):
     PAYMENT_METHODS = "payment_methods"
     BANKS = "banks"
     BANKS_PAYMENT_METHODS = "bank_payment_methods"
-    SALES_PAYMENT = (
+    SALES_PAYMENTS = (
         "sales_payments"  # Relación muchos a muchos entre bancos y métodos de pago
     )
-    PURCHASE_PAYMENTS = "puchase_payments"
+    PURCHASES_PAYMENTS = "purchases_payments"
 
 
 DATABASE_TABLES = {
@@ -243,7 +242,7 @@ DATABASE_TABLES = {
             "user_id": "INTEGER",  # ID del usuario que creó o modificó el producto.
             "images_ids": "INTEGER",  # IDs de las imágenes asociadas al producto.
             "brand_id": "INTEGER",  # ID de la marca del producto.
-            "creation_date": "TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))",  # Fecha de creación del producto, se establece por defecto a la fecha y hora actuales.
+            "creation_date": "timestamp [CURRENT_TIMESTAMP]",  # Fecha de creación del producto, se establece por defecto a la fecha y hora actuales.
             "last_modified_date": "TEXT",  # Fecha de la última modificación del producto.
             "state": "TEXT DEFAULT 'activo'",  # Estado del producto posibles: (enTienda, sinStock, esperandoArribo).
         },
@@ -268,16 +267,16 @@ DATABASE_TABLES = {
             },
             {
                 "column": "provider_id",
-                "reference_table": TABLES.PROVIDERS,
+                "reference_table": TABLES.ENTITIES,
                 "reference_column": "id",
-                "export_column_name": "provider_name",
+                "export_column_name": "entity_name",
             },
             {
                 "column": "images_ids",
                 "reference_table": TABLES.IMAGES,
                 "reference_column": "id",
                 "export_column_name": "image_data",
-            }
+            },
         ],
     },
     TABLES.IMAGES: {
@@ -496,7 +495,7 @@ DATABASE_TABLES = {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único de la compra
             "entity_id": "INTEGER",  # Id de la entidad (proveedor)
-            "purchase_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha y hora de la compra
+            "purchase_date": "timestamp",  # Fecha y hora de la compra
             "subtotal": "REAL NOT NULL",  # Suma total antes de descuentos
             "discount": "REAL DEFAULT 0.0",  # Total de descuentos aplicados
             "total": "REAL NOT NULL",  # Total final después de aplicar descuentos
@@ -504,20 +503,14 @@ DATABASE_TABLES = {
             "notes": "TEXT",  # Nota de texto para dejar comentarios
             "file_id": "INTEGER",  # Id del archivo adjunto de la compra
             "status": "TEXT DEFAULT 'Pendiente de entrega'",  # Estado de la compra: 'Pendiente de entrega', 'Recibido', 'Cancelado'
-            "delivery_date": "TEXT",  # Fecha de entrega/recepción de la compra
+            "delivery_date": "timestamp",  # Fecha de entrega/recepción de la compra
         },
         "foreign_keys": [
-            {  # Relación con tabla de clientes si es necesario
+            {  # Relación con tabla de entidades (proveedores)
                 "column": "entity_id",
                 "reference_table": TABLES.ENTITIES,
                 "reference_column": "id",
                 "export_column_name": "entity_name",
-            },
-            {  # Relación con tabla de productos si es necesario
-                "column": "payment_method",
-                "reference_table": TABLES.BANKS_PAYMENT_METHODS,
-                "reference_column": "id",
-                "export_column_name": "payment_method_name",
             },
             {  # Relación con tabla de archivos si es necesario
                 "column": "file_id",
@@ -560,7 +553,7 @@ DATABASE_TABLES = {
             "provider_id": "INTEGER NOT NULL",
             "amount": "INTEGER NOT NULL",
             "file_id": "INTEGER",
-            "transaction_number": "INTEGER"
+            "transaction_number": "INTEGER",
         },
         "foreign_keys": [
             {

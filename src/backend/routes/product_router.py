@@ -23,14 +23,19 @@ def recibir_datos():
     description = data.get("description")
     cost = data.get("cost")
     sale_price = data.get("sale_price")
-    original_price = data.get("original_price")  # Add original_price extraction
+    original_price = data.get("original_price", 0)  # Default to 0 if not provided
     tax = data.get("tax")
-    discount = data.get("discount")
+    discount = data.get("discount", 0)  # Legacy discount field
+    # New discount fields
+    discount_percentage = data.get("discount_percentage", 0)
+    discount_amount = data.get("discount_amount", 0)
+    has_discount = data.get("has_discount", 0)  # 0 = no discount, 1 = has discount
     comments = data.get("comments")
     user_id = data.get("user_id") or 1  # Default to user ID 1 if not provided
     images_ids = data.get("images_ids")  # Campo legacy - mantenemos por compatibilidad
     brand_id = data.get("brand_id")
-    creation_date = data.get("creation_date") or datetime.now()
+    # creation_date is now a timestamp with CURRENT_TIMESTAMP default - let DB handle it
+    creation_date = data.get("creation_date")  # Only include if explicitly provided
     last_modified_date = data.get("last_modified_date")
     # Nuevos arrays para las relaciones muchos a muchos
     size_ids = data.get("size_ids", [])  # Array de IDs de talles
@@ -48,28 +53,35 @@ def recibir_datos():
     db = Database()
     # if not barcode or not provider_code or not product_name or not group_id or not provider_id or not description or not cost or not sale_price or not tax or not discount or not comments or not user_id or not image_ids or not brand_id:
     #     return jsonify({"mensaje": "Faltan datos", "status": "error"}), 400
-    success = db.add_record(
-        "products",
-        {
-            "provider_code": provider_code,
-            "product_name": product_name,
-            "group_id": group_id,
-            "provider_id": provider_id,
-            "description": description,
-            "cost": cost,
-            "sale_price": sale_price,
-            "original_price": original_price,
-            "tax": tax,
-            "discount": discount,
-            "comments": comments,
-            "user_id": user_id,
-            "images_ids": images_ids,
-            "brand_id": brand_id,
-            "creation_date": creation_date,
-            "last_modified_date": last_modified_date,
-            "state": data.get("state", "activo"),
-        },
-    )
+
+    # Prepare product data - only include creation_date if explicitly provided
+    product_data = {
+        "provider_code": provider_code,
+        "product_name": product_name,
+        "group_id": group_id,
+        "provider_id": provider_id,
+        "description": description,
+        "cost": cost,
+        "sale_price": sale_price,
+        "original_price": original_price,
+        "tax": tax,
+        "discount": discount,  # Legacy discount field
+        "discount_percentage": discount_percentage,
+        "discount_amount": discount_amount,
+        "has_discount": has_discount,
+        "comments": comments,
+        "user_id": user_id,
+        "images_ids": images_ids,
+        "brand_id": brand_id,
+        "last_modified_date": last_modified_date,
+        "state": data.get("state", "activo"),
+    }
+
+    # Only include creation_date if explicitly provided, otherwise let DB use CURRENT_TIMESTAMP
+    if creation_date is not None:
+        product_data["creation_date"] = creation_date
+
+    success = db.add_record("products", product_data)
 
     if success.get("success"):
         # Obtener el ID del producto recién creado

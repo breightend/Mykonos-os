@@ -187,6 +187,7 @@ export default function AgregarCompraProveedor() {
                 cost_price: product.cost_price,
                 quantity: product.quantity,
                 discount: product.discount || 0,
+                discount_percentage: 0, // Product-level discounts are in money amounts
                 subtotal: product.subtotal,
                 stock_variants: product.stock_variants
               })
@@ -208,6 +209,7 @@ export default function AgregarCompraProveedor() {
             cost_price: product.cost_price,
             quantity: product.quantity,
             discount: product.discount || 0,
+            discount_percentage: 0, // Product-level discounts are in money amounts
             subtotal: product.subtotal,
             stock_variants: product.stock_variants
           })
@@ -223,6 +225,7 @@ export default function AgregarCompraProveedor() {
         entity_id: provider.id,
         subtotal: parseFloat(purchaseData.subtotal),
         discount: parseFloat(purchaseData.discount) || 0,
+        discount_percentage: discountType === 'percentage' ? parseFloat(purchaseData.discount) || 0 : 0,
         total: parseFloat(purchaseData.total),
         delivery_date: formattedDeliveryDate,
         notes: purchaseData.notes || '',
@@ -240,8 +243,8 @@ export default function AgregarCompraProveedor() {
 
         if (result.status === 'éxito') {
           toast.success(
-            '¡Compra creada exitosamente!\nLos productos están marcados como "esperando arribo".\nPodrás gestionar los pagos por separado.',
-            { duration: 5000 }
+            '¡Compra creada exitosamente!\nLos productos están marcados como "esperando arribo".\nAhora puedes gestionar los pagos por separado en la página del proveedor.',
+            { duration: 6000 }
           )
           setLocation(`/infoProvider?id=${providerId}`)
           resetForm()
