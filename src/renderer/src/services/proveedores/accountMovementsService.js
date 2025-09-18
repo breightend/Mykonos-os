@@ -56,6 +56,39 @@ export const accountMovementsService = {
             console.error('Error fetching all movements:', error)
             throw error
         }
+    },
+
+    // Validate provider balance integrity
+    async validateProviderBalance(providerId) {
+        try {
+            const response = await axios.get(`${BASE_URL}/provider/${providerId}/validate`)
+            return response.data
+        } catch (error) {
+            console.error('Error validating provider balance:', error)
+            throw error
+        }
+    },
+
+    // Recalculate provider balance
+    async recalculateProviderBalance(providerId) {
+        try {
+            const response = await axios.post(`${BASE_URL}/provider/${providerId}/recalculate`)
+            return response.data
+        } catch (error) {
+            console.error('Error recalculating provider balance:', error)
+            throw error
+        }
+    },
+
+    // Fix missing purchase movements
+    async fixMissingPurchaseMovements() {
+        try {
+            const response = await axios.post(`${BASE_URL}/fix-missing-purchase-movements`)
+            return response.data
+        } catch (error) {
+            console.error('Error fixing missing purchase movements:', error)
+            throw error
+        }
     }
 }
 

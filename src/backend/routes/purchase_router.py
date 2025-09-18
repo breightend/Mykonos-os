@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
+from services.account_movements_service import AccountMovementsService
 from datetime import datetime
 import base64
 import traceback
@@ -123,6 +124,37 @@ def create_purchase():
                         "message": "Error al agregar productos a la compra",
                     }
                 ), 500
+
+        # CREATE ACCOUNT MOVEMENT (DEBIT) FOR THE PROVIDER
+        # This creates the debt for the purchase
+        try:
+            account_service = AccountMovementsService()
+
+            # Create debit movement for the provider (increases debt)
+            movement_result = account_service.create_provider_debit_movement(
+                entity_id=data["entity_id"],
+                amount=data["total"],
+                description=f"Compra - Factura: {data.get('invoice_number', 'N/A')}",
+                purchase_id=purchase_id,
+                partial_payment=0.0,  # No partial payment for now
+                partial_payment_method="efectivo",
+            )
+
+            if not movement_result.get("success"):
+                print(
+                    f"⚠️ WARNING: Could not create account movement for purchase {purchase_id}: {movement_result.get('message')}"
+                )
+                # Don't fail the purchase creation, but log the error
+            else:
+                print(
+                    f"✅ Created account movement for purchase {purchase_id}, new balance: ${movement_result.get('new_balance', 0)}"
+                )
+
+        except Exception as e:
+            print(
+                f"⚠️ WARNING: Error creating account movement for purchase {purchase_id}: {e}"
+            )
+            # Don't fail the purchase creation, but log the error
 
         return jsonify(
             {

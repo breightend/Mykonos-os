@@ -710,6 +710,72 @@ export default function InfoProvider() {
                           ? 'A nuestro favor'
                           : 'Sin deuda'}
                     </div>
+                    {/* Balance validation button for development/admin */}
+                    <div className="mt-2 flex gap-1">
+                      <button
+                        className="btn btn-ghost btn-xs text-gray-400 hover:text-gray-600"
+                        onClick={async () => {
+                          try {
+                            const validation =
+                              await accountMovementsService.validateProviderBalance(providerId)
+                            if (validation.success) {
+                              if (validation.is_valid) {
+                                toast.success('✅ Balance correcto')
+                              } else {
+                                const confirmFix = window.confirm(
+                                  `⚠️ Se encontraron ${validation.inconsistencies.length} inconsistencias en el balance.\n\n¿Desea recalcular y corregir automáticamente?`
+                                )
+                                if (confirmFix) {
+                                  const recalc =
+                                    await accountMovementsService.recalculateProviderBalance(
+                                      providerId
+                                    )
+                                  if (recalc.success) {
+                                    toast.success('✅ Balance recalculado correctamente')
+                                    await loadAccountMovements() // Reload data
+                                  } else {
+                                    toast.error('❌ Error al recalcular balance')
+                                  }
+                                }
+                              }
+                            }
+                          } catch (error) {
+                            toast.error('❌ Error al validar balance')
+                          }
+                        }}
+                        title="Validar integridad del balance"
+                      >
+                        🔧 Validar
+                      </button>
+
+                      <button
+                        className="btn btn-ghost btn-xs text-blue-400 hover:text-blue-600"
+                        onClick={async () => {
+                          const confirmFix = window.confirm(
+                            '🔧 Esta acción creará movimientos contables para compras que no los tengan.\n\n¿Continuar?'
+                          )
+                          if (confirmFix) {
+                            try {
+                              const result =
+                                await accountMovementsService.fixMissingPurchaseMovements()
+                              if (result.success) {
+                                toast.success(
+                                  `✅ Se crearon ${result.created_count} movimientos faltantes`
+                                )
+                                await loadAccountMovements() // Reload data
+                              } else {
+                                toast.error('❌ Error al crear movimientos faltantes')
+                              }
+                            } catch (error) {
+                              toast.error('❌ Error al procesar movimientos')
+                            }
+                          }
+                        }}
+                        title="Crear movimientos faltantes para compras"
+                      >
+                        🔄 Reparar
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

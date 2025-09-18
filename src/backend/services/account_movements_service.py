@@ -226,20 +226,19 @@ class AccountMovementsService:
             float: Current balance
         """
         try:
-            # Get the most recent movement for this provider
-            movements = self.db.get_all_records_by_clause(
-                "account_movements", "entity_id = %s", entity_id
-            )
+            # Get the most recent movement for this provider ordered by ID (which reflects creation order)
+            query = """
+                SELECT saldo 
+                FROM account_movements 
+                WHERE entity_id = %s 
+                ORDER BY id DESC 
+                LIMIT 1
+            """
 
-            if movements:
-                # Sort by creation date and get the latest
-                movements.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-                latest_balance = float(movements[0].get("saldo", 0))
+            result = self.db.execute_query(query, (entity_id,))
 
-                # For providers, we return the balance as-is since the logic is already correct:
-                # - When we create a debit (purchase), it increases our debt to the provider
-                # - When we create a credit (payment), it decreases our debt to the provider
-                return latest_balance
+            if result and len(result) > 0:
+                return float(result[0].get("saldo", 0))
             else:
                 return 0.0
 
@@ -674,3 +673,138 @@ class AccountMovementsService:
         except Exception as e:
             print(f"❌ Error getting payment method ID for {method_name}: {e}")
             return 1
+
+    def recalculate_provider_balances(self, entity_id):
+        """
+        Recalculates all balances for a provider in chronological order.
+        This utility function ensures data consistency in case of balance errors.
+
+        Args:
+            entity_id (int): ID of the provider
+
+        Returns:
+            dict: Result of the operation
+        """
+        try:
+            # Get all movements for this provider ordered by ID (chronological order)
+            movements = self.db.execute_query(
+                """
+                SELECT id, debe, haber, saldo 
+                FROM account_movements 
+                WHERE entity_id = %s 
+                ORDER BY id ASC
+                """,
+                (entity_id,),
+            )
+
+            if not movements:
+                return {"success": True, "message": "No movements found for provider"}
+
+            # Recalculate balances
+            running_balance = 0.0
+            updates = []
+
+            for movement in movements:
+                # Calculate the balance after this movement
+                debe = float(movement.get("debe", 0))
+                haber = float(movement.get("haber", 0))
+                running_balance = running_balance + debe - haber
+
+                # Store update for this movement
+                updates.append(
+                    {
+                        "id": movement["id"],
+                        "old_saldo": movement.get("saldo", 0),
+                        "new_saldo": running_balance,
+                    }
+                )
+
+            # Apply updates to database
+            for update in updates:
+                self.db.execute_query(
+                    "UPDATE account_movements SET saldo = %s WHERE id = %s",
+                    (update["new_saldo"], update["id"]),
+                )
+
+            return {
+                "success": True,
+                "message": f"Recalculated {len(updates)} movements for provider {entity_id}",
+                "final_balance": running_balance,
+                "updates_count": len(updates),
+            }
+
+        except Exception as e:
+            print(f"Error recalculating provider balances: {e}")
+            return {"success": False, "message": f"Error: {e}"}
+
+    def validate_provider_balance_integrity(self, entity_id):
+        """
+        Validates the balance integrity for a provider by checking if the running
+        balances are calculated correctly.
+
+        Args:
+            entity_id (int): ID of the provider
+
+        Returns:
+            dict: Validation result with any inconsistencies found
+        """
+        try:
+            # Get all movements for this provider ordered by ID (chronological order)
+            movements = self.db.execute_query(
+                """
+                SELECT id, debe, haber, saldo, descripcion
+                FROM account_movements 
+                WHERE entity_id = %s 
+                ORDER BY id ASC
+                """,
+                (entity_id,),
+            )
+
+            if not movements:
+                return {
+                    "success": True,
+                    "message": "No movements found for provider",
+                    "is_valid": True,
+                }
+
+            # Check balance calculation
+            running_balance = 0.0
+            inconsistencies = []
+
+            for i, movement in enumerate(movements):
+                debe = float(movement.get("debe", 0))
+                haber = float(movement.get("haber", 0))
+                stored_saldo = float(movement.get("saldo", 0))
+
+                # Calculate what the balance should be
+                running_balance = running_balance + debe - haber
+
+                # Check if stored balance matches calculated balance
+                if (
+                    abs(running_balance - stored_saldo) > 0.01
+                ):  # Allow for small floating point errors
+                    inconsistencies.append(
+                        {
+                            "movement_id": movement["id"],
+                            "position": i + 1,
+                            "description": movement.get("descripcion", ""),
+                            "stored_balance": stored_saldo,
+                            "calculated_balance": running_balance,
+                            "difference": stored_saldo - running_balance,
+                        }
+                    )
+
+            return {
+                "success": True,
+                "is_valid": len(inconsistencies) == 0,
+                "final_balance": running_balance,
+                "movements_count": len(movements),
+                "inconsistencies": inconsistencies,
+                "message": f"Found {len(inconsistencies)} balance inconsistencies"
+                if inconsistencies
+                else "All balances are correct",
+            }
+
+        except Exception as e:
+            print(f"Error validating provider balance integrity: {e}")
+            return {"success": False, "message": f"Error: {e}"}

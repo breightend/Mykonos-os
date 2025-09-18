@@ -504,6 +504,7 @@ DATABASE_TABLES = {
             "file_id": "INTEGER",  # Id del archivo adjunto de la compra
             "status": "TEXT DEFAULT 'Pendiente de entrega'",  # Estado de la compra: 'Pendiente de entrega', 'Recibido', 'Cancelado'
             "delivery_date": "timestamp",  # Fecha de entrega/recepción de la compra
+            "pay" : "BOOLEAN", # Indica si la compra fue pagada o no
         },
         "foreign_keys": [
             {  # Relación con tabla de entidades (proveedores)

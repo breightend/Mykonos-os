@@ -381,3 +381,129 @@ def get_provider_financial_summary(provider_id):
         return jsonify(
             {"success": False, "message": f"Error getting provider summary: {e}"}
         ), 500
+
+
+@account_movements_router.route(
+    "/provider/<int:entity_id>/recalculate", methods=["POST"]
+)
+def recalculate_provider_balance(entity_id):
+    """
+    Recalculates all balances for a provider to fix any inconsistencies
+    """
+    try:
+        service = AccountMovementsService()
+        result = service.recalculate_provider_balances(entity_id)
+
+        if result["success"]:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error recalculating balance: {e}"}
+        ), 500
+
+
+@account_movements_router.route("/provider/<int:entity_id>/validate", methods=["GET"])
+def validate_provider_balance_integrity(entity_id):
+    """
+    Validates the balance integrity for a provider
+    """
+    try:
+        service = AccountMovementsService()
+        result = service.validate_provider_balance_integrity(entity_id)
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error validating balance: {e}"}
+        ), 500
+
+
+@account_movements_router.route("/fix-missing-purchase-movements", methods=["POST"])
+def fix_missing_purchase_movements():
+    """
+    Creates account movements for purchases that don't have them
+    """
+    try:
+        from database.database import Database
+
+        db = Database()
+        service = AccountMovementsService()
+
+        # Get all purchases that don't have corresponding account movements
+        query = """
+            SELECT 
+                p.id as purchase_id,
+                p.entity_id as provider_id,
+                p.total,
+                p.purchase_date,
+                p.invoice_number,
+                pr.nombre as provider_name
+            FROM purchases p
+            LEFT JOIN proveedores pr ON p.entity_id = pr.id
+            LEFT JOIN account_movements am ON p.id = am.purchase_id
+            WHERE am.id IS NULL
+            ORDER BY p.purchase_date ASC, p.id ASC
+        """
+
+        missing_purchases = db.execute_query(query)
+
+        if not missing_purchases:
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "No missing purchase movements found",
+                    "created_count": 0,
+                }
+            ), 200
+
+        created_count = 0
+        failed_movements = []
+
+        for purchase in missing_purchases:
+            try:
+                # Create the debit movement for this purchase
+                description = f"Compra - Factura: {purchase['invoice_number'] or 'N/A'}"
+
+                result = service.create_provider_debit_movement(
+                    entity_id=purchase["provider_id"],
+                    amount=purchase["total"],
+                    description=description,
+                    purchase_id=purchase["purchase_id"],
+                    partial_payment=0.0,
+                    partial_payment_method="efectivo",
+                )
+
+                if result.get("success"):
+                    created_count += 1
+                else:
+                    failed_movements.append(
+                        {
+                            "purchase_id": purchase["purchase_id"],
+                            "error": result.get("message", "Unknown error"),
+                        }
+                    )
+
+            except Exception as e:
+                failed_movements.append(
+                    {"purchase_id": purchase["purchase_id"], "error": str(e)}
+                )
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Created {created_count} account movements for missing purchases",
+                "created_count": created_count,
+                "failed_count": len(failed_movements),
+                "total_processed": len(missing_purchases),
+                "failures": failed_movements,
+            }
+        ), 200
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error fixing missing movements: {e}"}
+        ), 500

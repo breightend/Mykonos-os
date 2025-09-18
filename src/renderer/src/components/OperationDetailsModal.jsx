@@ -1,4 +1,4 @@
-import { X, Download, FileText, Calendar, DollarSign, CreditCard, Check } from 'lucide-react'
+import { X, Download, FileText, Calendar, DollarSign, CreditCard, Check, HandCoins } from 'lucide-react'
 import { formatCurrency, formatMovementType } from '../services/proveedores/accountMovementsService'
 
 export default function OperationDetailsModal({ operation, isOpen, onClose }) {
@@ -20,19 +20,34 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
     }
   }
 
+  const handleShowIcon =  (iconName) => {
+    // Lógica para mostrar el ícono basado en el nombre proporcionado
+    switch (iconName) {
+      case 'CreditCard':
+        return <CreditCard className="h-4 w-4" />
+      case 'DollarSign':
+        return <DollarSign className="h-4 w-4" />
+      case 'Check':
+        return <Check className="h-4 w-4" />
+      case 'HandCoins':
+        return <HandCoins className="h-4 w-4" />
+      default:
+        return null
+    }
+  }
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-2xl">
-        <div className="mb-6 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
+      <div className="my-8 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-2xl">
+        <div className="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white p-6">
           <h3 className="text-2xl font-bold text-gray-800">Detalles de la Operación</h3>
-          <button onClick={onClose} className="btn btn-ghost btn-sm btn-circle hover:bg-gray-100">
+          <button onClick={onClose} className="btn btn-ghost btn-sm ">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
           {/* Basic Information */}
-          <div className="rounded-lg bg-gray-50 p-4">
+          <div className="rounded-lg bg-primary/20 p-4">
             <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-700">
               <FileText className="h-5 w-5" />
               Información General
@@ -43,8 +58,8 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                 <p className="font-mono text-lg text-gray-900">#{operation.numero_operacion}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Tipo de Movimiento</label>
-                <span className={`badge ${movementType.badge} badge-lg`}>{movementType.label}</span>
+                <label className="text-sm font-medium text-gray-500">Tipo de Movimiento </label>
+                <span className={`badge px-2 ${movementType.badge} badge-lg`}>{movementType.label}</span>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Descripción</label>
@@ -61,7 +76,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
           </div>
 
           {/* Financial Details */}
-          <div className="rounded-lg bg-blue-50 p-4">
+          <div className="rounded-lg bg-secondary/10 p-4">
             <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-blue-700">
               <DollarSign className="h-5 w-5" />
               Detalles Financieros
@@ -98,7 +113,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
           {(operation.payment_details_id ||
             operation.payment_method_name ||
             operation.bank_name) && (
-            <div className="rounded-lg bg-green-50 p-4">
+            <div className="rounded-lg bg-accent/10 p-4">
               <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-green-700">
                 <CreditCard className="h-5 w-5" />
                 Detalles del Pago
@@ -109,7 +124,9 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                     <label className="text-sm font-medium text-gray-500">Método de Pago</label>
                     <div className="flex items-center gap-2">
                       {operation.payment_method_icon && (
-                        <span className="text-lg">{operation.payment_method_icon}</span>
+                        <span className=' text-green-700'>
+                          {handleShowIcon(operation.payment_method_icon)}
+                        </span>
                       )}
                       <span className="font-medium text-green-700">
                         {operation.payment_method_display_name}
@@ -178,8 +195,8 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                 </div>
                 {operation.purchase_status && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Estado de la Compra</label>
-                    <span className="badge badge-secondary">{operation.purchase_status}</span>
+                    <label className="text-sm font-medium text-gray-500">Estado de la Compra </label>
+                    <span className="badge badge-secondary px-2">{operation.purchase_status}</span>
                   </div>
                 )}
                 {operation.purchase_subtotal && (
@@ -298,7 +315,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
           )}
 
           {/* Dates and References */}
-          <div className="rounded-lg bg-yellow-50 p-4">
+          <div className="rounded-lg bg-primary/10 p-4">
             <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-yellow-700">
               <Calendar className="h-5 w-5" />
               Fechas y Referencias
@@ -372,7 +389,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
           )}
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="sticky bottom-0 flex justify-end gap-3 border-t border-gray-200 bg-white p-6">
           <button onClick={onClose} className="btn btn-primary">
             Cerrar
           </button>
