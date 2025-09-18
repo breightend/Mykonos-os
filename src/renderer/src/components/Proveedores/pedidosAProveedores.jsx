@@ -31,7 +31,6 @@ export default function PedidosAProveedores() {
   const [showProductStats, setShowProductStats] = useState(false)
   const [location, setLocation] = useLocation()
 
-  // Modal states
   const [showModal, setShowModal] = useState(false)
   const [selectedPurchase, setSelectedPurchase] = useState(null)
   const [modalLoading, setModalLoading] = useState(false)
@@ -115,7 +114,7 @@ export default function PedidosAProveedores() {
   const handleStatusChange = async (purchaseId, newStatus) => {
     try {
       await updatePurchaseStatus(purchaseId, newStatus)
-      fetchData() // Refresh data
+      fetchData() 
     } catch (error) {
       console.error('Error updating status:', error)
     }
@@ -124,7 +123,7 @@ export default function PedidosAProveedores() {
   const handleReceivePurchase = async (purchaseId, storageId = 1) => {
     try {
       await receivePurchase(purchaseId, storageId)
-      fetchData() // Refresh data
+      fetchData()
     } catch (error) {
       console.error('Error receiving purchase:', error)
     }
@@ -476,7 +475,8 @@ export default function PedidosAProveedores() {
                       <th>Proveedor</th>
                       <th>Total</th>
                       <th>Estado</th>
-                      <th>Cambiar Estado</th>
+                      <th>Marcar Recibido</th>
+                      <th>Cancelar</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
@@ -489,53 +489,60 @@ export default function PedidosAProveedores() {
                         <td className="font-semibold">{formatCurrency(purchase.total)}</td>
                         <td>{getStatusBadge(purchase.status)}</td>
                         <td>
-                          <div className="dropdown dropdown-end">
-                            <button
-                              tabIndex={0}
-                              className="btn btn-outline btn-sm"
-                              disabled={purchase.status === 'Recibido'}
-                            >
-                              Cambiar
-                            </button>
-                            <ul
-                              tabIndex={0}
-                              className="dropdown-content menu z-[1] w-52 rounded-box bg-base-100 p-2 shadow"
-                            >
-                              {purchase.status !== 'Recibido' && (
-                                <li>
-                                  <button
-                                    onClick={() => handleStatusChange(purchase.id, 'Recibido')}
-                                    className="text-success"
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                    Marcar como Recibido
-                                  </button>
-                                </li>
-                              )}
-                              {purchase.status !== 'Cancelado' && (
-                                <li>
-                                  <button
-                                    onClick={() => handleStatusChange(purchase.id, 'Cancelado')}
-                                    className="text-error"
-                                  >
-                                    <X className="h-4 w-4" />
-                                    Marcar como Cancelado
-                                  </button>
-                                </li>
-                              )}
-                              {purchase.status === 'Pendiente de entrega' && (
-                                <li>
-                                  <button
-                                    onClick={() => handleReceivePurchase(purchase.id)}
-                                    className="text-info"
-                                  >
-                                    <Package className="h-4 w-4" />
-                                    Recibir y Actualizar Stock
-                                  </button>
-                                </li>
-                              )}
-                            </ul>
-                          </div>
+                          <button
+                            className={`btn btn-sm ${
+                              purchase.status === 'Recibido'
+                                ? 'btn-disabled text-gray-400'
+                                : purchase.status === 'Cancelado'
+                                  ? 'btn-disabled text-gray-400'
+                                  : 'btn-success text-white'
+                            }`}
+                            onClick={() => {
+                              if (
+                                purchase.status !== 'Recibido' &&
+                                purchase.status !== 'Cancelado'
+                              ) {
+                                if (purchase.status === 'Pendiente de entrega') {
+                                  handleReceivePurchase(purchase.id)
+                                } else {
+                                  handleStatusChange(purchase.id, 'Recibido')
+                                }
+                              }
+                            }}
+                            disabled={
+                              purchase.status === 'Recibido' || purchase.status === 'Cancelado'
+                            }
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            {purchase.status === 'Pendiente de entrega'
+                              ? 'Recibir + Stock'
+                              : 'Recibido'}
+                          </button>
+                        </td>
+                        <td>
+                          <button
+                            className={`btn btn-sm ${
+                              purchase.status === 'Cancelado'
+                                ? 'btn-disabled text-gray-400'
+                                : purchase.status === 'Recibido'
+                                  ? 'btn-disabled text-gray-400'
+                                  : 'btn-error text-white'
+                            }`}
+                            onClick={() => {
+                              if (
+                                purchase.status !== 'Cancelado' &&
+                                purchase.status !== 'Recibido'
+                              ) {
+                                handleStatusChange(purchase.id, 'Cancelado')
+                              }
+                            }}
+                            disabled={
+                              purchase.status === 'Cancelado' || purchase.status === 'Recibido'
+                            }
+                          >
+                            <X className="h-4 w-4" />
+                            Cancelar
+                          </button>
                         </td>
                         <td>
                           <button

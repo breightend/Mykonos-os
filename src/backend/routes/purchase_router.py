@@ -241,7 +241,7 @@ def create_purchase():
         purchase_id = purchase_result.get("rowid")
         print(f"DEBUG: Created purchase with ID: {purchase_id}")
 
-        # Agregar los productos de la compra
+        # Agregar los productos de la compra y actualizar estados
         for product in data["products"]:
             print(
                 f"DEBUG: Processing product - ID: {product.get('product_id')}, Quantity: {product.get('quantity')}, Cost: {product.get('cost_price')}"
@@ -276,6 +276,19 @@ def create_purchase():
                         "message": "Error al agregar productos a la compra",
                     }
                 ), 500
+
+            # Actualizar estado del producto a 'esperandoArribo' cuando se ordena
+            try:
+                product_update_data = {
+                    "id": product["product_id"],
+                    "state": "esperandoArribo",
+                    "last_modified_date": datetime.now().isoformat(),
+                }
+                update_result = db.update_record("products", product_update_data)
+                print(f"✅ Updated product {product['product_id']} state to 'esperandoArribo'")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not update product state for product {product['product_id']}: {e}")
+                # No failing the purchase creation for this - it's not critical
 
         # CREATE ACCOUNT MOVEMENT (DEBIT) FOR THE PROVIDER
         # This creates the debt for the purchase
@@ -784,14 +797,14 @@ def update_purchase_status(purchase_id):
 # Recibir compra y actualizar inventario
 @purchase_bp.route("/<int:purchase_id>/receive", methods=["POST"])
 def receive_purchase(purchase_id):
+    print(f"🚨🚨🚨 RECEIVE_PURCHASE CALLED! Purchase ID: {purchase_id} 🚨🚨🚨")
+    print(f"🚨🚨🚨 This should appear when you click 'Recibir' button! 🚨🚨🚨")
+    
     try:
         data = request.get_json()
-        storage_id = data.get("storage_id")
-
-        if not storage_id:
-            return jsonify(
-                {"status": "error", "message": "ID de almacén requerido"}
-            ), 400
+        storage_id = data.get("storage_id", 1)  # Default to storage ID 1
+        
+        print(f"🔧 Starting receive_purchase for purchase {purchase_id}, storage {storage_id}")
 
         db = Database()
 
@@ -806,48 +819,189 @@ def receive_purchase(purchase_id):
                 {"status": "error", "message": "La compra ya fue procesada"}
             ), 400
 
-        # Obtener productos de la compra
+        # Obtener productos de la compra con metadata de variantes
         details_query = """
-        SELECT pd.product_id, pd.quantity
+        SELECT pd.product_id, pd.quantity, pd.metadata,
+               pr.product_name, pr.state
         FROM purchases_detail pd
-        WHERE pd.purchase_id = ?
+        LEFT JOIN products pr ON pd.product_id = pr.id
+        WHERE pd.purchase_id = %s
         """
         product_details = db.execute_query(details_query, (purchase_id,))
 
-        # Actualizar stock para cada producto
+        if not product_details:
+            return jsonify(
+                {"status": "error", "message": "No se encontraron productos en la compra"}
+            ), 400
+
+        # Actualizar inventario para cada producto
+        products_updated = []
+        
         for detail in product_details:
             product_id = detail["product_id"]
             quantity = detail["quantity"]
-
-            # Verificar si ya existe stock para este producto en este almacén
-            existing_stock_query = """
-            SELECT id, quantity FROM warehouse_stock 
-            WHERE product_id = ? AND branch_id = ?
-            """
-            existing_stock = db.execute_query(
-                existing_stock_query, (product_id, storage_id)
-            )
-
-            if existing_stock:
-                # Actualizar stock existente
-                new_quantity = existing_stock[0]["quantity"] + quantity
-                update_stock_data = {
-                    "id": existing_stock[0]["id"],
-                    "quantity": new_quantity,
-                    "last_updated": datetime.now().isoformat(),
+            product_name = detail["product_name"]
+            metadata = detail.get("metadata")
+            current_state = detail.get("state", "activo")
+            
+            print(f"🔧 Processing product {product_id} ({product_name}): quantity={quantity}, metadata={metadata}")
+            
+            # Actualizar estado del producto de 'esperandoArribo' a 'enTienda'
+            try:
+                product_update_data = {
+                    "id": product_id,
+                    "state": "enTienda",
+                    "last_modified_date": datetime.now().isoformat(),
                 }
-                db.update_record("warehouse_stock", update_stock_data)
-            else:
-                # Crear nuevo registro de stock
-                stock_data = {
+                update_result = db.update_record("products", product_update_data)
+                print(f"✅ Updated product {product_id} state from '{current_state}' to 'enTienda'")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not update product state for product {product_id}: {e}")
+
+            # Procesar variantes si existe metadata
+            has_variants = False
+            if metadata:
+                try:
+                    import ast
+                    # Convertir metadata string a lista de variantes
+                    variants = ast.literal_eval(metadata)
+                    
+                    if isinstance(variants, list) and len(variants) > 0:
+                        print(f"🔧 Processing {len(variants)} variants for product {product_id}")
+                        has_variants = True
+                        
+                        # Procesar cada variante individualmente
+                        for variant in variants:
+                            size_id = variant.get("size_id")
+                            color_id = variant.get("color_id") 
+                            variant_quantity = variant.get("quantity", 0)
+                            
+                            if variant_quantity > 0:
+                                # Verificar si ya existe stock para esta variante
+                                existing_variant_query = """
+                                SELECT id, quantity FROM warehouse_stock_variants 
+                                WHERE product_id = %s AND size_id = %s AND color_id = %s AND branch_id = %s
+                                """
+                                existing_variant = db.execute_query(
+                                    existing_variant_query, (product_id, size_id, color_id, storage_id)
+                                )
+
+                                if existing_variant:
+                                    # Actualizar stock existente
+                                    new_quantity = existing_variant[0]["quantity"] + variant_quantity
+                                    update_variant_data = {
+                                        "id": existing_variant[0]["id"],
+                                        "quantity": new_quantity,
+                                        "last_updated": datetime.now().isoformat(),
+                                    }
+                                    variant_result = db.update_record("warehouse_stock_variants", update_variant_data)
+                                    print(f"✅ Updated variant stock: Product {product_id}, Size {size_id}, Color {color_id} = {new_quantity}")
+                                else:
+                                    # Crear nuevo registro de stock por variante con código de barras
+                                    import uuid
+                                    # Generar un código de barras único para la variante
+                                    variant_barcode = f"{product_id}{size_id or '0'}{color_id or '0'}{str(uuid.uuid4())[:8]}"
+                                    
+                                    new_variant_data = {
+                                        "product_id": product_id,
+                                        "size_id": size_id,
+                                        "color_id": color_id,
+                                        "branch_id": storage_id,
+                                        "quantity": variant_quantity,
+                                        "variant_barcode": variant_barcode,
+                                        "last_updated": datetime.now().isoformat(),
+                                    }
+                                    variant_result = db.add_record("warehouse_stock_variants", new_variant_data)
+                                    print(f"✅ Created new variant stock: Product {product_id}, Size {size_id}, Color {color_id} = {variant_quantity}")
+                        
+                        # No crear stock tradicional si hay variantes específicas
+                        products_updated.append({
+                            "product_id": product_id,
+                            "product_name": product_name,
+                            "quantity": quantity,
+                            "has_variants": True,
+                            "variants_count": len(variants),
+                            "state_updated": True
+                        })
+                        continue
+                        
+                except Exception as e:
+                    print(f"⚠️ Error processing variant metadata for product {product_id}: {e}")
+                    # Continuar con stock tradicional si falla el procesamiento de variantes
+            
+            # Si no hay variantes o falló el procesamiento, usar stock tradicional
+            print(f"🔧 Creating traditional stock for product {product_id} (has_variants={has_variants})")
+            
+            try:
+                existing_stock_query = """
+                SELECT id, quantity FROM warehouse_stock 
+                WHERE product_id = %s AND branch_id = %s
+                """
+                existing_stock = db.execute_query(
+                    existing_stock_query, (product_id, storage_id)
+                )
+                print(f"🔍 Existing stock query result: {existing_stock}")
+
+                if existing_stock:
+                    # Actualizar stock existente
+                    new_quantity = existing_stock[0]["quantity"] + quantity
+                    update_stock_data = {
+                        "id": existing_stock[0]["id"],
+                        "quantity": new_quantity,
+                        "last_updated": datetime.now().isoformat(),
+                    }
+                    update_result = db.update_record("warehouse_stock", update_stock_data)
+                    print(f"✅ Updated stock for product {product_id}: +{quantity} = {new_quantity}")
+                    print(f"🔍 Update result: {update_result}")
+                else:
+                    # Crear nuevo registro de stock - SIN provider_id que no existe en la tabla
+                    stock_data = {
+                        "product_id": product_id,
+                        "branch_id": storage_id,
+                        "quantity": quantity,
+                        "last_updated": datetime.now().isoformat(),
+                    }
+                    print(f"🔧 Creating stock with data: {stock_data}")
+                    result = db.add_record("warehouse_stock", stock_data)
+                    print(f"✅ Created new stock record for product {product_id}: {quantity} units")
+                    print(f"🔍 Stock creation result: {result}")
+                    
+                # Registrar movimiento de inventario
+                movement_data = {
                     "product_id": product_id,
                     "branch_id": storage_id,
+                    "movement_type": "Entrada",
                     "quantity": quantity,
-                    "provider_id": purchase_data[
-                        "entity_id"
-                    ],  # Add provider_id from purchase
+                    "reason": f"Recepción de compra #{purchase_id}",
+                    "movement_date": datetime.now().isoformat(),
                 }
-                db.add_record("warehouse_stock", stock_data)
+                print(f"🔧 Creating movement with data: {movement_data}")
+                movement_result = db.add_record("inventory_movements", movement_data)
+                print(f"🔍 Movement creation result: {movement_result}")
+                
+                products_updated.append({
+                    "product_id": product_id,
+                    "product_name": product_name,
+                    "quantity": quantity,
+                    "has_variants": has_variants,
+                    "state_updated": True,
+                    "stock_created": True
+                })
+                
+            except Exception as stock_error:
+                print(f"❌ ERROR in traditional stock creation for product {product_id}: {stock_error}")
+                print(f"❌ Error type: {type(stock_error).__name__}")
+                print(f"❌ Error details: {str(stock_error)}")
+                
+                products_updated.append({
+                    "product_id": product_id,
+                    "product_name": product_name,
+                    "quantity": quantity,
+                    "has_variants": has_variants,
+                    "state_updated": True,
+                    "stock_created": False,
+                    "error": str(stock_error)
+                })
 
         # Actualizar estado de la compra
         update_data = {
@@ -860,14 +1014,17 @@ def receive_purchase(purchase_id):
         return jsonify(
             {
                 "status": "éxito",
-                "message": "Compra recibida e inventario actualizado exitosamente",
+                "message": "Compra recibida, inventario actualizado y productos disponibles en tienda",
+                "products_processed": len(product_details),
+                "products_updated": products_updated
             }
         ), 200
 
     except Exception as e:
         print(f"Error receiving purchase: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify(
-            {"status": "error", "message": "Error interno del servidor"}
+            {"status": "error", "message": f"Error interno del servidor: {str(e)}"}
         ), 500
 
 
@@ -877,12 +1034,16 @@ def generate_barcodes(purchase_id):
     try:
         db = Database()
 
-        # Obtener productos de la compra
+        # Obtener productos de la compra con información de variantes
         details_query = """
-        SELECT pd.product_id, pd.quantity, pr.product_name, pr.barcode
+        SELECT pd.product_id, pd.quantity, pd.variant_id, pd.size_id, pd.color_id,
+               pr.product_name, pr.barcode as product_barcode,
+               s.size_name, c.color_name
         FROM purchases_detail pd
         LEFT JOIN products pr ON pd.product_id = pr.id
-        WHERE pd.purchase_id = ?
+        LEFT JOIN sizes s ON pd.size_id = s.id
+        LEFT JOIN colors c ON pd.color_id = c.id
+        WHERE pd.purchase_id = %s
         """
         products = db.execute_query(details_query, (purchase_id,))
 
@@ -894,31 +1055,74 @@ def generate_barcodes(purchase_id):
                 }
             ), 404
 
-        # Aquí podrías integrar con una librería de generación de códigos de barras
-        # Por ahora solo devolvemos la información de los productos
+        # Generar información de códigos de barras
         barcodes_info = []
         for product in products:
-            for i in range(product["quantity"]):
-                barcodes_info.append(
-                    {
-                        "product_name": product["product_name"],
-                        "barcode": product["barcode"],
-                        "copy_number": i + 1,
-                    }
-                )
+            size_id = product.get("size_id")
+            color_id = product.get("color_id")
+            
+            # Si hay variantes, buscar códigos de barras específicos
+            if size_id or color_id:
+                variant_query = """
+                SELECT variant_barcode FROM warehouse_stock_variants 
+                WHERE product_id = %s 
+                AND COALESCE(size_id, 0) = COALESCE(%s, 0)
+                AND COALESCE(color_id, 0) = COALESCE(%s, 0)
+                """
+                variant_result = db.execute_query(variant_query, (product["product_id"], size_id, color_id))
+                
+                if variant_result:
+                    barcode = variant_result[0]["variant_barcode"]
+                else:
+                    # Si no existe la variante en stock, crear código temporal
+                    from barcode_generator import BarcodeService
+                    barcode_service = BarcodeService()
+                    barcode = barcode_service.generate_variant_barcode(
+                        product["product_id"], 
+                        size_id, 
+                        color_id
+                    )
+                
+                # Generar una entrada por cada unidad de la variante
+                for i in range(product["quantity"]):
+                    barcodes_info.append(
+                        {
+                            "product_name": product["product_name"],
+                            "size": product.get("size_name"),
+                            "color": product.get("color_name"),
+                            "barcode": barcode,
+                            "copy_number": i + 1,
+                            "variant_info": f"{product.get('size_name', '')} - {product.get('color_name', '')}".strip(' -')
+                        }
+                    )
+            else:
+                # Para productos sin variantes, usar código de barras del producto
+                for i in range(product["quantity"]):
+                    barcodes_info.append(
+                        {
+                            "product_name": product["product_name"],
+                            "size": None,
+                            "color": None,
+                            "barcode": product["product_barcode"],
+                            "copy_number": i + 1,
+                            "variant_info": "Producto estándar"
+                        }
+                    )
 
         return jsonify(
             {
                 "status": "éxito",
-                "message": "Códigos de barras generados",
+                "message": f"Códigos de barras generados para {len(barcodes_info)} unidades",
                 "barcodes": barcodes_info,
+                "total_barcodes": len(barcodes_info)
             }
         ), 200
 
     except Exception as e:
         print(f"Error generating barcodes: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify(
-            {"status": "error", "message": "Error interno del servidor"}
+            {"status": "error", "message": f"Error generando códigos de barras: {str(e)}"}
         ), 500
 
 

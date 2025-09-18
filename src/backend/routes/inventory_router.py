@@ -6,6 +6,100 @@ import traceback
 inventory_router = Blueprint("inventory_router", __name__)
 
 
+@inventory_router.route("/products-by-state", methods=["GET"])
+def get_products_by_state():
+    """
+    Obtiene productos agrupados por estado (esperandoArribo, enTienda, sinStock)
+    """
+    try:
+        state_filter = request.args.get("state")  # Optional filter
+        
+        db = Database()
+        
+        if state_filter:
+            # Filter by specific state
+            query = """
+            SELECT 
+                p.id,
+                p.product_name,
+                p.state,
+                b.brand_name,
+                g.group_name,
+                p.cost,
+                p.sale_price,
+                p.last_modified_date,
+                COALESCE(SUM(ws.quantity), 0) as stock_total
+            FROM products p
+            LEFT JOIN brands b ON p.brand_id = b.id
+            LEFT JOIN groups g ON p.group_id = g.id
+            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
+            WHERE p.state = %s
+            GROUP BY p.id, p.product_name, p.state, b.brand_name, g.group_name, p.cost, p.sale_price, p.last_modified_date
+            ORDER BY p.last_modified_date DESC
+            """
+            products = db.execute_query(query, (state_filter,))
+        else:
+            # Get all products with their states
+            query = """
+            SELECT 
+                p.id,
+                p.product_name,
+                p.state,
+                b.brand_name,
+                g.group_name,
+                p.cost,
+                p.sale_price,
+                p.last_modified_date,
+                COALESCE(SUM(ws.quantity), 0) as stock_total
+            FROM products p
+            LEFT JOIN brands b ON p.brand_id = b.id
+            LEFT JOIN groups g ON p.group_id = g.id
+            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
+            GROUP BY p.id, p.product_name, p.state, b.brand_name, g.group_name, p.cost, p.sale_price, p.last_modified_date
+            ORDER BY p.state, p.last_modified_date DESC
+            """
+            products = db.execute_query(query)
+        
+        # Group by state for better organization
+        grouped_results = {
+            "esperandoArribo": [],
+            "enTienda": [],
+            "sinStock": [],
+            "activo": []  # For legacy products
+        }
+        
+        for product in products:
+            state = product.get("state", "activo")
+            if state not in grouped_results:
+                grouped_results[state] = []
+            
+            grouped_results[state].append({
+                "id": product["id"],
+                "product_name": product["product_name"],
+                "brand_name": product.get("brand_name"),
+                "group_name": product.get("group_name"),
+                "cost": product.get("cost"),
+                "sale_price": product.get("sale_price"),
+                "stock_total": product.get("stock_total", 0),
+                "last_modified_date": product.get("last_modified_date"),
+                "state": state
+            })
+        
+        # Count products by state
+        state_counts = {state: len(products) for state, products in grouped_results.items()}
+        
+        return jsonify({
+            "status": "success",
+            "products_by_state": grouped_results,
+            "state_counts": state_counts
+        }), 200
+
+    except Exception as e:
+        print(f"Error getting products by state: {e}")
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": "Error interno del servidor"}), 500
+
+
 @inventory_router.route("/products-summary", methods=["GET"])
 def get_products_summary():
     """
@@ -19,50 +113,73 @@ def get_products_summary():
         db = Database()
 
         if storage_id:
-            # Productos de una sucursal específica
+            # Productos de una sucursal específica - INCLUDES BOTH TRADITIONAL AND VARIANT STOCK
             query = """
             SELECT 
                 p.id,
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
-                COALESCE(SUM(ws.quantity), 0) as cantidad_total,
+                COALESCE(
+                    COALESCE(SUM(ws.quantity), 0) + COALESCE(SUM(wsv.quantity), 0), 
+                    0
+                ) as cantidad_total,
                 COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
-                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
+                COUNT(DISTINCT COALESCE(ws.branch_id, wsv.branch_id)) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
-                p.sale_price
+                p.sale_price,
+                p.state
             FROM products p
-            INNER JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = %s
+            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = %s
+            LEFT JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id AND wsv.branch_id = %s
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price
+            WHERE (ws.product_id IS NOT NULL OR wsv.product_id IS NOT NULL)
+            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.state
             ORDER BY p.product_name
             """
-            products = db.execute_query(query, (storage_id,))
+            products = db.execute_query(query, (storage_id, storage_id))
         else:
-            # Todos los productos con su cantidad total
+            # Todos los productos con su cantidad total - INCLUDES BOTH TRADITIONAL AND VARIANT STOCK
             query = """
             SELECT 
                 p.id,
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
-                COALESCE(SUM(ws.quantity), 0) as cantidad_total,
+                COALESCE(
+                    COALESCE(SUM(ws.quantity), 0) + COALESCE(SUM(wsv.quantity), 0), 
+                    0
+                ) as cantidad_total,
                 COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
-                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
+                COUNT(DISTINCT COALESCE(ws.branch_id, wsv.branch_id)) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
-                p.sale_price
+                p.sale_price,
+                p.state
             FROM products p
             LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
+            LEFT JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price
+            WHERE (ws.product_id IS NOT NULL OR wsv.product_id IS NOT NULL)
+            GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.state
             ORDER BY p.product_name
             """
             products = db.execute_query(query)
 
         print(f"🔍 DEBUG products-summary: {len(products)} productos encontrados")
         print(f"🔍 DEBUG products-summary: Tipo de resultado: {type(products)}")
+        
+        # Debug: show first few products
+        if products:
+            print(f"🔍 DEBUG products-summary: Primeros productos:")
+            for i, p in enumerate(products[:3]):
+                if isinstance(p, dict):
+                    print(f"  {i+1}. ID: {p.get('id')}, Nombre: {p.get('producto')}, Stock: {p.get('cantidad_total')}, Estado: {p.get('state')}")
+                else:
+                    print(f"  {i+1}. ID: {p[0]}, Nombre: {p[1]}, Stock: {p[3]}, Estado: {p[9] if len(p) > 9 else 'N/A'}")
+        else:
+            print("🔍 DEBUG products-summary: ¡No se encontraron productos!")
 
         # Procesar datos para asegurar formato consistente
         processed_products = []
