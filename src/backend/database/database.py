@@ -551,9 +551,13 @@ DATABASE_TABLES = {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "payment_method_id": "INTEGER NOT NULL",
             "provider_id": "INTEGER NOT NULL",
-            "amount": "INTEGER NOT NULL",
+            "amount": "REAL NOT NULL",  # Changed from INTEGER to REAL for decimal amounts
             "file_id": "INTEGER",
-            "transaction_number": "INTEGER",
+            "transaction_number": "TEXT",  # Changed from INTEGER to TEXT for flexibility
+            "payment_date": "TIMESTAMP",  # When the payment was made
+            "description": "TEXT",  # Payment description/notes
+            "created_at": "TIMESTAMP",
+            "updated_at": "TIMESTAMP",
         },
         "foreign_keys": [
             {

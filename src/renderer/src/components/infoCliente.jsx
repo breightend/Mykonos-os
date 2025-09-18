@@ -272,9 +272,7 @@ export default function InfoClientes() {
             <div className="card-body">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold text-primary">
-                    Registro de operaciones
-                  </h2>
+                  <h2 className="text-2xl font-bold text-primary">Registro de operaciones</h2>
                   <button
                     className="btn btn-ghost btn-sm btn-circle"
                     onClick={() => setShowOperations(!showOperations)}
@@ -351,6 +349,7 @@ export default function InfoClientes() {
                         <th className="text-slate-700 dark:text-slate-200">Fecha</th>
                         <th className="text-slate-700 dark:text-slate-200">Operación</th>
                         <th className="text-slate-700 dark:text-slate-200">Método de Pago</th>
+                        <th className="text-slate-700 dark:text-slate-200">Detalles del Pago</th>
                         <th className="text-slate-700 dark:text-slate-200">Debe</th>
                         <th className="text-slate-700 dark:text-slate-200">Haber</th>
                         <th className="text-slate-700 dark:text-slate-200">Saldo</th>
@@ -360,7 +359,7 @@ export default function InfoClientes() {
                     <tbody>
                       {loadingMovements ? (
                         <tr>
-                          <td colSpan="8" className="py-8 text-center">
+                          <td colSpan="9" className="py-8 text-center">
                             <div className="flex items-center justify-center">
                               <div className="loading loading-spinner loading-md mr-2"></div>
                               <span className="text-slate-600 dark:text-slate-300">
@@ -371,7 +370,7 @@ export default function InfoClientes() {
                         </tr>
                       ) : movements.length === 0 ? (
                         <tr>
-                          <td colSpan="8" className="py-8 text-center">
+                          <td colSpan="9" className="py-8 text-center">
                             <div className="text-slate-500 dark:text-slate-400">
                               <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
                               No hay movimientos registrados
@@ -395,7 +394,39 @@ export default function InfoClientes() {
                                 {getOperationType(movement)}
                               </span>
                             </td>
-                            <td>{movement.medio_pago || 'N/A'}</td>
+                            <td>
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {movement.payment_method_display_name ||
+                                    movement.medio_pago ||
+                                    'N/A'}
+                                </span>
+                                {movement.bank_name && (
+                                  <span className="text-xs text-gray-500">
+                                    {movement.bank_name}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="flex flex-col text-xs">
+                                {movement.numero_de_comprobante && (
+                                  <span className="font-mono text-blue-600">
+                                    #{movement.numero_de_comprobante}
+                                  </span>
+                                )}
+                                {movement.payment_amount && (
+                                  <span className="font-medium text-green-600">
+                                    {formatCurrency(movement.payment_amount)}
+                                  </span>
+                                )}
+                                {movement.payment_details_id && (
+                                  <span className="text-xs text-gray-500">
+                                    ID: {movement.payment_details_id}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             <td className={movement.debe > 0 ? 'font-bold text-red-600' : ''}>
                               {movement.debe > 0 ? formatCurrency(movement.debe) : '-'}
                             </td>
@@ -441,7 +472,7 @@ export default function InfoClientes() {
       {/* Sales History Section */}
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
-          <h3 className="card-title  flex items-center gap-2 text-xl text-primary dark:text-slate-200">
+          <h3 className="card-title flex items-center gap-2 text-xl text-primary dark:text-slate-200">
             <Shirt className="h-5 w-5" />
             Historial de productos vendidos
           </h3>

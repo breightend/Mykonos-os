@@ -311,3 +311,73 @@ def get_all_movements():
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error en el servidor: {e}"}), 500
+
+
+@account_movements_router.route("/provider/payments/<int:provider_id>", methods=["GET"])
+def get_provider_payments(provider_id):
+    """
+    Gets all payments made to a specific provider (separate from account movements)
+    These are actual cash payments from purchases_payments table
+    """
+    try:
+        service = AccountMovementsService()
+        payments = service.get_provider_payments(provider_id)
+
+        return jsonify(
+            {"success": True, "payments": payments, "count": len(payments)}
+        ), 200
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error getting provider payments: {e}"}
+        ), 500
+
+
+@account_movements_router.route("/provider/summary/<int:provider_id>", methods=["GET"])
+def get_provider_financial_summary(provider_id):
+    """
+    Gets a complete financial summary for a provider including:
+    - Current account balance (debt)
+    - Total payments made
+    - Payment history
+    """
+    try:
+        service = AccountMovementsService()
+
+        # Get current balance (debt)
+        current_balance = service.get_client_balance(provider_id)
+
+        # Get payments made to provider
+        payments = service.get_provider_payments(provider_id)
+
+        # Calculate payment totals
+        total_payments = sum(float(payment.get("amount", 0)) for payment in payments)
+        payment_count = len(payments)
+
+        # Get account movements (purchases creating debt)
+        movements = service.get_client_movements(provider_id)
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "summary": {
+                        "provider_id": provider_id,
+                        "current_balance": current_balance,  # Current debt
+                        "total_payments": total_payments,  # Total payments made
+                        "payment_count": payment_count,  # Number of payments
+                        "movements_count": len(
+                            movements
+                        ),  # Number of account movements
+                    },
+                    "payments": payments[:10],  # Last 10 payments
+                    "movements": movements[:10],  # Last 10 movements
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "message": f"Error getting provider summary: {e}"}
+        ), 500

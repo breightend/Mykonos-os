@@ -152,16 +152,10 @@ def get_purchases():
             e.cuit as provider_cuit,
             e.phone_number as provider_phone,
             e.email as provider_email,
-            bpm.amount as payment_method_amount,
-            b.name as bank_name,
-            pm.method_name as payment_method_name,
             fa.file_name as invoice_file_name,
             fa.file_extension as invoice_file_extension
         FROM purchases p
         LEFT JOIN entities e ON p.entity_id = e.id
-        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
-        LEFT JOIN banks b ON bpm.bank_id = b.id
-        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
         LEFT JOIN file_attachments fa ON p.file_id = fa.id
         ORDER BY p.purchase_date DESC
         """
@@ -185,15 +179,9 @@ def get_purchases_by_provider(provider_id):
             e.entity_name as provider_name,
             e.cuit as provider_cuit,
             e.razon_social as provider_razon_social,
-            bpm.amount as payment_method_amount,
-            b.name as bank_name,
-            pm.method_name as payment_method_name,
             fa.file_name as invoice_file_name
         FROM purchases p
         LEFT JOIN entities e ON p.entity_id = e.id
-        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
-        LEFT JOIN banks b ON bpm.bank_id = b.id
-        LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
         LEFT JOIN file_attachments fa ON p.file_id = fa.id
         WHERE p.entity_id = ?
         ORDER BY p.purchase_date DESC
@@ -503,17 +491,17 @@ def get_purchases_summary():
         """
         by_provider = db.execute_query(by_provider_query)
 
-        # Compras por método de pago
+        # Provider payment summary (separate from purchases)
         by_payment_method_query = """
         SELECT 
             pm.method_name || ' - ' || b.name as payment_method,
-            COUNT(p.id) as purchase_count,
-            SUM(p.total) as total_amount
-        FROM purchases p
-        LEFT JOIN banks_payment_methods bpm ON p.payment_method = bpm.id
+            COUNT(pp.id) as payment_count,
+            SUM(pp.amount) as total_amount
+        FROM purchases_payments pp
+        LEFT JOIN banks_payment_methods bpm ON pp.payment_method_id = bpm.id
         LEFT JOIN banks b ON bpm.bank_id = b.id
         LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
-        GROUP BY p.payment_method, pm.method_name, b.name
+        GROUP BY pm.method_name, b.name
         ORDER BY total_amount DESC
         """
         by_payment_method = db.execute_query(by_payment_method_query)

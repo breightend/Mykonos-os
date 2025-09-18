@@ -840,6 +840,161 @@ export default function InfoProvider() {
         )}
 
         {/* Account Movements Section */}
+        <div className="card mb-6 bg-base-100 shadow-xl">
+          <div className="card-body">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-primary">Movimientos de Cuenta</h2>
+                <button
+                  className="btn btn-ghost btn-sm btn-circle"
+                  onClick={() => setShowMovements(!showMovements)}
+                >
+                  {showMovements ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${showMovements ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+            >
+              <div className="overflow-x-auto rounded-lg">
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                      <th className="text-slate-700 dark:text-slate-200">#</th>
+                      <th className="text-slate-700 dark:text-slate-200">Fecha</th>
+                      <th className="text-slate-700 dark:text-slate-200">Operación</th>
+                      <th className="text-slate-700 dark:text-slate-200">Método de Pago</th>
+                      <th className="text-slate-700 dark:text-slate-200">Detalles del Pago</th>
+                      <th className="text-slate-700 dark:text-slate-200">Debe</th>
+                      <th className="text-slate-700 dark:text-slate-200">Haber</th>
+                      <th className="text-slate-700 dark:text-slate-200">Saldo</th>
+                      <th className="text-slate-700 dark:text-slate-200">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingMovements ? (
+                      <tr>
+                        <td colSpan="9" className="py-8 text-center">
+                          <div className="flex items-center justify-center">
+                            <div className="loading loading-spinner loading-md mr-2"></div>
+                            <span className="text-slate-600 dark:text-slate-300">
+                              Cargando movimientos...
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : movements.length === 0 ? (
+                      <tr>
+                        <td colSpan="9" className="py-8 text-center">
+                          <div className="text-slate-500 dark:text-slate-400">
+                            <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                            No hay movimientos registrados
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      movements.map((movement, index) => (
+                        <tr
+                          key={movement.id || index}
+                          className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                          onDoubleClick={() => handleOperationDoubleClick(movement)}
+                        >
+                          <th className="font-medium">{index + 1}</th>
+                          <td className="font-medium">
+                            {new Date(movement.created_at).toLocaleDateString('es-ES', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                          <td>
+                            <span
+                              className={`badge ${movement.debe > 0 ? 'badge-error' : 'badge-success'} shadow-sm`}
+                            >
+                              {movement.debe > 0 ? 'Compra' : 'Pago'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {movement.payment_method_display_name ||
+                                  movement.medio_pago ||
+                                  'N/A'}
+                              </span>
+                              {movement.bank_name && (
+                                <span className="text-xs text-gray-500">{movement.bank_name}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="flex flex-col text-xs">
+                              {movement.numero_de_comprobante && (
+                                <span className="font-mono text-blue-600">
+                                  #{movement.numero_de_comprobante}
+                                </span>
+                              )}
+                              {movement.payment_amount && (
+                                <span className="font-medium text-green-600">
+                                  {formatCurrency(movement.payment_amount)}
+                                </span>
+                              )}
+                              {movement.payment_details_id && (
+                                <span className="text-xs text-gray-500">
+                                  ID: {movement.payment_details_id}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className={movement.debe > 0 ? 'font-bold text-red-600' : ''}>
+                            {movement.debe > 0 ? formatCurrency(movement.debe) : '-'}
+                          </td>
+                          <td className={movement.haber > 0 ? 'font-bold text-green-600' : ''}>
+                            {movement.haber > 0 ? formatCurrency(movement.haber) : '-'}
+                          </td>
+                          <td
+                            className={`font-bold ${movement.saldo > 0 ? 'text-red-600' : movement.saldo < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                          >
+                            {formatCurrency(movement.saldo)}
+                          </td>
+                          <td className="max-w-xs truncate" title={movement.descripcion}>
+                            {movement.descripcion || 'Sin descripción'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+
+                {movements.length > 0 && (
+                  <div className="mt-4 text-center text-sm text-slate-600 dark:text-slate-400">
+                    💡 Haz doble clic en una operación para ver los detalles completos
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="mb-6 flex justify-center">
           <button

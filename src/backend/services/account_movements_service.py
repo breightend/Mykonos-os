@@ -291,14 +291,31 @@ class AccountMovementsService:
             if not numero_operacion:
                 numero_operacion = self.generate_operation_number()
 
-            # Get or create default payment method
-            payment_method_id = self._get_default_payment_method()
+            # First, create a record in banks_payment_methods with payment details
+            banks_payment_data = {
+                "bank_id": bank_id if bank_id else 1,  # Default bank if none provided
+                "payment_method_id": self._get_payment_method_id_by_name(medio_pago),
+                "amount": amount,
+            }
+
+            banks_payment_result = self.db.add_record(
+                "banks_payment_methods", banks_payment_data
+            )
+
+            if not banks_payment_result["success"]:
+                return {
+                    "success": False,
+                    "message": "Error al registrar el método de pago",
+                }
+
+            # Use the ID from banks_payment_methods for the account_movements record
+            banks_payment_id = banks_payment_result["rowid"]
 
             movement_data = {
                 "numero_operacion": numero_operacion,
                 "entity_id": entity_id,
                 "descripcion": description,
-                "payment_method": payment_method_id,  # Use valid payment method ID
+                "payment_method": banks_payment_id,  # Reference to banks_payment_methods record
                 "numero_de_comprobante": numero_de_comprobante,
                 "debe": 0.0,  # Debit amount (we don't owe more)
                 "haber": amount,  # Credit amount (we pay the provider)
@@ -404,16 +421,18 @@ class AccountMovementsService:
 
     def get_client_movements(self, entity_id):
         """
-        Gets all movements for a specific client with purchase and payment details if available
+        Gets all movements for a specific client/provider with account balance information.
+        Note: Provider payments are tracked separately in purchases_payments table.
 
         Args:
-            entity_id (int): ID of the client
+            entity_id (int): ID of the client/provider
 
         Returns:
-            list: List of movements with purchase and payment information
+            list: List of account movements (purchases creating debt, payments reducing debt)
         """
         try:
-            # Enhanced query with LEFT JOINs to include purchase details and payment information
+            # Enhanced query including payment details from banks_payment_methods table
+            # Note: Using only the columns that actually exist in the database
             query = """
             SELECT 
                 am.*,
@@ -426,32 +445,34 @@ class AccountMovementsService:
                 p.notes as purchase_notes,
                 p.invoice_number as purchase_invoice_number,
                 p.purchase_date as purchase_date,
-                -- Purchase payments summary
-                pp_summary.total_payments,
-                pp_summary.payment_count,
-                pp_summary.last_payment_date,
-                pp_summary.payment_methods
+                -- Payment details from banks_payment_methods table (only existing columns)
+                bpm.id as payment_details_id,
+                bpm.amount as payment_amount,
+                -- Bank information
+                b.name as bank_name,
+                b.swift_code as bank_swift_code,
+                -- Payment method information
+                pm.method_name as payment_method_name,
+                pm.display_name as payment_method_display_name,
+                pm.description as payment_method_description,
+                pm.requires_reference as payment_method_requires_reference,
+                pm.icon_name as payment_method_icon
             FROM account_movements am
             LEFT JOIN purchases p ON am.purchase_id = p.id
-            LEFT JOIN (
-                SELECT 
-                    purchase_id,
-                    SUM(amount) as total_payments,
-                    COUNT(*) as payment_count,
-                    MAX(payment_date) as last_payment_date,
-                    STRING_AGG(DISTINCT payment_method, ', ') as payment_methods
-                FROM purchases_payments 
-                GROUP BY purchase_id
-            ) pp_summary ON p.id = pp_summary.purchase_id
+            LEFT JOIN banks_payment_methods bpm ON am.payment_method = bpm.id
+            LEFT JOIN banks b ON bpm.bank_id = b.id
+            LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
             WHERE am.entity_id = %s
             ORDER BY am.created_at DESC
             """
 
             result = self.db.execute_query(query, (entity_id,))
 
-            if result.get("success"):
+            # Fix the result handling - execute_query returns a list directly in some cases
+            if isinstance(result, list):
+                movements = result
+            elif isinstance(result, dict) and result.get("success"):
                 movements = result.get("data", [])
-                return movements
             else:
                 # Fallback to old method if query fails
                 movements = self.db.get_all_records_by_clause(
@@ -461,8 +482,10 @@ class AccountMovementsService:
                 movements.sort(key=lambda x: x.get("created_at", ""), reverse=True)
                 return movements
 
+            return movements
+
         except Exception as e:
-            print(f"Error getting client movements with purchase details: {e}")
+            print(f"Error getting client movements: {e}")
             # Fallback to old method
             try:
                 movements = self.db.get_all_records_by_clause(
@@ -473,6 +496,54 @@ class AccountMovementsService:
             except Exception as e2:
                 print(f"Error in fallback method: {e2}")
                 return []
+
+    def get_provider_payments(self, provider_id):
+        """
+        Gets all payments made to a specific provider from account_movements table.
+        These are credit movements (haber > 0) that reduce our debt to the provider.
+
+        Args:
+            provider_id (int): ID of the provider
+
+        Returns:
+            list: List of payments made to the provider
+        """
+        try:
+            query = """
+            SELECT 
+                am.*,
+                pm.method_name as payment_method_name,
+                pm.display_name as payment_method_display,
+                b.name as bank_name,
+                bpm.amount as payment_amount,
+                fa.file_name as receipt_file_name,
+                fa.file_extension as receipt_file_extension,
+                e.entity_name as provider_name
+            FROM account_movements am
+            LEFT JOIN banks_payment_methods bpm ON am.payment_method = bpm.id
+            LEFT JOIN payment_methods pm ON bpm.payment_method_id = pm.id
+            LEFT JOIN banks b ON bpm.bank_id = b.id
+            LEFT JOIN file_attachments fa ON am.file_id = fa.id
+            LEFT JOIN entities e ON am.entity_id = e.id
+            WHERE am.entity_id = %s 
+            AND am.haber > 0
+            ORDER BY am.created_at DESC
+            """
+
+            result = self.db.execute_query(query, (provider_id,))
+
+            if isinstance(result, list):
+                payments = result
+            elif isinstance(result, dict) and result.get("success"):
+                payments = result.get("data", [])
+            else:
+                payments = []
+
+            return payments
+
+        except Exception as e:
+            print(f"Error getting provider payments: {e}")
+            return []
 
     def generate_operation_number(self):
         """
@@ -570,3 +641,36 @@ class AccountMovementsService:
             print(f"❌ Error getting/creating default payment method: {e}")
             # Return None to cause the foreign key to be NULL rather than invalid
             return None
+
+    def _get_payment_method_id_by_name(self, method_name):
+        """
+        Get payment method ID by name from payment_methods table
+
+        Args:
+            method_name (str): Name of the payment method (efectivo, transferencia, etc.)
+
+        Returns:
+            int: Payment method ID, defaults to 1 if not found
+        """
+        try:
+            result = self.db.execute_query(
+                "SELECT id FROM payment_methods WHERE method_name = %s", (method_name,)
+            )
+
+            if result and len(result) > 0:
+                return result[0]["id"]
+
+            # If method not found, default to efectivo (cash)
+            result = self.db.execute_query(
+                "SELECT id FROM payment_methods WHERE method_name = 'efectivo'"
+            )
+
+            if result and len(result) > 0:
+                return result[0]["id"]
+
+            # If no efectivo found either, return 1 as default
+            return 1
+
+        except Exception as e:
+            print(f"❌ Error getting payment method ID for {method_name}: {e}")
+            return 1

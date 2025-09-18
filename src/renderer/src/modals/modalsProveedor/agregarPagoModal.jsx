@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { DollarSign, Upload, X, Check, AlertTriangle } from 'lucide-react'
+import { DollarSign, Upload, X, Check, AlertTriangle, FileX, FileCheck } from 'lucide-react'
+import { useDropzone } from 'react-dropzone'
 import { providerPaymentService } from '../../services/proveedores/providerPaymentService'
 import { createPurchasePayment } from '../../services/proveedores/paymentService'
 import toast from 'react-hot-toast'
@@ -290,8 +291,54 @@ function AgregarPagoModal({
       alert('Por favor, sube un archivo PDF.')
     }
   }
+
+  // React Dropzone configuration
+  const onDrop = (acceptedFiles, rejectedFiles) => {
+    if (rejectedFiles.length > 0) {
+      const reasons = rejectedFiles[0].errors
+        .map((error) => {
+          switch (error.code) {
+            case 'file-too-large':
+              return 'El archivo es muy grande (máximo 10MB)'
+            case 'file-invalid-type':
+              return 'Tipo de archivo no válido (solo PDF, PNG, JPG)'
+            default:
+              return 'Error desconocido'
+          }
+        })
+        .join(', ')
+      toast.error(`Error al subir archivo: ${reasons}`)
+      return
+    }
+
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0]
+      setInvoiceFile(file)
+      setFormData((prev) => ({
+        ...prev,
+        comprobante_image: file
+      }))
+      toast.success('Archivo cargado correctamente')
+    }
+  }
+
+  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/png': ['.png'],
+      'image/jpeg': ['.jpg', '.jpeg']
+    },
+    maxSize: 10 * 1024 * 1024, // 10MB
+    multiple: false
+  })
+
   const handleRemoveFile = () => {
     setInvoiceFile(null)
+    setFormData((prev) => ({
+      ...prev,
+      comprobante_image: null
+    }))
   }
 
   const handleCancel = () => {
@@ -491,32 +538,72 @@ function AgregarPagoModal({
                 </span>
                 <span className="label-text-alt text-base-content/50">Opcional</span>
               </label>
-              <div className="flex w-full items-center justify-center">
-                <label
-                  htmlFor="comprobante"
-                  className="bg-base-200/50 flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-base-300 transition-colors hover:bg-base-200"
-                >
-                  <div className="flex flex-col items-center justify-center pb-6 pt-5">
-                    <Upload className="text-base-content/50 mb-4 h-8 w-8" />
-                    <p className="text-base-content/70 mb-2 text-sm">
-                      <span className="font-semibold">Clic para subir</span> o arrastra y suelta
-                    </p>
-                    <p className="text-base-content/50 text-xs">PDF, PNG, JPG (MAX. 10MB)</p>
-                    {formData.comprobante_image && (
-                      <p className="mt-2 text-xs font-medium text-primary">
-                        Archivo: {formData.comprobante_image.name}
+
+              {/* React Dropzone Area */}
+              <div
+                {...getRootProps()}
+                className={`flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all duration-200 ${
+                  isDragActive && !isDragReject
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : isDragReject
+                      ? 'bg-error/10 border-error text-error'
+                      : invoiceFile || formData.comprobante_image
+                        ? 'bg-success/10 border-success text-success'
+                        : 'bg-base-200/50 text-base-content/70 border-base-300 hover:bg-base-200'
+                } `}
+              >
+                <input {...getInputProps()} />
+                <div className="flex flex-col items-center justify-center pb-6 pt-5">
+                  {isDragActive ? (
+                    isDragReject ? (
+                      <>
+                        <FileX className="mb-4 h-8 w-8 text-error" />
+                        <p className="text-sm font-semibold text-error">Archivo no válido</p>
+                        <p className="text-error/70 text-xs">Solo PDF, PNG, JPG (MAX. 10MB)</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mb-4 h-8 w-8 text-primary" />
+                        <p className="text-sm font-semibold text-primary">
+                          ¡Suelta el archivo aquí!
+                        </p>
+                      </>
+                    )
+                  ) : invoiceFile || formData.comprobante_image ? (
+                    <>
+                      <FileCheck className="mb-4 h-8 w-8 text-success" />
+                      <p className="text-sm font-semibold text-success">
+                        Archivo cargado: {(invoiceFile || formData.comprobante_image)?.name}
                       </p>
-                    )}
-                  </div>
-                  <input
-                    id="comprobante_image"
-                    name="comprobante_image"
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={handleFileChange}
-                  />
-                </label>
+                      <p className="text-success/70 text-xs">
+                        Tamaño:{' '}
+                        {((invoiceFile || formData.comprobante_image)?.size / 1024 / 1024).toFixed(
+                          2
+                        )}{' '}
+                        MB
+                      </p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveFile()
+                        }}
+                        className="btn btn-error btn-xs mt-2"
+                      >
+                        <X className="h-3 w-3" />
+                        Eliminar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="text-base-content/50 mb-4 h-8 w-8" />
+                      <p className="text-base-content/70 mb-2 text-sm">
+                        <span className="font-semibold">Clic para subir</span> o arrastra y suelta
+                      </p>
+                      <p className="text-base-content/50 text-xs">PDF, PNG, JPG (MAX. 10MB)</p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 

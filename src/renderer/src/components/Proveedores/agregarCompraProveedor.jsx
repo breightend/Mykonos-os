@@ -11,8 +11,11 @@ import {
   Check,
   Trash2,
   DollarSign,
-  Percent
+  Percent,
+  FileX,
+  FileCheck
 } from 'lucide-react'
+import { useDropzone } from 'react-dropzone'
 import { fetchProductos } from '../../services/products/productService'
 import postData from '../../services/products/productService'
 import { createPurchase } from '../../services/proveedores/purchaseService'
@@ -200,7 +203,6 @@ export default function AgregarCompraProveedor() {
             console.error('Error creating new product:', error)
             toast.error('Error al crear el producto: ' + product.product_name)
 
-
             throw error // Re-throw to be caught by the outer try-catch
           }
         } else {
@@ -225,7 +227,8 @@ export default function AgregarCompraProveedor() {
         entity_id: provider.id,
         subtotal: parseFloat(purchaseData.subtotal),
         discount: parseFloat(purchaseData.discount) || 0,
-        discount_percentage: discountType === 'percentage' ? parseFloat(purchaseData.discount) || 0 : 0,
+        discount_percentage:
+          discountType === 'percentage' ? parseFloat(purchaseData.discount) || 0 : 0,
         total: parseFloat(purchaseData.total),
         delivery_date: formattedDeliveryDate,
         notes: purchaseData.notes || '',
@@ -288,6 +291,41 @@ export default function AgregarCompraProveedor() {
       alert('Por favor, sube un archivo PDF.')
     }
   }
+
+  // React Dropzone configuration for invoice upload
+  const onDrop = (acceptedFiles, rejectedFiles) => {
+    if (rejectedFiles.length > 0) {
+      const reasons = rejectedFiles[0].errors
+        .map((error) => {
+          switch (error.code) {
+            case 'file-too-large':
+              return 'El archivo es muy grande (máximo 10MB)'
+            case 'file-invalid-type':
+              return 'Solo se permiten archivos PDF'
+            default:
+              return 'Error desconocido'
+          }
+        })
+        .join(', ')
+      toast.error(`Error al subir archivo: ${reasons}`)
+      return
+    }
+
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0]
+      setInvoiceFile(file)
+      toast.success('Factura cargada correctamente')
+    }
+  }
+
+  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf']
+    },
+    maxSize: 10 * 1024 * 1024, // 10MB
+    multiple: false
+  })
 
   const handleRemoveFile = () => {
     setInvoiceFile(null)
@@ -400,43 +438,68 @@ export default function AgregarCompraProveedor() {
               <p className="mb-4 text-sm text-gray-500">
                 Sube el archivo PDF de la factura para mantener un registro digital.
               </p>
-              <div className="flex items-center space-x-4">
-                <label
-                  htmlFor="invoice-upload"
-                  className="btn btn-primary btn-outline cursor-pointer transition-colors duration-200 hover:bg-primary hover:text-white"
-                >
-                  {invoiceFile ? (
-                    <div className="flex items-center gap-2">
-                      <FileCheck2 className="h-5 w-5" />
-                      <span>Cambiar Archivo</span>
-                    </div>
+
+              {/* React Dropzone Area */}
+              <div
+                {...getRootProps()}
+                className={`flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all duration-200 ${
+                  isDragActive && !isDragReject
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : isDragReject
+                      ? 'bg-error/10 border-error text-error'
+                      : invoiceFile
+                        ? 'bg-success/10 border-success text-success'
+                        : 'border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200'
+                } `}
+              >
+                <input {...getInputProps()} />
+                <div className="flex flex-col items-center justify-center pb-6 pt-5">
+                  {isDragActive ? (
+                    isDragReject ? (
+                      <>
+                        <FileX className="mb-4 h-8 w-8 text-error" />
+                        <p className="text-sm font-semibold text-error">Archivo no válido</p>
+                        <p className="text-error/70 text-xs">Solo archivos PDF (MAX. 10MB)</p>
+                      </>
+                    ) : (
+                      <>
+                        <FileUp className="mb-4 h-8 w-8 text-primary" />
+                        <p className="text-sm font-semibold text-primary">
+                          ¡Suelta la factura aquí!
+                        </p>
+                      </>
+                    )
+                  ) : invoiceFile ? (
+                    <>
+                      <FileCheck className="mb-4 h-8 w-8 text-success" />
+                      <p className="text-sm font-semibold text-success">
+                        Factura cargada: {invoiceFile.name}
+                      </p>
+                      <p className="text-success/70 text-xs">
+                        Tamaño: {(invoiceFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveFile()
+                        }}
+                        className="btn btn-error btn-xs mt-2"
+                      >
+                        <X className="h-3 w-3" />
+                        Eliminar Factura
+                      </button>
+                    </>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <FileUp className="h-5 w-5" />
-                      <span>Seleccionar Archivo</span>
-                    </div>
+                    <>
+                      <FileUp className="mb-4 h-8 w-8 text-gray-400" />
+                      <p className="mb-2 text-sm text-gray-600">
+                        <span className="font-semibold">Clic para subir</span> o arrastra y suelta
+                      </p>
+                      <p className="text-xs text-gray-500">Solo archivos PDF (MAX. 10MB)</p>
+                    </>
                   )}
-                  <input
-                    id="invoice-upload"
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
-                {invoiceFile && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="truncate font-medium">{invoiceFile.name}</span>
-                    <button
-                      type="button"
-                      onClick={handleRemoveFile}
-                      className="text-error hover:text-red-700"
-                      aria-label="Eliminar archivo"
-                    >
-                      &times;
-                    </button>
-                  </div>
-                )}
+                </div>
               </div>
             </section>
 

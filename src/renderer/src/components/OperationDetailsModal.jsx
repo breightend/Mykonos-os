@@ -94,6 +94,76 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
             </div>
           </div>
 
+          {/* Enhanced Payment Details (if available) */}
+          {(operation.payment_details_id ||
+            operation.payment_method_name ||
+            operation.bank_name) && (
+            <div className="rounded-lg bg-green-50 p-4">
+              <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-green-700">
+                <CreditCard className="h-5 w-5" />
+                Detalles del Pago
+              </h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {operation.payment_method_display_name && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Método de Pago</label>
+                    <div className="flex items-center gap-2">
+                      {operation.payment_method_icon && (
+                        <span className="text-lg">{operation.payment_method_icon}</span>
+                      )}
+                      <span className="font-medium text-green-700">
+                        {operation.payment_method_display_name}
+                      </span>
+                    </div>
+                    {operation.payment_method_description && (
+                      <p className="mt-1 text-xs text-gray-600">
+                        {operation.payment_method_description}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {operation.bank_name && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Banco</label>
+                    <p className="font-medium text-gray-900">{operation.bank_name}</p>
+                    {operation.bank_swift_code && (
+                      <p className="font-mono text-xs text-gray-600">
+                        SWIFT: {operation.bank_swift_code}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {operation.payment_amount && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Monto del Pago</label>
+                    <p className="text-lg font-bold text-green-600">
+                      {formatCurrency(operation.payment_amount)}
+                    </p>
+                  </div>
+                )}
+
+                {operation.numero_de_comprobante && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Número de Comprobante
+                    </label>
+                    <p className="font-mono text-gray-900">{operation.numero_de_comprobante}</p>
+                  </div>
+                )}
+              </div>
+
+              {operation.payment_method_requires_reference && !operation.numero_de_comprobante && (
+                <div className="mt-3 rounded-md bg-yellow-100 p-3">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ Este método de pago requiere número de referencia pero no se proporcionó uno.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Purchase Details (if available) */}
           {operation.purchase_id && (
             <div className="rounded-lg bg-purple-50 p-4">
