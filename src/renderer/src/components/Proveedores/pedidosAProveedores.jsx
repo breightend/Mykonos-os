@@ -209,24 +209,12 @@ export default function PedidosAProveedores() {
           </button>
           <h1 className="text-3xl font-bold">Pedidos a Proveedores</h1>
         </div>
-        <button
-          className="btn btn-primary btn-outline gap-2"
-          onClick={() => {
-            setShowProductStats(!showProductStats)
-            if (!showProductStats && Object.keys(productStats).length === 0) {
-              fetchProductStatsData()
-            }
-          }}
-        >
-          <BarChart3 className="h-5 w-5" />
-          {showProductStats ? 'Ver Compras' : 'Ver Estadísticas de Productos'}
-        </button>
       </div>
 
       {/* Stats Cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="stat rounded-box bg-gradient-to-br from-secondary/10 to-secondary/30">
-          <div className=" text-primary">
+          <div className="text-primary">
             <Package className="h-8 w-8" />
           </div>
           <div className="stat-title">Total Compras</div>
@@ -244,7 +232,7 @@ export default function PedidosAProveedores() {
         </div>
 
         <div className="stat rounded-box bg-gradient-to-br from-secondary/10 to-secondary/30">
-          <div className=" text-warning">
+          <div className="text-warning">
             <Clock className="h-8 w-8" />
           </div>
           <div className="stat-title">Pendientes</div>
@@ -252,7 +240,7 @@ export default function PedidosAProveedores() {
         </div>
 
         <div className="stat rounded-box bg-gradient-to-br from-secondary/10 to-secondary/30">
-          <div className=" text-info">
+          <div className="text-info">
             <CheckCircle className="h-8 w-8" />
           </div>
           <div className="stat-title">Recibidas</div>
@@ -466,13 +454,14 @@ export default function PedidosAProveedores() {
             <div className="card-body">
               <h2 className="card-title mb-4">
                 Información de Compras
-              
                 <div className="badge badge-secondary px-2">
-                  {filteredPurchases.length > 0 ? (filteredPurchases.length === 1 ? (
-                    <span>1 compra</span>
+                  {filteredPurchases.length > 0 ? (
+                    filteredPurchases.length === 1 ? (
+                      <span>1 compra</span>
+                    ) : (
+                      <span>{filteredPurchases.length} compras</span>
+                    )
                   ) : (
-                    <span>{filteredPurchases.length} compras</span>
-                  )) : (  
                     <span>No hay compras</span>
                   )}
                 </div>

@@ -310,6 +310,57 @@ class AccountMovementsService:
             # Use the ID from banks_payment_methods for the account_movements record
             banks_payment_id = banks_payment_result["rowid"]
 
+            # Process file attachment if provided
+            file_id = None
+            if invoice_file:
+                print(f"🗂️ Processing invoice file in account movement...")
+                try:
+                    import base64
+                    from datetime import datetime
+                    
+                    # Check if it's base64 string or file object
+                    if isinstance(invoice_file, str):
+                        # It's base64 data
+                        file_content = base64.b64decode(invoice_file)
+                    elif isinstance(invoice_file, dict) and 'path' in invoice_file:
+                        # It's a file object with path - this is what we're getting!
+                        print(f"🗂️ File object received: {invoice_file}")
+                        print("⚠️ File path received but no base64 content - file not saved")
+                        # For now, we can't process file paths, we need base64 content
+                        file_content = None
+                    else:
+                        print(f"🗂️ Unknown file format: {type(invoice_file)}")
+                        file_content = None
+                    
+                    if file_content:
+                        # Handle PostgreSQL binary data
+                        if self.db.use_postgres:
+                            import psycopg2
+                            file_content_for_db = psycopg2.Binary(file_content)
+                        else:
+                            file_content_for_db = file_content
+                        
+                        file_data = {
+                            "file_name": f"payment_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                            "file_extension": ".pdf",
+                            "file_content": file_content_for_db,
+                            "comment": "Comprobante de pago a proveedor",
+                        }
+                        
+                        file_result = self.db.add_record("file_attachments", file_data)
+                        print(f"🗂️ File save result: {file_result}")
+                        
+                        if file_result.get("success"):
+                            file_id = file_result.get("rowid")
+                            print(f"✅ Payment file saved with ID: {file_id}")
+                        else:
+                            print(f"❌ Error saving payment file: {file_result}")
+                    
+                except Exception as e:
+                    print(f"❌ Error processing payment file: {e}")
+                    import traceback
+                    traceback.print_exc()
+
             movement_data = {
                 "numero_operacion": numero_operacion,
                 "entity_id": entity_id,
@@ -319,13 +370,13 @@ class AccountMovementsService:
                 "debe": 0.0,  # Debit amount (we don't owe more)
                 "haber": amount,  # Credit amount (we pay the provider)
                 "saldo": new_balance,
+                "file_id": file_id,  # Add the file_id to the movement
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
 
-            # Note: The following fields (bank_id, transaction_number, echeq_time,
-            # invoice_number, invoice_file) are not in the current database schema
-            # They will be ignored for now until the schema is updated
+            # Filter out None values for optional fields
+            movement_data = {k: v for k, v in movement_data.items() if v is not None}
 
             result = self.db.add_record("account_movements", movement_data)
 

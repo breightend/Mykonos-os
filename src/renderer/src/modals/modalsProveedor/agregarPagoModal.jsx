@@ -222,6 +222,27 @@ function AgregarPagoModal({
         formData.descripcion ||
         `Pago a proveedor (${providerPaymentService.getPaymentMethodNameSync(formData.forma_pago)})`
 
+      // Convert file to base64 if present
+      let invoiceFileBase64 = null
+      if (invoiceFile) {
+        try {
+          invoiceFileBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              // Remove the data URL prefix to get just the base64 data
+              const base64 = reader.result.split(',')[1]
+              resolve(base64)
+            }
+            reader.onerror = reject
+            reader.readAsDataURL(invoiceFile)
+          })
+          console.log('📁 File converted to base64, length:', invoiceFileBase64.length)
+        } catch (error) {
+          console.error('Error converting file to base64:', error)
+          toast.error('Error al procesar el archivo adjunto')
+        }
+      }
+
       // Prepare payment data with additional fields
       const paymentData = {
         entity_id: provider.id,
@@ -231,7 +252,7 @@ function AgregarPagoModal({
         numero_de_comprobante: formData.numero_comprobante || undefined,
         comprobante_image: formData.comprobante_image || undefined,
         banks: banks || [],
-        invoice_file: invoiceFile || null,
+        invoice_file: invoiceFileBase64, // Send base64 data instead of file object
         invoice_number: formData.invoice_number || null,
         purchase_id: purchaseData?.id || null // Link to purchase if available
       }
