@@ -9,7 +9,131 @@ purchase_bp = Blueprint("purchase", __name__)
 
 
 # Simple test route
-@purchase_bp.route("/test", methods=["GET"])
+@purchase_bp.route("/debug-file-save", methods=["GET"])
+def debug_file_save():
+    """Simple debug endpoint to test file saving"""
+    try:
+        db = Database()
+        
+        # Test with simple text content
+        test_content = "Hello World - Test File"
+        test_bytes = test_content.encode('utf-8')
+        
+        # For PostgreSQL, handle binary data properly
+        if db.use_postgres:
+            import psycopg2
+            test_bytes_for_db = psycopg2.Binary(test_bytes)
+            print(f"🗂️ Using psycopg2.Binary for PostgreSQL")
+        else:
+            test_bytes_for_db = test_bytes
+            print(f"🗂️ Using raw bytes for SQLite")
+        
+        file_data = {
+            "file_name": "debug_test.txt",
+            "file_extension": ".txt", 
+            "file_content": test_bytes_for_db,
+            "comment": "Debug test file",
+        }
+        
+        print(f"🗂️ Attempting to save debug file: {list(file_data.keys())}")
+        result = db.add_record("file_attachments", file_data)
+        print(f"🗂️ Debug file save result: {result}")
+        
+        if result.get("success"):
+            file_id = result.get("rowid")
+            print(f"✅ Debug file saved with ID: {file_id}")
+            
+            # Try to retrieve it
+            retrieve_query = "SELECT id, file_name, file_extension FROM file_attachments WHERE id = %s"
+            retrieved = db.execute_query(retrieve_query, (file_id,))
+            print(f"🗂️ Retrieved debug file: {retrieved}")
+            
+            return jsonify({
+                "status": "success",
+                "message": "Debug file save successful",
+                "file_id": file_id,
+                "retrieved": retrieved
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Debug file save failed",
+                "details": result
+            }), 500
+            
+    except Exception as e:
+        print(f"❌ Debug file save error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": f"Debug error: {str(e)}"
+        }), 500
+
+
+@purchase_bp.route("/test-file-upload", methods=["POST"])
+def test_file_upload():
+    """Test endpoint to debug file upload functionality"""
+    try:
+        data = request.get_json()
+        print(f"🧪 Test file upload data: {data}")
+        
+        db = Database()
+        
+        # Create a simple test file
+        test_content = "Test file content for debugging"
+        test_bytes = test_content.encode('utf-8')
+        
+        # For PostgreSQL, handle binary data properly
+        if db.use_postgres:
+            import psycopg2
+            test_bytes_for_db = psycopg2.Binary(test_bytes)
+        else:
+            test_bytes_for_db = test_bytes
+        
+        file_data = {
+            "file_name": "test_file.txt",
+            "file_extension": ".txt", 
+            "file_content": test_bytes_for_db,
+            "comment": "Test file for debugging",
+        }
+        
+        print(f"🧪 Attempting to save test file: {file_data}")
+        result = db.add_record("file_attachments", file_data)
+        print(f"🧪 Test file save result: {result}")
+        
+        if result.get("success"):
+            # Try to retrieve the file
+            file_id = result.get("rowid")
+            retrieve_query = "SELECT * FROM file_attachments WHERE id = %s"
+            retrieved = db.execute_query(retrieve_query, (file_id,))
+            print(f"🧪 Retrieved file: {retrieved}")
+            
+            return jsonify({
+                "status": "success",
+                "message": "Test file upload successful",
+                "file_id": file_id,
+                "save_result": result,
+                "retrieved_data": retrieved
+            }), 200
+        else:
+            return jsonify({
+                "status": "error", 
+                "message": "Test file upload failed",
+                "details": result
+            }), 500
+            
+    except Exception as e:
+        print(f"🧪 Test file upload error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": f"Test file upload exception: {str(e)}"
+        }), 500
+
+
+@purchase_bp.route("/test-file-system", methods=["GET"])
 def test_route():
     print(f"🟢 TEST ROUTE HIT: /api/purchases/test")
     return jsonify({"status": "success", "message": "Purchase router is working!"}), 200
@@ -43,24 +167,52 @@ def create_purchase():
 
         # Procesar archivo adjunto si existe
         if data.get("invoice_file"):
+            print("🗂️ Processing invoice file...")
             try:
                 invoice_file = data["invoice_file"]
+                print(f"🗂️ Invoice file type: {type(invoice_file)}")
+                print(f"🗂️ Invoice file length: {len(invoice_file) if isinstance(invoice_file, str) else 'N/A'}")
+                
                 # Si es un archivo base64, procesarlo
                 if isinstance(invoice_file, str):
-                    file_content = base64.b64decode(invoice_file)
+                    try:
+                        file_content = base64.b64decode(invoice_file)
+                        print(f"🗂️ Decoded file content length: {len(file_content)} bytes")
+                    except Exception as decode_error:
+                        print(f"❌ Error decoding base64: {decode_error}")
+                        raise decode_error
+                    
+                    # For PostgreSQL, handle binary data properly
+                    if db.use_postgres:
+                        import psycopg2
+                        file_content_for_db = psycopg2.Binary(file_content)
+                    else:
+                        file_content_for_db = file_content
+                    
                     file_data = {
                         "file_name": f"invoice_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                        "file_extension": "pdf",
-                        "file_content": file_content,
+                        "file_extension": ".pdf",  # Make sure it has the dot
+                        "file_content": file_content_for_db,
                         "comment": "Factura de compra",
                     }
+                    print(f"🗂️ Attempting to save file data: {list(file_data.keys())}")
+                    
                     file_result = db.add_record("file_attachments", file_data)
+                    print(f"🗂️ File save result: {file_result}")
+                    
                     if file_result.get("success"):
                         file_id = file_result.get("rowid")
+                        print(f"✅ File saved successfully with ID: {file_id}")
                     else:
-                        print(f"Error saving file: {file_result}")
+                        print(f"❌ Error saving file: {file_result}")
+                else:
+                    print(f"❌ Invoice file is not a string: {type(invoice_file)}")
             except Exception as e:
-                print(f"Error processing invoice file: {e}")
+                print(f"❌ Error processing invoice file: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print("🗂️ No invoice file provided in request data")
 
         # Crear la compra principal
         purchase_data = {
@@ -215,7 +367,7 @@ def get_purchases_by_provider(provider_id):
         FROM purchases p
         LEFT JOIN entities e ON p.entity_id = e.id
         LEFT JOIN file_attachments fa ON p.file_id = fa.id
-        WHERE p.entity_id = ?
+        WHERE p.entity_id = %s
         ORDER BY p.purchase_date DESC
         """
         purchases = db.execute_query(query, (provider_id,))
@@ -227,83 +379,54 @@ def get_purchases_by_provider(provider_id):
         ), 500
 
 
+# Test endpoint to debug routing issues
+@purchase_bp.route("/test-debug", methods=["GET"])
+def test_debug():
+    import sys
+
+    print("🚨🚨🚨 TEST DEBUG ENDPOINT HIT!")
+    sys.stdout.flush()
+    return jsonify({"status": "success", "message": "Test endpoint working"}), 200
+
+
 # Obtener una compra por ID con sus detalles completos
 @purchase_bp.route("/<int:purchase_id>", methods=["GET"])
 def get_purchase_by_id(purchase_id):
-    print(f"🔍 API CALL: GET /api/purchases/{purchase_id}")
-    print(f"🔍 Request method: {request.method}")
-    print(f"🔍 Request URL: {request.url}")
-    print(f"DEBUG: Fetching purchase with ID: {purchase_id}")
+    print(f"🔍🔍🔍 PURCHASE DETAIL API CALL: GET /api/purchases/{purchase_id} - START")
+    print(f"🔍🔍🔍 Purchase ID type: {type(purchase_id)}, value: {purchase_id}")
     try:
         db = Database()
 
-        # Simple purchase query first
+        # Use the same working query structure as the purchases list
         purchase_query = """
         SELECT 
-            p.id, p.entity_id, p.purchase_date, p.subtotal, p.discount, p.total,
-            p.payment_method, p.transaction_number, p.invoice_number, p.notes,
-            p.file_id, p.status, p.delivery_date,
+            p.*,
             e.entity_name as provider_name,
-            e.cuit as provider_cuit
+            e.cuit as provider_cuit,
+            e.phone_number as provider_phone,
+            e.email as provider_email,
+            fa.file_name as invoice_file_name,
+            fa.file_extension as invoice_file_extension
         FROM purchases p
         LEFT JOIN entities e ON p.entity_id = e.id
+        LEFT JOIN file_attachments fa ON p.file_id = fa.id
         WHERE p.id = %s
         """
-        print(f"DEBUG: Executing purchase query for ID: {purchase_id}")
-        purchase = db.execute_query(purchase_query, (purchase_id,))
+
+        print(f"🔍🔍🔍 Executing query with purchase_id: {purchase_id}")
+        purchase_result = db.execute_query(purchase_query, (purchase_id,))
         print(
-            f"DEBUG: Purchase query returned {len(purchase) if purchase else 0} results"
+            f"🔍🔍🔍 Purchase query returned {len(purchase_result) if purchase_result else 0} results"
         )
 
-        if purchase:
-            print(f"DEBUG: Purchase data type: {type(purchase[0])}")
-            print(f"DEBUG: Purchase data: {purchase[0]}")
-
-        if not purchase:
+        if not purchase_result:
+            print(f"🔍🔍🔍 No purchase found for ID: {purchase_id}")
             return jsonify({"status": "error", "message": "Compra no encontrada"}), 404
 
-        # Handle both dictionary and tuple formats
-        purchase_row = purchase[0]
-        if isinstance(purchase_row, dict):
-            # If it's a dictionary, access by key names
-            purchase_data = {
-                "id": purchase_row.get("id"),
-                "entity_id": purchase_row.get("entity_id"),
-                "purchase_date": purchase_row.get("purchase_date"),
-                "subtotal": purchase_row.get("subtotal"),
-                "discount": purchase_row.get("discount"),
-                "total": purchase_row.get("total"),
-                "payment_method": purchase_row.get("payment_method"),
-                "transaction_number": purchase_row.get("transaction_number"),
-                "invoice_number": purchase_row.get("invoice_number"),
-                "notes": purchase_row.get("notes"),
-                "file_id": purchase_row.get("file_id"),
-                "status": purchase_row.get("status"),
-                "delivery_date": purchase_row.get("delivery_date"),
-                "provider_name": purchase_row.get("provider_name"),
-                "provider_cuit": purchase_row.get("provider_cuit"),
-            }
-        else:
-            # If it's a tuple/list, access by index
-            purchase_data = {
-                "id": purchase_row[0],
-                "entity_id": purchase_row[1],
-                "purchase_date": purchase_row[2],
-                "subtotal": purchase_row[3],
-                "discount": purchase_row[4],
-                "total": purchase_row[5],
-                "payment_method": purchase_row[6],
-                "transaction_number": purchase_row[7],
-                "invoice_number": purchase_row[8],
-                "notes": purchase_row[9],
-                "file_id": purchase_row[10],
-                "status": purchase_row[11],
-                "delivery_date": purchase_row[12],
-                "provider_name": purchase_row[13],
-                "provider_cuit": purchase_row[14],
-            }
+        purchase_data = purchase_result[0]
+        print(f"🔍🔍🔍 Found purchase data: {purchase_data}")
 
-        # Get purchase details
+        # Get purchase details/products
         details_query = """
         SELECT 
             pd.id, pd.purchase_id, pd.product_id, pd.cost_price, pd.quantity, 
@@ -317,63 +440,19 @@ def get_purchase_by_id(purchase_id):
         WHERE pd.purchase_id = %s
         """
         details = db.execute_query(details_query, (purchase_id,))
-
         print(
-            f"DEBUG: Purchase ID {purchase_id} details query returned {len(details)} products"
+            f"🔍🔍🔍 Purchase details query returned {len(details) if details else 0} products"
         )
 
-        # Convert details to list of dictionaries
-        products = []
-        for detail in details:
-            if isinstance(detail, dict):
-                # If it's a dictionary, access by key names
-                products.append(
-                    {
-                        "id": detail.get("id"),
-                        "purchase_id": detail.get("purchase_id"),
-                        "product_id": detail.get("product_id"),
-                        "cost_price": detail.get("cost_price"),
-                        "quantity": detail.get("quantity"),
-                        "discount": detail.get("discount"),
-                        "subtotal": detail.get("subtotal"),
-                        "metadata": detail.get("metadata"),
-                        "product_name": detail.get("product_name"),
-                        "provider_code": detail.get("provider_code"),
-                        "current_cost": detail.get("current_cost"),
-                        "current_sale_price": detail.get("current_sale_price"),
-                        "brand_name": detail.get("brand_name"),
-                        "group_name": detail.get("group_name"),
-                    }
-                )
-            else:
-                # If it's a tuple/list, access by index
-                products.append(
-                    {
-                        "id": detail[0],
-                        "purchase_id": detail[1],
-                        "product_id": detail[2],
-                        "cost_price": detail[3],
-                        "quantity": detail[4],
-                        "discount": detail[5],
-                        "subtotal": detail[6],
-                        "metadata": detail[7],
-                        "product_name": detail[8],
-                        "provider_code": detail[9],
-                        "current_cost": detail[10],
-                        "current_sale_price": detail[11],
-                        "brand_name": detail[12],
-                        "group_name": detail[13],
-                    }
-                )
+        # Add products to purchase data
+        purchase_data["products"] = details or []
 
-        purchase_data["products"] = products
-
-        print(f"DEBUG: Returning purchase with {len(products)} products")
+        print(f"🔍🔍🔍 Returning successful response for purchase {purchase_id}")
         return jsonify(purchase_data), 200
 
     except Exception as e:
-        print(f"Error fetching purchase by ID {purchase_id}: {e}")
-        print(f"Full traceback: {traceback.format_exc()}")
+        print(f"🔍🔍🔍 ERROR in get_purchase_by_id: {e}")
+        print(f"🔍🔍🔍 Full traceback: {traceback.format_exc()}")
         return jsonify(
             {"status": "error", "message": "Error al obtener la compra"}
         ), 500
@@ -442,7 +521,7 @@ def get_purchase_attachments(purchase_id):
         SELECT fa.id, fa.file_name, fa.file_extension, fa.upload_date, fa.comment
         FROM purchases p
         LEFT JOIN file_attachments fa ON p.file_id = fa.id
-        WHERE p.id = ? AND fa.id IS NOT NULL
+        WHERE p.id = %s AND fa.id IS NOT NULL
         """
         attachments = db.execute_query(query, (purchase_id,))
 
@@ -464,7 +543,7 @@ def download_attachment(file_id):
         query = """
         SELECT file_name, file_extension, file_content
         FROM file_attachments
-        WHERE id = ?
+        WHERE id = %s
         """
         file_data = db.execute_query(query, (file_id,))
 
@@ -633,7 +712,7 @@ def get_product_statistics():
         monthly_by_group_query = """
         SELECT 
             g.group_name,
-            strftime('%Y-%m', pur.purchase_date) as month,
+            TO_CHAR(pur.purchase_date, 'YYYY-MM') as month,
             SUM(pd.quantity) as quantity,
             SUM(pd.subtotal) as total_spent
         FROM purchases_detail pd
@@ -641,8 +720,8 @@ def get_product_statistics():
         LEFT JOIN products p ON pd.product_id = p.id
         LEFT JOIN groups g ON p.group_id = g.id
         WHERE g.group_name IS NOT NULL 
-            AND pur.purchase_date >= date('now', '-6 months')
-        GROUP BY g.id, g.group_name, strftime('%Y-%m', pur.purchase_date)
+            AND pur.purchase_date >= CURRENT_DATE - INTERVAL '6 months'
+        GROUP BY g.id, g.group_name, TO_CHAR(pur.purchase_date, 'YYYY-MM')
         ORDER BY month DESC, quantity DESC
         """
         monthly_by_group = db.execute_query(monthly_by_group_query)
@@ -1075,7 +1154,7 @@ def create_sample_data():
 # ============================================================================
 
 
-@purchase_bp.route("/purchases/<int:purchase_id>/payments", methods=["POST"])
+@purchase_bp.route("/<int:purchase_id>/payments", methods=["POST"])
 def create_purchase_payment(purchase_id):
     """Create a new payment for a purchase"""
     try:
@@ -1131,7 +1210,7 @@ def create_purchase_payment(purchase_id):
         ), 500
 
 
-@purchase_bp.route("/purchases/<int:purchase_id>/payments", methods=["GET"])
+@purchase_bp.route("/<int:purchase_id>/payments", methods=["GET"])
 def get_purchase_payments(purchase_id):
     """Get all payments for a specific purchase"""
     try:
@@ -1141,7 +1220,7 @@ def get_purchase_payments(purchase_id):
         purchase_query = "SELECT id FROM purchases WHERE id = %s"
         purchase_result = db.execute_query(purchase_query, (purchase_id,))
 
-        if not purchase_result.get("success") or not purchase_result.get("data"):
+        if not purchase_result:
             return jsonify({"status": "error", "message": "Purchase not found"}), 404
 
         # Get all payments for the purchase
@@ -1159,16 +1238,9 @@ def get_purchase_payments(purchase_id):
         ORDER BY payment_date DESC, created_at DESC
         """
 
-        result = db.execute_query(payments_query, (purchase_id,))
+        payments_result = db.execute_query(payments_query, (purchase_id,))
 
-        if result.get("success"):
-            return jsonify(
-                {"status": "success", "payments": result.get("data", [])}
-            ), 200
-        else:
-            return jsonify(
-                {"status": "error", "message": "Error retrieving payments"}
-            ), 500
+        return jsonify({"status": "success", "payments": payments_result or []}), 200
 
     except Exception as e:
         print(f"Error getting purchase payments: {e}")

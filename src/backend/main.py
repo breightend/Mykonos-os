@@ -19,6 +19,7 @@ from routes.exchange_router import exchange_router
 from routes.payment_methods_router import payment_methods_router
 from routes.banks_router import banks_router
 from routes.statistics_router import statistics_bp
+from routes.files_router import files_bp
 
 app = Flask(__name__)
 
@@ -63,6 +64,7 @@ app.register_blueprint(exchange_router, url_prefix="/api/exchange")
 app.register_blueprint(payment_methods_router, url_prefix="/api/payment-methods")
 app.register_blueprint(banks_router, url_prefix="/api/banks")
 app.register_blueprint(statistics_bp, url_prefix="/api/statistics")
+app.register_blueprint(files_bp, url_prefix="/api/files")
 
 
 @app.route("/")

@@ -96,10 +96,10 @@ DATABASE_TABLES = {
     TABLES.FILE_ATTACHMENTS: {
         "columns": {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",  # Identificador único para cada archivo adjunto, se incrementa automáticamente.
-            "file_name": "TEXT NOT NULL",  # Nombre del archivo original
-            "file_extension": "TEXT NOT NULL",  # Extensión del archivo (ej: pdf, jpg, png)
-            "file_content": "BLOB NOT NULL",  # Contenido del archivo
-            "upload_date": "TEXT DEFAULT CURRENT_TIMESTAMP",  # Fecha de carga del archivo
+            "file_name": "TEXT",  # Nombre del archivo original
+            "file_extension": "TEXT",  # Extensión del archivo (ej: pdf, jpg, png)
+            "file_content": "bytea",  # Contenido del archivo
+            "upload_date": "timestamp NULL",  # Fecha de carga del archivo
             "comment": "TEXT",  # Comentario opcional sobre el archivo
         }
     },

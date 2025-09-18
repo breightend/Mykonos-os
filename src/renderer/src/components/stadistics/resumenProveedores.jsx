@@ -65,7 +65,7 @@ export default function ResumenProveedores() {
       </div>
 
       {/* Product Summary Stats */}
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-5">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="stat rounded-box bg-gradient-to-br from-primary/30 to-primary/50 text-white">
           <div className=" ">
             <Package className="h-8 w-8" />
@@ -105,12 +105,13 @@ export default function ResumenProveedores() {
           </div>
           <div className="text-xs text-black">Unidades compradas en total</div>
         </div>
-
-        <div className="stat rounded-box bg-gradient-to-br from-primary/30 to-primary/50 text-white">
-          <div className=" ">
-            <DollarSign className="h-8 w-8" />
+      </div>
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="stat rounded-box bg-gradient-to-br from-accent/30 to-secondary/50 text-white">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-10 w-10" />
+            <div className="font-bold text-xl text-black ">Valor Total</div>
           </div>
-          <div className="font-semibold text-black">Valor Total</div>
           <div className="stat-value text-lg">
             {formatCurrency(productStats.product_summary?.total_products_value || 0)}
           </div>
@@ -141,7 +142,9 @@ export default function ResumenProveedores() {
                     <div className="card-body">
                       <h3 className="card-title flex items-center justify-between text-lg text-primary">
                         {group.group_name}
-                        <div className="badge badge-primary px-2 badge-lg">{group.total_quantity}</div>
+                        <div className="badge badge-primary badge-lg px-2">
+                          {group.total_quantity}
+                        </div>
                       </h3>
 
                       <div className="space-y-2">

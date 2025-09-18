@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react'
-import { X, Package, Check, Printer, Calendar, DollarSign, Plus, CreditCard } from 'lucide-react'
+import {
+  X,
+  Package,
+  Check,
+  Printer,
+  Calendar,
+  DollarSign,
+  Plus,
+  CreditCard,
+  Download,
+  FileText
+} from 'lucide-react'
 import {
   fetchPurchaseById,
   receivePurchase,
@@ -149,6 +160,47 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
     return Math.max(0, purchaseTotal - totalPaid)
   }
 
+  const handleDownloadFile = async (fileId, fileName) => {
+    if (!fileId) {
+      toast.error('No hay archivo disponible para descargar')
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/purchases/attachment/${fileId}`)
+
+      if (!response.ok) {
+        throw new Error('Error al descargar el archivo')
+      }
+
+      const data = await response.json()
+
+      // Convert base64 to blob
+      const byteCharacters = atob(data.file_content)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: 'application/pdf' })
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = data.file_name || fileName || 'archivo.pdf'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('Archivo descargado exitosamente')
+    } catch (error) {
+      console.error('Error downloading file:', error)
+      toast.error('Error al descargar el archivo')
+    }
+  }
+
   const handleReceivePurchase = async () => {
     if (!selectedStorage) {
       toast.error('Por favor seleccione una sucursal')
@@ -294,6 +346,60 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                 )}
               </div>
             </div>
+
+            {/* Archivos Adjuntos */}
+            {(purchase.invoice_file_name || purchase.file_id) && (
+              <div className="rounded-lg bg-base-200 p-4">
+                <h4 className="mb-4 flex items-center gap-2 font-semibold">
+                  <FileText className="h-5 w-5" />
+                  Archivos Adjuntos
+                </h4>
+                <div className="space-y-2">
+                  {purchase.invoice_file_name && (
+                    <div className="flex items-center justify-between rounded bg-white p-3 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <Download className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <p className="font-medium text-gray-900">{purchase.invoice_file_name}</p>
+                          <p className="text-sm text-gray-500">
+                            Factura de compra •{' '}
+                            {purchase.invoice_file_extension?.toUpperCase() || 'PDF'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() =>
+                          handleDownloadFile(purchase.file_id, purchase.invoice_file_name)
+                        }
+                        className="btn btn-primary btn-outline btn-sm"
+                        disabled={!purchase.file_id}
+                      >
+                        <Download className="h-4 w-4" />
+                        Descargar
+                      </button>
+                    </div>
+                  )}
+                  {!purchase.invoice_file_name && purchase.file_id && (
+                    <div className="flex items-center justify-between rounded bg-white p-3 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <Download className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <p className="font-medium text-gray-900">Archivo adjunto</p>
+                          <p className="text-sm text-gray-500">Documento de compra</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadFile(purchase.file_id, 'archivo-compra')}
+                        className="btn btn-primary btn-outline btn-sm"
+                      >
+                        <Download className="h-4 w-4" />
+                        Descargar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Productos */}
             <div className="rounded-lg bg-base-200 p-4">
