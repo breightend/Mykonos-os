@@ -13,9 +13,9 @@ def get_products_by_state():
     """
     try:
         state_filter = request.args.get("state")  # Optional filter
-        
+
         db = Database()
-        
+
         if state_filter:
             # Filter by specific state
             query = """
@@ -59,45 +59,53 @@ def get_products_by_state():
             ORDER BY p.state, p.last_modified_date DESC
             """
             products = db.execute_query(query)
-        
+
         # Group by state for better organization
         grouped_results = {
             "esperandoArribo": [],
             "enTienda": [],
             "sinStock": [],
-            "activo": []  # For legacy products
+            "activo": [],  # For legacy products
         }
-        
+
         for product in products:
             state = product.get("state", "activo")
             if state not in grouped_results:
                 grouped_results[state] = []
-            
-            grouped_results[state].append({
-                "id": product["id"],
-                "product_name": product["product_name"],
-                "brand_name": product.get("brand_name"),
-                "group_name": product.get("group_name"),
-                "cost": product.get("cost"),
-                "sale_price": product.get("sale_price"),
-                "stock_total": product.get("stock_total", 0),
-                "last_modified_date": product.get("last_modified_date"),
-                "state": state
-            })
-        
+
+            grouped_results[state].append(
+                {
+                    "id": product["id"],
+                    "product_name": product["product_name"],
+                    "brand_name": product.get("brand_name"),
+                    "group_name": product.get("group_name"),
+                    "cost": product.get("cost"),
+                    "sale_price": product.get("sale_price"),
+                    "stock_total": product.get("stock_total", 0),
+                    "last_modified_date": product.get("last_modified_date"),
+                    "state": state,
+                }
+            )
+
         # Count products by state
-        state_counts = {state: len(products) for state, products in grouped_results.items()}
-        
-        return jsonify({
-            "status": "success",
-            "products_by_state": grouped_results,
-            "state_counts": state_counts
-        }), 200
+        state_counts = {
+            state: len(products) for state, products in grouped_results.items()
+        }
+
+        return jsonify(
+            {
+                "status": "success",
+                "products_by_state": grouped_results,
+                "state_counts": state_counts,
+            }
+        ), 200
 
     except Exception as e:
         print(f"Error getting products by state: {e}")
         traceback.print_exc()
-        return jsonify({"status": "error", "message": "Error interno del servidor"}), 500
+        return jsonify(
+            {"status": "error", "message": "Error interno del servidor"}
+        ), 500
 
 
 @inventory_router.route("/products-summary", methods=["GET"])
@@ -169,15 +177,19 @@ def get_products_summary():
 
         print(f"🔍 DEBUG products-summary: {len(products)} productos encontrados")
         print(f"🔍 DEBUG products-summary: Tipo de resultado: {type(products)}")
-        
+
         # Debug: show first few products
         if products:
             print(f"🔍 DEBUG products-summary: Primeros productos:")
             for i, p in enumerate(products[:3]):
                 if isinstance(p, dict):
-                    print(f"  {i+1}. ID: {p.get('id')}, Nombre: {p.get('producto')}, Stock: {p.get('cantidad_total')}, Estado: {p.get('state')}")
+                    print(
+                        f"  {i + 1}. ID: {p.get('id')}, Nombre: {p.get('producto')}, Stock: {p.get('cantidad_total')}, Estado: {p.get('state')}"
+                    )
                 else:
-                    print(f"  {i+1}. ID: {p[0]}, Nombre: {p[1]}, Stock: {p[3]}, Estado: {p[9] if len(p) > 9 else 'N/A'}")
+                    print(
+                        f"  {i + 1}. ID: {p[0]}, Nombre: {p[1]}, Stock: {p[3]}, Estado: {p[9] if len(p) > 9 else 'N/A'}"
+                    )
         else:
             print("🔍 DEBUG products-summary: ¡No se encontraron productos!")
 
@@ -591,6 +603,141 @@ def get_product_details(product_id):
 
     except Exception as e:
         print(f"❌ DEBUG: Error en get_product_details: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/search-by-barcode", methods=["GET"])
+def search_by_barcode():
+    """
+    Busca un producto por código de barras para recompra
+    """
+    try:
+        barcode = request.args.get("barcode")
+        if not barcode:
+            return jsonify(
+                {"status": "error", "message": "Código de barras requerido"}
+            ), 400
+
+        db = Database()
+        print(f"🔍 Buscando producto por código de barras: {barcode}")
+
+        # Buscar en warehouse_stock_variants primero
+        variant_query = """
+        SELECT 
+            wsv.id,
+            wsv.product_id,
+            wsv.size_id,
+            wsv.color_id,
+            wsv.quantity,
+            wsv.variant_barcode,
+            p.product_name,
+            p.provider_code,
+            p.sale_price,
+            p.cost,
+            s.size_name,
+            c.color_name,
+            st.name as storage_name,
+            st.id as storage_id
+        FROM warehouse_stock_variants wsv
+        JOIN products p ON wsv.product_id = p.id
+        LEFT JOIN sizes s ON wsv.size_id = s.id
+        LEFT JOIN colors c ON wsv.color_id = c.id
+        LEFT JOIN storage st ON wsv.branch_id = st.id
+        WHERE wsv.variant_barcode = %s
+        LIMIT 1
+        """
+
+        variant_result = db.execute_query(variant_query, (barcode,))
+
+        if variant_result and len(variant_result) > 0:
+            variant = variant_result[0]
+            print(f"✅ Producto encontrado por código de barras: {variant}")
+
+            return jsonify(
+                {
+                    "status": "success",
+                    "data": {
+                        "id": variant.get("id"),
+                        "product_id": variant.get("product_id"),
+                        "product_name": variant.get("product_name"),
+                        "provider_code": variant.get("provider_code"),
+                        "sale_price": variant.get("sale_price"),
+                        "cost": variant.get("cost"),
+                        "size_id": variant.get("size_id"),
+                        "size_name": variant.get("size_name"),
+                        "color_id": variant.get("color_id"),
+                        "color_name": variant.get("color_name"),
+                        "quantity": variant.get("quantity"),
+                        "variant_barcode": variant.get("variant_barcode"),
+                        "storage_name": variant.get("storage_name"),
+                        "storage_id": variant.get("storage_id"),
+                    },
+                }
+            ), 200
+        else:
+            print(f"❌ No se encontró producto con código de barras: {barcode}")
+            return jsonify(
+                {"status": "error", "message": "Producto no encontrado"}
+            ), 404
+
+    except Exception as e:
+        print(f"❌ Error buscando por código de barras: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/update-product-cost", methods=["PUT"])
+def update_product_cost():
+    """
+    Actualiza el costo de un producto en la base de datos
+    """
+    try:
+        data = request.get_json()
+        product_id = data.get("product_id")
+        new_cost = data.get("new_cost")
+
+        if not product_id or new_cost is None:
+            return jsonify(
+                {"status": "error", "message": "product_id y new_cost son requeridos"}
+            ), 400
+
+        db = Database()
+        print(f"🔄 Actualizando costo del producto {product_id} a ${new_cost}")
+
+        # Actualizar el costo del producto
+        update_query = """
+        UPDATE products 
+        SET cost = %s, last_modified_date = CURRENT_TIMESTAMP
+        WHERE id = %s
+        """
+
+        result = db.execute_query(update_query, (new_cost, product_id))
+
+        if result is not None:  # La consulta se ejecutó exitosamente
+            print(f"✅ Costo del producto {product_id} actualizado a ${new_cost}")
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "Costo del producto actualizado exitosamente",
+                    "data": {"product_id": product_id, "new_cost": new_cost},
+                }
+            ), 200
+        else:
+            print(f"❌ Error al actualizar el costo del producto {product_id}")
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Error al actualizar el costo del producto",
+                }
+            ), 500
+
+    except Exception as e:
+        print(f"❌ Error actualizando costo del producto: {e}")
         import traceback
 
         traceback.print_exc()
@@ -3088,6 +3235,130 @@ def print_barcodes():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@inventory_router.route("/search-product-by-barcode", methods=["GET"])
+def search_product_by_barcode():
+    """
+    Busca un producto por código de barras para recompra
+    Devuelve información del producto y sus variantes existentes
+    """
+    try:
+        barcode = request.args.get("barcode")
+        if not barcode:
+            return jsonify(
+                {"status": "error", "message": "Código de barras requerido"}
+            ), 400
+
+        print(f"🔍 Buscando producto por código de barras para recompra: {barcode}")
+
+        db = Database()
+
+        # Buscar primero en warehouse_stock_variants por variant_barcode
+        variant_query = """
+        SELECT 
+            wsv.id,
+            wsv.product_id,
+            wsv.size_id,
+            wsv.color_id,
+            wsv.quantity,
+            wsv.variant_barcode,
+            p.product_name,
+            p.provider_code,
+            p.cost,
+            p.sale_price,
+            p.state,
+            s.size_name,
+            c.color_name,
+            c.color_hex,
+            b.brand_name,
+            g.group_name
+        FROM warehouse_stock_variants wsv
+        LEFT JOIN products p ON wsv.product_id = p.id
+        LEFT JOIN sizes s ON wsv.size_id = s.id
+        LEFT JOIN colors c ON wsv.color_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN groups g ON p.group_id = g.id
+        WHERE wsv.variant_barcode = %s
+        """
+
+        variant_result = db.execute_query(variant_query, (barcode,))
+
+        if variant_result and len(variant_result) > 0:
+            variant_data = variant_result[0]
+            product_id = variant_data["product_id"]
+
+            print(f"✅ Variante encontrada: {variant_data['product_name']}")
+
+            # Obtener todas las variantes existentes del producto
+            all_variants_query = """
+            SELECT 
+                wsv.size_id,
+                wsv.color_id,
+                wsv.quantity,
+                s.size_name,
+                c.color_name,
+                c.color_hex
+            FROM warehouse_stock_variants wsv
+            LEFT JOIN sizes s ON wsv.size_id = s.id
+            LEFT JOIN colors c ON wsv.color_id = c.id
+            WHERE wsv.product_id = %s AND wsv.quantity > 0
+            ORDER BY s.size_name, c.color_name
+            """
+
+            existing_variants = db.execute_query(all_variants_query, (product_id,))
+
+            # Obtener talles y colores disponibles para nuevas variantes
+            sizes_query = "SELECT id, size_name FROM sizes ORDER BY size_name"
+            colors_query = (
+                "SELECT id, color_name, color_hex FROM colors ORDER BY color_name"
+            )
+
+            available_sizes = db.execute_query(sizes_query)
+            available_colors = db.execute_query(colors_query)
+
+            response_data = {
+                "product": {
+                    "id": variant_data["product_id"],
+                    "product_name": variant_data["product_name"],
+                    "provider_code": variant_data["provider_code"],
+                    "cost": variant_data["cost"],
+                    "sale_price": variant_data["sale_price"],
+                    "state": variant_data["state"],
+                    "brand_name": variant_data["brand_name"],
+                    "group_name": variant_data["group_name"],
+                },
+                "scanned_variant": {
+                    "size_id": variant_data["size_id"],
+                    "color_id": variant_data["color_id"],
+                    "size_name": variant_data["size_name"],
+                    "color_name": variant_data["color_name"],
+                    "current_quantity": variant_data["quantity"],
+                },
+                "existing_variants": existing_variants,
+                "available_sizes": available_sizes,
+                "available_colors": available_colors,
+            }
+
+            return jsonify({"status": "success", "data": response_data}), 200
+
+        else:
+            print(f"❌ No se encontró producto con código de barras: {barcode}")
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Producto no encontrado con ese código de barras",
+                }
+            ), 404
+
+    except Exception as e:
+        print(f"❌ Error buscando producto por código de barras: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify(
+            {"status": "error", "message": f"Error interno del servidor: {str(e)}"}
+        ), 500
+
+
 @inventory_router.route("/test-barcode-endpoint", methods=["GET", "POST"])
 def test_barcode_endpoint():
     """
@@ -3457,4 +3728,110 @@ def save_print_settings():
 
     except Exception as e:
         print(f"❌ Error guardando configuraciones de impresión: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@inventory_router.route("/variants-by-storage/<int:storage_id>", methods=["GET"])
+def get_variants_by_storage(storage_id):
+    """
+    Get all product variants with stock for a specific storage in a single optimized query.
+    This replaces the N+1 query problem in the frontend.
+    Performance improvement: 1 query instead of N+1 queries.
+    """
+    try:
+        db = Database()
+
+        print(
+            f"🚀 OPTIMIZED: Loading variants for storage {storage_id} with single query"
+        )
+
+        # Single optimized query that gets all the data needed for moveInventory component
+        query = """
+        SELECT 
+            wsv.id as variant_id,
+            p.id as product_id,
+            p.product_name,
+            b.brand_name,
+            s.size_name,
+            c.color_name,
+            c.color_hex,
+            wsv.variant_barcode,
+            wsv.quantity as available_stock,
+            wsv.size_id,
+            wsv.color_id,
+            st.name as sucursal_nombre,
+            st.id as sucursal_id
+        FROM warehouse_stock_variants wsv
+        INNER JOIN products p ON wsv.product_id = p.id
+        INNER JOIN storage st ON wsv.branch_id = st.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN sizes s ON wsv.size_id = s.id
+        LEFT JOIN colors c ON wsv.color_id = c.id
+        WHERE wsv.branch_id = %s 
+          AND wsv.quantity > 0
+          AND wsv.variant_barcode IS NOT NULL
+          AND wsv.variant_barcode != ''
+        ORDER BY p.product_name, s.size_name, c.color_name
+        """
+
+        variants = db.execute_query(query, (storage_id,))
+
+        if not variants:
+            print(f"📦 No variants found for storage {storage_id}")
+            return jsonify({"status": "success", "data": []}), 200
+
+        # Process results
+        processed_variants = []
+        for variant in variants:
+            if isinstance(variant, dict):
+                variant_item = {
+                    "variant_id": variant.get("variant_id"),
+                    "product_id": variant.get("product_id"),
+                    "product_name": variant.get("product_name"),
+                    "brand_name": variant.get("brand_name"),
+                    "size_name": variant.get("size_name"),
+                    "color_name": variant.get("color_name"),
+                    "color_hex": variant.get("color_hex"),
+                    "variant_barcode": variant.get("variant_barcode"),
+                    "available_stock": variant.get("available_stock"),
+                    "size_id": variant.get("size_id"),
+                    "color_id": variant.get("color_id"),
+                    "sucursal_nombre": variant.get("sucursal_nombre"),
+                    "sucursal_id": variant.get("sucursal_id"),
+                }
+            else:
+                variant_item = {
+                    "variant_id": variant[0],
+                    "product_id": variant[1],
+                    "product_name": variant[2],
+                    "brand_name": variant[3],
+                    "size_name": variant[4],
+                    "color_name": variant[5],
+                    "color_hex": variant[6],
+                    "variant_barcode": variant[7],
+                    "available_stock": variant[8],
+                    "size_id": variant[9],
+                    "color_id": variant[10],
+                    "sucursal_nombre": variant[11],
+                    "sucursal_id": variant[12],
+                }
+            processed_variants.append(variant_item)
+
+        print(
+            f"✅ OPTIMIZED: Loaded {len(processed_variants)} variants in single query"
+        )
+
+        return jsonify(
+            {
+                "status": "success",
+                "data": processed_variants,
+                "count": len(processed_variants),
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"❌ Error in get_variants_by_storage: {e}")
+        import traceback
+
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500

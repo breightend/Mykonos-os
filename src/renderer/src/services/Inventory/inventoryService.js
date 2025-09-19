@@ -337,12 +337,12 @@ export const inventoryService = {
     async getProductVariants(productId, storageId = null) {
         try {
             let url = `${API_URL}/product-variants/${productId}`
-            
+
             // Agregar parámetro de sucursal si se especifica
             if (storageId) {
                 url += `?storage_id=${storageId}`
             }
-            
+
             const response = await axios.get(url)
             return response.data
         } catch (error) {
@@ -380,6 +380,25 @@ export const inventoryService = {
             return response.data
         } catch (error) {
             console.error('❌ Error al generar vista previa del código de barras:', error)
+            throw error
+        }
+    },
+
+    /**
+     * Get all available variants for a storage in a single optimized query
+     * This replaces the N+1 query problem in loadAvailableVariants
+     * Performance improvement: 1 query instead of N+1 queries
+     * @param {number} storageId - ID of the storage
+     * @returns {Promise} All variants with stock for the storage
+     */
+    async getVariantsByStorage(storageId) {
+        try {
+            console.log(`🚀 OPTIMIZED: Fetching variants for storage ${storageId} with single query`)
+            const response = await axios.get(`${API_URL}/variants-by-storage/${storageId}`)
+            console.log(`✅ OPTIMIZED: Received ${response.data.count || 0} variants in single request`)
+            return response.data
+        } catch (error) {
+            console.error('❌ Error al obtener variantes por sucursal:', error)
             throw error
         }
     }

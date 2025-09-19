@@ -289,7 +289,7 @@ export default function MoveInventory() {
     }
   }
 
-  // Cargar variantes disponibles de productos
+  // Cargar variantes disponibles de productos - OPTIMIZED VERSION
   const loadAvailableVariants = useCallback(async () => {
     if (!currentStorage?.id) {
       setError('No hay sucursal actual seleccionada')
@@ -300,49 +300,17 @@ export default function MoveInventory() {
       setLoadingProducts(true)
       console.log('📦 Cargando variantes disponibles de sucursal:', currentStorage.id)
 
-      const response = await inventoryService.getProductsSummary(currentStorage.id)
+      // ✅ SINGLE OPTIMIZED QUERY instead of N+1 queries
+      const response = await inventoryService.getVariantsByStorage(currentStorage.id)
 
       if (response.status === 'success' && response.data) {
-        // Para cada producto, obtener sus variantes detalladas
-        const allVariants = []
-
-        for (const product of response.data) {
-          if (product.cantidad_total > 0) {
-            try {
-              const detailResponse = await inventoryService.getProductDetails(product.id)
-              if (detailResponse.status === 'success' && detailResponse.data.stock_variants) {
-                const productVariants = detailResponse.data.stock_variants
-                  .filter(
-                    (variant) =>
-                      variant.sucursal_id === currentStorage.id &&
-                      variant.quantity > 0 &&
-                      variant.variant_barcode
-                  )
-                  .map((variant) => ({
-                    variant_id: variant.id,
-                    product_id: product.id,
-                    product_name: product.producto,
-                    brand_name: product.marca,
-                    size_name: variant.size_name,
-                    color_name: variant.color_name,
-                    color_hex: variant.color_hex,
-                    variant_barcode: variant.variant_barcode,
-                    available_stock: variant.quantity,
-                    size_id: variant.size_id,
-                    color_id: variant.color_id
-                  }))
-
-                allVariants.push(...productVariants)
-              }
-            } catch (detailError) {
-              console.warn('⚠️ Error cargando detalles del producto:', product.id, detailError)
-            }
-          }
-        }
-
-        setAvailableVariants(allVariants)
+        // Data is already in the correct format from the optimized endpoint
+        setAvailableVariants(response.data)
         setError(null)
-        console.log('✅ Variantes cargadas:', allVariants.length)
+        console.log('✅ Variantes cargadas con consulta optimizada:', response.data.length)
+        console.log(
+          `🚀 Rendimiento mejorado: 1 consulta en lugar de ${response.data.length + 1} consultas`
+        )
       } else {
         setError('No se pudieron cargar las variantes')
       }

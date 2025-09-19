@@ -21,11 +21,9 @@ export default function PrintBarcodeModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Estados para las cantidades y selección
   const [quantities, setQuantities] = useState({})
   const [selectAll, setSelectAll] = useState(false)
 
-  // Estados para opciones de texto del código de barras
   const [printOptions, setPrintOptions] = useState({
     includeColor: true,
     includePrice: true,
@@ -34,17 +32,14 @@ export default function PrintBarcodeModal({
     includeProductName: true
   })
 
-  // Estados para configuraciones
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [configurationChanged, setConfigurationChanged] = useState(false)
 
-  // Estado para vista previa
   const [previewVariant, setPreviewVariant] = useState(null)
   const [barcodePreview, setBarcodePreview] = useState(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
 
-  // Cargar configuraciones guardadas
   const loadPrintSettings = async () => {
     try {
       setSettingsLoading(true)
@@ -100,7 +95,6 @@ export default function PrintBarcodeModal({
     }
   }
 
-  // Función para generar texto de vista previa
   const generatePreviewText = (variant) => {
     if (!variant || !product) return ''
 
@@ -129,7 +123,6 @@ export default function PrintBarcodeModal({
     return textParts.join(' | ')
   }
 
-  // Función para cargar vista previa del código de barras SVG
   const loadBarcodePreview = async (variant) => {
     if (!variant) return
 
@@ -269,42 +262,34 @@ export default function PrintBarcodeModal({
     }
   }
 
-  // Manejar cambios en opciones de impresión
   const handlePrintOptionChange = (option, checked) => {
     setPrintOptions((prev) => ({
       ...prev,
       [option]: checked
     }))
-    // Marcar que hubo cambios en la configuración
     setConfigurationChanged(true)
 
-    // Recargar vista previa con nuevas opciones
     if (previewVariant) {
       loadBarcodePreview(previewVariant)
     }
   }
 
-  // Función para imprimir solo la vista previa
   const handlePrintPreview = () => {
     if (!barcodePreview?.png_data) {
       alert('No hay vista previa PNG para imprimir')
       return
     }
 
-    // Crear canvas para imprimir la imagen PNG
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     const img = new Image()
 
     img.onload = function () {
-      // Configurar canvas con el tamaño de la imagen
       canvas.width = img.width
       canvas.height = img.height
 
-      // Dibujar la imagen en el canvas
       ctx.drawImage(img, 0, 0)
 
-      // Crear contenido HTML para impresión
       const printContent = `
         <!DOCTYPE html>
         <html>
@@ -349,7 +334,6 @@ export default function PrintBarcodeModal({
         </html>
       `
 
-      // Crear iframe oculto para imprimir
       const iframe = document.createElement('iframe')
       iframe.style.position = 'absolute'
       iframe.style.width = '0px'
@@ -364,7 +348,6 @@ export default function PrintBarcodeModal({
         iframeDoc.write(printContent)
         iframeDoc.close()
 
-        // Esperar un momento para que cargue el contenido
         setTimeout(() => {
           iframe.contentWindow.focus()
           iframe.contentWindow.print()
@@ -512,7 +495,7 @@ export default function PrintBarcodeModal({
             </div>
             <button
               onClick={handleClose}
-              className="hover:bg-error/10 btn btn-ghost btn-sm px-3 py-2 transition-all duration-200 hover:text-error"
+              className="hover:bg-error/10 btn btn-ghost px-3 py-2 hover:text-error"
             >
               <X className="h-4 w-4" />
             </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Plus,
   Package,
@@ -13,13 +13,17 @@ import {
   DollarSign,
   Percent,
   FileX,
-  FileCheck
+  FileCheck,
+  Scan,
+  Search
 } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { fetchProductos } from '../../services/products/productService'
 import postData from '../../services/products/productService'
 import { createPurchase } from '../../services/proveedores/purchaseService'
 import { fetchProviderById } from '../../services/proveedores/proveedorService'
+import { fetchSize } from '../../services/products/sizeService'
+import { fetchColor } from '../../services/products/colorService'
 import toast from 'react-hot-toast'
 import { useLocation, useSearchParams } from 'wouter'
 import { useProductContext } from '../../contexts/ProductContext'
@@ -45,6 +49,195 @@ export default function AgregarCompraProveedor() {
   const [invoiceFile, setInvoiceFile] = useState(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [delivery_date, setDeliveryDate] = useState('')
+
+  // Estados para búsqueda por código de barras
+  const [barcodeSearch, setBarcodeSearch] = useState('')
+  const [searchingBarcode, setSearchingBarcode] = useState(false)
+  const [foundProductForPurchase, setFoundProductForPurchase] = useState(null)
+  const [showProductModal, setShowProductModal] = useState(false)
+  const [updateProductCost, setUpdateProductCost] = useState(false)
+
+  // Estados para el modal de producto encontrado
+  const [purchaseQuantity, setPurchaseQuantity] = useState(1)
+  const [purchasePrice, setPurchasePrice] = useState(0)
+  const [providerCode, setProviderCode] = useState('')
+
+  // Estados para sistema de variantes
+  const [selectedVariants, setSelectedVariants] = useState([
+    { talle: '', colores: [{ color: '', cantidad: 1 }] }
+  ])
+  const [availableSizes, setAvailableSizes] = useState([])
+  const [availableColors, setAvailableColors] = useState([])
+  const [loadingVariants, setLoadingVariants] = useState(false)
+  const [existingVariants, setExistingVariants] = useState([]) // Variantes actuales del producto
+
+  // Refs para funcionalidad de barcode
+  const barcodeInputRef = useRef(null)
+  const autoSearchTimeoutRef = useRef(null)
+
+  // Reset modal values when a new product is found
+  useEffect(() => {
+    if (foundProductForPurchase) {
+      setPurchaseQuantity(1)
+      setPurchasePrice(foundProductForPurchase.product?.cost || 0)
+      setProviderCode(foundProductForPurchase.product?.provider_code || '')
+      // Initialize with the scanned variant
+      setSelectedVariants([
+        {
+          talle: foundProductForPurchase.scanned_variant?.size_name || '',
+          colores: [
+            {
+              color: foundProductForPurchase.scanned_variant?.color_name || '',
+              cantidad: 1
+            }
+          ]
+        }
+      ])
+      // Load available sizes and colors
+      loadVariantData()
+    }
+  }, [foundProductForPurchase])
+
+  // Load available sizes and colors for variants
+  const loadVariantData = async () => {
+    try {
+      setLoadingVariants(true)
+      console.log('🔄 Cargando datos de variantes...')
+
+      // Use the same services as the reference file
+      const [sizesResponse, colorsResponse] = await Promise.allSettled([fetchSize(), fetchColor()])
+
+      if (sizesResponse.status === 'fulfilled' && sizesResponse.value) {
+        const sizesData = sizesResponse.value.map((size) => ({
+          id: size.id || size.size_id,
+          name: size.size_name || size.name
+        }))
+        setAvailableSizes(sizesData)
+        console.log('✅ Talles cargados exitosamente:', sizesData.length)
+      } else {
+        console.warn('⚠️ Error al cargar talles:', sizesResponse.reason)
+        setAvailableSizes([])
+      }
+
+      if (colorsResponse.status === 'fulfilled' && colorsResponse.value) {
+        const colorsData = colorsResponse.value.map((color) => ({
+          id: color.id || color.color_id,
+          name: color.color_name || color.name
+        }))
+        setAvailableColors(colorsData)
+        console.log('🎨 Colores cargados exitosamente:', colorsData.length)
+      } else {
+        console.warn('⚠️ Error al cargar colores:', colorsResponse.reason)
+        setAvailableColors([])
+      }
+    } catch (error) {
+      console.error('❌ Error loading variant data:', error)
+      toast.error('Error al cargar datos de variantes')
+    } finally {
+      setLoadingVariants(false)
+    }
+  }
+
+  // Función para cargar las variantes existentes del producto
+  const loadExistingVariants = async (productId) => {
+    try {
+      console.log('🔍 Cargando variantes existentes del producto:', productId)
+
+      const response = await fetch(
+        `http://localhost:5000/api/inventory/product-variants/${productId}`
+      )
+      const data = await response.json()
+
+      if (data.status === 'success' && data.data) {
+        setExistingVariants(data.data)
+        console.log('✅ Variantes existentes cargadas:', data.data.length)
+      } else {
+        console.warn('⚠️ No se encontraron variantes existentes')
+        setExistingVariants([])
+      }
+    } catch (error) {
+      console.error('❌ Error cargando variantes existentes:', error)
+      setExistingVariants([])
+    }
+  }
+
+  // Función para limpiar el modal
+  const clearProductModal = () => {
+    setFoundProductForPurchase(null)
+    setShowProductModal(false)
+    setUpdateProductCost(false)
+    setPurchaseQuantity(1)
+    setPurchasePrice(0)
+    setProviderCode('')
+    setSelectedVariants([{ talle: '', colores: [{ color: '', cantidad: 1 }] }])
+    setExistingVariants([])
+    setAvailableSizes([])
+    setAvailableColors([])
+    setLoadingVariants(false)
+  }
+
+  // Functions to handle variants
+  const agregarTalle = () => {
+    setSelectedVariants([...selectedVariants, { talle: '', colores: [{ color: '', cantidad: 1 }] }])
+  }
+
+  const eliminarTalle = (talleIndex) => {
+    const newVariants = selectedVariants.filter((_, index) => index !== talleIndex)
+    setSelectedVariants(
+      newVariants.length > 0 ? newVariants : [{ talle: '', colores: [{ color: '', cantidad: 1 }] }]
+    )
+  }
+
+  const handleTalleChange = (talleIndex, value) => {
+    const newVariants = [...selectedVariants]
+    newVariants[talleIndex].talle = value
+    setSelectedVariants(newVariants)
+  }
+
+  const agregarColor = (talleIndex) => {
+    const newVariants = [...selectedVariants]
+    newVariants[talleIndex].colores.push({ color: '', cantidad: 1 })
+    setSelectedVariants(newVariants)
+  }
+
+  const eliminarColor = (talleIndex, colorIndex) => {
+    const newVariants = [...selectedVariants]
+    if (newVariants[talleIndex].colores.length > 1) {
+      newVariants[talleIndex].colores.splice(colorIndex, 1)
+    }
+    setSelectedVariants(newVariants)
+  }
+
+  const handleColorChange = (talleIndex, colorIndex, field, value) => {
+    const newVariants = [...selectedVariants]
+    newVariants[talleIndex].colores[colorIndex][field] = value
+    setSelectedVariants(newVariants)
+  }
+
+  const getTallesDisponibles = (currentTalleIndex) => {
+    const usedTalles = selectedVariants
+      .map((variant, index) => (index !== currentTalleIndex ? variant.talle : null))
+      .filter(Boolean)
+    return availableSizes.filter((size) => !usedTalles.includes(size.size_name))
+  }
+
+  const getColoresDisponibles = (talleIndex, currentColorIndex) => {
+    const usedColors = selectedVariants[talleIndex].colores
+      .map((color, index) => (index !== currentColorIndex ? color.color : null))
+      .filter(Boolean)
+    return availableColors.filter((color) => !usedColors.includes(color.color_name))
+  }
+
+  const calculateTotalQuantity = () => {
+    return selectedVariants.reduce((total, variant) => {
+      return (
+        total +
+        variant.colores.reduce((colorTotal, color) => {
+          return colorTotal + (parseInt(color.cantidad) || 0)
+        }, 0)
+      )
+    }, 0)
+  }
 
   const {
     productData,
@@ -97,6 +290,204 @@ export default function AgregarCompraProveedor() {
 
   // Add this state for discount type
   const [discountType, setDiscountType] = useState('money') // 'money' or 'percentage'
+
+  // Cleanup timeout cuando el componente se desmonta
+  useEffect(() => {
+    return () => {
+      if (autoSearchTimeoutRef.current) {
+        clearTimeout(autoSearchTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Función para buscar productos por código de barras
+  const searchByBarcode = async (barcode) => {
+    // Asegurar que barcode es una string
+    const barcodeStr = String(barcode || '').trim()
+    if (!barcodeStr) return
+
+    try {
+      setSearchingBarcode(true)
+      setBarcodeSearch('') // Limpiar inmediatamente para próximo escaneo
+      console.log('🔍 Buscando producto por código de barras para recompra:', barcodeStr)
+
+      const response = await fetch(
+        `http://localhost:5000/api/inventory/search-by-barcode?barcode=${encodeURIComponent(barcodeStr)}`
+      )
+      const data = await response.json()
+
+      if (data.status === 'success' && data.data) {
+        console.log('✅ Producto encontrado para recompra:', data.data)
+
+        // Estructurar los datos para el modal
+        const productData = {
+          product: {
+            id: data.data.product_id,
+            product_name: data.data.product_name,
+            provider_code: data.data.provider_code,
+            sale_price: data.data.sale_price,
+            cost: data.data.cost
+          },
+          scanned_variant: {
+            size_id: data.data.size_id,
+            size_name: data.data.size_name,
+            color_id: data.data.color_id,
+            color_name: data.data.color_name,
+            current_quantity: data.data.quantity || 0,
+            variant_barcode: data.data.variant_barcode
+          },
+          available_sizes: [], // Se llenará cuando sea necesario
+          available_colors: [] // Se llenará cuando sea necesario
+        }
+
+        setFoundProductForPurchase(productData)
+
+        // Cargar variantes existentes del producto
+        await loadExistingVariants(data.data.product_id)
+
+        // Inicializar con la variante escaneada
+        setSelectedVariants([
+          {
+            talle: data.data.size_name,
+            colores: [
+              {
+                color: data.data.color_name,
+                cantidad: '1' // Cantidad inicial por defecto
+              }
+            ]
+          }
+        ])
+
+        setShowProductModal(true)
+
+        toast.success(
+          `Producto encontrado: ${data.data.product_name}\nVariante escaneada: ${data.data.size_name}-${data.data.color_name} (Stock: ${data.data.quantity || 0})`,
+          {
+            duration: 4000,
+            position: 'top-center'
+          }
+        )
+      } else {
+        toast.error('Producto no encontrado con ese código de barras', {
+          duration: 2500,
+          position: 'top-center'
+        })
+      }
+    } catch (error) {
+      console.error('❌ Error buscando por código de barras:', error)
+      toast.error('Error al buscar el producto: ' + error.message, {
+        duration: 3000,
+        position: 'top-center'
+      })
+    } finally {
+      setSearchingBarcode(false)
+
+      // Refocus el input para próximo escaneo
+      setTimeout(() => {
+        if (barcodeInputRef.current) {
+          barcodeInputRef.current.focus()
+        }
+      }, 100)
+    }
+  }
+
+  // Manejar input de código de barras
+  const handleBarcodeInput = (e) => {
+    const value = e.target.value
+    setBarcodeSearch(value)
+
+    // Limpiar timeout anterior si existe
+    if (autoSearchTimeoutRef.current) {
+      clearTimeout(autoSearchTimeoutRef.current)
+    }
+
+    // Si se presiona Enter, buscar inmediatamente
+    if (e.key === 'Enter' && value.trim()) {
+      searchByBarcode(value.trim())
+      return
+    }
+
+    // Auto-búsqueda después de que el scanner termine de escribir
+    if (value.trim() && value.length >= 8) {
+      autoSearchTimeoutRef.current = setTimeout(() => {
+        if (value.trim() === barcodeSearch.trim()) {
+          searchByBarcode(value.trim())
+        }
+      }, 150)
+    }
+  }
+
+  // Función para agregar el producto encontrado a la compra
+  const addFoundProductToPurchase = async (
+    productToAdd,
+    selectedVariants,
+    costPrice,
+    totalQuantity
+  ) => {
+    console.log('📦 Agregando producto escaneado a la compra:', {
+      product: productToAdd,
+      variants: selectedVariants,
+      costPrice,
+      totalQuantity,
+      updateCost: updateProductCost
+    })
+
+    try {
+      // Si el usuario quiere actualizar el costo del producto
+      if (updateProductCost && costPrice !== productToAdd.cost) {
+        console.log('🔄 Actualizando costo del producto en la base de datos...')
+
+        const updateResponse = await fetch(
+          `http://localhost:5000/api/inventory/update-product-cost`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              product_id: productToAdd.id,
+              new_cost: costPrice
+            })
+          }
+        )
+
+        if (updateResponse.ok) {
+          console.log('✅ Costo del producto actualizado exitosamente')
+          toast.success('Costo del producto actualizado', {
+            duration: 2000
+          })
+        } else {
+          console.warn('⚠️ No se pudo actualizar el costo del producto')
+          toast.warning('No se pudo actualizar el costo del producto')
+        }
+      }
+
+      // Crear el producto para agregar al contexto
+      const productForPurchase = {
+        id: Date.now(), // ID temporal único
+        product_id: productToAdd.id,
+        product_name: productToAdd.product_name,
+        provider_code: productToAdd.provider_code || '',
+        cost_price: costPrice,
+        quantity: totalQuantity,
+        subtotal: costPrice * totalQuantity,
+        discount: 0,
+        is_existing_product: true, // Marca que es un producto existente
+        stock_variants: selectedVariants // Variantes seleccionadas
+      }
+
+      // Agregar al contexto de productos
+      updatePurchaseInfo('products', [...productData.products, productForPurchase])
+
+      // Limpiar el modal
+      clearProductModal()
+
+      toast.success(`Producto agregado: ${productToAdd.product_name} (${totalQuantity} unidades)`)
+    } catch (error) {
+      console.error('❌ Error al agregar producto:', error)
+      toast.error('Error al agregar el producto: ' + error.message)
+    }
+  }
 
   // Update the useEffect for calculations
   useEffect(() => {
@@ -520,6 +911,47 @@ export default function AgregarCompraProveedor() {
                 </button>
               </div>
 
+              {/* Barcode Search Section */}
+              <div className="mb-6 rounded-lg border-2 border-dashed border-gray-300 bg-white p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Scan className="h-5 w-5 text-primary" />
+                  <h4 className="text-lg font-medium text-gray-700">
+                    Buscar Producto Existente por Código de Barras
+                  </h4>
+                </div>
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      ref={barcodeInputRef}
+                      type="text"
+                      value={barcodeSearch}
+                      onChange={handleBarcodeInput}
+                      placeholder="Escanea o escribe el código de barras del producto..."
+                      className="input-bordered input w-full pr-10"
+                    />
+                    <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => searchByBarcode(barcodeSearch)}
+                    disabled={!barcodeSearch.trim() || searchingBarcode}
+                    className="btn btn-primary"
+                  >
+                    {searchingBarcode ? (
+                      <>
+                        <div className="loading loading-spinner loading-sm"></div>
+                        Buscando...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4" />
+                        Buscar
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
               {productData.products.length > 0 ? (
                 <div className="overflow-x-auto rounded-lg border">
                   <table className="table w-full">
@@ -815,6 +1247,447 @@ export default function AgregarCompraProveedor() {
           </div>
         )}
       </div>
+
+      {/* Barcode Search Product Modal */}
+      {foundProductForPurchase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="relative h-full max-h-[95vh] w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-xl">
+            {/* Header */}
+            <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
+                  <Package className="h-6 w-6 text-primary" />
+                  Recomprar Producto Existente
+                </h3>
+                <button type="button" onClick={clearProductModal} className="btn btn-ghost btn-sm">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto px-6 py-4" style={{ maxHeight: 'calc(95vh - 140px)' }}>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {/* Información del Producto */}
+                <div className="space-y-6">
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <h4 className="mb-3 text-lg font-medium text-gray-700">
+                      {foundProductForPurchase.product.product_name}
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Código de Barras:</span>
+                        <p className="font-mono text-sm">
+                          {foundProductForPurchase.scanned_variant.variant_barcode}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Código Proveedor:</span>
+                        <p className="text-sm">
+                          {foundProductForPurchase.product.provider_code || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Talla Escaneada:</span>
+                        <p className="text-sm">
+                          {foundProductForPurchase.scanned_variant.size_name}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Color Escaneado:</span>
+                        <p className="text-sm">
+                          {foundProductForPurchase.scanned_variant.color_name}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">
+                          Stock Actual (Escaneado):
+                        </span>
+                        <p className="text-sm font-medium">
+                          {foundProductForPurchase.scanned_variant.current_quantity} unidades
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Precio Sugerido:</span>
+                        <p className="text-sm font-medium">
+                          ${foundProductForPurchase.product.cost}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stock Actual de Todas las Variantes */}
+                  <div className="rounded-lg border border-gray-200 bg-white p-4">
+                    <h5 className="mb-3 text-lg font-medium text-gray-700">
+                      Stock Actual de Todas las Variantes
+                    </h5>
+                    {existingVariants.length > 0 ? (
+                      <div className="max-h-48 overflow-y-auto">
+                        <div className="space-y-2">
+                          {existingVariants.map((variant, index) => (
+                            <div
+                              key={index}
+                              className={`rounded border p-2 text-sm ${
+                                variant.quantity > 0
+                                  ? variant.quantity < 5
+                                    ? 'border-yellow-200 bg-yellow-50'
+                                    : 'border-green-200 bg-green-50'
+                                  : 'border-red-200 bg-red-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="font-medium">
+                                    {variant.size_name} - {variant.color_name}
+                                  </span>
+                                  <div className="text-xs text-gray-500">
+                                    {variant.variant_barcode}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-bold">{variant.quantity} unidades</div>
+                                  {variant.quantity === 0 && (
+                                    <div className="text-xs text-red-600">Sin stock</div>
+                                  )}
+                                  {variant.quantity > 0 && variant.quantity < 5 && (
+                                    <div className="text-xs text-yellow-600">Stock bajo</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-500">
+                        No se encontraron variantes existentes
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Configuración de Compra */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Precio de Costo
+                      </label>
+                      <input
+                        type="number"
+                        value={purchasePrice || foundProductForPurchase.product.cost || 0}
+                        onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}
+                        className="input-bordered input w-full"
+                        min="0"
+                        step="0.01"
+                        placeholder="Ingresa el precio de costo"
+                      />
+                      <div className="mt-2">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={updateProductCost}
+                            onChange={(e) => setUpdateProductCost(e.target.checked)}
+                            className="checkbox checkbox-xs"
+                          />
+                          Actualizar el costo del producto para futuras compras
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Código del Proveedor (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={providerCode || foundProductForPurchase.product.provider_code || ''}
+                        onChange={(e) => setProviderCode(e.target.value)}
+                        className="input-bordered input w-full"
+                        placeholder="Código del proveedor para este producto"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gestión de Variantes */}
+                <div className="space-y-4">
+                  {/* Sección de gestión de variantes */}
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h4 className="text-lg font-medium text-gray-700">
+                        Gestión de Variantes (Talles y Colores)
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => loadVariantData()}
+                        disabled={loadingVariants}
+                        className="btn btn-outline btn-sm"
+                      >
+                        {loadingVariants ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                            Cargando...
+                          </>
+                        ) : (
+                          'Cargar Talles/Colores'
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Tabla de variantes seleccionadas */}
+                    <div className="mb-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="text-sm font-medium text-gray-700">
+                          Variantes Seleccionadas:
+                        </label>
+                        <button
+                          type="button"
+                          onClick={agregarTalle}
+                          className="btn btn-primary btn-sm"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Agregar Talle
+                        </button>
+                      </div>
+
+                      {selectedVariants.length === 0 ? (
+                        <div className="rounded-md border border-dashed border-gray-300 p-4 text-center text-gray-500">
+                          No hay variantes seleccionadas. Haz clic en "Agregar Talle" para comenzar.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {selectedVariants.map((variant, variantIndex) => (
+                            <div
+                              key={variantIndex}
+                              className="rounded-md border border-gray-300 bg-white p-3"
+                            >
+                              <div className="mb-3 flex items-center justify-between">
+                                <h5 className="font-medium text-gray-700">
+                                  Talle {variantIndex + 1}
+                                </h5>
+                                <button
+                                  type="button"
+                                  onClick={() => eliminarTalle(variantIndex)}
+                                  className="btn btn-error btn-sm"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+
+                              <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <div>
+                                  <label className="mb-1 block text-sm font-medium text-gray-600">
+                                    Talle:
+                                  </label>
+                                  <select
+                                    value={variant.talle}
+                                    onChange={(e) =>
+                                      handleTalleChange(variantIndex, 'talle', e.target.value)
+                                    }
+                                    className="select-bordered select w-full"
+                                    required
+                                  >
+                                    <option value="">Seleccionar talle</option>
+                                    {getTallesDisponibles(variantIndex).map((size) => (
+                                      <option key={size.id} value={size.name}>
+                                        {size.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Colores para este talle */}
+                              <div>
+                                <div className="mb-2 flex items-center justify-between">
+                                  <label className="text-sm font-medium text-gray-600">
+                                    Colores:
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => agregarColor(variantIndex)}
+                                    className="btn btn-secondary btn-sm"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                    Agregar Color
+                                  </button>
+                                </div>
+
+                                {variant.colores.length === 0 ? (
+                                  <div className="rounded border border-dashed border-gray-200 p-2 text-center text-sm text-gray-400">
+                                    No hay colores agregados
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {variant.colores.map((colorData, colorIndex) => (
+                                      <div
+                                        key={colorIndex}
+                                        className="grid grid-cols-1 gap-2 rounded border border-gray-200 bg-gray-50 p-2 md:grid-cols-3"
+                                      >
+                                        <div>
+                                          <select
+                                            value={colorData.color}
+                                            onChange={(e) =>
+                                              handleColorChange(
+                                                variantIndex,
+                                                colorIndex,
+                                                'color',
+                                                e.target.value
+                                              )
+                                            }
+                                            className="select-bordered select select-sm w-full"
+                                            required
+                                          >
+                                            <option value="">Seleccionar color</option>
+                                            {getColoresDisponibles(variantIndex, colorIndex).map(
+                                              (color) => (
+                                                <option key={color.id} value={color.name}>
+                                                  {color.name}
+                                                </option>
+                                              )
+                                            )}
+                                          </select>
+                                        </div>
+                                        <div>
+                                          <input
+                                            type="number"
+                                            value={colorData.cantidad}
+                                            onChange={(e) =>
+                                              handleColorChange(
+                                                variantIndex,
+                                                colorIndex,
+                                                'cantidad',
+                                                e.target.value
+                                              )
+                                            }
+                                            className="input-bordered input input-sm w-full"
+                                            placeholder="Cantidad"
+                                            min="1"
+                                            required
+                                          />
+                                        </div>
+                                        <div className="flex justify-end">
+                                          <button
+                                            type="button"
+                                            onClick={() => eliminarColor(variantIndex, colorIndex)}
+                                            className="btn btn-error btn-sm"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Resumen de cantidad total */}
+                      {selectedVariants.length > 0 && (
+                        <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-blue-700">
+                              Cantidad Total de Unidades:
+                            </span>
+                            <span className="text-lg font-bold text-blue-800">
+                              {calculateTotalQuantity()} unidades
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer con botones */}
+              <div className="sticky bottom-0 border-t border-gray-200 bg-white px-6 py-4">
+                <div className="flex justify-end gap-3">
+                  <button type="button" onClick={clearProductModal} className="btn btn-ghost">
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Validar que hay variantes seleccionadas
+                      if (selectedVariants.length === 0) {
+                        toast.error('Debe agregar al menos una variante (talle y color)', {
+                          duration: 3000,
+                          position: 'top-center'
+                        })
+                        return
+                      }
+
+                      // Validar que todas las variantes tienen talle y al menos un color con cantidad
+                      const invalidVariants = selectedVariants.some(
+                        (variant) =>
+                          !variant.talle ||
+                          variant.colores.length === 0 ||
+                          variant.colores.some(
+                            (color) => !color.color || !color.cantidad || color.cantidad <= 0
+                          )
+                      )
+
+                      if (invalidVariants) {
+                        toast.error(
+                          'Todas las variantes deben tener talle, color y cantidad válida',
+                          {
+                            duration: 3000,
+                            position: 'top-center'
+                          }
+                        )
+                        return
+                      }
+
+                      // Preparar variantes para la función - convertir estructura de talles/colores a lista plana
+                      const variantsForPurchase = []
+
+                      selectedVariants.forEach((variant) => {
+                        variant.colores.forEach((colorData) => {
+                          // Buscar IDs desde los datos disponibles
+                          const sizeObj = availableSizes.find((s) => s.name === variant.talle)
+                          const colorObj = availableColors.find((c) => c.name === colorData.color)
+
+                          if (sizeObj && colorObj) {
+                            variantsForPurchase.push({
+                              size_id: sizeObj.id,
+                              size_name: variant.talle,
+                              color_id: colorObj.id,
+                              color_name: colorData.color,
+                              quantity: parseInt(colorData.cantidad)
+                            })
+                          }
+                        })
+                      })
+
+                      const totalQuantity = calculateTotalQuantity()
+                      const costPrice = purchasePrice || foundProductForPurchase.product.cost
+
+                      addFoundProductToPurchase(
+                        foundProductForPurchase.product,
+                        variantsForPurchase,
+                        costPrice,
+                        totalQuantity
+                      )
+                    }}
+                    disabled={
+                      selectedVariants.length === 0 ||
+                      !purchasePrice ||
+                      calculateTotalQuantity() === 0
+                    }
+                    className="btn btn-primary"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Agregar a la Compra
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
