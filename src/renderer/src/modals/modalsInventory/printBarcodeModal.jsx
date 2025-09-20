@@ -86,10 +86,10 @@ export default function PrintBarcodeModal({
       if (response.status === 'success') {
         toast.success('✅ Configuraciones guardadas')
         setConfigurationChanged(false)
-        
+
         // Recargar configuraciones después de guardar para asegurar sincronización
         await loadPrintSettings()
-        
+
         // Actualizar vista previa si hay una variante seleccionada
         if (previewVariant) {
           loadBarcodePreview(previewVariant)
@@ -734,7 +734,11 @@ export default function PrintBarcodeModal({
                     </p>
                   </div>
                   <div className="">
-                    <button className="btn btn-ghost btn-sm gap-2 " title='Configuración de Etiquetas' onClick={toggleDropdown}>
+                    <button
+                      className="btn btn-ghost btn-sm gap-2"
+                      title="Configuración de Etiquetas"
+                      onClick={toggleDropdown}
+                    >
                       <Cog className="h-7 w-7 text-secondary" />
                     </button>
                   </div>
@@ -1047,7 +1051,7 @@ export default function PrintBarcodeModal({
 
               {/* Botón principal para imprimir todas las variantes seleccionadas */}
               {variants.length > 0 && (
-                <div className="sticky bottom-0 bg-base-100 pt-4 border-t border-base-300">
+                <div className="sticky bottom-0 border-t border-base-300 bg-base-100 pt-4">
                   <div className="flex items-center justify-between gap-4 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 p-4">
                     <div className="flex-1">
                       <h4 className="font-semibold text-primary">¿Listo para imprimir?</h4>
@@ -1064,16 +1068,13 @@ export default function PrintBarcodeModal({
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={handleClose}
-                        className="btn btn-ghost btn-sm"
-                      >
+                      <button onClick={handleClose} className="btn btn-ghost btn-sm">
                         Cancelar
                       </button>
                       <button
                         onClick={handlePrintBarcodes}
                         disabled={
-                          loading || 
+                          loading ||
                           Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0) === 0
                         }
                         className="btn btn-primary gap-2"

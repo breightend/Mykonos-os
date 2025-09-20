@@ -358,8 +358,12 @@ def get_product_details(product_id):
                             "sucursal_id": s.get("sucursal_id"),
                             "sucursal_nombre": s.get("sucursal_nombre"),
                             "sucursal_direccion": s.get("sucursal_direccion"),
-                            "cantidad": s.get("cantidad"),  # Corregido: usar 'cantidad' en lugar de 'quantity'
-                            "ultima_actualizacion": s.get("ultima_actualizacion"),  # Corregido: usar 'ultima_actualizacion'
+                            "cantidad": s.get(
+                                "cantidad"
+                            ),  # Corregido: usar 'cantidad' en lugar de 'quantity'
+                            "ultima_actualizacion": s.get(
+                                "ultima_actualizacion"
+                            ),  # Corregido: usar 'ultima_actualizacion'
                         }
                     else:
                         stock_item = {
@@ -3592,7 +3596,7 @@ def get_print_settings():
                 WHERE table_name = 'barcode_print_settings'
             );
         """)
-        
+
         if not table_check or not table_check[0][0]:
             print("⚠️ Tabla barcode_print_settings no existe, creándola...")
             # Crear la tabla si no existe
@@ -3616,7 +3620,7 @@ def get_print_settings():
             );
             """
             db.execute_query(create_table_sql)
-            
+
             # Insertar configuración por defecto
             db.execute_query("""
                 INSERT INTO barcode_print_settings (user_id) 
@@ -3656,17 +3660,22 @@ def get_print_settings():
             )
         else:
             # Si no hay datos, insertar configuración por defecto y devolverla
-            print(f"⚠️ No se encontraron configuraciones para usuario '{user_id}', creando por defecto...")
-            
+            print(
+                f"⚠️ No se encontraron configuraciones para usuario '{user_id}', creando por defecto..."
+            )
+
             try:
-                db.execute_query("""
+                db.execute_query(
+                    """
                     INSERT INTO barcode_print_settings (user_id) 
                     VALUES (%s)
                     ON CONFLICT (user_id) DO NOTHING;
-                """, (user_id,))
+                """,
+                    (user_id,),
+                )
             except Exception as insert_error:
                 print(f"⚠️ Error insertando configuración por defecto: {insert_error}")
-            
+
             # Devolver configuración por defecto
             return jsonify(
                 {
@@ -3691,25 +3700,28 @@ def get_print_settings():
         print(f"❌ Error obteniendo configuraciones de impresión: {e}")
         print(f"   Tipo de error: {type(e).__name__}")
         import traceback
+
         traceback.print_exc()
-        
+
         # En caso de error, devolver configuración por defecto para que la app funcione
-        return jsonify({
-            "status": "success",
-            "settings": {
-                "showProductName": True,
-                "showVariantName": True,
-                "showSize": True,
-                "showColor": True,
-                "showPrice": False,
-                "showBarcode": True,
-                "printWidth": 450,
-                "printHeight": 200,
-                "fontSize": 12,
-                "backgroundColor": "#FFFFFF",
-                "textColor": "#000000",
-            },
-        })
+        return jsonify(
+            {
+                "status": "success",
+                "settings": {
+                    "showProductName": True,
+                    "showVariantName": True,
+                    "showSize": True,
+                    "showColor": True,
+                    "showPrice": False,
+                    "showBarcode": True,
+                    "printWidth": 450,
+                    "printHeight": 200,
+                    "fontSize": 12,
+                    "backgroundColor": "#FFFFFF",
+                    "textColor": "#000000",
+                },
+            }
+        )
 
 
 @inventory_router.route("/print-settings", methods=["POST"])
@@ -3732,7 +3744,7 @@ def save_print_settings():
                 WHERE table_name = 'barcode_print_settings'
             );
         """)
-        
+
         if not table_check or not table_check[0][0]:
             print("⚠️ Tabla barcode_print_settings no existe, creándola...")
             # Crear la tabla si no existe
@@ -3840,6 +3852,7 @@ def save_print_settings():
         print(f"❌ Error guardando configuraciones de impresión: {e}")
         print(f"   Tipo de error: {type(e).__name__}")
         import traceback
+
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
