@@ -31,6 +31,8 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
   // Estado para la URL de la imagen del producto
   const [productImageUrl, setProductImageUrl] = useState(null)
+  const [imageError, setImageError] = useState(false)
+  const [imageLoading, setImageLoading] = useState(false)
   const branchId = getCurrentBranchId()
   useEffect(() => {
     const loadProductDetails = async () => {
@@ -49,9 +51,23 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
           // Configurar URL de imagen si el producto tiene imagen
           if (response.data.has_image) {
-            setProductImageUrl(`http://localhost:5000/api/product/${productId}/image`)
+            const imageUrl = `http://localhost:5000/api/product/${productId}/image`
+            console.log('🖼️ Configurando URL de imagen:', {
+              productId: productId,
+              has_image: response.data.has_image,
+              imageUrl: imageUrl
+            })
+            setProductImageUrl(imageUrl)
+            setImageError(false)
+            setImageLoading(true)
           } else {
+            console.log('🖼️ Producto no tiene imagen:', {
+              productId: productId,
+              has_image: response.data.has_image
+            })
             setProductImageUrl(null)
+            setImageError(false)
+            setImageLoading(false)
           }
 
           // 🔧 DEBUGGING ESPECÍFICO DE VARIANT_BARCODE
@@ -116,6 +132,8 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
     } else if (!isOpen) {
       setProductDetails(null)
       setProductImageUrl(null)
+      setImageError(false)
+      setImageLoading(false)
       setError(null)
     }
   }, [isOpen, productId])
@@ -241,23 +259,86 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
               <div className="mb-8 flex justify-center">
                 <div className="w-full max-w-md">
                   <div className="flex justify-center">
-                    {productImageUrl ? (
+                    {productImageUrl && !imageError ? (
                       <div className="group relative">
+                        {imageLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-xl border-2 border-gray-200 bg-gray-100">
+                            <div className="flex flex-col items-center">
+                              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+                              <span className="mt-2 text-sm text-gray-500">Cargando imagen...</span>
+                            </div>
+                          </div>
+                        )}
                         <img
                           src={productImageUrl}
                           alt={productDetails.product_name}
-                          className="h-80 w-80 rounded-xl border-2 border-gray-200 object-cover shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl"
-                          onError={(e) => {
-                            console.log('Error cargando imagen del producto:', e)
-                            // Si hay error cargando la imagen, mostrar placeholder
-                            setProductImageUrl(null)
+                          className={`h-80 w-80 rounded-xl border-2 border-gray-200 object-cover shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+                          onError={async (e) => {
+                            console.error('❌ ERROR cargando imagen del producto:')
+                            console.error('   URL:', productImageUrl)
+                            console.error('   Producto ID:', productId)
+                            
+                            // Verificar si el problema es un 404 (respuesta JSON en lugar de imagen)
+                            try {
+                              const response = await fetch(productImageUrl)
+                              if (!response.ok) {
+                                const errorData = await response.text()
+                                console.error('   Response status:', response.status)
+                                console.error('   Response headers:', Object.fromEntries(response.headers.entries()))
+                                console.error('   Response body:', errorData)
+                                
+                                if (response.status === 404) {
+                                  console.warn('🔧 SOLUCIÓN: El producto marcado con has_image=true NO tiene imagen real en la BD')
+                                  console.warn('🔧 Esto indica un problema de sincronización entre el flag has_image y la tabla images')
+                                }
+                              }
+                            } catch (fetchError) {
+                              console.error('   Error verificando respuesta:', fetchError)
+                            }
+                            
+                            console.error('   Error details:', {
+                              src: e.target.src,
+                              naturalWidth: e.target.naturalWidth,
+                              naturalHeight: e.target.naturalHeight,
+                              complete: e.target.complete
+                            })
+                            
+                            // Marcar error de imagen y mostrar placeholder
+                            setImageError(true)
+                            setImageLoading(false)
+                          }}
+                          onLoad={(e) => {
+                            console.log('✅ Imagen cargada exitosamente:', {
+                              url: productImageUrl,
+                              productId: productId,
+                              width: e.target.naturalWidth,
+                              height: e.target.naturalHeight
+                            })
+                            setImageLoading(false)
                           }}
                         />
                       </div>
                     ) : (
                       <div className="flex h-80 w-80 flex-col items-center justify-center rounded-xl border-2 border-gray-200 bg-gray-100">
                         <Package className="mb-4 h-20 w-20 text-gray-400" />
-                        <span className="text-lg text-gray-500">Sin imagen disponible</span>
+                        <span className="text-lg text-gray-500">
+                          {imageError ? 'Error al cargar imagen' : 'Sin imagen disponible'}
+                        </span>
+                        {imageError && (
+                          <div className="mt-2 text-center">
+                            <span className="text-sm text-gray-400">
+                              La imagen existe en la base de datos pero
+                            </span>
+                            <br />
+                            <span className="text-sm text-gray-400">
+                              no se pudo cargar correctamente
+                            </span>
+                            <br />
+                            <span className="text-xs text-gray-300 mt-1">
+                              Verificar logs de consola para más detalles
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

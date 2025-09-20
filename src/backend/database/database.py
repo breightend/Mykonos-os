@@ -2303,7 +2303,7 @@ class Database:
 
     def get_product_image(self, product_id):
         """
-        Obtiene la primera imagen de un producto
+        Obtiene la primera imagen de un producto usando la foreign key correcta
 
         Args:
             product_id (int): ID del producto
@@ -2312,22 +2312,42 @@ class Database:
             dict: {'success': bool, 'message': str, 'image_data': bytes or None}
         """
         try:
-            result = self.get_record_by_clause(
-                TABLES.IMAGES.value, "product_id = ?", (product_id,)
-            )
-
-            if result.get("success") and result.get("record"):
-                return {
-                    "success": True,
-                    "message": "Imagen encontrada",
-                    "image_data": result["record"].get("image_data"),
-                }
-            else:
-                return {
-                    "success": False,
-                    "message": "No se encontró imagen para este producto",
-                    "image_data": None,
-                }
+            # Usar JOIN para seguir la foreign key: products.images_ids -> images.id
+            query = """
+            SELECT i.image_data 
+            FROM products p
+            INNER JOIN images i ON p.images_ids = i.id
+            WHERE p.id = %s 
+            AND p.images_ids IS NOT NULL
+            LIMIT 1
+            """ if self.use_postgres else """
+            SELECT i.image_data 
+            FROM products p
+            INNER JOIN images i ON p.images_ids = i.id
+            WHERE p.id = ? 
+            AND p.images_ids IS NOT NULL
+            LIMIT 1
+            """
+            params = (product_id,)
+            
+            with self.create_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(query, params)
+                row = cur.fetchone()
+                
+                if row:
+                    image_data = row[0]
+                    return {
+                        "success": True,
+                        "message": "Imagen encontrada",
+                        "image_data": image_data,
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": "No se encontró imagen para este producto",
+                        "image_data": None,
+                    }
 
         except Exception as e:
             return {

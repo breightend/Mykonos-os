@@ -234,20 +234,30 @@ def get_product_image(product_id):
     Obtiene la imagen de un producto específico
     """
     try:
+        print(f"🖼️ DEBUG: Solicitando imagen para producto ID: {product_id}")
+        
         db = Database()
         image_result = db.get_product_image(product_id)
-
+        
+        print(f"🖼️ DEBUG: Resultado de consulta de imagen: {image_result.get('success')}")
+        print(f"🖼️ DEBUG: Mensaje: {image_result.get('message')}")
+        
         if image_result.get("success") and image_result.get("image_data"):
+            image_data = image_result["image_data"]
+            print(f"🖼️ DEBUG: Imagen encontrada, tamaño: {len(image_data)} bytes")
+            
             # Retornar la imagen directamente como respuesta binaria
             return Response(
-                image_result["image_data"],
+                image_data,
                 mimetype="image/jpeg",  # Asumimos JPEG, podrías detectar el tipo real
                 headers={
                     "Content-Type": "image/jpeg",
                     "Cache-Control": "public, max-age=3600",  # Cache por 1 hora
+                    "Access-Control-Allow-Origin": "*",  # Agregar CORS explícito
                 },
             )
         else:
+            print(f"❌ DEBUG: No se encontró imagen para producto {product_id}")
             return jsonify(
                 {
                     "status": "error",
@@ -256,6 +266,7 @@ def get_product_image(product_id):
             ), 404
 
     except Exception as e:
+        print(f"💥 DEBUG: Error al obtener imagen para producto {product_id}: {str(e)}")
         return jsonify(
             {"status": "error", "message": f"Error al obtener imagen: {str(e)}"}
         ), 500

@@ -553,23 +553,27 @@ def get_product_details(product_id):
             [s for s in product_data["stock_por_sucursal"] if s["cantidad"] > 0]
         )
 
-        # Verificar si el producto tiene imagen (sin cargar los datos completos)
+        # Verificar si el producto tiene imagen usando la foreign key correcta
         product_data["has_image"] = False
         print(
             f"🔍 DEBUG product-details: Verificando si existe imagen para product_id = {product_id}"
         )
 
         try:
-            # Solo verificar si existe imagen, no cargar los datos
+            # Verificar si el producto tiene images_ids y si esa imagen existe
             image_check_query = """
             SELECT COUNT(*) as image_count
-            FROM images 
-            WHERE product_id = %s 
+            FROM products p
+            INNER JOIN images i ON p.images_ids = i.id
+            WHERE p.id = %s 
+            AND p.images_ids IS NOT NULL
             LIMIT 1
             """
             print(
                 f"🔍 DEBUG product-details: Ejecutando verificación de imagen para product_id = {product_id}"
             )
+            print(f"🔍 DEBUG product-details: Query corregida: {image_check_query}")
+            
             image_check_result = db.execute_query(image_check_query, (product_id,))
             print(
                 f"🔍 DEBUG product-details: Resultado verificación imagen: {image_check_result}"
