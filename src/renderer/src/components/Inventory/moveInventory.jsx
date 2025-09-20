@@ -42,13 +42,10 @@ export default function MoveInventory() {
   const [searchingBarcode, setSearchingBarcode] = useState(false)
   const [availableVariants, setAvailableVariants] = useState([])
 
-  // Ref para prevenir procesamientos duplicados
   const lastProcessedRef = useRef({ barcode: '', executionId: '', timestamp: 0, processed: false })
 
-  // Ref para el timeout de auto-búsqueda
   const autoSearchTimeoutRef = useRef(null)
 
-  // Ref para el input de código de barras
   const barcodeInputRef = useRef(null)
 
   const [showProductModal, setShowProductModal] = useState(false)
@@ -71,21 +68,18 @@ export default function MoveInventory() {
       return cleanHex
     }
 
-    // Si no tiene # al inicio pero tiene 6 caracteres hex válidos, agregarlo
     const hexWithoutHash = cleanHex.replace('#', '')
     if (/^[0-9A-Fa-f]{6}$/.test(hexWithoutHash)) {
       return `#${hexWithoutHash}`
     }
 
     console.warn('Color hex inválido:', hexValue, 'usando fallback')
-    return '#6B7280' // fallback gris
+    return '#6B7280' 
   }
 
-  // Buscar producto por código de barras de variante
   const searchByBarcode = async (barcode) => {
     if (!barcode.trim()) return
 
-    // Generar ID único para esta ejecución
     const executionId = Date.now() + Math.random()
     const currentTime = Date.now()
 
@@ -910,17 +904,6 @@ export default function MoveInventory() {
               Envíos Realizados
               {showSentShipments && <span className="ml-1">📍</span>}
             </button>
-
-            {/* Botón temporal para crear envíos de prueba */}
-            {process.env.NODE_ENV === 'development' && (
-              <button
-                onClick={createTestShipments}
-                className="btn btn-warning btn-outline btn-sm"
-                title="Crear envíos de prueba (solo desarrollo)"
-              >
-                🧪 Test Data
-              </button>
-            )}
           </div>
 
           {/* Vista de envíos pendientes */}

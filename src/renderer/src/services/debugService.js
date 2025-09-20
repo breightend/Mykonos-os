@@ -1,7 +1,7 @@
 // Servicio de debugging para comparar backend vs frontend
 class DebugService {
   constructor() {
-    this.baseURL = 'http://localhost:8000/api'
+    this.baseURL = 'http://localhost:5000/api'
   }
 
   async debugVariantBarcodes() {

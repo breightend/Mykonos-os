@@ -18,8 +18,6 @@ import BarcodeService from '../../services/barcodeService'
 import { useLocation } from 'wouter'
 import toast, { Toaster } from 'react-hot-toast'
 import { getCurrentBranchId } from '../../utils/posUtils'
-//BUG: stock_total muestra un valor erroneo
-
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -193,9 +191,10 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
   if (!isOpen) return null
 
+  // Fix: Calculate stock total properly by summing actual quantities from warehouse_stock
   const stockTotal =
-    productDetails && productDetails.stock_variants
-      ? new Set(productDetails.stock_variants.map((v) => v.sucursal_nombre)).size
+    productDetails && productDetails.stock_por_sucursal
+      ? productDetails.stock_por_sucursal.reduce((total, stock) => total + (stock.cantidad || 0), 0)
       : 0
 
   return (
@@ -370,7 +369,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                           {formatCurrency(productDetails.sale_price)}
                         </p>
                         <div className="mt-2 flex items-center justify-center space-x-4 text-sm text-emerald-600">
-                          <span>📈 Stock: {productDetails.stock_total || 0} unidades</span>
+                          <span>📈 Stock: {stockTotal} unidades</span>
                           {productDetails.tax > 0 && (
                             <span>🏛️ Impuesto: {productDetails.tax}%</span>
                           )}
@@ -439,10 +438,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                           Dirección
                         </th>
                         <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">
-                          Cantidad adquirida
-                        </th>
-                        <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">
-                          Cantidad vendida
+                          Stock actual
                         </th>
                         <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">
                           Última Actualización
@@ -465,12 +461,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                             <span
                               className={`font-semibold ${stock.cantidad > 0 ? 'text-green-600' : 'text-red-600'}`}
                             >
-                              {stock.cantidad}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="font-semibold text-gray-800">
-                              {stock.cantidad - stockTotal  }
+                              {stock.cantidad} unidades
                             </span>
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-600">

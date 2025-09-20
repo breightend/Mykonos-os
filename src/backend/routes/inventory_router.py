@@ -121,55 +121,47 @@ def get_products_summary():
         db = Database()
 
         if storage_id:
-            # Productos de una sucursal específica - INCLUDES BOTH TRADITIONAL AND VARIANT STOCK
+            # Productos de una sucursal específica - USE ONLY WAREHOUSE_STOCK
             query = """
             SELECT 
                 p.id,
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
-                COALESCE(
-                    COALESCE(SUM(ws.quantity), 0) + COALESCE(SUM(wsv.quantity), 0), 
-                    0
-                ) as cantidad_total,
+                COALESCE(SUM(ws.quantity), 0) as cantidad_total,
                 COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
-                COUNT(DISTINCT COALESCE(ws.branch_id, wsv.branch_id)) as sucursales_con_stock,
+                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
                 p.sale_price,
                 p.state
             FROM products p
             LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = %s
-            LEFT JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id AND wsv.branch_id = %s
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            WHERE (ws.product_id IS NOT NULL OR wsv.product_id IS NOT NULL)
+            WHERE ws.product_id IS NOT NULL
             GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.state
             ORDER BY p.product_name
             """
-            products = db.execute_query(query, (storage_id, storage_id))
+            products = db.execute_query(query, (storage_id,))
         else:
-            # Todos los productos con su cantidad total - INCLUDES BOTH TRADITIONAL AND VARIANT STOCK
+            # Todos los productos con su cantidad total - USE ONLY WAREHOUSE_STOCK
             query = """
             SELECT 
                 p.id,
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
-                COALESCE(
-                    COALESCE(SUM(ws.quantity), 0) + COALESCE(SUM(wsv.quantity), 0), 
-                    0
-                ) as cantidad_total,
+                COALESCE(SUM(ws.quantity), 0) as cantidad_total,
                 COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
-                COUNT(DISTINCT COALESCE(ws.branch_id, wsv.branch_id)) as sucursales_con_stock,
+                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
                 p.sale_price,
                 p.state
             FROM products p
             LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
-            LEFT JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            WHERE (ws.product_id IS NOT NULL OR wsv.product_id IS NOT NULL)
+            WHERE ws.product_id IS NOT NULL
             GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.state
             ORDER BY p.product_name
             """
@@ -548,7 +540,7 @@ def get_product_details(product_id):
             print(f"❌ DEBUG product-details: Error consultando variantes: {e}")
             product_data["stock_variants"] = []
 
-        # Calcular totales
+        # Calcular totales - USAR SOLO WAREHOUSE_STOCK
         total_stock = sum([s["cantidad"] for s in product_data["stock_por_sucursal"]])
         product_data["stock_total"] = total_stock
         product_data["sucursales_con_stock"] = len(

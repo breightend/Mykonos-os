@@ -218,14 +218,14 @@ export default function AgregarCompraProveedor() {
     const usedTalles = selectedVariants
       .map((variant, index) => (index !== currentTalleIndex ? variant.talle : null))
       .filter(Boolean)
-    return availableSizes.filter((size) => !usedTalles.includes(size.size_name))
+    return availableSizes.filter((size) => !usedTalles.includes(size.name))
   }
 
   const getColoresDisponibles = (talleIndex, currentColorIndex) => {
     const usedColors = selectedVariants[talleIndex].colores
       .map((color, index) => (index !== currentColorIndex ? color.color : null))
       .filter(Boolean)
-    return availableColors.filter((color) => !usedColors.includes(color.color_name))
+    return availableColors.filter((color) => !usedColors.includes(color.name))
   }
 
   const calculateTotalQuantity = () => {
@@ -244,10 +244,18 @@ export default function AgregarCompraProveedor() {
     removeProduct,
     updateProductQuantity,
     clearProducts,
+    addProduct, // Agregar esta función que se necesita
     purchaseInfo,
     updatePurchaseInfo,
     clearPurchaseInfo
   } = useProductContext()
+
+  // Debug logging para el contexto
+  useEffect(() => {
+    console.log('🔍 ProductData cambió:', productData)
+    console.log('  - Productos:', productData?.products || [])
+    console.log('  - Cantidad de productos:', productData?.products?.length || 0)
+  }, [productData])
 
   useEffect(() => {
     if (purchaseInfo.notes) {
@@ -462,22 +470,26 @@ export default function AgregarCompraProveedor() {
         }
       }
 
-      // Crear el producto para agregar al contexto
-      const productForPurchase = {
-        id: Date.now(), // ID temporal único
-        product_id: productToAdd.id,
+      // Crear el producto para agregar al contexto en el formato que espera addProduct
+      const productForContext = {
+        id: productToAdd.id, // Usar el ID real del producto
         product_name: productToAdd.product_name,
-        provider_code: productToAdd.provider_code || '',
-        cost_price: costPrice,
-        quantity: totalQuantity,
-        subtotal: costPrice * totalQuantity,
-        discount: 0,
-        is_existing_product: true, // Marca que es un producto existente
-        stock_variants: selectedVariants // Variantes seleccionadas
+        provider_code: providerCode || productToAdd.provider_code || '',
+        cost: costPrice, // addProduct espera 'cost', no 'cost_price'
+        initial_quantity: totalQuantity,
+        provider_id: providerId,
+        stock_variants: selectedVariants,
+        is_existing_product: true // Marca que es un producto existente
       }
 
-      // Agregar al contexto de productos
-      updatePurchaseInfo('products', [...productData.products, productForPurchase])
+      console.log('🔍 Estado antes de agregar:')
+      console.log('  - Productos actuales:', productData?.products || [])
+      console.log('  - Producto a agregar (formato addProduct):', productForContext)
+
+      // Usar addProduct en lugar de updatePurchaseInfo
+      addProduct(productForContext)
+
+      console.log('✅ Producto agregado usando addProduct')
 
       // Limpiar el modal
       clearProductModal()
@@ -491,8 +503,9 @@ export default function AgregarCompraProveedor() {
 
   // Update the useEffect for calculations
   useEffect(() => {
-    const subtotal = productData.products.reduce(
-      (acc, item) => acc + item.cost_price * item.quantity,
+    const currentProducts = productData?.products || []
+    const subtotal = currentProducts.reduce(
+      (acc, item) => acc + (item.cost_price || 0) * (item.quantity || 0),
       0
     )
 
@@ -505,14 +518,14 @@ export default function AgregarCompraProveedor() {
       discountAmount = discountValue
     }
 
-    const total = subtotal - discountAmount
+    const total = Math.max(0, subtotal - discountAmount)
 
     setPurchaseData((prev) => ({
       ...prev,
       subtotal: subtotal.toFixed(2),
       total: total.toFixed(2)
     }))
-  }, [productData.products, purchaseData.discount, discountType])
+  }, [productData?.products, purchaseData.discount, discountType])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -524,7 +537,7 @@ export default function AgregarCompraProveedor() {
     console.log('Purchase data:', purchaseData)
     console.log('Delivery date:', delivery_date)
 
-    if (productData.products.length === 0) {
+    if (productData?.products?.length === 0) {
       toast.error('Debe agregar al menos un producto antes de continuar')
       return
     }
@@ -557,9 +570,9 @@ export default function AgregarCompraProveedor() {
       const processedProducts = []
       const createdProductIds = []
 
-      console.log(`🔄 Processing ${productData.products.length} products...`)
+      console.log(`🔄 Processing ${productData?.products?.length || 0} products...`)
 
-      for (const product of productData.products) {
+      for (const product of productData?.products || []) {
         console.log(`📦 Processing product: ${product.product_name || 'Unknown'}`)
 
         if (product.is_new_product) {
@@ -952,61 +965,70 @@ export default function AgregarCompraProveedor() {
                 </div>
               </div>
 
-              {productData.products.length > 0 ? (
-                <div className="overflow-x-auto rounded-lg border">
-                  <table className="table w-full">
-                    <thead className="bg-gray-200 text-gray-700">
-                      <tr>
-                        <th className="px-4 py-3 text-left">#</th>
-                        <th className="px-4 py-3 text-left">Nombre</th>
-                        <th className="px-4 py-3 text-left">Código Proveedor</th>
-                        <th className="px-4 py-3 text-left">Precio Costo</th>
-                        <th className="px-4 py-3 text-left">Cantidad</th>
-                        <th className="px-4 py-3 text-left">Subtotal</th>
-                        <th className="px-4 py-3 text-left">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {productData.products.map((product, index) => (
-                        <tr
-                          key={product.id}
-                          className="border-b transition-colors hover:bg-gray-100"
-                        >
-                          <td className="px-4 py-3 font-medium">{index + 1}</td>
-                          <td className="px-4 py-3 font-medium">{product.product_name}</td>
-                          <td className="px-4 py-3">{product.provider_code}</td>
-                          <td className="px-4 py-3 text-gray-600">
-                            ${product.cost_price.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="number"
-                              value={product.quantity}
-                              onChange={(e) =>
-                                updateProductQuantity(product.id, parseInt(e.target.value) || 0)
-                              }
-                              className="input-bordered input input-sm w-20 text-center"
-                              min="0"
-                            />
-                          </td>
-                          <td className="px-4 py-3 font-medium">${product.subtotal.toFixed(2)}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                className="btn btn-error btn-sm"
-                                onClick={() => removeProduct(product.id)}
-                                title="Eliminar producto"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              {productData?.products?.length > 0 ? (
+                (() => {
+                  console.log('🔍 Renderizando tabla con productos:', productData.products)
+                  return (
+                    <div className="overflow-x-auto rounded-lg border">
+                      <table className="table w-full">
+                        <thead className="bg-gray-200 text-gray-700">
+                          <tr>
+                            <th className="px-4 py-3 text-left">#</th>
+                            <th className="px-4 py-3 text-left">Nombre</th>
+                            <th className="px-4 py-3 text-left">Código Proveedor</th>
+                            <th className="px-4 py-3 text-left">Precio Costo</th>
+                            <th className="px-4 py-3 text-left">Cantidad</th>
+                            <th className="px-4 py-3 text-left">Subtotal</th>
+                            <th className="px-4 py-3 text-left">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productData.products.map((product, index) => (
+                            <tr
+                              key={product.id}
+                              className="border-b transition-colors hover:bg-gray-100"
+                            >
+                              <td className="px-4 py-3 font-medium">{index + 1}</td>
+                              <td className="px-4 py-3 font-medium">
+                                {product.product_name || 'N/A'}
+                              </td>
+                              <td className="px-4 py-3">{product.provider_code || 'N/A'}</td>
+                              <td className="px-4 py-3 text-gray-600">
+                                ${(product.cost_price || 0).toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  value={product.quantity || 0}
+                                  onChange={(e) =>
+                                    updateProductQuantity(product.id, parseInt(e.target.value) || 0)
+                                  }
+                                  className="input-bordered input input-sm w-20 text-center"
+                                  min="0"
+                                />
+                              </td>
+                              <td className="px-4 py-3 font-medium">
+                                ${((product.cost_price || 0) * (product.quantity || 0)).toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    className="btn btn-error btn-sm"
+                                    onClick={() => removeProduct(product.id)}
+                                    title="Eliminar producto"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                })()
               ) : (
                 <div className="py-12 text-center text-gray-400">
                   <p>No hay productos agregados a la compra.</p>
@@ -1134,7 +1156,7 @@ export default function AgregarCompraProveedor() {
               <button
                 type="submit"
                 className="btn btn-primary flex items-center gap-2"
-                disabled={loading || productData.products.length === 0 || !provider}
+                disabled={loading || !productData?.products?.length || !provider}
               >
                 <Check className="h-4 w-4" />
                 {loading ? 'Creando Compra...' : !provider ? 'Cargando...' : 'Crear Compra'}
@@ -1162,7 +1184,7 @@ export default function AgregarCompraProveedor() {
                 </div>
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm btn-circle text-gray-500 hover:bg-red-50 hover:text-red-500"
+                  className="btn btn-ghost text-gray-500 hover:bg-red-50 hover:text-red-500"
                   onClick={() => setShowCalendar(false)}
                 >
                   <X className="h-4 w-4" />
@@ -1481,7 +1503,7 @@ export default function AgregarCompraProveedor() {
                                   <select
                                     value={variant.talle}
                                     onChange={(e) =>
-                                      handleTalleChange(variantIndex, 'talle', e.target.value)
+                                      handleTalleChange(variantIndex, e.target.value)
                                     }
                                     className="select-bordered select w-full"
                                     required

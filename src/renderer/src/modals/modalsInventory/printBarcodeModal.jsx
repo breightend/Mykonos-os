@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Printer, X, Package, Palette, Tag, Ruler, DollarSign, Save } from 'lucide-react'
+import { Printer, X, Package, Palette, Tag, Ruler, DollarSign, Save, Cog } from 'lucide-react'
 import { inventoryService } from '../../services/inventory/inventoryService'
 import { barcodePrintService } from '../../services/barcodePrintService'
 import printSettingsService from '../../services/printSettingsService'
@@ -461,6 +461,10 @@ export default function PrintBarcodeModal({
     }
   }
 
+  const [dropDown, setDropdown] = useState(false)
+
+  const toggleDropdown = () => setDropdown(!dropDown)
+
   // Cerrar modal y limpiar estados
   const handleClose = () => {
     setProduct(null)
@@ -540,22 +544,17 @@ export default function PrintBarcodeModal({
                       <div>
                         <h5 className="text-xl font-bold text-base-content">{product.name}</h5>
                         <div className="mt-2 flex flex-wrap gap-3">
-                          <div className="badge badge-outline gap-2">
-                            <span className="text-xs">🏷️</span>
+                          <div className="badge badge-success px-2">
                             Marca: {product.brand || 'Sin marca'}
                           </div>
-                          <div className="badge badge-success gap-2">
-                            <span className="text-xs">💰</span>$
-                            {product.sale_price
-                              ? parseFloat(product.sale_price).toFixed(2)
-                              : '0.00'}
+                          <div className="badge badge-warning px-2">
+                            <span>
+                              Precio: $
+                              {product.sale_price
+                                ? parseFloat(product.sale_price).toFixed(2)
+                                : '0.00'}
+                            </span>
                           </div>
-                          {variants.length > 0 && variants[0].branch_name && (
-                            <div className="badge badge-primary gap-2">
-                              <span className="text-xs">🏪</span>
-                              {variants[0].branch_name}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -567,17 +566,17 @@ export default function PrintBarcodeModal({
                           <span className="text-sm font-medium text-gray-600">
                             Variantes disponibles
                           </span>
-                          <span className="badge badge-info">{variants.length}</span>
+                          <span className="badge badge-info px-2">{variants.length}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-gray-600">Seleccionadas</span>
-                          <span className="badge badge-warning">
+                          <span className="badge badge-warning px-2">
                             {Object.values(quantities).filter((q) => q > 0).length}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-gray-600">Total etiquetas</span>
-                          <span className="badge badge-accent">
+                          <span className="badge badge-accent px-2">
                             {Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0)}
                           </span>
                         </div>
@@ -592,178 +591,282 @@ export default function PrintBarcodeModal({
                   </div>
                 </div>
               </div>
-
-              {/* Opciones de impresión mejoradas */}
-              <div className="overflow-hidden rounded-xl border border-base-300 bg-gradient-to-br from-base-100 to-base-200 shadow-lg">
-                <div className="border-b border-base-300 bg-secondary/5 px-6 py-4">
-                  <h4 className="flex items-center gap-3 text-lg font-bold text-secondary">
-                    <div className="rounded-full bg-secondary/20 p-2">
-                      <Tag className="h-5 w-5 text-secondary" />
-                    </div>
-                    Configuración de Etiquetas
-                  </h4>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Personaliza qué información incluir en tus códigos de barras
-                  </p>
-                </div>
-
-                <div className="p-6">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {/* Nombre del producto */}
-                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-primary hover:shadow-md">
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-primary mt-1"
-                          checked={printOptions.includeProductName}
-                          onChange={(e) =>
-                            handlePrintOptionChange('includeProductName', e.target.checked)
-                          }
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <div className="rounded-full bg-primary/20 p-1">
-                              <Package className="h-4 w-4 text-primary" />
-                            </div>
-                            <span className="font-semibold text-primary">Nombre del producto</span>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Incluye el nombre completo del producto
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Color */}
-                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-secondary hover:shadow-md">
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-secondary mt-1"
-                          checked={printOptions.includeColor}
-                          onChange={(e) =>
-                            handlePrintOptionChange('includeColor', e.target.checked)
-                          }
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <div className="rounded-full bg-secondary/20 p-1">
-                              <Palette className="h-4 w-4 text-secondary" />
-                            </div>
-                            <span className="font-semibold text-secondary">Color</span>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Muestra el color de la variante
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Talle */}
-                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-accent hover:shadow-md">
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-accent mt-1"
-                          checked={printOptions.includeSize}
-                          onChange={(e) => handlePrintOptionChange('includeSize', e.target.checked)}
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <div className="rounded-full bg-accent/20 p-1">
-                              <Ruler className="h-4 w-4 text-accent" />
-                            </div>
-                            <span className="font-semibold text-accent">Talle</span>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Incluye el talle del producto
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Precio */}
-                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-success hover:shadow-md">
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-success mt-1"
-                          checked={printOptions.includePrice}
-                          onChange={(e) =>
-                            handlePrintOptionChange('includePrice', e.target.checked)
-                          }
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <div className="bg-success/20 rounded-full p-1">
-                              <DollarSign className="h-4 w-4 text-success" />
-                            </div>
-                            <span className="font-semibold text-success">Precio</span>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500">Muestra el precio de venta</p>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Código */}
-                    <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-info hover:shadow-md sm:col-span-2 lg:col-span-1">
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-info mt-1"
-                          checked={printOptions.includeCode}
-                          onChange={(e) => handlePrintOptionChange('includeCode', e.target.checked)}
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <div className="bg-info/20 rounded-full p-1">
-                              <Tag className="h-4 w-4 text-info" />
-                            </div>
-                            <span className="font-semibold text-info">Código alfanumérico</span>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Incluye el código de barras en texto
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Botón para aplicar configuraciones */}
-                  <div className="mt-6 flex flex-col gap-4 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2">
-                      {configurationChanged && (
-                        <div className="flex items-center gap-2 text-warning">
-                          <div className="h-2 w-2 animate-pulse rounded-full bg-warning"></div>
-                          <span className="text-sm font-medium">Configuración modificada</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={savePrintSettings}
-                        disabled={settingsSaving || !configurationChanged}
-                        className="btn btn-secondary btn-sm gap-2"
-                      >
-                        {settingsSaving ? (
-                          <l-pinwheel
-                            size="16"
-                            stroke="2"
-                            speed="0.9"
-                            color="currentColor"
-                          ></l-pinwheel>
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        {settingsSaving ? 'Guardando...' : 'Guardar configuración'}
-                      </button>
-                    </div>
-                  </div>
+              {/* Control de selección masiva */}
+              <div className="flex items-center justify-between rounded-lg bg-base-200 p-4">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-primary"
+                    checked={selectAll}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                  <span className="font-medium">Seleccionar todas las variantes</span>
+                  <span className="ml-2 text-xs text-gray-500">(con stock completo)</span>
+                </label>
+                <div className="text-sm text-gray-600">
+                  Total etiquetas:{' '}
+                  {Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0)}
                 </div>
               </div>
 
-              {/* Lista de variantes mejorada */}
+              {/* Lista de variantes */}
+              <div className="rounded-lg bg-base-200 p-4">
+                <h4 className="text-md mb-3 font-semibold">Variantes del Producto</h4>
+
+                {variants.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                    <p className="text-gray-600">No se encontraron variantes para este producto</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="table table-zebra w-full">
+                      <thead>
+                        <tr>
+                          <th>Talle</th>
+                          <th>Color</th>
+                          <th>Código</th>
+                          <th>Stock</th>
+                          <th>Cantidad a Imprimir</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {variants.map((variant) => (
+                          <tr key={variant.id}>
+                            <td>
+                              <span className="badge badge-outline">
+                                {variant.size_name || 'Sin talle'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-4 w-4 rounded border"
+                                  style={{ backgroundColor: variant.color_hex || '#cccccc' }}
+                                ></div>
+                                <span className="text-sm">{variant.color_name || 'Sin color'}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span className="font-mono text-xs">
+                                {variant.variant_barcode || 'Sin código'}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                className={`badge ${variant.quantity > 0 ? 'badge-success' : 'badge-error'}`}
+                              >
+                                {variant.quantity || 0}
+                              </span>
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                pattern="[0-9]*"
+                                className="input-bordered input input-sm w-20"
+                                value={quantities[variant.id] || 0}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/[^0-9]/g, '') // Solo números
+                                  handleQuantityChange(variant.id, value)
+                                }}
+                                placeholder="0"
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Opciones de impresión mejoradas */}
+              <div className="overflow-hidden rounded-xl border border-base-300 bg-gradient-to-br from-base-100 to-base-200 shadow-lg">
+                <div className="flex justify-between border-b border-base-300 bg-secondary/5 px-6 py-4">
+                  <div>
+                    <h4 className="flex items-center gap-3 text-lg font-bold text-secondary">
+                      <div className="rounded-full bg-secondary/20 p-2">
+                        <Tag className="h-5 w-5 text-secondary" />
+                      </div>
+                      Configuración de Etiquetas
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Personaliza qué información incluir en tus códigos de barras
+                    </p>
+                  </div>
+                  <div className="">
+                    <button className="btn btn-ghost btn-sm gap-2 " title='Configuración de Etiquetas' onClick={toggleDropdown}>
+                      <Cog className="h-7 w-7 text-secondary" />
+                    </button>
+                  </div>
+                </div>
+                {dropDown && (
+                  <>
+                    <div className="p-6">
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {/* Nombre del producto */}
+                        <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-primary hover:shadow-md">
+                          <label className="flex cursor-pointer items-start gap-3">
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-primary mt-1"
+                              checked={printOptions.includeProductName}
+                              onChange={(e) =>
+                                handlePrintOptionChange('includeProductName', e.target.checked)
+                              }
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className="rounded-full bg-primary/20 p-1">
+                                  <Package className="h-4 w-4 text-primary" />
+                                </div>
+                                <span className="font-semibold text-primary">
+                                  Nombre del producto
+                                </span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Incluye el nombre completo del producto
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Color */}
+                        <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-secondary hover:shadow-md">
+                          <label className="flex cursor-pointer items-start gap-3">
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-secondary mt-1"
+                              checked={printOptions.includeColor}
+                              onChange={(e) =>
+                                handlePrintOptionChange('includeColor', e.target.checked)
+                              }
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className="rounded-full bg-secondary/20 p-1">
+                                  <Palette className="h-4 w-4 text-secondary" />
+                                </div>
+                                <span className="font-semibold text-secondary">Color</span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Muestra el color de la variante
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Talle */}
+                        <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-accent hover:shadow-md">
+                          <label className="flex cursor-pointer items-start gap-3">
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-accent mt-1"
+                              checked={printOptions.includeSize}
+                              onChange={(e) =>
+                                handlePrintOptionChange('includeSize', e.target.checked)
+                              }
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className="rounded-full bg-accent/20 p-1">
+                                  <Ruler className="h-4 w-4 text-accent" />
+                                </div>
+                                <span className="font-semibold text-accent">Talle</span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Incluye el talle del producto
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Precio */}
+                        <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-success hover:shadow-md">
+                          <label className="flex cursor-pointer items-start gap-3">
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-success mt-1"
+                              checked={printOptions.includePrice}
+                              onChange={(e) =>
+                                handlePrintOptionChange('includePrice', e.target.checked)
+                              }
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className="bg-success/20 rounded-full p-1">
+                                  <DollarSign className="h-4 w-4 text-success" />
+                                </div>
+                                <span className="font-semibold text-success">Precio</span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Muestra el precio de venta
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Código */}
+                        <div className="rounded-lg border-2 border-dashed border-base-300 bg-base-100 p-4 transition-all hover:border-info hover:shadow-md sm:col-span-2 lg:col-span-1">
+                          <label className="flex cursor-pointer items-start gap-3">
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-info mt-1"
+                              checked={printOptions.includeCode}
+                              onChange={(e) =>
+                                handlePrintOptionChange('includeCode', e.target.checked)
+                              }
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className="bg-info/20 rounded-full p-1">
+                                  <Tag className="h-4 w-4 text-info" />
+                                </div>
+                                <span className="font-semibold text-info">Código alfanumérico</span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Incluye el código de barras en texto
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Botón para aplicar configuraciones */}
+                      <div className="mt-6 flex flex-col gap-4 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2">
+                          {configurationChanged && (
+                            <div className="flex items-center gap-2 text-warning">
+                              <div className="h-2 w-2 animate-pulse rounded-full bg-warning"></div>
+                              <span className="text-sm font-medium">Configuración modificada</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={savePrintSettings}
+                            disabled={settingsSaving || !configurationChanged}
+                            className="btn btn-secondary btn-sm gap-2"
+                          >
+                            {settingsSaving ? (
+                              <l-pinwheel
+                                size="16"
+                                stroke="2"
+                                speed="0.9"
+                                color="currentColor"
+                              ></l-pinwheel>
+                            ) : (
+                              <Save className="h-4 w-4" />
+                            )}
+                            {settingsSaving ? 'Guardando...' : 'Guardar configuración'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Vista previa del código de barras */}
               {variants.length > 0 && (
@@ -864,25 +967,6 @@ export default function PrintBarcodeModal({
                               )}
                             </div>
 
-                            {/* Información de debug adicional */}
-                            <div className="mt-2 text-xs text-gray-400">
-                              <details>
-                                <summary className="cursor-pointer">Ver datos debug</summary>
-                                <pre className="mt-1 overflow-x-auto rounded bg-gray-100 p-2 text-left text-xs">
-                                  {JSON.stringify(
-                                    {
-                                      ...barcodePreview,
-                                      png_data: barcodePreview.png_data
-                                        ? `[Base64 PNG: ${barcodePreview.png_data.length} chars]`
-                                        : null
-                                    },
-                                    null,
-                                    2
-                                  )}
-                                </pre>
-                              </details>
-                            </div>
-
                             {/* Botones para imprimir y descargar vista previa */}
                             <div className="mt-3 flex justify-center gap-2">
                               <button
@@ -921,116 +1005,8 @@ export default function PrintBarcodeModal({
                   </div>
                 </div>
               )}
-
-              {/* Control de selección masiva */}
-              <div className="flex items-center justify-between rounded-lg bg-base-200 p-4">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-primary"
-                    checked={selectAll}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                  />
-                  <span className="font-medium">Seleccionar todas las variantes</span>
-                  <span className="ml-2 text-xs text-gray-500">(con stock completo)</span>
-                </label>
-                <div className="text-sm text-gray-600">
-                  Total etiquetas:{' '}
-                  {Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0)}
-                </div>
-              </div>
-
-              {/* Lista de variantes */}
-              <div className="rounded-lg bg-base-200 p-4">
-                <h4 className="text-md mb-3 font-semibold">Variantes del Producto</h4>
-
-                {variants.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <Package className="mx-auto mb-2 h-12 w-12 opacity-50" />
-                    <p className="text-gray-600">No se encontraron variantes para este producto</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="table table-zebra w-full">
-                      <thead>
-                        <tr>
-                          <th>Talle</th>
-                          <th>Color</th>
-                          <th>Código</th>
-                          <th>Stock</th>
-                          <th>Cantidad a Imprimir</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variants.map((variant) => (
-                          <tr key={variant.id}>
-                            <td>
-                              <span className="badge badge-outline">
-                                {variant.size_name || 'Sin talle'}
-                              </span>
-                            </td>
-                            <td>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="h-4 w-4 rounded border"
-                                  style={{ backgroundColor: variant.color_hex || '#cccccc' }}
-                                ></div>
-                                <span className="text-sm">{variant.color_name || 'Sin color'}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <span className="font-mono text-xs">
-                                {variant.variant_barcode || 'Sin código'}
-                              </span>
-                            </td>
-                            <td>
-                              <span
-                                className={`badge ${variant.quantity > 0 ? 'badge-success' : 'badge-error'}`}
-                              >
-                                {variant.quantity || 0}
-                              </span>
-                            </td>
-                            <td>
-                              <input
-                                type="text"
-                                pattern="[0-9]*"
-                                className="input-bordered input input-sm w-20"
-                                value={quantities[variant.id] || 0}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(/[^0-9]/g, '') // Solo números
-                                  handleQuantityChange(variant.id, value)
-                                }}
-                                placeholder="0"
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
             </div>
           )}
-
-          {/* Footer con botones */}
-        </div>
-
-        {/* Footer fijo fuera del scroll */}
-        <div className="print-modal-footer">
-          <div className="flex justify-end gap-2">
-            <button onClick={handleClose} className="btn btn-ghost">
-              Cancelar
-            </button>
-            <button
-              onClick={handlePrintBarcodes}
-              className="btn btn-primary"
-              disabled={loading || Object.values(quantities).filter((q) => q > 0).length === 0}
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimir Códigos
-            </button>
-          </div>
         </div>
       </div>
     </div>
