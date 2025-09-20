@@ -2942,7 +2942,11 @@ def print_barcodes():
         options = data.get("options", {})
 
         print(f"🖨️ Procesando impresión de códigos de barras para producto {product_id}")
-        print(f"📦 Variantes: {len(variants)}")
+        print(f"📦 Variantes recibidas: {len(variants)}")
+        for idx, variant_data in enumerate(variants):
+            print(
+                f"   Variante {idx + 1}: ID={variant_data.get('variantId')}, Cantidad={variant_data.get('quantity')}"
+            )
         print(f"⚙️ Opciones: {options}")
 
         if not product_id or not variants:
@@ -3047,12 +3051,15 @@ def print_barcodes():
                     "barcode": barcode_code,
                     "text": text_lines,
                     "quantity": quantity,
+                    "variant_id": variant_id,  # Añadir referencia para debugging
                 }
 
                 print_jobs.append(print_job)
                 total_labels += quantity
 
-                print(f"✅ Variante {variant_id}: {quantity} etiquetas preparadas")
+                print(
+                    f"✅ Variante {variant_id}: {quantity} etiquetas preparadas (código: {barcode_code})"
+                )
 
         # Generar e imprimir códigos de barras usando BarcodeGenerator
         try:
@@ -3074,11 +3081,12 @@ def print_barcodes():
                 variant_data = variants[i] if i < len(variants) else {}
                 variant_id = variant_data.get("variantId")
 
-                # Obtener detalles adicionales de la variante si es necesario
+                # Obtener detalles de la variante
                 variant_details = {}
+                variant_barcode = None
                 if variant_id:
                     variant_query = """
-                    SELECT s.size_name, c.color_name
+                    SELECT s.size_name, c.color_name, wsv.variant_barcode
                     FROM warehouse_stock_variants wsv
                     LEFT JOIN sizes s ON wsv.size_id = s.id
                     LEFT JOIN colors c ON wsv.color_id = c.id
@@ -3086,28 +3094,41 @@ def print_barcodes():
                     """
                     variant_result = db.execute_query(variant_query, (variant_id,))
                     if variant_result:
-                        variant_details = variant_result[0]
+                        variant_info = variant_result[0]
+                        variant_details = {
+                            "size_name": variant_info.get("size_name"),
+                            "color_name": variant_info.get("color_name"),
+                        }
+                        variant_barcode = variant_info.get("variant_barcode")
 
                 # Construir información del producto para el generador
                 product_info = {
                     "name": product["product_name"],
-                    "barcode": barcode_code,
-                    "original_barcode": variant[
-                        "variant_barcode"
-                    ],  # Código original para mostrar
+                    "barcode": print_job["barcode"],  # Usar el código del print_job
+                    "original_barcode": variant_barcode,  # Código original para mostrar
                     "price": product["sale_price"],
                     "size_name": variant_details.get("size_name"),
                     "color_name": variant_details.get("color_name"),
                 }
 
                 # Generar archivos de códigos de barras
+                print(
+                    f"🏭 Generando {print_job['quantity']} códigos para variante {variant_id}"
+                )
                 generated_files = barcode_generator.generate_barcode_with_text(
-                    barcode_code,  # Usar el código numérico para EAN13
+                    print_job["barcode"],  # Usar el código de barras del print_job
                     product_info,
                     options,
                     print_job["quantity"],
                 )
                 all_generated_files.extend(generated_files)
+                print(
+                    f"📁 Generados {len(generated_files)} archivos para esta variante"
+                )
+
+            print(
+                f"🎯 Total de archivos generados: {len(all_generated_files)} para {total_labels} etiquetas"
+            )
 
             # Imprimir todos los archivos
             print_result = barcode_generator.print_barcodes(all_generated_files)

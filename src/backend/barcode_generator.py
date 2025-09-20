@@ -254,18 +254,82 @@ class BarcodeGenerator:
         try:
             printed_count = 0
 
-            for file_path in file_paths:
+            print(f"🖨️ Iniciando impresión de {len(file_paths)} códigos de barras...")
+
+            # Si hay muchos archivos, intentar crear una hoja con múltiples códigos
+            if len(file_paths) > 10:
+                print(
+                    f"📋 Muchos códigos ({len(file_paths)}), intentando crear hoja compuesta..."
+                )
+                try:
+                    composite_file = self._create_composite_sheet(file_paths)
+                    if composite_file:
+                        print(f"📄 Hoja compuesta creada: {composite_file}")
+                        if platform.system() == "Windows":
+                            os.startfile(composite_file, "print")
+                        else:
+                            subprocess.run(["lpr", composite_file], check=False)
+
+                        # Limpiar archivo compuesto
+                        try:
+                            os.unlink(composite_file)
+                        except Exception:
+                            pass
+
+                        return {
+                            "status": "success",
+                            "message": f"{len(file_paths)} códigos enviados a impresión (hoja compuesta)",
+                            "printed_count": len(file_paths),
+                        }
+                except Exception as e:
+                    print(
+                        f"⚠️ No se pudo crear hoja compuesta: {e}, imprimiendo individualmente..."
+                    )
+
+            # Impresión individual para pocos archivos o si falla la hoja compuesta
+            for i, file_path in enumerate(file_paths, 1):
                 if os.path.exists(file_path):
+                    print(
+                        f"📄 Imprimiendo código {i}/{len(file_paths)}: {os.path.basename(file_path)}"
+                    )
+
                     if platform.system() == "Windows":
-                        # En Windows, usar el comando por defecto para imprimir
-                        subprocess.run(["mspaint", "/p", file_path], check=False)
-                        # Alternativa más directa:
-                        # os.startfile(file_path, "print")
+                        try:
+                            # Usar os.startfile que es más directo para Windows
+                            os.startfile(file_path, "print")
+                            # Pequeña pausa entre impresiones para evitar sobrecarga
+                            import time
+
+                            time.sleep(0.5)
+                        except Exception as e:
+                            print(
+                                f"⚠️ Error con os.startfile, intentando método alternativo: {e}"
+                            )
+                            # Método alternativo con subprocess
+                            try:
+                                subprocess.run(
+                                    ["mspaint", "/p", file_path],
+                                    check=False,
+                                    timeout=30,
+                                )
+                            except subprocess.TimeoutExpired:
+                                print(
+                                    f"⏰ Timeout al imprimir {file_path}, continuando..."
+                                )
+                            except Exception as e2:
+                                print(f"❌ Error también con mspaint: {e2}")
                     else:
                         # En Linux/Mac
                         subprocess.run(["lpr", file_path], check=False)
 
                     printed_count += 1
+                    print(f"✅ Código {i} enviado a impresión")
+                else:
+                    print(f"❌ Archivo no encontrado: {file_path}")
+
+            print(
+                f"🎯 Impresión completada: {printed_count}/{len(file_paths)} códigos enviados"
+            )
 
             return {
                 "status": "success",
@@ -274,7 +338,59 @@ class BarcodeGenerator:
             }
 
         except Exception as e:
+            print(f"❌ Error general al imprimir: {str(e)}")
             return {"status": "error", "message": f"Error al imprimir: {str(e)}"}
+
+    def _create_composite_sheet(self, file_paths: List[str]) -> str:
+        """
+        Crea una hoja con múltiples códigos de barras para impresión más eficiente
+        """
+        try:
+            # Configuración de la hoja
+            codes_per_row = 3
+            margin = 20
+            code_width = 250
+            code_height = 150
+
+            # Calcular dimensiones de la hoja
+            total_codes = len(file_paths)
+            rows_needed = (total_codes + codes_per_row - 1) // codes_per_row
+
+            sheet_width = codes_per_row * code_width + (codes_per_row + 1) * margin
+            sheet_height = rows_needed * code_height + (rows_needed + 1) * margin
+
+            # Crear imagen de la hoja
+            sheet = Image.new("RGB", (sheet_width, sheet_height), "white")
+
+            for i, file_path in enumerate(file_paths):
+                if os.path.exists(file_path):
+                    # Cargar imagen del código
+                    code_img = Image.open(file_path)
+
+                    # Redimensionar si es necesario
+                    code_img = code_img.resize(
+                        (code_width - 10, code_height - 10), Image.Resampling.LANCZOS
+                    )
+
+                    # Calcular posición en la grilla
+                    row = i // codes_per_row
+                    col = i % codes_per_row
+
+                    x = col * code_width + (col + 1) * margin
+                    y = row * code_height + (row + 1) * margin
+
+                    # Pegar en la hoja
+                    sheet.paste(code_img, (x, y))
+
+            # Guardar hoja compuesta
+            composite_path = tempfile.mktemp(suffix="_composite_sheet.png")
+            sheet.save(composite_path, "PNG", dpi=(300, 300))
+
+            return composite_path
+
+        except Exception as e:
+            print(f"❌ Error creando hoja compuesta: {e}")
+            return None
 
     def cleanup_files(self, file_paths: List[str]) -> None:
         """
@@ -325,7 +441,9 @@ class BarcodeGenerator:
                 elif len(clean_barcode_data) > 12:
                     clean_barcode_data = clean_barcode_data[:12]
 
-                barcode_instance = BARCODE_CLASS(clean_barcode_data, writer=ImageWriter())
+                barcode_instance = BARCODE_CLASS(
+                    clean_barcode_data, writer=ImageWriter()
+                )
 
                 options = {
                     "module_width": 0.4,
@@ -338,7 +456,9 @@ class BarcodeGenerator:
                     "quiet_zone": 6.5,
                 }
 
-                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_barcode:
+                with tempfile.NamedTemporaryFile(
+                    suffix=".png", delete=False
+                ) as tmp_barcode:
                     barcode_instance.write(tmp_barcode, options=options)
                     barcode_path = tmp_barcode.name
 
