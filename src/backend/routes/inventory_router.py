@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database.database import Database
+from services.auth_service import validate_session
 from datetime import datetime
 import traceback
 
@@ -258,11 +259,14 @@ def get_product_details(product_id):
             p.discount,
             p.comments,
             p.last_modified_date,
+            p.creation_date,
             p.images_ids,
             b.brand_name,
-            b.description as brand_description
+            b.description as brand_description,
+            e.entity_name as provider_name
         FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN entities e ON p.provider_id = e.id
         WHERE p.id = %s
         """
         product_info = db.execute_query(product_query, (product_id,))
@@ -298,9 +302,11 @@ def get_product_details(product_id):
                     "discount": row.get("discount"),
                     "comments": row.get("comments"),
                     "last_modified_date": row.get("last_modified_date"),
+                    "creation_date": row.get("creation_date"),
                     "images_ids": row.get("images_ids"),
                     "brand_name": row.get("brand_name"),
                     "brand_description": row.get("brand_description"),
+                    "provider_name": row.get("provider_name"),
                 }
             else:
                 # Si es una tupla/lista, acceso por índice
@@ -319,9 +325,11 @@ def get_product_details(product_id):
                     "discount": row[11],
                     "comments": row[12],
                     "last_modified_date": row[13],
-                    "images_ids": row[14],
-                    "brand_name": row[15],
-                    "brand_description": row[16],
+                    "creation_date": row[14],
+                    "images_ids": row[15],
+                    "brand_name": row[16],
+                    "brand_description": row[17],
+                    "provider_name": row[18],
                 }
         except (IndexError, KeyError) as access_error:
             print(f"❌ DEBUG product-details: Error de acceso: {access_error}")
@@ -3583,13 +3591,62 @@ def generate_barcode_preview(variant_id):
 # ================================
 
 
+def get_user_id_from_session(request):
+    """
+    Helper function to extract user_id from session token in request
+
+    Args:
+        request: Flask request object
+
+    Returns:
+        tuple: (user_id: int or None, error_response: dict or None)
+    """
+    try:
+        # Try to get session token from headers first
+        session_token = request.headers.get("Authorization")
+        if session_token and session_token.startswith("Bearer "):
+            session_token = session_token.replace("Bearer ", "")
+
+        # If not in headers, try to get from request body
+        if not session_token:
+            data = request.get_json() if request.is_json else {}
+            session_token = data.get("session_token")
+
+        # If still no token, try query params for GET requests
+        if not session_token:
+            session_token = request.args.get("session_token")
+
+        if not session_token:
+            return None, {"status": "error", "message": "Session token required"}, 401
+
+        # Validate session and get user info
+        validation_response = validate_session(session_token)
+
+        if not validation_response["success"]:
+            return (
+                None,
+                {"status": "error", "message": "Invalid or expired session"},
+                401,
+            )
+
+        user_id = validation_response["session_data"]["user_id"]
+        return user_id, None, None
+
+    except Exception as e:
+        print(f"Error extracting user_id from session: {e}")
+        return None, {"status": "error", "message": "Authentication error"}, 500
+
+
 @inventory_router.route("/print-settings", methods=["GET"])
 def get_print_settings():
     """
     Obtiene las configuraciones de impresión guardadas
     """
     try:
-        user_id = request.args.get("user_id", "default")
+        # Get user_id from session
+        user_id, error_response, status_code = get_user_id_from_session(request)
+        if error_response:
+            return jsonify(error_response), status_code
 
         db = Database()
 
@@ -3601,13 +3658,18 @@ def get_print_settings():
             );
         """)
 
-        if not table_check or not table_check[0][0]:
+        # table_check is a list of dictionaries, we need to access the 'exists' key
+        table_exists = (
+            table_check and len(table_check) > 0 and table_check[0].get("exists", False)
+        )
+
+        if not table_exists:
             print("⚠️ Tabla barcode_print_settings no existe, creándola...")
             # Crear la tabla si no existe
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS barcode_print_settings (
                 id SERIAL PRIMARY KEY,
-                user_id VARCHAR(100) DEFAULT 'default' UNIQUE,
+                user_id INTEGER NOT NULL UNIQUE,
                 show_product_name BOOLEAN DEFAULT true,
                 show_variant_name BOOLEAN DEFAULT true,
                 show_size BOOLEAN DEFAULT true,
@@ -3625,13 +3687,6 @@ def get_print_settings():
             """
             db.execute_query(create_table_sql)
 
-            # Insertar configuración por defecto
-            db.execute_query("""
-                INSERT INTO barcode_print_settings (user_id) 
-                VALUES ('default')
-                ON CONFLICT (user_id) DO NOTHING;
-            """)
-
         query = """
         SELECT show_product_name, show_variant_name, show_size, show_color, 
                show_price, show_barcode, print_width, print_height, font_size,
@@ -3648,17 +3703,17 @@ def get_print_settings():
                 {
                     "status": "success",
                     "settings": {
-                        "showProductName": settings[0],
-                        "showVariantName": settings[1],
-                        "showSize": settings[2],
-                        "showColor": settings[3],
-                        "showPrice": settings[4],
-                        "showBarcode": settings[5],
-                        "printWidth": settings[6],
-                        "printHeight": settings[7],
-                        "fontSize": settings[8],
-                        "backgroundColor": settings[9],
-                        "textColor": settings[10],
+                        "showProductName": settings["show_product_name"],
+                        "showVariantName": settings["show_variant_name"],
+                        "showSize": settings["show_size"],
+                        "showColor": settings["show_color"],
+                        "showPrice": settings["show_price"],
+                        "showBarcode": settings["show_barcode"],
+                        "printWidth": settings["print_width"],
+                        "printHeight": settings["print_height"],
+                        "fontSize": settings["font_size"],
+                        "backgroundColor": settings["background_color"],
+                        "textColor": settings["text_color"],
                     },
                 }
             )
@@ -3734,9 +3789,12 @@ def save_print_settings():
     Guarda las configuraciones de impresión
     """
     try:
-        data = request.json
-        user_id = data.get("user_id", "default")
+        # Get user_id from session
+        user_id, error_response, status_code = get_user_id_from_session(request)
+        if error_response:
+            return jsonify(error_response), status_code
 
+        data = request.json
         settings = data.get("settings", {})
 
         db = Database()
@@ -3749,13 +3807,18 @@ def save_print_settings():
             );
         """)
 
-        if not table_check or not table_check[0][0]:
+        # table_check is a list of dictionaries, we need to access the 'exists' key
+        table_exists = (
+            table_check and len(table_check) > 0 and table_check[0].get("exists", False)
+        )
+
+        if not table_exists:
             print("⚠️ Tabla barcode_print_settings no existe, creándola...")
             # Crear la tabla si no existe
             create_table_sql = """
             CREATE TABLE IF NOT EXISTS barcode_print_settings (
                 id SERIAL PRIMARY KEY,
-                user_id VARCHAR(100) DEFAULT 'default' UNIQUE,
+                user_id INTEGER NOT NULL UNIQUE,
                 show_product_name BOOLEAN DEFAULT true,
                 show_variant_name BOOLEAN DEFAULT true,
                 show_size BOOLEAN DEFAULT true,
@@ -3813,19 +3876,6 @@ def save_print_settings():
              show_price, show_barcode, print_width, print_height, font_size,
              background_color, text_color)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (user_id) DO UPDATE SET
-                show_product_name = EXCLUDED.show_product_name,
-                show_variant_name = EXCLUDED.show_variant_name,
-                show_size = EXCLUDED.show_size,
-                show_color = EXCLUDED.show_color,
-                show_price = EXCLUDED.show_price,
-                show_barcode = EXCLUDED.show_barcode,
-                print_width = EXCLUDED.print_width,
-                print_height = EXCLUDED.print_height,
-                font_size = EXCLUDED.font_size,
-                background_color = EXCLUDED.background_color,
-                text_color = EXCLUDED.text_color,
-                updated_at = CURRENT_TIMESTAMP
             """
 
             db.execute_query(

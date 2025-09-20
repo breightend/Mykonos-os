@@ -6,10 +6,15 @@ class PrintSettingsService {
   /**
    * Obtiene las configuraciones de impresión guardadas
    */
-  async getPrintSettings(userId = 'default') {
+  async getPrintSettings() {
     try {
+      const sessionToken = localStorage.getItem('session_token')
+      if (!sessionToken) {
+        throw new Error('No session token found')
+      }
+
       const response = await axios.get(`${API_BASE_URL}/print-settings`, {
-        params: { user_id: userId }
+        params: { session_token: sessionToken }
       })
       return response.data
     } catch (error) {
@@ -21,10 +26,15 @@ class PrintSettingsService {
   /**
    * Guarda las configuraciones de impresión
    */
-  async savePrintSettings(settings, userId = 'default') {
+  async savePrintSettings(settings) {
     try {
+      const sessionToken = localStorage.getItem('session_token')
+      if (!sessionToken) {
+        throw new Error('No session token found')
+      }
+
       const response = await axios.post(`${API_BASE_URL}/print-settings`, {
-        user_id: userId,
+        session_token: sessionToken,
         settings: settings
       })
       return response.data
