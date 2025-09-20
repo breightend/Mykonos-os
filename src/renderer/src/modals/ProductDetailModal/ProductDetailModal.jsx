@@ -277,32 +277,39 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                             console.error('❌ ERROR cargando imagen del producto:')
                             console.error('   URL:', productImageUrl)
                             console.error('   Producto ID:', productId)
-                            
+
                             // Verificar si el problema es un 404 (respuesta JSON en lugar de imagen)
                             try {
                               const response = await fetch(productImageUrl)
                               if (!response.ok) {
                                 const errorData = await response.text()
                                 console.error('   Response status:', response.status)
-                                console.error('   Response headers:', Object.fromEntries(response.headers.entries()))
+                                console.error(
+                                  '   Response headers:',
+                                  Object.fromEntries(response.headers.entries())
+                                )
                                 console.error('   Response body:', errorData)
-                                
+
                                 if (response.status === 404) {
-                                  console.warn('🔧 SOLUCIÓN: El producto marcado con has_image=true NO tiene imagen real en la BD')
-                                  console.warn('🔧 Esto indica un problema de sincronización entre el flag has_image y la tabla images')
+                                  console.warn(
+                                    '🔧 SOLUCIÓN: El producto marcado con has_image=true NO tiene imagen real en la BD'
+                                  )
+                                  console.warn(
+                                    '🔧 Esto indica un problema de sincronización entre el flag has_image y la tabla images'
+                                  )
                                 }
                               }
                             } catch (fetchError) {
                               console.error('   Error verificando respuesta:', fetchError)
                             }
-                            
+
                             console.error('   Error details:', {
                               src: e.target.src,
                               naturalWidth: e.target.naturalWidth,
                               naturalHeight: e.target.naturalHeight,
                               complete: e.target.complete
                             })
-                            
+
                             // Marcar error de imagen y mostrar placeholder
                             setImageError(true)
                             setImageLoading(false)
@@ -334,7 +341,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
                               no se pudo cargar correctamente
                             </span>
                             <br />
-                            <span className="text-xs text-gray-300 mt-1">
+                            <span className="mt-1 text-xs text-gray-300">
                               Verificar logs de consola para más detalles
                             </span>
                           </div>

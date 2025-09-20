@@ -504,7 +504,7 @@ DATABASE_TABLES = {
             "file_id": "INTEGER",  # Id del archivo adjunto de la compra
             "status": "TEXT DEFAULT 'Pendiente de entrega'",  # Estado de la compra: 'Pendiente de entrega', 'Recibido', 'Cancelado'
             "delivery_date": "timestamp",  # Fecha de entrega/recepción de la compra
-            "pay" : "BOOLEAN", # Indica si la compra fue pagada o no
+            "pay": "BOOLEAN",  # Indica si la compra fue pagada o no
         },
         "foreign_keys": [
             {  # Relación con tabla de entidades (proveedores)
@@ -2313,14 +2313,17 @@ class Database:
         """
         try:
             # Usar JOIN para seguir la foreign key: products.images_ids -> images.id
-            query = """
+            query = (
+                """
             SELECT i.image_data 
             FROM products p
             INNER JOIN images i ON p.images_ids = i.id
             WHERE p.id = %s 
             AND p.images_ids IS NOT NULL
             LIMIT 1
-            """ if self.use_postgres else """
+            """
+                if self.use_postgres
+                else """
             SELECT i.image_data 
             FROM products p
             INNER JOIN images i ON p.images_ids = i.id
@@ -2328,13 +2331,14 @@ class Database:
             AND p.images_ids IS NOT NULL
             LIMIT 1
             """
+            )
             params = (product_id,)
-            
+
             with self.create_connection() as conn:
                 cur = conn.cursor()
                 cur.execute(query, params)
                 row = cur.fetchone()
-                
+
                 if row:
                     image_data = row[0]
                     return {

@@ -235,17 +235,19 @@ def get_product_image(product_id):
     """
     try:
         print(f"🖼️ DEBUG: Solicitando imagen para producto ID: {product_id}")
-        
+
         db = Database()
         image_result = db.get_product_image(product_id)
-        
-        print(f"🖼️ DEBUG: Resultado de consulta de imagen: {image_result.get('success')}")
+
+        print(
+            f"🖼️ DEBUG: Resultado de consulta de imagen: {image_result.get('success')}"
+        )
         print(f"🖼️ DEBUG: Mensaje: {image_result.get('message')}")
-        
+
         if image_result.get("success") and image_result.get("image_data"):
             image_data = image_result["image_data"]
             print(f"🖼️ DEBUG: Imagen encontrada, tamaño: {len(image_data)} bytes")
-            
+
             # Retornar la imagen directamente como respuesta binaria
             return Response(
                 image_data,

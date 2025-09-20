@@ -573,7 +573,7 @@ def get_product_details(product_id):
                 f"🔍 DEBUG product-details: Ejecutando verificación de imagen para product_id = {product_id}"
             )
             print(f"🔍 DEBUG product-details: Query corregida: {image_check_query}")
-            
+
             image_check_result = db.execute_query(image_check_query, (product_id,))
             print(
                 f"🔍 DEBUG product-details: Resultado verificación imagen: {image_check_result}"
