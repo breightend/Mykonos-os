@@ -113,6 +113,7 @@ def get_products_summary():
     """
     Obtiene un resumen de productos para la vista principal de inventario
     Muestra: ID, Nombre, Marca, Cantidad Total, Fecha de Edición
+    CORREGIDO: Ahora usa warehouse_stock_variants para cálculos correctos
     """
     try:
         storage_id = request.args.get("storage_id")
@@ -121,47 +122,47 @@ def get_products_summary():
         db = Database()
 
         if storage_id:
-            # Productos de una sucursal específica - USE ONLY WAREHOUSE_STOCK
+            # Productos de una sucursal específica - USA warehouse_stock_variants
             query = """
             SELECT 
                 p.id,
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
-                COALESCE(SUM(ws.quantity), 0) as cantidad_total,
+                COALESCE(SUM(wsv.quantity), 0) as cantidad_total,
                 COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
-                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
+                COUNT(DISTINCT wsv.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
                 p.sale_price,
                 p.state
             FROM products p
-            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id AND ws.branch_id = %s
+            LEFT JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id AND wsv.branch_id = %s
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            WHERE ws.product_id IS NOT NULL
+            WHERE p.state IN ('enTienda', 'sinStock')
             GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.state
             ORDER BY p.product_name
             """
             products = db.execute_query(query, (storage_id,))
         else:
-            # Todos los productos con su cantidad total - USE ONLY WAREHOUSE_STOCK
+            # Todos los productos con su cantidad total - USA warehouse_stock_variants
             query = """
             SELECT 
                 p.id,
                 COALESCE(p.product_name, 'Sin nombre') as producto,
                 COALESCE(b.brand_name, 'Sin marca') as marca,
-                COALESCE(SUM(ws.quantity), 0) as cantidad_total,
+                COALESCE(SUM(wsv.quantity), 0) as cantidad_total,
                 COALESCE(p.last_modified_date, NOW()) as fecha_edicion,
-                COUNT(DISTINCT ws.branch_id) as sucursales_con_stock,
+                COUNT(DISTINCT wsv.branch_id) as sucursales_con_stock,
                 COALESCE(g.group_name, 'Sin grupo') as grupo,
                 p.group_id,
                 p.sale_price,
                 p.state
             FROM products p
-            LEFT JOIN warehouse_stock ws ON p.id = ws.product_id
+            LEFT JOIN warehouse_stock_variants wsv ON p.id = wsv.product_id
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN groups g ON p.group_id = g.id
-            WHERE ws.product_id IS NOT NULL
+            WHERE p.state IN ('enTienda', 'sinStock')
             GROUP BY p.id, p.product_name, b.brand_name, p.last_modified_date, g.group_name, p.group_id, p.sale_price, p.state
             ORDER BY p.product_name
             """
@@ -331,17 +332,18 @@ def get_product_details(product_id):
                 }
             ), 500
 
-        # Stock por sucursal
+        # Stock por sucursal - CORREGIDO: Ahora suma correctamente desde warehouse_stock_variants
         stock_query = """
         SELECT 
             s.id as sucursal_id,
             s.name as sucursal_nombre,
             s.address as sucursal_direccion,
-            ws.quantity,
-            ws.last_updated
-        FROM warehouse_stock ws
-        JOIN storage s ON ws.branch_id = s.id
-        WHERE ws.product_id = %s
+            COALESCE(SUM(wsv.quantity), 0) as cantidad,
+            MAX(wsv.last_updated) as ultima_actualizacion
+        FROM storage s
+        LEFT JOIN warehouse_stock_variants wsv ON s.id = wsv.branch_id AND wsv.product_id = %s
+        GROUP BY s.id, s.name, s.address
+        HAVING COALESCE(SUM(wsv.quantity), 0) > 0
         ORDER BY s.name
         """
         stock_data = db.execute_query(stock_query, (product_id,))
@@ -356,8 +358,8 @@ def get_product_details(product_id):
                             "sucursal_id": s.get("sucursal_id"),
                             "sucursal_nombre": s.get("sucursal_nombre"),
                             "sucursal_direccion": s.get("sucursal_direccion"),
-                            "cantidad": s.get("quantity"),
-                            "ultima_actualizacion": s.get("last_updated"),
+                            "cantidad": s.get("cantidad"),  # Corregido: usar 'cantidad' en lugar de 'quantity'
+                            "ultima_actualizacion": s.get("ultima_actualizacion"),  # Corregido: usar 'ultima_actualizacion'
                         }
                     else:
                         stock_item = {
@@ -3583,6 +3585,45 @@ def get_print_settings():
 
         db = Database()
 
+        # Primero verificar si la tabla existe y tiene la estructura correcta
+        table_check = db.execute_query("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'barcode_print_settings'
+            );
+        """)
+        
+        if not table_check or not table_check[0][0]:
+            print("⚠️ Tabla barcode_print_settings no existe, creándola...")
+            # Crear la tabla si no existe
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS barcode_print_settings (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(100) DEFAULT 'default' UNIQUE,
+                show_product_name BOOLEAN DEFAULT true,
+                show_variant_name BOOLEAN DEFAULT true,
+                show_size BOOLEAN DEFAULT true,
+                show_color BOOLEAN DEFAULT true,
+                show_price BOOLEAN DEFAULT false,
+                show_barcode BOOLEAN DEFAULT true,
+                print_width INTEGER DEFAULT 450,
+                print_height INTEGER DEFAULT 200,
+                font_size INTEGER DEFAULT 12,
+                background_color VARCHAR(7) DEFAULT '#FFFFFF',
+                text_color VARCHAR(7) DEFAULT '#000000',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+            db.execute_query(create_table_sql)
+            
+            # Insertar configuración por defecto
+            db.execute_query("""
+                INSERT INTO barcode_print_settings (user_id) 
+                VALUES ('default')
+                ON CONFLICT (user_id) DO NOTHING;
+            """)
+
         query = """
         SELECT show_product_name, show_variant_name, show_size, show_color, 
                show_price, show_barcode, print_width, print_height, font_size,
@@ -3614,6 +3655,18 @@ def get_print_settings():
                 }
             )
         else:
+            # Si no hay datos, insertar configuración por defecto y devolverla
+            print(f"⚠️ No se encontraron configuraciones para usuario '{user_id}', creando por defecto...")
+            
+            try:
+                db.execute_query("""
+                    INSERT INTO barcode_print_settings (user_id) 
+                    VALUES (%s)
+                    ON CONFLICT (user_id) DO NOTHING;
+                """, (user_id,))
+            except Exception as insert_error:
+                print(f"⚠️ Error insertando configuración por defecto: {insert_error}")
+            
             # Devolver configuración por defecto
             return jsonify(
                 {
@@ -3636,7 +3689,27 @@ def get_print_settings():
 
     except Exception as e:
         print(f"❌ Error obteniendo configuraciones de impresión: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"   Tipo de error: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        
+        # En caso de error, devolver configuración por defecto para que la app funcione
+        return jsonify({
+            "status": "success",
+            "settings": {
+                "showProductName": True,
+                "showVariantName": True,
+                "showSize": True,
+                "showColor": True,
+                "showPrice": False,
+                "showBarcode": True,
+                "printWidth": 450,
+                "printHeight": 200,
+                "fontSize": 12,
+                "backgroundColor": "#FFFFFF",
+                "textColor": "#000000",
+            },
+        })
 
 
 @inventory_router.route("/print-settings", methods=["POST"])
@@ -3651,6 +3724,38 @@ def save_print_settings():
         settings = data.get("settings", {})
 
         db = Database()
+
+        # Asegurarse de que la tabla existe
+        table_check = db.execute_query("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'barcode_print_settings'
+            );
+        """)
+        
+        if not table_check or not table_check[0][0]:
+            print("⚠️ Tabla barcode_print_settings no existe, creándola...")
+            # Crear la tabla si no existe
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS barcode_print_settings (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(100) DEFAULT 'default' UNIQUE,
+                show_product_name BOOLEAN DEFAULT true,
+                show_variant_name BOOLEAN DEFAULT true,
+                show_size BOOLEAN DEFAULT true,
+                show_color BOOLEAN DEFAULT true,
+                show_price BOOLEAN DEFAULT false,
+                show_barcode BOOLEAN DEFAULT true,
+                print_width INTEGER DEFAULT 450,
+                print_height INTEGER DEFAULT 200,
+                font_size INTEGER DEFAULT 12,
+                background_color VARCHAR(7) DEFAULT '#FFFFFF',
+                text_color VARCHAR(7) DEFAULT '#000000',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+            db.execute_query(create_table_sql)
 
         # Verificar si ya existe configuración para este usuario
         check_query = "SELECT id FROM barcode_print_settings WHERE user_id = %s"
@@ -3692,6 +3797,19 @@ def save_print_settings():
              show_price, show_barcode, print_width, print_height, font_size,
              background_color, text_color)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (user_id) DO UPDATE SET
+                show_product_name = EXCLUDED.show_product_name,
+                show_variant_name = EXCLUDED.show_variant_name,
+                show_size = EXCLUDED.show_size,
+                show_color = EXCLUDED.show_color,
+                show_price = EXCLUDED.show_price,
+                show_barcode = EXCLUDED.show_barcode,
+                print_width = EXCLUDED.print_width,
+                print_height = EXCLUDED.print_height,
+                font_size = EXCLUDED.font_size,
+                background_color = EXCLUDED.background_color,
+                text_color = EXCLUDED.text_color,
+                updated_at = CURRENT_TIMESTAMP
             """
 
             db.execute_query(
@@ -3720,6 +3838,9 @@ def save_print_settings():
 
     except Exception as e:
         print(f"❌ Error guardando configuraciones de impresión: {e}")
+        print(f"   Tipo de error: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

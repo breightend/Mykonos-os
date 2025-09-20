@@ -37,8 +37,7 @@ import PurchaseDetailsModal from '../PurchaseDetailsModal'
 import OperationDetailsModal from '../OperationDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
 import { useSession } from '../../contexts/SessionContext'
-//TODO: agregar compra de proveedores
-//TODO: agregar pago de proveedores
+
 export default function InfoProvider() {
   const [, setLocation] = useLocation()
   const [searchParams] = useSearchParams()

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS barcode_print_settings (
     id SERIAL PRIMARY KEY,
-    user_id VARCHAR(100) DEFAULT 'default',
+    user_id VARCHAR(100) DEFAULT 'default' UNIQUE,
     show_product_name BOOLEAN DEFAULT true,
     show_variant_name BOOLEAN DEFAULT true,
     show_size BOOLEAN DEFAULT true,

@@ -369,7 +369,7 @@ export default function Inventario() {
           // Verificar que no cambió mientras esperábamos
           searchByBarcode(value.trim())
         }
-      }, 150) // 150ms de espera después del último carácter
+      }, 150) 
     }
   }
   const formatCurrency = (value) => {

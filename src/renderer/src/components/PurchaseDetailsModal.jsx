@@ -253,7 +253,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
         <div className="mb-6 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-xl font-bold">
             <Package className="h-6 w-6" />
-            Detalles de Compra #{purchase?.id}
+            Detalles de Compra # {purchase?.id}
           </h3>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -288,22 +288,25 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                       : 'N/A'}
                   </p>
                 </div>
-
-                <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">Estado</span>
-                  </label>
-                  <span
-                    className={`badge ${
-                      purchase.status === 'Recibido'
-                        ? 'badge-success'
-                        : purchase.status === 'Pendiente de entrega'
-                          ? 'badge-warning'
-                          : 'badge-error'
-                    }`}
-                  >
-                    {purchase.status}
-                  </span>
+                <div className="gap-1">
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Estado</span>
+                    </label>
+                  </div>
+                  <div>
+                    <span
+                      className={`badge px-2 ${
+                        purchase.status === 'Recibido'
+                          ? 'badge-success'
+                          : purchase.status === 'Pendiente de entrega'
+                            ? 'badge-warning'
+                            : 'badge-error'
+                      }`}
+                    >
+                      {purchase.status}
+                    </span>
+                  </div>
                 </div>
 
                 <div>
@@ -486,7 +489,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
 
               {/* Payment Summary */}
               <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="rounded bg-green-100 p-3">
+                <div className="rounded bg-secondary/10 p-3">
                   <label className="label">
                     <span className="label-text font-semibold text-green-700">Total Pagado</span>
                   </label>
@@ -494,7 +497,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                     {formatCurrency(getTotalPaid())}
                   </p>
                 </div>
-                <div className="rounded bg-orange-100 p-3">
+                <div className="rounded bg-primary/10 p-3">
                   <label className="label">
                     <span className="label-text font-semibold text-orange-700">Pendiente</span>
                   </label>
@@ -502,15 +505,22 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                     {formatCurrency(getRemainingAmount())}
                   </p>
                 </div>
-                <div className="rounded bg-blue-100 p-3">
-                  <label className="label">
-                    <span className="label-text font-semibold text-blue-700">Estado</span>
-                  </label>
-                  <span
-                    className={`badge ${getRemainingAmount() <= 0 ? 'badge-success' : 'badge-warning'}`}
-                  >
-                    {getRemainingAmount() <= 0 ? 'Pagado Completo' : 'Pago Pendiente'}
-                  </span>
+                <div className="rounded bg-accent/10 p-3">
+                  <div className='gap-2'>
+                    <div>
+                      <label className="label">
+                        <span className="label-text font-semibold text-blue-700">Estado</span>
+                      </label>
+                    </div>
+                    <div>
+                      <span
+                        className={`badge px-2 ${getRemainingAmount() <= 0 ? 'badge-success' : 'badge-warning'}`}
+                      >
+                        {getRemainingAmount() <= 0 ? 'Pagado Completo' : 'Pago Pendiente'}
+                      </span>
+
+                    </div>
+                  </div>
                 </div>
               </div>
 
