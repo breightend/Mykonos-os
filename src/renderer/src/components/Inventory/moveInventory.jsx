@@ -19,7 +19,9 @@ import {
   Plus,
   Minus,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ScanQrCode,
+  ScanBarcode
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
 
@@ -74,7 +76,7 @@ export default function MoveInventory() {
     }
 
     console.warn('Color hex inválido:', hexValue, 'usando fallback')
-    return '#6B7280' 
+    return '#6B7280'
   }
 
   const searchByBarcode = async (barcode) => {
@@ -911,7 +913,7 @@ export default function MoveInventory() {
             <div className="card mb-6 bg-base-200 shadow-xl">
               <div className="card-body">
                 <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div EscaneadoclassName="flex items-center gap-3">
                     <h4 className="card-title text-secondary">📥 Envíos Pendientes</h4>
                     <div className="badge badge-secondary">Recibiendo</div>
                   </div>
@@ -1405,52 +1407,60 @@ export default function MoveInventory() {
                   <div className="card bg-base-200 shadow-xl">
                     <div className="card-body">
                       <h4 className="card-title flex items-center gap-2">
-                        <Scan className="h-5 w-5" />
+                        <ScanBarcode className="h-5 w-5" />
                         Buscar por Código de Barras
                       </h4>
                       <div className="form-control">
-                        <div className="input-group">
-                          <input
-                            ref={barcodeInputRef}
-                            type="text"
-                            placeholder={
-                              searchingBarcode
-                                ? 'Procesando...'
-                                : 'Escanear código (automático) o escribir...'
-                            }
-                            className={`input-bordered input flex-1 ${!searchingBarcode ? 'focus:border-success' : ''}`}
-                            value={barcodeInput}
-                            onChange={(e) => setBarcodeInput(e.target.value)}
-                            onKeyDown={handleBarcodeInput}
-                            disabled={searchingBarcode}
-                            autoFocus
-                          />
+                        <div className="w-full flex">
+                          <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                              <ScanBarcode className="text-base-content/50 h-5 w-5" />
+                            </div>
+                            <input
+                              ref={barcodeInputRef}
+                              type="text"
+                              placeholder={
+                                searchingBarcode
+                                  ? 'Procesando...'
+                                  : 'Escanear código de barras o escribir...'
+                              }
+                              className={`input-bordered input w-full pl-12 join-item ${
+                                !searchingBarcode
+                                  ? 'focus:border-success focus:outline-success'
+                                  : 'bg-base-200'
+                              }`}
+                              value={barcodeInput}
+                              onChange={(e) => setBarcodeInput(e.target.value)}
+                              onKeyDown={handleBarcodeInput}
+                              disabled={searchingBarcode}
+                              autoFocus
+                            />
+                          </div>
                           <button
-                            className="btn btn-primary"
+                            className="btn btn-primary ml-2"
                             onClick={() => searchByBarcode(barcodeInput)}
                             disabled={searchingBarcode || !barcodeInput.trim()}
                           >
                             {searchingBarcode ? (
-                              <l-pinwheel
-                                size="20"
-                                stroke="2"
-                                speed="0.9"
-                                color="white"
-                              ></l-pinwheel>
+                              <>
+                                <l-pinwheel
+                                  size="20"
+                                  stroke="2"
+                                  speed="0.9"
+                                  color="white"
+                                ></l-pinwheel>
+                                <span className="ml-2">Buscando...</span>
+                              </>
                             ) : (
-                              <Search className="h-4 w-4" />
+                              <>
+                                <Search className="h-4 w-4" />
+                              </>
                             )}
                           </button>
                         </div>
-                        <label className="label">
-                          <span className="label-text-alt">
-                            🚀 Escaneado automático activado - Solo apunta y escanea
-                            <br />
-                            📝 También puedes escribir manualmente y presionar Enter
-                            <br />
-                            📋 Formato: VAR + 4 dígitos producto + 3 dígitos talle + 3 dígitos color
-                          </span>
-                        </label>
+                        <div className="label">
+
+                        </div>
                       </div>
                     </div>
                   </div>
