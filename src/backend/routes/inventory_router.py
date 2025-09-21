@@ -3111,19 +3111,29 @@ def print_barcodes():
                     "color_name": variant_details.get("color_name"),
                 }
 
-                # Generar archivos de códigos de barras
+                # Generar UN SOLO archivo por variante - Windows manejará la cantidad
                 print(
-                    f"🏭 Generando {print_job['quantity']} códigos para variante {variant_id}"
+                    f"🏭 Generando 1 archivo para variante {variant_id} (cantidad: {print_job['quantity']})"
                 )
                 generated_files = barcode_generator.generate_barcode_with_text(
                     print_job["barcode"],  # Usar el código de barras del print_job
                     product_info,
                     options,
-                    print_job["quantity"],
+                    1,  # Generar solo 1 archivo por variante
                 )
-                all_generated_files.extend(generated_files)
+
+                # Añadir información de cantidad para la impresión
+                for file_path in generated_files:
+                    all_generated_files.append(
+                        {
+                            "file_path": file_path,
+                            "quantity": print_job["quantity"],
+                            "variant_id": variant_id,
+                        }
+                    )
+
                 print(
-                    f"📁 Generados {len(generated_files)} archivos para esta variante"
+                    f"📁 Generado 1 archivo para variante {variant_id} (se imprimirá {print_job['quantity']} veces)"
                 )
 
             print(
@@ -3134,7 +3144,11 @@ def print_barcodes():
             print_result = barcode_generator.print_barcodes(all_generated_files)
 
             # Limpiar archivos temporales
-            barcode_generator.cleanup_files(all_generated_files)
+            cleanup_files = [
+                item["file_path"] if isinstance(item, dict) else item
+                for item in all_generated_files
+            ]
+            barcode_generator.cleanup_files(cleanup_files)
 
             if print_result["status"] == "success":
                 return jsonify(

@@ -21,7 +21,7 @@ export default function PrintBarcodeModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const [quantities, setQuantities] = useState({})
+  const [selectedVariants, setSelectedVariants] = useState(new Set())
   const [selectAll, setSelectAll] = useState(false)
 
   const [printOptions, setPrintOptions] = useState({
@@ -177,21 +177,15 @@ export default function PrintBarcodeModal({
     }
   }, [isOpen, productId])
 
-  // Sincronizar el estado del checkbox "Seleccionar todas" con las cantidades individuales
+  // Sincronizar el estado del checkbox "Seleccionar todas" con las variantes seleccionadas
   useEffect(() => {
     if (variants.length === 0) return
 
-    // Verificar si todas las variantes tienen cantidad > 0
-    const allVariantsSelected = variants.every((variant) => {
-      const quantity = quantities[variant.id] || 0
-      return quantity > 0
-    })
+    // Verificar si todas las variantes están seleccionadas
+    const allVariantsSelected = variants.every((variant) => selectedVariants.has(variant.id))
 
-    // Verificar si ninguna variante tiene cantidad > 0
-    const noVariantsSelected = variants.every((variant) => {
-      const quantity = quantities[variant.id] || 0
-      return quantity === 0
-    })
+    // Verificar si ninguna variante está seleccionada
+    const noVariantsSelected = selectedVariants.size === 0
 
     // Actualizar el estado del checkbox solo si es necesario para evitar loops infinitos
     if (allVariantsSelected && !selectAll) {
@@ -202,7 +196,7 @@ export default function PrintBarcodeModal({
       // Estado intermedio: algunas variantes seleccionadas, otras no
       setSelectAll(false)
     }
-  }, [quantities, variants, selectAll])
+  }, [selectedVariants, variants, selectAll])
 
   const loadProductVariants = async () => {
     try {
@@ -227,31 +221,28 @@ export default function PrintBarcodeModal({
         setVariants(variantsList)
 
         console.log(`✅ Cargadas ${variantsList.length} variantes de la sucursal actual`)
-        console.log('🎯 Cantidades iniciales recibidas:', initialVariantQuantities)
+        console.log('🎯 Variantes iniciales recibidas:', initialVariantQuantities)
 
         if (variantsList.length === 0) {
           setError('No hay variantes con stock disponible en esta sucursal')
         }
 
-        // Inicializar cantidades
-        const initialQuantities = {}
+        // Inicializar selección basada en las variantes iniciales
+        const initialSelected = new Set()
         variantsList.forEach((variant) => {
-          // Buscar si hay una cantidad inicial para esta variante
+          // Buscar si hay una cantidad inicial para esta variante (la seleccionamos automáticamente)
           const initialVariant = initialVariantQuantities.find(
             (initial) =>
               initial.size_name === variant.size_name && initial.color_name === variant.color_name
           )
-          // Si hay cantidad inicial, usarla; de lo contrario, usar 0
-          initialQuantities[variant.id] = initialVariant ? initialVariant.quantity : 0
-
-          if (initialVariant) {
-            console.log(
-              `🎯 Variante encontrada: ${variant.size_name} - ${variant.color_name} = ${initialVariant.quantity}`
-            )
+          // Si hay cantidad inicial, seleccionar la variante automáticamente
+          if (initialVariant && initialVariant.quantity > 0) {
+            initialSelected.add(variant.id)
+            console.log(`🎯 Variante preseleccionada: ${variant.size_name} - ${variant.color_name}`)
           }
         })
-        console.log('🎯 Cantidades finales aplicadas:', initialQuantities)
-        setQuantities(initialQuantities)
+        console.log('🎯 Variantes seleccionadas:', Array.from(initialSelected))
+        setSelectedVariants(initialSelected)
 
         // Establecer primera variante como vista previa por defecto
         if (variantsList.length > 0) {
@@ -268,45 +259,35 @@ export default function PrintBarcodeModal({
     }
   }
 
-  // Manejar cambio de cantidad para una variante específica
-  const handleQuantityChange = (variantId, quantity) => {
-    const numQuantity = Math.max(0, parseInt(quantity) || 0)
-    setQuantities((prev) => ({
-      ...prev,
-      [variantId]: numQuantity
-    }))
+  // Manejar selección/deselección de una variante específica
+  const handleVariantSelection = (variantId, selected) => {
+    setSelectedVariants((prev) => {
+      const newSelected = new Set(prev)
+      if (selected) {
+        newSelected.add(variantId)
+      } else {
+        newSelected.delete(variantId)
+      }
+      return newSelected
+    })
   }
 
   // Manejar seleccionar todas las variantes
   const handleSelectAll = (checked) => {
     if (checked) {
-      // Seleccionar todas las variantes con su stock disponible como cantidad
-      const allQuantities = {}
-      variants.forEach((variant) => {
-        // Usar el stock disponible real de la variante
-        const stockAvailable = variant.quantity || 0
-        if (stockAvailable > 0) {
-          allQuantities[variant.id] = stockAvailable
-        } else {
-          // Si no hay stock, usar 1 como mínimo para poder imprimir al menos una etiqueta
-          allQuantities[variant.id] = 1
-        }
-      })
-      setQuantities(allQuantities)
+      // Seleccionar todas las variantes
+      const allVariantIds = variants.map((variant) => variant.id)
+      setSelectedVariants(new Set(allVariantIds))
       setSelectAll(true)
 
       // Log para debugging
-      console.log('🏷️ Seleccionar todas - cantidades asignadas:', allQuantities)
-      const totalLabels = Object.values(allQuantities).reduce((sum, qty) => sum + qty, 0)
-      console.log(`📊 Total de etiquetas a imprimir: ${totalLabels}`)
+      console.log('🏷️ Seleccionar todas - variantes seleccionadas:', allVariantIds)
+      console.log(`📊 Total de variantes seleccionadas: ${allVariantIds.length}`)
     } else {
       // Deseleccionar todas
-      const resetQuantities = {}
-      variants.forEach((variant) => {
-        resetQuantities[variant.id] = 0
-      })
-      setQuantities(resetQuantities)
+      setSelectedVariants(new Set())
       setSelectAll(false)
+      console.log('❌ Deseleccionar todas las variantes')
     }
   }
 
@@ -463,54 +444,63 @@ export default function PrintBarcodeModal({
     try {
       setLoading(true)
 
-      // Preparar variantes seleccionadas con sus cantidades
-      const selectedVariants = Object.entries(quantities)
-        .filter(([, quantity]) => quantity > 0)
-        .map(([variantId, quantity]) => {
-          const variant = variants.find((v) => v.id.toString() === variantId)
-          return {
-            variant: variant,
-            quantity: quantity
-          }
+      // Preparar variantes seleccionadas
+      const selectedVariantsList = Array.from(selectedVariants)
+        .map((variantId) => {
+          const variant = variants.find((v) => v.id.toString() === variantId.toString())
+          return variant
+            ? {
+                variant: variant,
+                quantity: 1 // Cada variante seleccionada = 1 diálogo de impresión
+              }
+            : null
         })
+        .filter(Boolean) // Filtrar nulls
 
-      if (selectedVariants.length === 0) {
+      console.log('🔍 DEBUG: Selected variants set:', selectedVariants)
+      console.log('🔍 DEBUG: Processed variants list:', selectedVariantsList)
+
+      if (selectedVariantsList.length === 0) {
         toast.error('Por favor selecciona al menos una variante para imprimir')
         return
       }
 
-      // Calcular total de etiquetas
-      const totalLabels = selectedVariants.reduce((total, variant) => total + variant.quantity, 0)
-
       console.log('🏷️ Imprimiendo:', {
-        variantsCount: selectedVariants.length,
-        totalLabels: totalLabels,
-        variants: selectedVariants.map((v) => ({
+        variantsCount: selectedVariantsList.length,
+        variants: selectedVariantsList.map((v) => ({
           variant: v.variant.size_name + ' - ' + v.variant.color_name,
-          quantity: v.quantity
+          variantId: v.variant.id
         }))
       })
 
+      console.log('🚀 Enviando datos al backend:', {
+        productId: product?.id,
+        variants: selectedVariantsList.map((item) => ({
+          variantId: item.variant.id,
+          quantity: item.quantity
+        })),
+        printOptions: printOptions
+      })
+
       // Mostrar mensaje de progreso con información detallada
-      toast.loading(
-        `Generando ${totalLabels} códigos de barras para ${selectedVariants.length} variante(s)...`,
-        { duration: 3000 }
-      )
+      toast.loading(`Abriendo ${selectedVariantsList.length} diálogo(s) de impresión...`, {
+        duration: 3000
+      })
 
       // Usar el servicio de impresión de códigos de barras
       const result = await barcodePrintService.processPrintRequest(
-        selectedVariants,
+        selectedVariantsList,
         product,
         printOptions
       )
 
       if (result.success) {
-        const successMessage = `✅ ${totalLabels} códigos enviados a impresión para ${selectedVariants.length} variante(s)`
-        toast.success(successMessage, { duration: 5000 })
+        const successMessage = `✅ ${selectedVariantsList.length} diálogo(s) de impresión abiertos. Especifica las cantidades en cada diálogo de Windows.`
+        toast.success(successMessage, { duration: 6000 })
         console.log('📊 Impresión exitosa:', {
           ...result,
-          totalLabelsRequested: totalLabels,
-          variantsProcessed: selectedVariants.length
+          variantsProcessed: selectedVariantsList.length,
+          note: 'El usuario debe especificar cantidades en los diálogos de Windows'
         })
 
         // Cerrar el modal después de una impresión exitosa
@@ -537,7 +527,7 @@ export default function PrintBarcodeModal({
   const handleClose = () => {
     setProduct(null)
     setVariants([])
-    setQuantities({})
+    setSelectedVariants(new Set())
     setSelectAll(false)
     setPreviewVariant(null)
     setBarcodePreview(null)
@@ -638,15 +628,13 @@ export default function PrintBarcodeModal({
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-gray-600">Seleccionadas</span>
-                          <span className="badge badge-warning px-2">
-                            {Object.values(quantities).filter((q) => q > 0).length}
-                          </span>
+                          <span className="badge badge-warning px-2">{selectedVariants.size}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-600">Total etiquetas</span>
-                          <span className="badge badge-accent px-2">
-                            {Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0)}
+                          <span className="text-sm font-medium text-gray-600">
+                            Diálogos de impresión
                           </span>
+                          <span className="badge badge-accent px-2">{selectedVariants.size}</span>
                         </div>
                       </div>
 
@@ -670,12 +658,11 @@ export default function PrintBarcodeModal({
                   />
                   <span className="font-medium">Seleccionar todas las variantes</span>
                   <span className="ml-2 text-xs text-gray-500">
-                    (establece cantidad = stock para todas)
+                    (abre un diálogo de impresión por variante)
                   </span>
                 </label>
                 <div className="text-sm text-gray-600">
-                  Total etiquetas:{' '}
-                  {Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0)}
+                  Variantes seleccionadas: {selectedVariants.size}
                 </div>
               </div>
 
@@ -693,16 +680,28 @@ export default function PrintBarcodeModal({
                     <table className="table table-zebra w-full">
                       <thead>
                         <tr>
+                          <th>Seleccionar</th>
                           <th>Talle</th>
                           <th>Color</th>
                           <th>Código</th>
                           <th>Stock</th>
-                          <th>Cantidad a Imprimir</th>
                         </tr>
                       </thead>
                       <tbody>
                         {variants.map((variant) => (
                           <tr key={variant.id}>
+                            <td>
+                              <label className="flex cursor-pointer items-center justify-center">
+                                <input
+                                  type="checkbox"
+                                  className="checkbox checkbox-primary"
+                                  checked={selectedVariants.has(variant.id)}
+                                  onChange={(e) =>
+                                    handleVariantSelection(variant.id, e.target.checked)
+                                  }
+                                />
+                              </label>
+                            </td>
                             <td>
                               <span className="badge badge-outline">
                                 {variant.size_name || 'Sin talle'}
@@ -728,19 +727,6 @@ export default function PrintBarcodeModal({
                               >
                                 {variant.quantity || 0}
                               </span>
-                            </td>
-                            <td>
-                              <input
-                                type="text"
-                                pattern="[0-9]*"
-                                className="input-bordered input input-sm w-20"
-                                value={quantities[variant.id] || 0}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(/[^0-9]/g, '') // Solo números
-                                  handleQuantityChange(variant.id, value)
-                                }}
-                                placeholder="0"
-                              />
                             </td>
                           </tr>
                         ))}
@@ -1082,20 +1068,38 @@ export default function PrintBarcodeModal({
                     <div className="flex-1">
                       <h4 className="font-semibold text-primary">¿Listo para imprimir?</h4>
                       <p className="text-sm text-gray-600">
-                        Se imprimirán{' '}
-                        <span className="font-bold text-secondary">
-                          {Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0)}
-                        </span>{' '}
-                        etiquetas de{' '}
-                        <span className="font-bold text-primary">
-                          {Object.entries(quantities).filter(([, qty]) => qty > 0).length}
-                        </span>{' '}
+                        Se abrirán{' '}
+                        <span className="font-bold text-secondary">{selectedVariants.size}</span>{' '}
+                        diálogos de impresión para{' '}
+                        <span className="font-bold text-primary">{selectedVariants.size}</span>{' '}
                         variantes
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={handleClose} className="btn btn-ghost btn-sm">
                         Cancelar
+                      </button>
+                      <button
+                        onClick={handlePrintBarcodes}
+                        disabled={loading || selectedVariants.size === 0}
+                        className="btn btn-primary btn-sm"
+                      >
+                        {loading ? (
+                          <>
+                            <l-pinwheel
+                              size="16"
+                              stroke="1.5"
+                              speed="0.9"
+                              color="white"
+                            ></l-pinwheel>
+                            Imprimiendo...
+                          </>
+                        ) : (
+                          <>
+                            <Printer className="h-4 w-4" />
+                            Imprimir Códigos
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
