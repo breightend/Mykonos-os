@@ -730,7 +730,7 @@ export default function RegistroVentas() {
           </div>
 
           {/* Botones de acción */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 space-y-2 mb-2">
             {/* Botón para limpiar filtros */}
             {(range || searchTerm) && (
               <button
