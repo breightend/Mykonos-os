@@ -73,6 +73,7 @@ function AgregarPagoModal({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
+
     setFormData((prev) => ({
       ...prev,
       [name]: value
@@ -130,7 +131,7 @@ function AgregarPagoModal({
 
   const isEcheqTimeVisible = () => {
     const selectedMethodId = parseInt(formData.forma_pago)
-    return selectedMethodId === 3
+    return selectedMethodId === 6
   }
 
   const getPaymentMethodId = () => {
@@ -138,7 +139,6 @@ function AgregarPagoModal({
     const bankId = formData.bank_id
 
     if (basicMethod && bankId) {
-      // This would need to be implemented based on your bank/payment combinations
       return basicMethod
     } else if (basicMethod) {
       return basicMethod
@@ -164,6 +164,12 @@ function AgregarPagoModal({
 
     if (!formData.forma_pago) {
       toast.error('Debe seleccionar un método de pago')
+      return
+    }
+
+    // Validate echeq_time if payment method is echeq (method id 6)
+    if (parseInt(formData.forma_pago) === 6 && !formData.echeq_time) {
+      toast.error('Debe seleccionar el plazo del cheque electrónico')
       return
     }
 
@@ -466,17 +472,18 @@ function AgregarPagoModal({
 
               {isEcheqTimeVisible() && (
                 <div>
-                  <label htmlFor="" className="label">
-                    <span className="label-text font-medium text-gray-600">Tiempo: </span>
+                  <label htmlFor="echeq_time" className="label">
+                    <span className="label-text font-medium text-gray-600">Plazo del Cheque *</span>
                   </label>
                   <select
+                    id="echeq_time"
                     name="echeq_time"
                     value={formData.echeq_time}
                     onChange={handleInputChange}
                     className="select-bordered select w-full"
                     required
                   >
-                    <option value="">Seleccionar a dias...</option>
+                    <option value="">Seleccionar plazo...</option>
                     <option value={30}>30 días</option>
                     <option value={60}>60 días</option>
                     <option value={90}>90 días</option>
@@ -658,6 +665,14 @@ function AgregarPagoModal({
                         {providerPaymentService.getPaymentMethodNameSync(formData.forma_pago)}
                       </span>
                     </div>
+                    {formData.echeq_time && parseInt(formData.forma_pago) === 6 && (
+                      <div className="flex justify-between">
+                        <span className="text-base-content/70">Plazo del cheque:</span>
+                        <span className="font-medium text-base-content">
+                          {formData.echeq_time} días
+                        </span>
+                      </div>
+                    )}
                     {formData.numero_comprobante && (
                       <div className="flex justify-between">
                         <span className="text-base-content/70">Comprobante:</span>
@@ -693,7 +708,8 @@ function AgregarPagoModal({
                   !formData.forma_pago ||
                   parseFloat(
                     formData.monto_raw || formData.monto.replace(/\./g, '').replace(',', '.')
-                  ) <= 0
+                  ) <= 0 ||
+                  (parseInt(formData.forma_pago) === 6 && !formData.echeq_time)
                 }
               >
                 {isProcessing ? (
