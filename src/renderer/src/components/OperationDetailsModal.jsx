@@ -76,13 +76,6 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                 <label className="text-sm font-medium text-gray-500">Descripción</label>
                 <p className="text-gray-900">{operation.descripcion || 'Sin descripción'}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Método de Pago</label>
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  <span className="capitalize">{operation.medio_pago || 'No especificado'}</span>
-                </div>
-              </div>
             </div>
           </div>
 

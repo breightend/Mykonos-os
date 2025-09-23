@@ -291,12 +291,17 @@ class AccountMovementsService:
                 numero_operacion = self.generate_operation_number()
 
             # First, create a record in banks_payment_methods with payment details
+            print(f"🔍 Processing payment method: {medio_pago}")
+            payment_method_id = self._get_payment_method_id_by_name(medio_pago)
+            print(f"🔍 Resolved payment method ID: {payment_method_id}")
+
             banks_payment_data = {
                 "bank_id": bank_id if bank_id else 1,  # Default bank if none provided
-                "payment_method_id": self._get_payment_method_id_by_name(medio_pago),
+                "payment_method_id": payment_method_id,
                 "amount": amount,
             }
 
+            print(f"🔍 Banks payment data: {banks_payment_data}")
             banks_payment_result = self.db.add_record(
                 "banks_payment_methods", banks_payment_data
             )
@@ -696,19 +701,33 @@ class AccountMovementsService:
             # Return None to cause the foreign key to be NULL rather than invalid
             return None
 
-    def _get_payment_method_id_by_name(self, method_name):
+    def _get_payment_method_id_by_name(self, method_input):
         """
-        Get payment method ID by name from payment_methods table
+        Get payment method ID by name or ID from payment_methods table
 
         Args:
-            method_name (str): Name of the payment method (efectivo, transferencia, etc.)
+            method_input (str): Name or ID of the payment method (efectivo, transferencia, or numeric ID like "6")
 
         Returns:
             int: Payment method ID, defaults to 1 if not found
         """
         try:
+            # First, check if the input is already a numeric ID
+            try:
+                method_id = int(method_input)
+                # Verify that this ID exists in the payment_methods table
+                result = self.db.execute_query(
+                    "SELECT id FROM payment_methods WHERE id = %s", (method_id,)
+                )
+                if result and len(result) > 0:
+                    return method_id
+            except (ValueError, TypeError):
+                # Not a numeric ID, treat as method name
+                pass
+
+            # Try to find by method name
             result = self.db.execute_query(
-                "SELECT id FROM payment_methods WHERE method_name = %s", (method_name,)
+                "SELECT id FROM payment_methods WHERE method_name = %s", (method_input,)
             )
 
             if result and len(result) > 0:
@@ -726,7 +745,7 @@ class AccountMovementsService:
             return 1
 
         except Exception as e:
-            print(f"❌ Error getting payment method ID for {method_name}: {e}")
+            print(f"❌ Error getting payment method ID for {method_input}: {e}")
             return 1
 
     def recalculate_provider_balances(self, entity_id):
