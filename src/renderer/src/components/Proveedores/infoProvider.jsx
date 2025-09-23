@@ -963,6 +963,11 @@ export default function InfoProvider() {
                                   ID: {movement.payment_details_id}
                                 </span>
                               )}
+                              {movement.echeq_time && (
+                                <span className="text-xs font-medium text-orange-600">
+                                  E-Cheque: {movement.echeq_time} días
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className={movement.debe > 0 ? 'font-bold text-red-600' : ''}>

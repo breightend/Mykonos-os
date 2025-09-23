@@ -1,4 +1,13 @@
-import { X, Download, FileText, Calendar, DollarSign, CreditCard, Check, HandCoins } from 'lucide-react'
+import {
+  X,
+  Download,
+  FileText,
+  Calendar,
+  DollarSign,
+  CreditCard,
+  Check,
+  HandCoins
+} from 'lucide-react'
 import { formatCurrency, formatMovementType } from '../services/proveedores/accountMovementsService'
 
 export default function OperationDetailsModal({ operation, isOpen, onClose }) {
@@ -20,7 +29,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
     }
   }
 
-  const handleShowIcon =  (iconName) => {
+  const handleShowIcon = (iconName) => {
     // Lógica para mostrar el ícono basado en el nombre proporcionado
     switch (iconName) {
       case 'CreditCard':
@@ -40,7 +49,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
       <div className="my-8 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white p-6">
           <h3 className="text-2xl font-bold text-gray-800">Detalles de la Operación</h3>
-          <button onClick={onClose} className="btn btn-ghost btn-sm ">
+          <button onClick={onClose} className="btn btn-ghost btn-sm">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -59,7 +68,9 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Tipo de Movimiento </label>
-                <span className={`badge px-2 ${movementType.badge} badge-lg`}>{movementType.label}</span>
+                <span className={`badge px-2 ${movementType.badge} badge-lg`}>
+                  {movementType.label}
+                </span>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Descripción</label>
@@ -124,7 +135,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                     <label className="text-sm font-medium text-gray-500">Método de Pago</label>
                     <div className="flex items-center gap-2">
                       {operation.payment_method_icon && (
-                        <span className=' text-green-700'>
+                        <span className="text-green-700">
                           {handleShowIcon(operation.payment_method_icon)}
                         </span>
                       )}
@@ -169,6 +180,15 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                     <p className="font-mono text-gray-900">{operation.numero_de_comprobante}</p>
                   </div>
                 )}
+
+                {operation.echeq_time && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">E-Cheque</label>
+                    <p className="font-medium text-orange-600">
+                      {operation.echeq_time} días de plazo
+                    </p>
+                  </div>
+                )}
               </div>
 
               {operation.payment_method_requires_reference && !operation.numero_de_comprobante && (
@@ -195,7 +215,9 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
                 </div>
                 {operation.purchase_status && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Estado de la Compra </label>
+                    <label className="text-sm font-medium text-gray-500">
+                      Estado de la Compra{' '}
+                    </label>
                     <span className="badge badge-secondary px-2">{operation.purchase_status}</span>
                   </div>
                 )}
