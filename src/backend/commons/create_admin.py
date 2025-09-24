@@ -3,6 +3,104 @@ from werkzeug.security import generate_password_hash
 from database.database import Database
 
 
+def assign_all_storages_to_user(db, user_id):
+    """
+    Asigna acceso a todas las sucursales existentes al usuario especificado.
+
+    Args:
+        db (Database): Instancia de la base de datos
+        user_id (int): ID del usuario
+    """
+    try:
+        # Obtener todas las sucursales
+        storages = db.get_all_records("storage")
+
+        if not storages:
+            print("   📦 No hay sucursales registradas en el sistema.")
+            return
+
+        print(f"   📦 Asignando acceso a {len(storages)} sucursal(es)...")
+
+        # Asignar cada sucursal al usuario
+        success_count = 0
+        for storage in storages:
+            storage_id = storage.get("id")
+
+            # Verificar si ya existe la relación
+            existing = db.get_record_by_clause(
+                "usersxstorage", "id_user = ? AND id_storage = ?", (user_id, storage_id)
+            )
+
+            if not (existing["success"] and existing["record"]):
+                # Crear la relación usuario-sucursal
+                relation_data = {"id_user": user_id, "id_storage": storage_id}
+
+                result = db.add_record("usersxstorage", relation_data)
+                if result["success"]:
+                    success_count += 1
+                    print(
+                        f"      ✅ Acceso asignado a sucursal: {storage.get('name', f'ID {storage_id}')}"
+                    )
+                else:
+                    print(
+                        f"      ❌ Error asignando sucursal {storage.get('name', f'ID {storage_id}')}: {result.get('message')}"
+                    )
+            else:
+                print(
+                    f"      ℹ️  Ya tiene acceso a sucursal: {storage.get('name', f'ID {storage_id}')}"
+                )
+
+        if success_count > 0:
+            print(f"   🎯 Acceso asignado exitosamente a {success_count} sucursal(es).")
+
+    except Exception as e:
+        print(f"   ❌ Error al asignar sucursales: {str(e)}")
+
+
+def create_default_storage_if_needed(db):
+    """
+    Crea una sucursal por defecto si no existe ninguna.
+
+    Args:
+        db (Database): Instancia de la base de datos
+    """
+    try:
+        # Verificar si existen sucursales
+        storages = db.get_all_records("storage")
+
+        if not storages:
+            print(
+                "   🏪 No hay sucursales registradas. Creando sucursal por defecto..."
+            )
+
+            default_storage = {
+                "name": "Sucursal Principal",
+                "address": "Dirección Principal",
+                "postal_code": "0000",
+                "phone_number": "000-000-0000",
+                "area": "Principal",
+                "description": "Sucursal principal del sistema",
+                "status": "Activo",
+            }
+
+            result = db.add_record("storage", default_storage)
+            if result["success"]:
+                print(f"   ✅ Sucursal por defecto creada con ID: {result['rowid']}")
+                return result["rowid"]
+            else:
+                print(
+                    f"   ❌ Error creando sucursal por defecto: {result.get('message')}"
+                )
+                return None
+        else:
+            print(f"   ℹ️  Ya existen {len(storages)} sucursal(es) en el sistema.")
+            return True
+
+    except Exception as e:
+        print(f"   ❌ Error verificando/creando sucursales: {str(e)}")
+        return None
+
+
 def create_admin():
     """
     Crea un usuario administrador por defecto si no existe.
@@ -18,6 +116,9 @@ def create_admin():
         return True
     else:
         print("📝 Creando usuario administrador por defecto...")
+
+        # Crear sucursal por defecto si no existe ninguna
+        create_default_storage_if_needed(db)
 
         # Crear imagen de perfil por defecto (un pixel transparente en base64)
         default_image = base64.b64decode(
@@ -44,9 +145,14 @@ def create_admin():
         result = db.add_record("users", admin_data)
 
         if result["success"]:
+            user_id = result["rowid"]
             print("🎉 Usuario administrador creado con éxito.")
             print("   Usuario: admin")
             print("   Contraseña: admin123")
+
+            # Asignar acceso a todas las sucursales
+            assign_all_storages_to_user(db, user_id)
+
             print("   ⚠️  IMPORTANTE: Cambie la contraseña después del primer login")
             return True
         else:
@@ -110,11 +216,16 @@ def create_custom_admin(username, password, fullname, email, phone, domicilio, c
     result = db.add_record("users", admin_data)
 
     if result["success"]:
+        user_id = result["rowid"]
         print(f"🎉 Usuario administrador '{username}' creado con éxito.")
+
+        # Asignar acceso a todas las sucursales
+        assign_all_storages_to_user(db, user_id)
+
         return {
             "success": True,
             "message": f"Usuario administrador '{username}' creado exitosamente.",
-            "user_id": result["rowid"],
+            "user_id": user_id,
         }
     else:
         print(
@@ -149,6 +260,38 @@ def list_admins():
     return admins if admins else []
 
 
+def assign_storages_to_existing_user(username):
+    """
+    Asigna acceso a todas las sucursales a un usuario existente.
+
+    Args:
+        username (str): Nombre de usuario
+    """
+    print(f"🔧 Asignando sucursales al usuario: {username}")
+    db = Database()
+
+    # Buscar el usuario
+    user_result = db.get_record_by_clause("users", "username = ?", username)
+
+    if not (user_result["success"] and user_result["record"]):
+        print(f"❌ Usuario '{username}' no encontrado.")
+        return False
+
+    user = user_result["record"]
+    user_id = user.get("id")
+
+    print(f"✅ Usuario encontrado: {user.get('fullname')} (ID: {user_id})")
+
+    # Crear sucursal por defecto si no existe ninguna
+    create_default_storage_if_needed(db)
+
+    # Asignar todas las sucursales
+    assign_all_storages_to_user(db, user_id)
+
+    print("🎯 Proceso completado.")
+    return True
+
+
 if __name__ == "__main__":
     import sys
 
@@ -175,6 +318,14 @@ if __name__ == "__main__":
         elif command == "list":
             list_admins()
 
+        elif command == "assign-storages":
+            if len(sys.argv) != 3:
+                print("Uso: python create_admin.py assign-storages <username>")
+                sys.exit(1)
+
+            username = sys.argv[2]
+            assign_storages_to_existing_user(username)
+
         else:
             print("Comandos disponibles:")
             print(
@@ -185,6 +336,9 @@ if __name__ == "__main__":
             )
             print(
                 "  python create_admin.py list               - Listar administradores"
+            )
+            print(
+                "  python create_admin.py assign-storages <username> - Asignar sucursales a usuario existente"
             )
     else:
         create_admin()
