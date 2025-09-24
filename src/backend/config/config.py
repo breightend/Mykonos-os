@@ -15,11 +15,11 @@ class Config:
     USE_POSTGRES = os.getenv("USE_POSTGRES", "true").lower() == "true"
 
     # PostgreSQL Configuration
-    DB_HOST = os.getenv("DB_HOST", "localhost")
+    DB_HOST = os.getenv("DB_HOST", "192.168.100.65")
     DB_PORT = os.getenv("DB_PORT", "5432")
-    DB_NAME = os.getenv("DB_NAME", "mykonos")
-    DB_USER = os.getenv("DB_USER", "mykonos_user")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "mykonos_password")
+    DB_NAME = os.getenv("DB_NAME", "mykonos_db")
+    DB_USER = os.getenv("DB_USER", "breightend_db")
+    DB_PASSWORD = os.getenv("DB_PASSWORD", "ñmICHIFUS156602")
 
     # SQLAlchemy Configuration
     if USE_POSTGRES:
@@ -30,6 +30,11 @@ class Config:
         SQLALCHEMY_DATABASE_URI = "sqlite:///database.db"  # Legacy SQLite
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Server Configuration
+    SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
+    SERVER_PORT = int(os.getenv("SERVER_PORT", "5000"))
+    DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
     def postgres_config(self):

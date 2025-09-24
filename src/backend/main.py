@@ -2,6 +2,7 @@ import webbrowser
 from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 from commons import create_admin
+from config.config import Config
 from routes.auth import auth_bp
 from routes.usuario_router import usuario_router
 from routes.provider_router import provider_router
@@ -103,7 +104,10 @@ def getData():
 
 
 if __name__ == "__main__":
+    # Initialize config
+    config = Config()
+
     # Inicia un temporizador para abrir el navegador después de 1 segundo
     # threading.Timer(1, open_browser).start()
-    app.run(debug=True, port=5000)
+    app.run(host=config.SERVER_HOST, port=config.SERVER_PORT, debug=config.DEBUG)
     # create_admin.create_admin()
