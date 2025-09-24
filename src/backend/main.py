@@ -1,8 +1,10 @@
 import webbrowser
+import logging
 from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 from commons import create_admin
-from config.config import Config
+from config.config import get_config
+from config.logging_config import setup_logging
 from routes.auth import auth_bp
 from routes.usuario_router import usuario_router
 from routes.provider_router import provider_router
@@ -22,31 +24,45 @@ from routes.payment_methods_router import payment_methods_router
 from routes.banks_router import banks_router
 from routes.statistics_router import statistics_bp
 from routes.files_router import files_bp
+from routes.health import health_bp
+
+# Initialize configuration and logging
+config = get_config()
+setup_logging(config)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
 
-# Add request logging
+# Add request logging (only in development)
 @app.before_request
 def before_request():
-    print(f"🌐 INCOMING REQUEST: {request.method} {request.url}")
-    print(f"🌐 Headers: {dict(request.headers)}")
+    if config.DEBUG:
+        logger.debug(f"🌐 INCOMING REQUEST: {request.method} {request.url}")
+        logger.debug(f"🌐 Headers: {dict(request.headers)}")
 
 
-# Add response logging
+# Add response logging (only in development)
 @app.after_request
 def after_request(response):
-    print(f"🌐 OUTGOING RESPONSE: {response.status_code}")
+    if config.DEBUG:
+        logger.debug(f"🌐 OUTGOING RESPONSE: {response.status_code}")
     return response
 
 
-# Comprehensive CORS configuration to handle all preflight requests
+# CORS configuration based on environment
+cors_origins = (
+    config.CORS_ORIGINS
+    if hasattr(config, "CORS_ORIGINS")
+    else ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
+)
+
 CORS(
     app,
-    origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
+    origins=cors_origins,
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-    supports_credentials=False,  # Changed to False to avoid conflicts with wildcard origins
+    supports_credentials=False,
     expose_headers=["Content-Type", "Authorization"],
 )
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -104,10 +120,22 @@ def getData():
 
 
 if __name__ == "__main__":
-    # Initialize config
-    config = Config()
+    # Register health check routes
+    app.register_blueprint(health_bp, url_prefix="/api")
 
-    # Inicia un temporizador para abrir el navegador después de 1 segundo
-    # threading.Timer(1, open_browser).start()
-    app.run(host=config.SERVER_HOST, port=config.SERVER_PORT, debug=config.DEBUG)
-    # create_admin.create_admin()
+    # Log startup information
+    logger.info(f"Starting Mykonos OS backend in {config.ENVIRONMENT} environment")
+    logger.info(f"Server will run on {config.SERVER_HOST}:{config.SERVER_PORT}")
+    logger.info(f"Debug mode: {config.DEBUG}")
+
+    # Only open browser in development
+    if config.DEBUG:
+        # Inicia un temporizador para abrir el navegador después de 1 segundo
+        # threading.Timer(1, open_browser).start()
+        pass
+
+    try:
+        app.run(host=config.SERVER_HOST, port=config.SERVER_PORT, debug=config.DEBUG)
+    except Exception as e:
+        logger.error(f"Failed to start server: {e}")
+        raise

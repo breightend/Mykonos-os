@@ -1,8 +1,25 @@
-flask
-flask-jwt-extended
-flask-cors
-flask-sqlalchemy
-Pillow
-psycopg2-binary
-python-dotenv
-python-barcode[images]
+flask==3.0.0
+flask-jwt-extended==4.6.0
+flask-cors==4.0.0
+flask-sqlalchemy==3.1.1
+Pillow==10.1.0
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+python-barcode[images]==0.15.1
+werkzeug==3.0.1
+
+# Production server
+gunicorn==21.2.0
+
+# Monitoring and logging
+prometheus-flask-exporter==0.23.0
+
+# Database migrations
+alembic==1.13.1
+
+# Security
+bcrypt==4.1.2
+
+# Performance
+redis==5.0.1
+gevent==23.9.1
