@@ -54,7 +54,13 @@ def after_request(response):
 cors_origins = (
     config.CORS_ORIGINS
     if hasattr(config, "CORS_ORIGINS")
-    else ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
+    else [
+        "http://190.3.63.10:5173",
+        "http://190.3.63.10:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+    ]
 )
 
 CORS(

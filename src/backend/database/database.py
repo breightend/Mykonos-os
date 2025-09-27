@@ -800,6 +800,9 @@ DATABASE_TABLES = {
 config = Config()
 DATABASE_CONFIG = config.postgres_config
 
+# Smart database connection manager
+SMART_DB_CONNECTION = None
+
 # Legacy SQLite path (kept for compatibility)
 DATABASE_PATH = "./database/mykonos.db"
 
@@ -830,15 +833,41 @@ class Database:
         self.create_tables()
 
     def _init_postgres(self):
-        """Initialize PostgreSQL connection"""
+        """Initialize PostgreSQL connection with smart host detection"""
+        global SMART_DB_CONNECTION
+
         try:
-            # Test connection
+            # Try smart connection first
+            if config.USE_SMART_DB_CONNECTION:
+                print("🧠 Usando conexión inteligente a la base de datos...")
+                SMART_DB_CONNECTION = config.get_smart_db_connection()
+
+                if SMART_DB_CONNECTION:
+                    # Test smart connection
+                    conn = SMART_DB_CONNECTION.get_connection()
+                    conn.close()
+
+                    host_info = SMART_DB_CONNECTION.get_current_host_info()
+                    if host_info:
+                        print(
+                            f"✅ Conexión PostgreSQL exitosa usando: {host_info['description']}"
+                        )
+                    else:
+                        print("✅ Conexión PostgreSQL exitosa")
+                    return
+
+            # Fallback to traditional connection
+            print("🔄 Usando conexión tradicional a la base de datos...")
             conn = psycopg2.connect(**DATABASE_CONFIG)
             conn.close()
             print("✅ Conexión a PostgreSQL exitosa")
+
         except psycopg2.Error as e:
             print(f"❌ Error al conectar con PostgreSQL: {e}")
-            print("💡 Asegúrate de que el contenedor Docker esté ejecutándose")
+            print("💡 Verifica que:")
+            print("   - El servidor PostgreSQL esté ejecutándose")
+            print("   - Los puertos estén abiertos (5432)")
+            print("   - La configuración de red permita conexiones externas")
             raise
 
     def _init_sqlite(self):
@@ -864,7 +893,12 @@ class Database:
         """
         try:
             if self.use_postgres:
-                conn = psycopg2.connect(**DATABASE_CONFIG)
+                # Use smart connection if available
+                if SMART_DB_CONNECTION:
+                    conn = SMART_DB_CONNECTION.get_connection()
+                else:
+                    conn = psycopg2.connect(**DATABASE_CONFIG)
+
                 # Set autocommit for better compatibility
                 conn.autocommit = False
                 return conn

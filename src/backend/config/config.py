@@ -16,17 +16,20 @@ class BaseConfig:
     # Database Configuration
     USE_POSTGRES = os.getenv("USE_POSTGRES", "true").lower() == "true"
 
-    # PostgreSQL Configuration
-    DB_HOST = os.getenv("DB_HOST", "192.168.100.65")
-    DB_PORT = os.getenv("DB_PORT", "5432")
+
     DB_NAME = os.getenv("DB_NAME", "mykonos_db")
     DB_USER = os.getenv("DB_USER", "breightend_db")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "ñmICHIFUS156602")
 
+    # Smart connection enabled by default
+    USE_SMART_DB_CONNECTION = (
+        os.getenv("USE_SMART_DB_CONNECTION", "true").lower() == "true"
+    )
+
     # SQLAlchemy Configuration
     if USE_POSTGRES:
         SQLALCHEMY_DATABASE_URI = (
-            f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+            f"postgresql://{DB_USER}:{DB_PASSWORD}@localhost:/{DB_NAME}"
         )
     else:
         SQLALCHEMY_DATABASE_URI = "sqlite:///database.db"  # Legacy SQLite
@@ -50,7 +53,8 @@ class BaseConfig:
 
     # CORS Configuration
     CORS_ORIGINS = os.getenv(
-        "CORS_ORIGINS", "http://localhost:3000,http://localhost:5173"
+        "CORS_ORIGINS",
+        "http://190.3.63.10:3000,http://190.3.63.10:5173,http://localhost:3000,http://localhost:5173",
     ).split(",")
 
     @property
@@ -63,6 +67,25 @@ class BaseConfig:
             "user": self.DB_USER,
             "password": self.DB_PASSWORD,
         }
+
+    @classmethod
+    def get_smart_db_connection(cls):
+        """Get smart database connection manager"""
+        config_instance = cls()
+
+        if not config_instance.USE_SMART_DB_CONNECTION:
+            return None
+
+        from config.smart_db_connection import SmartDatabaseConnection
+
+        base_config = {
+            "port": config_instance.DB_PORT,
+            "database": config_instance.DB_NAME,
+            "user": config_instance.DB_USER,
+            "password": config_instance.DB_PASSWORD,
+        }
+
+        return SmartDatabaseConnection(base_config)
 
 
 class DevelopmentConfig(BaseConfig):

@@ -3,6 +3,5 @@ dist
 out
 .DS_Store
 .eslintcache
-.env
 *.log*
 __pycache__
