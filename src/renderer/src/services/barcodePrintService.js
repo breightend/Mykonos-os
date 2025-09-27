@@ -3,7 +3,7 @@
  * Maneja la comunicación con el backend para generar e imprimir códigos
 */
 
-const API_BASE_URL = 'http://localhost:5000/api'
+import { API_BASE_URL } from '../config/apiConfig.js'
 
 export class BarcodePrintService {
     /**

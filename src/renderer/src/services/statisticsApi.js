@@ -1,5 +1,7 @@
 // Statistics API service
-const API_BASE_URL = 'http://localhost:5000/api/statistics'
+import { API_ENDPOINTS } from '../config/apiConfig.js'
+
+const API_BASE_URL = API_ENDPOINTS.STATISTICS
 
 export const statisticsApi = {
     // Get dashboard overview statistics

@@ -1,7 +1,9 @@
 // Servicio de debugging para comparar backend vs frontend
+import { API_BASE_URL } from '../config/apiConfig.js'
+
 class DebugService {
   constructor() {
-    this.baseURL = 'http://localhost:5000/api'
+    this.baseURL = API_BASE_URL
   }
 
   async debugVariantBarcodes() {
@@ -111,7 +113,7 @@ class DebugService {
       console.log('\n🧪 PROBANDO inventoryService.getProductsSummary():')
 
       // Importar el servicio de inventario
-      const { inventoryService } = await import('./inventory/inventoryService.js')
+      const { inventoryService } = await import('./Inventory/inventoryService.js')
 
       const summaryResponse = await inventoryService.getProductsSummary()
       console.log('📊 RESPUESTA DE getProductsSummary:', summaryResponse)

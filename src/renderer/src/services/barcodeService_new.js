@@ -1,6 +1,8 @@
 // Servicio para manejar códigos de barras desde el frontend
+import { API_ENDPOINTS } from '../config/apiConfig.js'
+
 class BarcodeService {
-    constructor(baseUrl = 'http://localhost:5000/api/barcode') {
+    constructor(baseUrl = API_ENDPOINTS.BARCODE) {
         this.baseUrl = baseUrl
     }
 

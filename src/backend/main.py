@@ -50,22 +50,12 @@ def after_request(response):
     return response
 
 
-# CORS configuration based on environment
-cors_origins = (
-    config.CORS_ORIGINS
-    if hasattr(config, "CORS_ORIGINS")
-    else [
-        "http://190.3.63.10:5173",
-        "http://190.3.63.10:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-    ]
-)
-
+# CORS configuration optimized for Electron desktop application
+# Para aplicaciones de escritorio, permitimos cualquier origen ya que la seguridad
+# se maneja a través de la autenticación JWT, no por restricciones de origen
 CORS(
     app,
-    origins=cors_origins,
+    resources={r"/*": {"origins": "*"}},
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     supports_credentials=False,

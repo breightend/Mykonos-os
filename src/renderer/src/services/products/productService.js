@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../config/apiConfig.js'
 
-const API_BASE_URL = 'http://localhost:5000/api/product/'
+const API_BASE_URL = API_ENDPOINTS.PRODUCT
 
 // Crear un producto con sus relaciones de talles y colores
 export default async function postData(data) {

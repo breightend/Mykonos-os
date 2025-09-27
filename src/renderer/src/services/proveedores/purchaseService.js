@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../config/apiConfig.js'
 
-const API_BASE_URL = 'http://localhost:5000/api/purchases'
+const API_BASE_URL = API_ENDPOINTS.PURCHASES
 
 
 // Crear una nueva compra

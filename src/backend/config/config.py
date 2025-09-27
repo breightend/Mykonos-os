@@ -16,7 +16,10 @@ class BaseConfig:
     # Database Configuration
     USE_POSTGRES = os.getenv("USE_POSTGRES", "true").lower() == "true"
 
-
+    # PostgreSQL Configuration
+    DB_HOST = os.getenv("DB_HOST", "localhost")  # Database local en el mismo servidor
+    DB_PUBLIC_HOST = os.getenv("DB_PUBLIC_HOST", "127.0.0.1")  # Fallback local
+    DB_PORT = os.getenv("DB_PORT", "5432")
     DB_NAME = os.getenv("DB_NAME", "mykonos_db")
     DB_USER = os.getenv("DB_USER", "breightend_db")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "ñmICHIFUS156602")
@@ -29,7 +32,7 @@ class BaseConfig:
     # SQLAlchemy Configuration
     if USE_POSTGRES:
         SQLALCHEMY_DATABASE_URI = (
-            f"postgresql://{DB_USER}:{DB_PASSWORD}@localhost:/{DB_NAME}"
+            f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
         )
     else:
         SQLALCHEMY_DATABASE_URI = "sqlite:///database.db"  # Legacy SQLite
@@ -51,11 +54,8 @@ class BaseConfig:
     # Security
     BCRYPT_LOG_ROUNDS = int(os.getenv("BCRYPT_LOG_ROUNDS", "12"))
 
-    # CORS Configuration
-    CORS_ORIGINS = os.getenv(
-        "CORS_ORIGINS",
-        "http://190.3.63.10:3000,http://190.3.63.10:5173,http://localhost:3000,http://localhost:5173",
-    ).split(",")
+    # CORS Configuration - Se configura en main.py para aplicaciones Electron
+    CORS_ALLOW_ALL_ORIGINS = True  # Para aplicaciones de escritorio
 
     @property
     def postgres_config(self):

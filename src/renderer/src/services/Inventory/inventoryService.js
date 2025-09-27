@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../config/apiConfig.js'
 
-const API_URL = 'http://localhost:5000/api/inventory'
+const API_URL = API_ENDPOINTS.INVENTORY
 
 /**
  * Servicio para manejar operaciones de inventario
