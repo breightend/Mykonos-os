@@ -31,7 +31,7 @@ export const salesService = {
     async getProductByVariantBarcodeForExchange(variantBarcode) {
         try {
             const response = await axios.get(
-                `${API_URL}/sales/product-by-variant-barcode-exchange/${variantBarcode}`
+                `${API_ENDPOINTS.SALES}/product-by-variant-barcode-exchange/${variantBarcode}`
             )
             return response.data
         } catch (error) {
@@ -50,7 +50,7 @@ export const salesService = {
      */
     async checkVariantStock(productId, sizeId, colorId, branchId) {
         try {
-            const response = await axios.get(`${API_URL}/sales/variant-stock`, {
+            const response = await axios.get(`${API_ENDPOINTS.SALES}/variant-stock`, {
                 params: {
                     product_id: productId,
                     size_id: sizeId,
@@ -75,7 +75,7 @@ export const salesService = {
             console.log('🔍 Enviando datos de venta al backend:', saleData)
 
             // Usar endpoint real ahora que sabemos que los datos llegan bien
-            const response = await axios.post(`${API_URL}/sales/create-sale`, saleData, {
+            const response = await axios.post(`${API_ENDPOINTS.SALES}/create-sale`, saleData, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -126,7 +126,7 @@ export const salesService = {
      */
     async getSaleDetails(saleId) {
         try {
-            const response = await axios.get(`${API_URL}/sales/${saleId}/details`)
+            const response = await axios.get(`${API_ENDPOINTS.SALES}/${saleId}/details`)
 
             console.log('✅ Detalles de venta obtenidos:', response.data)
             return response.data

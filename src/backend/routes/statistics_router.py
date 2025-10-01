@@ -37,10 +37,10 @@ def get_dashboard_stats():
             filters.append("storage_id = %s")
             params.append(storage_id)
         if start_date:
-            filters.append("DATE(sale_date) >= %s")
+            filters.append("sale_date >= %s")
             params.append(start_date)
         if end_date:
-            filters.append("DATE(sale_date) <= %s")
+            filters.append("sale_date <= %s")
             params.append(end_date)
 
         sales_where = (
@@ -97,10 +97,10 @@ def get_dashboard_stats():
         purchase_params = []
 
         if start_date:
-            purchase_filters.append("DATE(purchase_date) >= %s")
+            purchase_filters.append("purchase_date >= %s")
             purchase_params.append(start_date)
         if end_date:
-            purchase_filters.append("DATE(purchase_date) <= %s")
+            purchase_filters.append("purchase_date <= %s")
             purchase_params.append(end_date)
 
         purchase_where = (
@@ -220,14 +220,14 @@ def get_sales_by_month():
 
         query = f"""
             SELECT 
-                DATE_TRUNC('month', s.sale_date::timestamp) as month,
+                SUBSTR(s.sale_date, 1, 7) as month,
                 COUNT(*) as sales_count,
                 COALESCE(SUM(s.total), 0) as total_revenue,
                 COALESCE(SUM(sd.quantity), 0) as products_sold
             FROM sales s
             LEFT JOIN sales_detail sd ON s.id = sd.sale_id AND sd.quantity > 0
             {where_clause}
-            GROUP BY DATE_TRUNC('month', s.sale_date::timestamp)
+            GROUP BY SUBSTR(s.sale_date, 1, 7)
             ORDER BY month
         """
 
@@ -237,9 +237,12 @@ def get_sales_by_month():
         monthly_data = []
         for row in result:
             if isinstance(row, dict):
-                month_date = row.get("month")
-                if isinstance(month_date, str):
-                    month_date = datetime.strptime(month_date, "%Y-%m-%d")
+                month_str = row.get("month")
+                if isinstance(month_str, str) and len(month_str) >= 7:
+                    # month_str is in format YYYY-MM, add day to make it parseable
+                    month_date = datetime.strptime(month_str + "-01", "%Y-%m-%d")
+                else:
+                    month_date = None
 
                 monthly_data.append(
                     {
@@ -255,9 +258,11 @@ def get_sales_by_month():
                     }
                 )
             else:
-                month_date = row[0]
-                if isinstance(month_date, str):
-                    month_date = datetime.strptime(month_date, "%Y-%m-%d")
+                month_str = row[0]
+                if isinstance(month_str, str) and len(month_str) >= 7:
+                    month_date = datetime.strptime(month_str + "-01", "%Y-%m-%d")
+                else:
+                    month_date = None
 
                 monthly_data.append(
                     {
@@ -305,10 +310,10 @@ def get_sales_by_category():
             filters.append("s.storage_id = %s")
             params.append(storage_id)
         if start_date:
-            filters.append("DATE(s.sale_date) >= %s")
+            filters.append("s.sale_date >= %s")
             params.append(start_date)
         if end_date:
-            filters.append("DATE(s.sale_date) <= %s")
+            filters.append("s.sale_date <= %s")
             params.append(end_date)
 
         where_clause = f"WHERE {' AND '.join(filters)}"
@@ -402,10 +407,10 @@ def get_top_products():
             filters.append("s.storage_id = %s")
             params.append(storage_id)
         if start_date:
-            filters.append("DATE(s.sale_date) >= %s")
+            filters.append("s.sale_date >= %s")
             params.append(start_date)
         if end_date:
-            filters.append("DATE(s.sale_date) <= %s")
+            filters.append("s.sale_date <= %s")
             params.append(end_date)
 
         where_clause = f"WHERE {' AND '.join(filters)}"
@@ -504,11 +509,11 @@ def get_sales_vs_purchases():
 
         sales_query = f"""
             SELECT 
-                DATE_TRUNC('month', sale_date) as month,
+                SUBSTR(sale_date, 1, 7) as month,
                 COALESCE(SUM(total), 0) as sales_revenue
             FROM sales
             {sales_where}
-            GROUP BY DATE_TRUNC('month', sale_date)
+            GROUP BY SUBSTR(sale_date, 1, 7)
             ORDER BY month
         """
 
@@ -540,7 +545,7 @@ def get_sales_vs_purchases():
             if isinstance(row, dict):
                 month = row.get("month")
                 if isinstance(month, str):
-                    month = datetime.strptime(month, "%Y-%m-%d")
+                    month = datetime.strptime(month + "-01", "%Y-%m-%d")
                 month_key = month.strftime("%Y-%m")
                 monthly_comparison[month_key] = {
                     "month": month.strftime("%b %Y"),
@@ -551,7 +556,7 @@ def get_sales_vs_purchases():
             else:
                 month = row[0]
                 if isinstance(month, str):
-                    month = datetime.strptime(month, "%Y-%m-%d")
+                    month = datetime.strptime(month + "-01", "%Y-%m-%d")
                 month_key = month.strftime("%Y-%m")
                 monthly_comparison[month_key] = {
                     "month": month.strftime("%b %Y"),
@@ -565,7 +570,17 @@ def get_sales_vs_purchases():
             if isinstance(row, dict):
                 month = row.get("month")
                 if isinstance(month, str):
-                    month = datetime.strptime(month, "%Y-%m-%d")
+                    # Handle both YYYY-MM format and YYYY-MM-DD format
+                    if len(month) == 7:  # YYYY-MM format
+                        month = datetime.strptime(month + "-01", "%Y-%m-%d")
+                    else:  # Full date format
+                        month = datetime.strptime(month, "%Y-%m-%d")
+                elif hasattr(month, "strftime"):
+                    # Already a datetime object from TIMESTAMP field
+                    pass
+                else:
+                    continue  # Skip invalid month data
+
                 month_key = month.strftime("%Y-%m")
                 if month_key in monthly_comparison:
                     monthly_comparison[month_key]["purchases"] = float(
@@ -581,7 +596,17 @@ def get_sales_vs_purchases():
             else:
                 month = row[0]
                 if isinstance(month, str):
-                    month = datetime.strptime(month, "%Y-%m-%d")
+                    # Handle both YYYY-MM format and YYYY-MM-DD format
+                    if len(month) == 7:  # YYYY-MM format
+                        month = datetime.strptime(month + "-01", "%Y-%m-%d")
+                    else:  # Full date format
+                        month = datetime.strptime(month, "%Y-%m-%d")
+                elif hasattr(month, "strftime"):
+                    # Already a datetime object from TIMESTAMP field
+                    pass
+                else:
+                    continue  # Skip invalid month data
+
                 month_key = month.strftime("%Y-%m")
                 if month_key in monthly_comparison:
                     monthly_comparison[month_key]["purchases"] = float(row[1])
@@ -629,10 +654,10 @@ def get_profit_analysis():
             filters.append("s.storage_id = %s")
             params.append(storage_id)
         if start_date:
-            filters.append("DATE(s.sale_date) >= %s")
+            filters.append("s.sale_date >= %s")
             params.append(start_date)
         if end_date:
-            filters.append("DATE(s.sale_date) <= %s")
+            filters.append("s.sale_date <= %s")
             params.append(end_date)
 
         where_clause = f"WHERE {' AND '.join(filters)}"
@@ -713,19 +738,14 @@ def get_purchases_by_month():
     Get purchases data grouped by month for the last 12 months
     """
     try:
-        storage_id = request.args.get("storage_id", type=int)
         db = Database()
 
         # Get last 12 months
         end_date = datetime.now()
         start_date = end_date - timedelta(days=365)
 
-        filters = ["status = %s"]
-        params = ["Completada"]
-
-        if storage_id:
-            filters.append("storage_id = %s")
-            params.append(storage_id)
+        filters = []
+        params = []
 
         filters.append("purchase_date >= %s")
         params.append(start_date.strftime("%Y-%m-%d"))
@@ -734,14 +754,14 @@ def get_purchases_by_month():
 
         query = f"""
             SELECT 
-                DATE_TRUNC('month', p.purchase_date::timestamp) as month,
+                DATE_TRUNC('month', p.purchase_date) as month,
                 COUNT(*) as purchase_count,
                 COALESCE(SUM(p.total), 0) as total_spent,
                 COALESCE(SUM(pd.quantity), 0) as products_purchased
             FROM purchases p
-            LEFT JOIN purchase_detail pd ON p.id = pd.purchase_id AND pd.quantity > 0
+            LEFT JOIN purchases_detail pd ON p.id = pd.purchase_id AND pd.quantity > 0
             {where_clause}
-            GROUP BY DATE_TRUNC('month', p.purchase_date::timestamp)
+            GROUP BY DATE_TRUNC('month', p.purchase_date)
             ORDER BY month
         """
 
