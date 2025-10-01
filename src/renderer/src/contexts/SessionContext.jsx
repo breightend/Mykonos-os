@@ -26,7 +26,25 @@ export const SessionProvider = ({ children }) => {
       setLoading(true)
       const sessionToken = localStorage.getItem('session_token')
 
+      console.log('🔍 Checking session with server:', API_ENDPOINTS.AUTH)
+
+      // First, test basic connectivity to the server
+      try {
+        const healthResponse = await fetch(`${API_ENDPOINTS.HEALTH}`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000) // 5 second timeout for health check
+        })
+        console.log('🏥 Health check status:', healthResponse.status)
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json()
+          console.log('🏥 Health check data:', healthData)
+        }
+      } catch (healthError) {
+        console.log('❌ Health check failed:', healthError.message)
+      }
+
       if (!sessionToken) {
+        console.log('❌ No session token found')
         setLoading(false)
         return
       }
@@ -34,6 +52,8 @@ export const SessionProvider = ({ children }) => {
       // Add timeout to prevent hanging requests
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+      console.log('🌐 Attempting to connect to server:', `${API_ENDPOINTS.AUTH}/validate`)
 
       const response = await fetch(`${API_ENDPOINTS.AUTH}/validate`, {
         method: 'POST',
@@ -45,6 +65,8 @@ export const SessionProvider = ({ children }) => {
       })
 
       clearTimeout(timeoutId)
+
+      console.log('✅ Server response status:', response.status)
 
       const data = await response.json()
 
