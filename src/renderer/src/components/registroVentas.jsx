@@ -17,6 +17,7 @@ import { DayPicker } from 'react-day-picker'
 import { es } from 'react-day-picker/locale'
 import { useSession } from '../contexts/SessionContext'
 import { salesService } from '../services/salesService'
+import { API_ENDPOINTS, API_BASE_URL } from '../config/apiConfig.js'
 import toast, { Toaster } from 'react-hot-toast'
 import '../assets/modal-improvements.css'
 import StatCard from '../componentes especificos/statRegistro'
@@ -156,7 +157,7 @@ export default function RegistroVentas() {
 
     try {
       setSearchingGift(true)
-      const response = await fetch(`http://localhost:5000/api/barcode/search-gift/${barcode}`)
+      const response = await fetch(`${API_ENDPOINTS.BARCODE}/search-gift/${barcode}`)
       const data = await response.json()
 
       if (response.ok && data.success) {
@@ -189,7 +190,7 @@ export default function RegistroVentas() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/sales/search-by-product?` +
+        `${API_ENDPOINTS.SALES}/search-by-product?` +
           new URLSearchParams({
             query: searchQuery.trim(),
             storage_id: currentStorage?.id || 1,
@@ -730,7 +731,7 @@ export default function RegistroVentas() {
           </div>
 
           {/* Botones de acción */}
-          <div className="flex gap-2 space-y-2 mb-2">
+          <div className="mb-2 flex gap-2 space-y-2">
             {/* Botón para limpiar filtros */}
             {(range || searchTerm) && (
               <button
@@ -841,7 +842,7 @@ export default function RegistroVentas() {
         {/* Modal de Detalles de Venta */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg p-2 bg-white shadow-2xl">
+            <div className="mx-4 my-8 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-lg bg-white p-2 shadow-2xl">
               {/* Sticky header */}
               <div>
                 <div className="sticky top-0 z-10 border-b border-base-300 bg-white p-6">

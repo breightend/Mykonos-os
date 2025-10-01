@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import { API_ENDPOINTS } from '../config/apiConfig.js'
 
 const SessionContext = createContext()
 
@@ -34,7 +35,7 @@ export const SessionProvider = ({ children }) => {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
-      const response = await fetch('http://localhost:5000/api/auth/validate', {
+      const response = await fetch(`${API_ENDPOINTS.AUTH}/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -81,7 +82,7 @@ export const SessionProvider = ({ children }) => {
       setLoading(true)
       setError(null)
 
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_ENDPOINTS.AUTH}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -122,7 +123,7 @@ export const SessionProvider = ({ children }) => {
       const sessionToken = localStorage.getItem('session_token')
 
       if (sessionToken) {
-        await fetch('http://localhost:5000/api/auth/logout', {
+        await fetch(`${API_ENDPOINTS.AUTH}/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -201,7 +202,7 @@ export const SessionProvider = ({ children }) => {
         throw new Error('No hay token de sesión')
       }
 
-      const response = await fetch('http://localhost:5000/api/auth/change-storage', {
+      const response = await fetch(`${API_ENDPOINTS.AUTH}/change-storage`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

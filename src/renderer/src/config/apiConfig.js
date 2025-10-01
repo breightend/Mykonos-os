@@ -9,8 +9,8 @@ const isDevelopment = !isProduction
 
 // URL del servidor backend
 export const API_BASE_URL = isDevelopment
-    ? 'http://190.3.63.10:5000'  // IP fija para desarrollo
-    : 'http://190.3.63.10:8080'  // IP fija para producción
+    ? 'http://190.3.63.58:8000'  // Puerto 8000 donde está corriendo el backend
+    : 'http://190.3.63.58:8000'  // Puerto 8000 para producción también
 
 // URLs específicas por servicio
 export const API_ENDPOINTS = {
