@@ -12,12 +12,13 @@ import {
   PackageOpen,
   Trash2
 } from 'lucide-react'
-import { inventoryService } from '../../services/inventory/inventoryService'
+import { inventoryService } from '../../services/Inventory/inventoryService'
 import { desvincularProductoDeTienda } from '../../services/products/productService'
 import BarcodeService from '../../services/barcodeService'
 import { useLocation } from 'wouter'
 import toast, { Toaster } from 'react-hot-toast'
 import { getCurrentBranchId } from '../../utils/posUtils'
+import { API_ENDPOINTS } from '../../config/apiConfig.js'
 const ProductDetailModal = ({ isOpen, onClose, productId }) => {
   const [productDetails, setProductDetails] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -51,7 +52,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId }) => {
 
           // Configurar URL de imagen si el producto tiene imagen
           if (response.data.has_image) {
-            const imageUrl = `http://localhost:5000/api/product/${productId}/image`
+            const imageUrl = `${API_ENDPOINTS.PRODUCT}/${productId}/image`
             console.log('🖼️ Configurando URL de imagen:', {
               productId: productId,
               has_image: response.data.has_image,

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 import { fetchProductos } from '../../services/products/productService'
+import { API_ENDPOINTS } from '../../config/apiConfig.js'
 import postData from '../../services/products/productService'
 import { createPurchase } from '../../services/proveedores/purchaseService'
 import { fetchProviderById } from '../../services/proveedores/proveedorService'
@@ -143,9 +144,7 @@ export default function AgregarCompraProveedor() {
     try {
       console.log('🔍 Cargando variantes existentes del producto:', productId)
 
-      const response = await fetch(
-        `http://localhost:5000/api/inventory/product-variants/${productId}`
-      )
+      const response = await fetch(`${API_ENDPOINTS.INVENTORY}/product-variants/${productId}`)
       const data = await response.json()
 
       if (data.status === 'success' && data.data) {
@@ -320,7 +319,7 @@ export default function AgregarCompraProveedor() {
       console.log('🔍 Buscando producto por código de barras para recompra:', barcodeStr)
 
       const response = await fetch(
-        `http://localhost:5000/api/inventory/search-by-barcode?barcode=${encodeURIComponent(barcodeStr)}`
+        `${API_ENDPOINTS.INVENTORY}/search-by-barcode?barcode=${encodeURIComponent(barcodeStr)}`
       )
       const data = await response.json()
 
@@ -445,19 +444,16 @@ export default function AgregarCompraProveedor() {
       if (updateProductCost && costPrice !== productToAdd.cost) {
         console.log('🔄 Actualizando costo del producto en la base de datos...')
 
-        const updateResponse = await fetch(
-          `http://localhost:5000/api/inventory/update-product-cost`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              product_id: productToAdd.id,
-              new_cost: costPrice
-            })
-          }
-        )
+        const updateResponse = await fetch(`${API_ENDPOINTS.INVENTORY}/update-product-cost`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            product_id: productToAdd.id,
+            new_cost: costPrice
+          })
+        })
 
         if (updateResponse.ok) {
           console.log('✅ Costo del producto actualizado exitosamente')

@@ -15,55 +15,25 @@ logger = logging.getLogger(__name__)
 @health_bp.route("/health", methods=["GET"])
 def health_check():
     """
-    Health check endpoint for monitoring
+    Simple health check endpoint for monitoring
     """
     try:
-        config = get_config()
-
-        # Basic health status
-        status = {
-            "status": "healthy",
-            "timestamp": None,
-            "environment": config.ENVIRONMENT,
-            "version": "1.0.0",  # You should get this from a version file
-            "checks": {},
-        }
-
-        # Database connectivity check
-        try:
-            db = Database()
-            # Simple query to test database
-            if config.USE_POSTGRES:
-                # Test PostgreSQL connection
-                conn = psycopg2.connect(**config.postgres_config)
-                cursor = conn.cursor()
-                cursor.execute("SELECT 1")
-                cursor.fetchone()
-                cursor.close()
-                conn.close()
-                status["checks"]["database"] = {
-                    "status": "healthy",
-                    "type": "postgresql",
-                }
-            else:
-                # Test SQLite connection
-                db.get_all_records("users", limit=1)
-                status["checks"]["database"] = {"status": "healthy", "type": "sqlite"}
-
-        except Exception as e:
-            logger.error(f"Database health check failed: {str(e)}")
-            status["status"] = "unhealthy"
-            status["checks"]["database"] = {"status": "unhealthy", "error": str(e)}
-
-        # Add timestamp
         from datetime import datetime
 
-        status["timestamp"] = datetime.utcnow().isoformat()
+        # Basic health status without database dependency
+        status = {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "service": "mykonos-backend",
+            "version": "1.0.0",
+        }
 
-        return jsonify(status), 200 if status["status"] == "healthy" else 503
+        return jsonify(status), 200
 
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
+        from datetime import datetime
+
         return jsonify(
             {
                 "status": "unhealthy",

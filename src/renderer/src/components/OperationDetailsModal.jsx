@@ -9,6 +9,7 @@ import {
   HandCoins
 } from 'lucide-react'
 import { formatCurrency, formatMovementType } from '../services/proveedores/accountMovementsService'
+import { API_ENDPOINTS } from '../config/apiConfig.js'
 
 export default function OperationDetailsModal({ operation, isOpen, onClose }) {
   if (!isOpen || !operation) return null
@@ -19,7 +20,7 @@ export default function OperationDetailsModal({ operation, isOpen, onClose }) {
     if (operation.numero_de_comprobante) {
       // Simular descarga - puedes implementar la lógica real aquí
       const link = document.createElement('a')
-      link.href = `http://localhost:5000/api/files/comprobante/${operation.numero_de_comprobante}`
+      link.href = `${API_ENDPOINTS.FILES}/comprobante/${operation.numero_de_comprobante}`
       link.download = `comprobante_${operation.numero_de_comprobante}.pdf`
       document.body.appendChild(link)
       link.click()

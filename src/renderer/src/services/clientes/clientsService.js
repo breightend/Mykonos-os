@@ -1,8 +1,10 @@
 import axios from "axios";
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
+
 //Anda
 export async function fetchCliente() {
     try {
-        const response = await axios.get("http://localhost:5000/api/client/");
+        const response = await axios.get(`${API_ENDPOINTS.CLIENT}/`);
         return response.data;
     } catch (error) {
         console.error("Error fetching cliente:", error);
@@ -12,7 +14,7 @@ export async function fetchCliente() {
 //Anda
 export async function fetchClienteById(id) {
     try {
-        const response = await axios.get(`http://localhost:5000/api/client/${id}`,);
+        const response = await axios.get(`${API_ENDPOINTS.CLIENT}/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching cliente by ID:", error);
@@ -22,7 +24,7 @@ export async function fetchClienteById(id) {
 //Anda
 export async function postData(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/client/", data);
+        const response = await axios.post(`${API_ENDPOINTS.CLIENT}/`, data);
         return response.data;
     } catch (error) {
         console.error("Error posting data:", error);
@@ -32,7 +34,7 @@ export async function postData(data) {
 //Anda
 export async function putData(id, data) {
     try {
-        const response = await axios.put(`http://localhost:5000/api/client/${id}`, data);
+        const response = await axios.put(`${API_ENDPOINTS.CLIENT}/${id}`, data);
         return response.data;
     } catch (error) {
         console.error("Error updating data:", error);
@@ -42,7 +44,7 @@ export async function putData(id, data) {
 //Anda
 export async function deleteData(id) {
     try {
-        const response = await axios.delete(`http://localhost:5000/api/client/${id}`);
+        const response = await axios.delete(`${API_ENDPOINTS.CLIENT}/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting data:", error);

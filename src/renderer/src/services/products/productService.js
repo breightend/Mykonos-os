@@ -1,12 +1,18 @@
 import axios from 'axios'
-import { API_ENDPOINTS } from '../../config/apiConfig.js'
+import { API_ENDPOINTS, apiClient } from '../../config/apiConfig.js'
+import { cacheService, CACHE_TTL } from '../cacheService.js'
 
 const API_BASE_URL = API_ENDPOINTS.PRODUCT
 
 // Crear un producto con sus relaciones de talles y colores
 export default async function postData(data) {
     try {
-        const response = await axios.post(API_BASE_URL, data)
+        const response = await apiClient.post('/api/product', data)
+
+        // Invalidar caché de productos después de crear uno nuevo
+        cacheService.delete('products:all')
+        console.log('🔄 Cache invalidated: products after create')
+
         return response.data
     } catch (e) {
         console.error('Error:', e)
@@ -14,26 +20,28 @@ export default async function postData(data) {
     }
 }
 
-// Obtener todos los productos
+// Obtener todos los productos (con caché)
 export async function fetchProductos() {
-    try {
-        const response = await axios.get(API_BASE_URL)
-        return response.data
-    } catch (error) {
-        console.log(error)
-        throw error
-    }
+    return cacheService.cached(
+        'products:all',
+        async () => {
+            const response = await apiClient.get('/api/product')
+            return response.data
+        },
+        CACHE_TTL.PRODUCTS
+    )
 }
 
-// Obtener un producto completo con sus talles y colores
+// Obtener un producto completo con sus talles y colores (con caché)
 export async function fetchProductoCompleto(productId) {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/${productId}/details`)
-        return response.data
-    } catch (error) {
-        console.error('Error fetching complete product:', error)
-        throw error
-    }
+    return cacheService.cached(
+        `product:${productId}:details`,
+        async () => {
+            const response = await apiClient.get(`/api/product/${productId}/details`)
+            return response.data
+        },
+        CACHE_TTL.PRODUCTS
+    )
 }
 
 //Desvincular un producto a una tienda en especifico

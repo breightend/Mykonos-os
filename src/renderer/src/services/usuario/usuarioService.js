@@ -1,14 +1,15 @@
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
 
 export async function fetchData() {
-  const response = await axios.get('http://localhost:5000/api/user/employees')
+  const response = await axios.get(`${API_ENDPOINTS.USER}/employees`)
   console.log(response)
 }
 
 export async function enviarData(data) {
   try {
     console.log('Data to be sent:', data)
-    const response = await axios.post('http://localhost:5000/api/user/employees', data)
+    const response = await axios.post(`${API_ENDPOINTS.USER}/employees`, data)
     return response.data
   } catch (error) {
     console.error('Error posting data:', error)

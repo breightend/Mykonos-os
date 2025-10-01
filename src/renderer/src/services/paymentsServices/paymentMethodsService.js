@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
 
-const API_BASE_URL = 'http://localhost:5000/api/payment-methods'
+const API_BASE_URL = API_ENDPOINTS.PAYMENT_METHODS
 
 export const paymentMethodsService = {
     /**

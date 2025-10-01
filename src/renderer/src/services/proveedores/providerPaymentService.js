@@ -1,7 +1,6 @@
 import axios from 'axios'
 import { paymentMethodsService } from '../paymentsServices/paymentMethodsService'
-
-const API_BASE_URL = 'http://localhost:5000/api/account'
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
 
 export const providerPaymentService = {
     /**
@@ -18,7 +17,7 @@ export const providerPaymentService = {
      */
     async createProviderPayment(data) {
         try {
-            const response = await axios.post(`${API_BASE_URL}/provider/credit`, data)
+            const response = await axios.post(`${API_ENDPOINTS.ACCOUNT}/provider/credit`, data)
             return response.data
         } catch (error) {
             console.error('Error creating provider payment:', error)
@@ -39,7 +38,7 @@ export const providerPaymentService = {
      */
     async createProviderDebt(data) {
         try {
-            const response = await axios.post(`${API_BASE_URL}/provider/debit`, data)
+            const response = await axios.post(`${API_ENDPOINTS.ACCOUNT}/provider/debit`, data)
             return response.data
         } catch (error) {
             console.error('Error creating provider debt:', error)
@@ -54,7 +53,7 @@ export const providerPaymentService = {
      */
     async getProviderBalance(providerId) {
         try {
-            const response = await axios.get(`${API_BASE_URL}/provider/balance/${providerId}`)
+            const response = await axios.get(`${API_ENDPOINTS.ACCOUNT}/provider/balance/${providerId}`)
             return response.data
         } catch (error) {
             console.error('Error getting provider balance:', error)
@@ -69,7 +68,7 @@ export const providerPaymentService = {
      */
     async getProviderMovements(providerId) {
         try {
-            const response = await axios.get(`${API_BASE_URL}/provider/movements/${providerId}`)
+            const response = await axios.get(`${API_ENDPOINTS.ACCOUNT}/provider/movements/${providerId}`)
             return response.data
         } catch (error) {
             console.error('Error getting provider movements:', error)

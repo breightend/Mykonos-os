@@ -1,8 +1,9 @@
 import axios from "axios";
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
 
 export async function fetchProvider() {
     try {
-        const response = await axios.get("http://localhost:5000/api/provider/");
+        const response = await axios.get(`${API_ENDPOINTS.PROVIDER}/`);
         return response.data;
     } catch (error) {
         console.error("Error fetching provider:", error);
@@ -12,7 +13,7 @@ export async function fetchProvider() {
 
 export async function fetchProviderById(id) {
     try {
-        const response = await axios.get(`http://localhost:5000/api/provider/${id}`,);
+        const response = await axios.get(`${API_ENDPOINTS.PROVIDER}/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching provider by ID:", error);
@@ -22,7 +23,7 @@ export async function fetchProviderById(id) {
 //Anda
 export async function postData(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/provider/", data);
+        const response = await axios.post(`${API_ENDPOINTS.PROVIDER}/`, data);
         return response.data;
     } catch (error) {
         console.error("Error posting data:", error);
@@ -32,7 +33,7 @@ export async function postData(data) {
 //Anda
 export async function putData(id, data) {
     try {
-        const response = await axios.put(`http://localhost:5000/api/provider/${id}`, data);
+        const response = await axios.put(`${API_ENDPOINTS.PROVIDER}/${id}`, data);
         return response.data;
     } catch (error) {
         console.error("Error updating data:", error);
@@ -42,7 +43,7 @@ export async function putData(id, data) {
 //Anda
 export async function deleteData(id) {
     try {
-        const response = await axios.delete(`http://localhost:5000/api/provider/${id}`);
+        const response = await axios.delete(`${API_ENDPOINTS.PROVIDER}/${id}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting data:", error);

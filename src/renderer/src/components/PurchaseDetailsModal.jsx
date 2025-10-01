@@ -23,6 +23,7 @@ import {
 } from '../services/proveedores/paymentService'
 import { fetchStorages } from '../services/sucursales/sucursalesService'
 import toast from 'react-hot-toast'
+import { API_ENDPOINTS } from '../config/apiConfig.js'
 
 export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUpdate }) {
   const [purchase, setPurchase] = useState(null)
@@ -167,7 +168,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/purchases/attachment/${fileId}`)
+      const response = await fetch(`${API_ENDPOINTS.PURCHASES}/attachment/${fileId}`)
 
       if (!response.ok) {
         throw new Error('Error al descargar el archivo')
@@ -506,7 +507,7 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                   </p>
                 </div>
                 <div className="rounded bg-accent/10 p-3">
-                  <div className='gap-2'>
+                  <div className="gap-2">
                     <div>
                       <label className="label">
                         <span className="label-text font-semibold text-blue-700">Estado</span>
@@ -518,7 +519,6 @@ export default function PurchaseDetailsModal({ purchaseId, isOpen, onClose, onUp
                       >
                         {getRemainingAmount() <= 0 ? 'Pagado Completo' : 'Pago Pendiente'}
                       </span>
-
                     </div>
                   </div>
                 </div>

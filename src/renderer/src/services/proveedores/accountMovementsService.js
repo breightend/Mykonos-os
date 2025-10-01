@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
 
-const BASE_URL = 'http://localhost:5000/api/account'
+const BASE_URL = API_ENDPOINTS.ACCOUNT
 
 export const accountMovementsService = {
     // Get all movements for a provider

@@ -1,8 +1,9 @@
 import axios from "axios";
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
 
 export async function fetchSize() {
     try {
-        const response = await axios.get("http://localhost:5000/api/product/sizes");
+        const response = await axios.get(`${API_ENDPOINTS.PRODUCT}/sizes`);
         return response.data;
     } catch (error) {
         console.error("Error fetching size:", error);
@@ -12,7 +13,7 @@ export async function fetchSize() {
 
 export async function postDataSize(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/product/sizes", data);
+        const response = await axios.post(`${API_ENDPOINTS.PRODUCT}/sizes`, data);
         return response.data;
     } catch (error) {
         console.error("Error posting data:", error);
@@ -22,7 +23,7 @@ export async function postDataSize(data) {
 
 export async function fetchCategorySize() {
     try {
-        const response = await axios.get("http://localhost:5000/api/product/category");
+        const response = await axios.get(`${API_ENDPOINTS.PRODUCT}/category`);
         return response.data;
     } catch (error) {
         console.error("Error fetching category size:", error);
@@ -32,7 +33,7 @@ export async function fetchCategorySize() {
 
 export async function postDataCategory(data) {
     try {
-        const response = await axios.post("http://localhost:5000/api/product/category", data);
+        const response = await axios.post(`${API_ENDPOINTS.PRODUCT}/category`, data);
         return response.data;
 
     } catch (error) {
@@ -43,7 +44,7 @@ export async function postDataCategory(data) {
 
 export async function getCategoryXsize() {
     try {
-        const response = await axios.get("http://localhost:5000/api/product/sizeXcategory");
+        const response = await axios.get(`${API_ENDPOINTS.PRODUCT}/sizeXcategory`);
         return response.data;
     } catch (error) {
         console.error("Error fetching category size:", error);
@@ -53,7 +54,7 @@ export async function getCategoryXsize() {
 
 export async function deleteCategory(categoryId) {
     try {
-        const response = await axios.delete(`http://localhost:5000/api/product/category/${categoryId}`);
+        const response = await axios.delete(`${API_ENDPOINTS.PRODUCT}/category/${categoryId}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting category:", error);
@@ -63,7 +64,7 @@ export async function deleteCategory(categoryId) {
 
 export async function deleteSize(sizeId) {
     try {
-        const response = await axios.delete(`http://localhost:5000/api/product/sizes/${sizeId}`);
+        const response = await axios.delete(`${API_ENDPOINTS.PRODUCT}/sizes/${sizeId}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting size:", error);

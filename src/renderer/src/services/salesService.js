@@ -1,7 +1,5 @@
 import axios from 'axios'
-import { API_BASE_URL } from '../config/apiConfig.js'
-
-const API_URL = API_BASE_URL
+import { API_ENDPOINTS } from '../config/apiConfig.js'
 
 /**
  * Servicio para manejar operaciones de ventas con códigos de barras de variantes
@@ -15,7 +13,7 @@ export const salesService = {
     async getProductByVariantBarcode(variantBarcode) {
         try {
             const response = await axios.get(
-                `${API_URL}/sales/product-by-variant-barcode/${variantBarcode}`
+                `${API_ENDPOINTS.SALES}/product-by-variant-barcode/${variantBarcode}`
             )
             return response.data
         } catch (error) {
@@ -111,7 +109,7 @@ export const salesService = {
             if (filters.limit) params.append('limit', filters.limit)
             if (filters.offset) params.append('offset', filters.offset)
 
-            const response = await axios.get(`${API_URL}/sales/list?${params}`)
+            const response = await axios.get(`${API_ENDPOINTS.SALES}/list?${params}`)
 
             console.log('✅ Lista de ventas obtenida:', response.data)
             return response.data
@@ -151,7 +149,7 @@ export const salesService = {
             if (filters.start_date) params.append('start_date', filters.start_date)
             if (filters.end_date) params.append('end_date', filters.end_date)
 
-            const response = await axios.get(`${API_URL}/sales/stats?${params}`)
+            const response = await axios.get(`${API_ENDPOINTS.SALES}/stats?${params}`)
 
             console.log('✅ Estadísticas de ventas obtenidas:', response.data)
             return response.data

@@ -1,10 +1,11 @@
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
 
 // Get all sucursales
 export async function fetchSucursales() {
     try {
-        console.log('🌐 Intentando fetch a: http://localhost:5000/api/storage/')
-        const response = await axios.get('http://localhost:5000/api/storage/')
+        console.log('🌐 Intentando fetch a:', `${API_ENDPOINTS.STORAGE}/`)
+        const response = await axios.get(`${API_ENDPOINTS.STORAGE}/`)
         console.log('✅ Respuesta recibida:', response)
         console.log('📊 Status de respuesta:', response.status)
         console.log('📊 Datos de sucursales:', response.data)
@@ -54,7 +55,7 @@ export const fetchStorages = fetchSucursales
 // Get sucursal by ID
 export async function fetchSucursalById(id) {
     try {
-        const response = await axios.get(`http://localhost:5000/api/storage/${id}`)
+        const response = await axios.get(`${API_ENDPOINTS.STORAGE}/${id}`)
         return response.data
     } catch (error) {
         console.error('Error fetching sucursal by ID:', error)
@@ -65,7 +66,7 @@ export async function fetchSucursalById(id) {
 // Create new sucursal
 export async function postData(data) {
     try {
-        const response = await axios.post('http://localhost:5000/api/storage/', data)
+        const response = await axios.post(`${API_ENDPOINTS.STORAGE}/`, data)
         return response.data
     } catch (error) {
         console.error('Error posting data:', error)
@@ -76,7 +77,7 @@ export async function postData(data) {
 // Update sucursal
 export async function putData(id, data) {
     try {
-        const response = await axios.put(`http://localhost:5000/api/storage/${id}`, data)
+        const response = await axios.put(`${API_ENDPOINTS.STORAGE}/${id}`, data)
         return response.data
     } catch (error) {
         console.error('Error updating data:', error)
@@ -87,7 +88,7 @@ export async function putData(id, data) {
 // Delete sucursal
 export async function deleteData(id) {
     try {
-        const response = await axios.delete(`http://localhost:5000/api/storage/${id}`)
+        const response = await axios.delete(`${API_ENDPOINTS.STORAGE}/${id}`)
         return response.data
     } catch (error) {
         console.error('Error deleting data:', error)
@@ -104,7 +105,7 @@ export async function fetchSucursalEmployees(storageId) {
             throw new Error('Storage ID is required')
         }
 
-        const response = await axios.get(`http://localhost:5000/api/storage/${storageId}/employees`)
+        const response = await axios.get(`${API_ENDPOINTS.STORAGE}/${storageId}/employees`)
         console.log('Employees response:', response.data)
         return response.data
     } catch (error) {
@@ -127,7 +128,7 @@ export async function fetchSucursalEmployees(storageId) {
 // Assign employee to sucursal
 export async function assignEmployeeToSucursal(storageId, userId) {
     try {
-        const response = await axios.post(`http://localhost:5000/api/storage/${storageId}/employees`, {
+        const response = await axios.post(`${API_ENDPOINTS.STORAGE}/${storageId}/employees`, {
             user_id: userId
         })
         return response.data
@@ -141,7 +142,7 @@ export async function assignEmployeeToSucursal(storageId, userId) {
 export async function removeEmployeeFromSucursal(storageId, userId) {
     try {
         const response = await axios.delete(
-            `http://localhost:5000/api/storage/${storageId}/employees/${userId}`
+            `${API_ENDPOINTS.STORAGE}/${storageId}/employees/${userId}`
         )
         return response.data
     } catch (error) {

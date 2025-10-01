@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Save, Calculator, Package, Upload, Camera, ArrowLeft, Plus, X } from 'lucide-react'
 import { useLocation, useSearchParams } from 'wouter'
-import { inventoryService } from '../../services/inventory/inventoryService'
+import { inventoryService } from '../../services/Inventory/inventoryService'
 import { useSession } from '../../contexts/SessionContext'
 import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import toast, { Toaster } from 'react-hot-toast'
+import { API_ENDPOINTS } from '../../config/apiConfig.js'
 //TODO: Colocar que se redondee para arriba asi no maneja precios raros.
 
 const EditarProducto = () => {
@@ -101,7 +102,7 @@ const EditarProducto = () => {
 
           // Si el producto tiene imagen, configurar la URL para mostrarla
           if (data.has_image) {
-            setCurrentImageUrl(`http://localhost:5000/api/product/${productId}/image`)
+            setCurrentImageUrl(`${API_ENDPOINTS.PRODUCT}/${productId}/image`)
           }
         } else {
           setError('Error al cargar los datos del producto')
@@ -124,14 +125,14 @@ const EditarProducto = () => {
     const loadVariantData = async () => {
       try {
         // Cargar tamaños
-        const sizesResponse = await fetch('http://localhost:5000/api/product/sizes')
+        const sizesResponse = await fetch(`${API_ENDPOINTS.PRODUCT}/sizes`)
         if (sizesResponse.ok) {
           const sizesData = await sizesResponse.json()
           setAvailableSizes(sizesData || [])
         }
 
         // Cargar colores
-        const colorsResponse = await fetch('http://localhost:5000/api/product/colors')
+        const colorsResponse = await fetch(`${API_ENDPOINTS.PRODUCT}/colors`)
         if (colorsResponse.ok) {
           const colorsData = await colorsResponse.json()
           setAvailableColors(colorsData || [])
@@ -445,9 +446,7 @@ const EditarProducto = () => {
 
           if (imageUpdateResponse.status === 'success') {
             // Actualizar la URL de la imagen actual
-            setCurrentImageUrl(
-              `http://localhost:5000/api/product/${productId}/image?t=${Date.now()}`
-            )
+            setCurrentImageUrl(`${API_ENDPOINTS.PRODUCT}/${productId}/image?t=${Date.now()}`)
             // Limpiar la nueva imagen del formulario
             setFormData((prev) => ({ ...prev, new_image: null }))
             if (fileInputRef.current) {
@@ -599,7 +598,7 @@ const EditarProducto = () => {
       <div>
         <div className="ml-20 p-8">
           <div className="text-center">
-            <h2 className="text-error text-2xl font-bold">Error</h2>
+            <h2 className="text-2xl font-bold text-error">Error</h2>
             <p className="mt-4">No se proporcionó un ID de producto válido</p>
             <button onClick={handleGoBack} className="btn btn-primary mt-4">
               Volver al producto
@@ -625,7 +624,7 @@ const EditarProducto = () => {
 
         <div className="overflow-hidden rounded-lg bg-white shadow-2xl">
           {/* Header */}
-          <div className="from-accent to-secondary flex items-center justify-between border-b border-gray-200 bg-gradient-to-r p-6 text-black">
+          <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-accent to-secondary p-6 text-black">
             <div className="flex items-center space-x-3">
               <Package className="h-6 w-6" />
               <h3 className="text-xl font-bold">Información del Producto</h3>
@@ -660,7 +659,7 @@ const EditarProducto = () => {
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, product_name: e.target.value }))
                       }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:outline-none focus:ring-blue-200"
                     />
                   </div>
 
@@ -674,7 +673,7 @@ const EditarProducto = () => {
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, description: e.target.value }))
                       }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:outline-none focus:ring-blue-200"
                     />
                   </div>
 
@@ -687,7 +686,7 @@ const EditarProducto = () => {
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, comments: e.target.value }))
                       }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:outline-none focus:ring-blue-200"
                       rows="3"
                     />
                   </div>
@@ -709,7 +708,7 @@ const EditarProducto = () => {
                         type="text"
                         value={formData.cost}
                         onChange={(e) => setFormData((prev) => ({ ...prev, cost: e.target.value }))}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:outline-none focus:ring-blue-200"
                         placeholder="0.00"
                       />
                     </div>
@@ -725,7 +724,7 @@ const EditarProducto = () => {
                           // Solo actualizar el precio original, NO recalcular descuentos automáticamente
                           setFormData((prev) => ({ ...prev, original_price: e.target.value }))
                         }}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:outline-none focus:ring-blue-200"
                         placeholder="Precio base sin descuentos"
                       />
                       <p className="mt-1 text-xs text-gray-500">
@@ -741,7 +740,7 @@ const EditarProducto = () => {
                         type="text"
                         value={formData.sale_price}
                         onChange={(e) => calculateDiscount('sale_price', e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:ring-blue-200 focus:outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 ring-2 focus:border-blue-500 focus:outline-none focus:ring-blue-200"
                         placeholder="0.00"
                       />
                     </div>
@@ -814,7 +813,7 @@ const EditarProducto = () => {
                               type="text"
                               value={formData.discount_percentage}
                               onChange={(e) => calculateDiscount('percentage', e.target.value)}
-                              className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
+                              className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:outline-none focus:ring-orange-200"
                               placeholder="0.00"
                             />
                           </div>
@@ -827,7 +826,7 @@ const EditarProducto = () => {
                               type="text"
                               value={formData.discount_amount}
                               onChange={(e) => calculateDiscount('amount', e.target.value)}
-                              className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
+                              className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:outline-none focus:ring-orange-200"
                               placeholder="0.00"
                             />
                           </div>
@@ -842,7 +841,7 @@ const EditarProducto = () => {
                               onChange={(e) =>
                                 setFormData((prev) => ({ ...prev, discount: e.target.value }))
                               }
-                              className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:ring-orange-200 focus:outline-none"
+                              className="w-full rounded-lg border border-orange-300 px-3 py-2 ring-2 focus:border-orange-500 focus:outline-none focus:ring-orange-200"
                               placeholder="Descuento adicional"
                             />
                             <p className="mt-1 text-xs text-orange-600">
@@ -1049,7 +1048,7 @@ const EditarProducto = () => {
                           <button
                             type="button"
                             onClick={() => removeVariant(index)}
-                            className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700"
+                            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700"
                             title="Eliminar variante"
                           >
                             <X size={14} />

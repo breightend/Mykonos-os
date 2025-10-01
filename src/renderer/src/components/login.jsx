@@ -3,10 +3,9 @@ import { useEffect } from 'react'
 import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye } from 'lucide-react'
 import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
-import {
-  fetchEmployeeByUsername,
-  fetchEmployeeStorages
-} from '../services/employee/employeeService'
+import { useEmployeeApi } from '../hooks/useRobustApi'
+import SmartLoadingOverlay from './SmartLoadingOverlay'
+import NetworkHealthMonitor from './NetworkHealthMonitor'
 import '../assets/login-only.css'
 
 export default function Login() {
@@ -23,21 +22,63 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [userId, setUserId] = useState(null)
+  const [progressMessage, setProgressMessage] = useState('')
+
+  // Hook robusto para manejo de API
+  const {
+    isLoading: apiLoading,
+    error: apiError,
+    fetchEmployeeByUsername,
+    fetchEmployeeStorages,
+    cancel: cancelApiCall
+  } = useEmployeeApi()
 
   const getStorage = async () => {
     if (flag && formData.username && formData.password) {
       try {
+        setProgressMessage('Verificando usuario...')
         const data_user = await fetchEmployeeByUsername(formData.username)
         console.log('data_user', data_user)
-        setUserId(data_user.data.id)
-        const data = await fetchEmployeeStorages(userId)
-        console.log('data storages', data)
-        setStorages(data)
+
+        // Validación segura de la respuesta del usuario
+        if (data_user && data_user.data && data_user.data.id) {
+          setUserId(data_user.data.id)
+
+          setProgressMessage('Obteniendo sucursales...')
+          const data = await fetchEmployeeStorages(data_user.data.id)
+          console.log('data storages', data)
+
+          // Validación segura de la respuesta de sucursales
+          const storageList = data && data.data && Array.isArray(data.data) ? data.data : []
+          setStorages(storageList)
+
+          // Auto-seleccionar la sucursal si solo hay una disponible
+          if (storageList.length === 1) {
+            console.log('🏪 Auto-seleccionando única sucursal disponible:', storageList[0])
+            setFormData((prev) => ({
+              ...prev,
+              storageId: storageList[0].id.toString()
+            }))
+          }
+        } else {
+          console.warn('⚠️ Usuario no encontrado o respuesta inválida')
+          setUserId(null)
+          setStorages([])
+        }
+        setProgressMessage('')
       } catch (err) {
+        console.log('Error obteniendo sucursales:', err)
         setStorages([])
+        setProgressMessage('')
+
+        // Si hay error con fallback, mostrar mensaje informativo
+        if (apiError?.fallbackUsed) {
+          setFormError(`Conexión lenta - usando datos guardados (${apiError.fallbackType})`)
+        }
       }
     } else {
       setStorages([])
+      setProgressMessage('')
     }
   }
 
@@ -75,34 +116,116 @@ export default function Login() {
       return
     }
 
-    if (storages && storages.length > 0 && !formData.storageId) {
-      setFormError('Debe seleccionar una sucursal')
-      return
-    }
-
     setIsSubmitting(true)
     setFormError('')
+    setProgressMessage('Iniciando sesión...')
 
     try {
-      const storageId = storages && storages.length > 0 ? parseInt(formData.storageId) : null
+      // Obtener las sucursales disponibles para el usuario directamente
+      let availableStorages = []
+      let storageId = null
+
+      if (formData.username && formData.password) {
+        try {
+          setProgressMessage('Verificando credenciales...')
+          const data_user = await fetchEmployeeByUsername(formData.username)
+          console.log('🔍 Usuario encontrado:', data_user)
+
+          // Validación segura del usuario
+          if (data_user && data_user.data && data_user.data.id) {
+            console.log('🔍 ID del usuario:', data_user.data.id)
+
+            setProgressMessage('Cargando sucursales...')
+            const storagesData = await fetchEmployeeStorages(data_user.data.id)
+            console.log('🏪 Respuesta completa de sucursales:', storagesData)
+            console.log('🏪 Tipo de respuesta:', typeof storagesData)
+            console.log('🏪 Propiedades:', Object.keys(storagesData || {}))
+
+            // Manejar diferentes estructuras de respuesta con validación segura
+            if (storagesData && storagesData.data && Array.isArray(storagesData.data)) {
+              availableStorages = storagesData.data
+              console.log('🏪 Usando storagesData.data')
+            } else if (Array.isArray(storagesData)) {
+              availableStorages = storagesData
+              console.log('🏪 Usando respuesta directa como array')
+            } else if (storagesData && typeof storagesData === 'object') {
+              // Si es un objeto, intentar extraer el array
+              availableStorages =
+                Object.values(storagesData).find((val) => Array.isArray(val)) || []
+              console.log('🏪 Buscando array en valores del objeto')
+            } else {
+              // Fallback por defecto
+              availableStorages = [
+                { id: 1, name: 'Sucursal Principal', description: 'Sucursal por defecto' }
+              ]
+              console.log('🏪 Usando fallback por defecto')
+            }
+
+            console.log('🏪 Sucursales disponibles:', availableStorages)
+            console.log('🏪 Cantidad de sucursales:', availableStorages.length)
+          } else {
+            console.warn('⚠️ Usuario no válido o no encontrado')
+            availableStorages = []
+          }
+        } catch (err) {
+          console.log('Error obteniendo datos del usuario/sucursales:', err)
+          console.error('Error details:', err.response?.data || err.message)
+
+          // Si hay error con fallback, continuar con datos por defecto
+          if (apiError?.fallbackUsed) {
+            console.log('🔄 Usando datos de fallback para sucursales')
+            availableStorages = [{ id: 1, name: 'Sucursal Principal' }]
+          }
+        }
+      }
+
+      // Determinar el storageId a enviar
+      const hasStorages = availableStorages.length > 0
+
+      if (hasStorages) {
+        // Si hay sucursales disponibles, verificar si se seleccionó una
+        if (!formData.storageId) {
+          // Si no hay selección manual, auto-seleccionar la primera disponible
+          storageId = availableStorages[0].id
+          console.log('🏪 Auto-seleccionando primera sucursal disponible:', {
+            id: storageId,
+            name: availableStorages[0].name
+          })
+        } else {
+          // Usar la selección manual del usuario
+          storageId = parseInt(formData.storageId)
+          console.log('🏪 Usando sucursal seleccionada por el usuario:', storageId)
+        }
+      } else {
+        // Si no hay sucursales, usar ID por defecto
+        storageId = 1
+        console.log('🏪 No hay sucursales disponibles, usando ID por defecto:', storageId)
+      }
+
       console.log('🔐 Datos de login:', {
         username: formData.username,
         storageId,
-        storagesAvailable: storages?.length || 0
+        storagesAvailable: availableStorages.length,
+        hasStorages,
+        selectedStorageId: formData.storageId
       })
 
+      setProgressMessage('Autenticando...')
       const result = await login(formData.username, formData.password, storageId)
       console.log('🔐 Resultado de login:', result)
 
       if (result.success) {
+        setProgressMessage('¡Éxito! Redirigiendo...')
         setLocation('/home')
       } else {
         setFormError(result.message)
       }
-    } catch {
+    } catch (error) {
+      console.error('❌ Login error:', error)
       setFormError('Error de conexión. Verifique que el servidor esté funcionando.')
     } finally {
       setIsSubmitting(false)
+      setProgressMessage('')
     }
   }
 
@@ -113,6 +236,11 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      {/* Network Health Monitor */}
+      <div className="login-settings">
+        <NetworkHealthMonitor />
+      </div>
+
       {/* Background */}
       <div className="login-background">
         <img src="./src/images/sunset2.jpg" alt="Background" className="dark:hidden" />
@@ -208,19 +336,42 @@ export default function Login() {
             )}
 
             {/* Botón */}
-            <button type="submit" className="login-button" disabled={isSubmitting || loading}>
-              {isSubmitting ? (
+            <button
+              type="submit"
+              className="login-button"
+              disabled={isSubmitting || loading || apiLoading}
+            >
+              {isSubmitting || apiLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Iniciando...
+                  {progressMessage || 'Iniciando...'}
                 </>
               ) : (
                 'Iniciar Sesión'
               )}
             </button>
+
+            {/* Mostrar fallback info si existe */}
+            {apiError?.fallbackUsed && (
+              <div className="login-alert login-alert-info">
+                ℹ️ Conexión lenta - usando datos guardados
+              </div>
+            )}
           </form>
         </div>
       </div>
+
+      {/* Smart Loading Overlay */}
+      {(isSubmitting || apiLoading) && (
+        <SmartLoadingOverlay
+          message={progressMessage || 'Cargando...'}
+          onCancel={() => {
+            cancelApiCall()
+            setIsSubmitting(false)
+            setProgressMessage('')
+          }}
+        />
+      )}
 
       {/* Logo */}
       <div className="login-logo">Mykonos-OS</div>

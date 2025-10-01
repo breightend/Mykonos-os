@@ -30,15 +30,15 @@
   z-index: 30;
 }
 .btn-icon {
-  display: inline-flex;              /* Alinea el ícono centrado */
+  display: inline-flex; /* Alinea el ícono centrado */
   align-items: center;
   justify-content: center;
-  width: 3rem;                     /* Tamaño fijo del botón */
+  width: 3rem; /* Tamaño fijo del botón */
   height: 3rem;
-  border-radius: 50%;                /* Hace el botón circular */
-  background-color: rgba(1, 1, 1, 0.1) ;     /* Fondo transparente */
-  border: 1px solid rgba(56, 56, 56, 0.2);   /* Usa el color actual del texto */
-  cursor: pointer;                   /* Cursor de mano */
+  border-radius: 50%; /* Hace el botón circular */
+  background-color: rgba(1, 1, 1, 0.1); /* Fondo transparente */
+  border: 1px solid rgba(56, 56, 56, 0.2); /* Usa el color actual del texto */
+  cursor: pointer; /* Cursor de mano */
   transition: background-color 0.2s ease;
 }
 
@@ -54,7 +54,7 @@
 }
 
 .btn-icon:active {
-  background-color: rgba(0, 0, 0, 0.1);  /* Un poco más oscuro al hacer click */
+  background-color: rgba(0, 0, 0, 0.1); /* Un poco más oscuro al hacer click */
 }
 
 .login-page .login-card {
@@ -303,4 +303,57 @@
     bottom: 1rem;
     left: 1rem;
   }
+}
+
+/* ===== ESTILOS PARA NOTIFICACIONES DE FALLBACK ===== */
+.login-page .login-alert-info {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.login-page .login-alert-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.login-page .login-alert-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.login-page .login-alert-success {
+  background-color: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }

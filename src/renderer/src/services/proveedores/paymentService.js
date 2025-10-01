@@ -1,6 +1,6 @@
 import axios from 'axios'
-
-const API_BASE_URL = 'http://localhost:5000/api/purchases'
+import { API_ENDPOINTS } from '../../config/apiConfig.js';
+const API_BASE_URL = API_ENDPOINTS.PURCHASES
 
 // Create a new payment for a purchase
 export async function createPurchasePayment(purchaseId, paymentData) {
@@ -59,7 +59,7 @@ export async function getAllPayments(filters = {}) {
         if (filters.end_date) params.append('end_date', filters.end_date)
         if (filters.purchase_id) params.append('purchase_id', filters.purchase_id)
 
-        const response = await axios.get(`http://localhost:5000/api/payments?${params}`)
+        const response = await axios.get(`${API_ENDPOINTS.PAYMENTS}?${params}`)
         return response.data
     } catch (error) {
         console.error('Error fetching all payments:', error)

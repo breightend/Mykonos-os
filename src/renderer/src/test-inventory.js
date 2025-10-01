@@ -1,8 +1,10 @@
 // Script para probar el endpoint de inventario directamente
+import { API_ENDPOINTS } from './config/apiConfig.js';
+
 async function testInventoryEndpoint() {
     console.log('🧪 Iniciando pruebas del endpoint de inventario...\n');
 
-    const baseURL = 'http://localhost:5000/api/inventory';
+    const baseURL = API_ENDPOINTS.INVENTORY;
 
     try {
         // Probar endpoint de debug

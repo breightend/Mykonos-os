@@ -6,6 +6,7 @@ import { Gift, Printer, Replace, RotateCcw, Shirt } from 'lucide-react'
 import { salesService } from '../services/salesService'
 import { getCurrentBranchId } from '../utils/posUtils'
 import { useSession } from '../contexts/SessionContext'
+import { API_ENDPOINTS } from '../config/apiConfig.js'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
@@ -400,20 +401,17 @@ export default function ConfirmacionDatosDeCompra() {
           if (giftDetails.length > 0) {
             try {
               // 1. Pedir al backend las imágenes de los códigos de barra
-              const response = await fetch(
-                'http://localhost:5000/api/barcode/gift-barcodes-images',
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    sales_details: giftDetails.map((g) => ({
-                      sales_detail_id: g.salesDetail.id,
-                      quantity: g.salesDetail.quantity
-                    })),
-                    options: printOptions
-                  })
-                }
-              )
+              const response = await fetch(`${API_ENDPOINTS.BARCODE}/gift-barcodes-images`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  sales_details: giftDetails.map((g) => ({
+                    sales_detail_id: g.salesDetail.id,
+                    quantity: g.salesDetail.quantity
+                  })),
+                  options: printOptions
+                })
+              })
               const data = await response.json()
               if (!response.ok || !data.images)
                 throw new Error(data.error || 'No se pudieron generar las imágenes')
