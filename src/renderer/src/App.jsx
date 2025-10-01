@@ -1,6 +1,9 @@
 import { Route, Switch } from 'wouter'
 import { SessionProvider } from './contexts/SessionContext'
+import { useGlobalData } from './contexts/GlobalDataContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import PreloadScreen from './components/PreloadScreen'
+import { useState } from 'react'
 import Clientes from './components/clientes'
 import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
 import Empleados from './components/empleados'
@@ -37,6 +40,13 @@ import PedidosAProveedores from './components/Proveedores/pedidosAProveedores'
 import { ProductProvider } from './contexts/ProductContext'
 
 function App() {
+  const { isLoading } = useGlobalData()
+  const [preloadComplete, setPreloadComplete] = useState(false)
+
+  // Mostrar pantalla de precarga mientras se cargan datos globales
+  if (isLoading && !preloadComplete) {
+    return <PreloadScreen onComplete={() => setPreloadComplete(true)} />
+  }
   return (
     <SessionProvider>
       <Switch>

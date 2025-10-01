@@ -1,12 +1,55 @@
 /**
  * Servicio de caché para optimizar performance
  * Reduce llamadas repetidas a la API almacenando resultados temporalmente
+ * Incluye persistencia local para datos críticos
  */
 
 class CacheService {
     constructor() {
         this.cache = new Map()
         this.timeouts = new Map()
+        this.persistentKeys = new Set() // Keys que se guardan en localStorage
+        this.loadPersistentCache()
+    }
+
+    /**
+     * Carga cache persistente desde localStorage
+     */
+    loadPersistentCache() {
+        try {
+            const persistentData = localStorage.getItem('persistent_cache')
+            if (persistentData) {
+                const parsed = JSON.parse(persistentData)
+                Object.entries(parsed).forEach(([key, item]) => {
+                    // Solo cargar si no ha expirado
+                    if (Date.now() < item.expiry) {
+                        this.cache.set(key, item)
+                        this.persistentKeys.add(key)
+                        console.log(`📦 Loaded persistent cache: ${key}`)
+                    }
+                })
+            }
+        } catch (error) {
+            console.warn('⚠️ Error loading persistent cache:', error)
+        }
+    }
+
+    /**
+     * Guarda cache persistente en localStorage
+     */
+    savePersistentCache() {
+        try {
+            const persistentData = {}
+            this.persistentKeys.forEach(key => {
+                const item = this.cache.get(key)
+                if (item && Date.now() < item.expiry) {
+                    persistentData[key] = item
+                }
+            })
+            localStorage.setItem('persistent_cache', JSON.stringify(persistentData))
+        } catch (error) {
+            console.warn('⚠️ Error saving persistent cache:', error)
+        }
     }
 
     /**
@@ -33,16 +76,28 @@ class CacheService {
      * @param {string} key - Clave del caché
      * @param {any} data - Datos a almacenar
      * @param {number} ttl - Tiempo de vida en milisegundos (default: 5 min)
+     * @param {boolean} persistent - Si debe persistir entre sesiones
      */
-    set(key, data, ttl = 5 * 60 * 1000) {
+    set(key, data, ttl = 5 * 60 * 1000, persistent = false) {
         const expiry = Date.now() + ttl
         this.cache.set(key, { data, expiry })
-        console.log(`💾 Cache SET: ${key} (TTL: ${ttl}ms)`)
+        
+        if (persistent) {
+            this.persistentKeys.add(key)
+            this.savePersistentCache()
+            console.log(`💾 Cache SET (PERSISTENT): ${key} (TTL: ${ttl}ms)`)
+        } else {
+            console.log(`💾 Cache SET: ${key} (TTL: ${ttl}ms)`)
+        }
 
         // Limpiar automáticamente cuando expire
         const timeout = setTimeout(() => {
             this.cache.delete(key)
             this.timeouts.delete(key)
+            if (persistent) {
+                this.persistentKeys.delete(key)
+                this.savePersistentCache()
+            }
             console.log(`🗑️ Cache EXPIRED: ${key}`)
         }, ttl)
 
