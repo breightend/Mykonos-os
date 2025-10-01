@@ -9,6 +9,8 @@ import {
 } from '../ui/charts'
 import { statisticsApi } from '../../services/statisticsApi'
 import { useSession } from '../../contexts/SessionContext'
+import { ArrowLeft } from 'lucide-react'
+import { useLocation } from 'wouter'
 
 const ComprehensiveStatistics = () => {
   // State for different data types
@@ -127,7 +129,13 @@ const ComprehensiveStatistics = () => {
     } else {
       setLoading(false)
     }
-  }, [currentStorage?.id, dateRange]) // Re-load when date range changes
+  }, [currentStorage?.id, dateRange]) 
+
+  const [locarion, setLocation] = useLocation()
+
+  const handleVolver = () => {
+    setLocation('/home')
+  }
 
   if (loading) {
     return (
@@ -151,7 +159,10 @@ const ComprehensiveStatistics = () => {
       {/* Header with Date Range Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div className="mb-4 lg:mb-0">
-          <h1 className="text-3xl font-bold text-base-content">📊 Análisis Empresarial Completo</h1>
+          <button className="btn btn-outline  mr-2" onClick={handleVolver}>
+            <ArrowLeft size={16} className="mr-2" /> Volver
+          </button>
+          <h1 className="text-3xl font-bold text-base-content">Análisis Empresarial Completo</h1>
           <p className="text-base-content/70 mt-2">
             Dashboard integral con métricas de ventas, compras, rentabilidad y tendencias
           </p>

@@ -13,8 +13,8 @@ const isDevelopment = !isProduction
 
 // URL del servidor backend
 export const API_BASE_URL = isDevelopment
-    ? 'http://190.3.63.58:8000'  // Puerto 8000 donde está corriendo el backend
-    : 'http://190.3.63.58:8000'  // Puerto 8000 para producción también
+    ? 'http://190.3.63.58:8000'  // Puerto 8000 donde está corriendo el backend en el servidor
+    : 'http://190.3.63.58:8000'  // Puerto 8000 para producción
 
 // Timeouts específicos por tipo de operación
 export const TIMEOUT_CONFIG = {
