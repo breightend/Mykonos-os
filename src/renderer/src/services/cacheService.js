@@ -81,7 +81,7 @@ class CacheService {
     set(key, data, ttl = 5 * 60 * 1000, persistent = false) {
         const expiry = Date.now() + ttl
         this.cache.set(key, { data, expiry })
-        
+
         if (persistent) {
             this.persistentKeys.add(key)
             this.savePersistentCache()

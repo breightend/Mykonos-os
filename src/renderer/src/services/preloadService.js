@@ -12,7 +12,7 @@ class PreloadService {
         this.preloadComplete = false
         this.preloadData = {}
         this.preloadErrors = {}
-        
+
         // Datos que se precargan al inicio (comunes a todas las sucursales)
         this.globalDataQueries = [
             {
@@ -89,7 +89,7 @@ class PreloadService {
 
         this.isPreloading = true
         console.log('🚀 Iniciando precarga de datos globales...')
-        
+
         const startTime = performance.now()
         const promises = []
 
@@ -100,11 +100,11 @@ class PreloadService {
 
         try {
             const results = await Promise.allSettled(promises)
-            
+
             // Procesar resultados
             results.forEach((result, index) => {
                 const query = this.globalDataQueries[index]
-                
+
                 if (result.status === 'fulfilled') {
                     this.preloadData[query.key] = result.value
                     console.log(`✅ Precargado: ${query.key} (${result.value?.length || 0} elementos)`)
@@ -117,15 +117,15 @@ class PreloadService {
 
             const totalTime = performance.now() - startTime
             console.log(`🎯 Precarga completada en ${totalTime.toFixed(2)}ms`)
-            
+
             this.preloadComplete = true
             this.isPreloading = false
-            
+
             // Guardar timestamp de última precarga
             localStorage.setItem('last_preload', Date.now().toString())
-            
+
             return this.preloadData
-            
+
         } catch (error) {
             console.error('❌ Error en precarga global:', error)
             this.isPreloading = false
@@ -138,7 +138,7 @@ class PreloadService {
      */
     async loadGlobalQuery(query) {
         const cacheKey = `global_${query.key}`
-        
+
         try {
             // Intentar obtener de cache primero
             const cached = cacheService.get(cacheKey)
@@ -154,21 +154,21 @@ class PreloadService {
             })
 
             const data = response.data?.data || response.data || []
-            
+
             // Cachear con TTL específico
             cacheService.set(cacheKey, data, query.cacheTTL)
-            
+
             return data
-            
+
         } catch (error) {
             console.warn(`⚠️ Error cargando ${query.key}, usando fallback:`, error.message)
-            
+
             // Usar datos de fallback
             const fallbackData = query.fallback || []
-            
+
             // Cachear fallback por tiempo menor
             cacheService.set(cacheKey, fallbackData, 60 * 60 * 1000) // 1 hora
-            
+
             return fallbackData
         }
     }
@@ -179,16 +179,16 @@ class PreloadService {
     getPreloadedData(key) {
         if (!this.preloadComplete) {
             console.warn(`⚠️ Datos de ${key} solicitados antes de completar precarga`)
-            
+
             // Intentar obtener de cache como fallback
             const cached = cacheService.get(`global_${key}`)
             if (cached) return cached
-            
+
             // Usar fallback de configuración
             const query = this.globalDataQueries.find(q => q.key === key)
             return query?.fallback || []
         }
-        
+
         return this.preloadData[key] || []
     }
 
@@ -212,14 +212,14 @@ class PreloadService {
         }
 
         console.log(`🔄 Recargando datos de ${key}...`)
-        
+
         // Limpiar cache
         cacheService.delete(`global_${key}`)
-        
+
         // Recargar
         const data = await this.loadGlobalQuery(query)
         this.preloadData[key] = data
-        
+
         return data
     }
 
@@ -229,11 +229,11 @@ class PreloadService {
     shouldRefreshPreload() {
         const lastPreload = localStorage.getItem('last_preload')
         if (!lastPreload) return true
-        
+
         const lastPreloadTime = parseInt(lastPreload)
         const now = Date.now()
         const hoursSincePreload = (now - lastPreloadTime) / (1000 * 60 * 60)
-        
+
         // Refrescar si han pasado más de 4 horas
         return hoursSincePreload > 4
     }
@@ -245,12 +245,12 @@ class PreloadService {
         this.preloadData = {}
         this.preloadErrors = {}
         this.preloadComplete = false
-        
+
         // Limpiar caches
         for (const query of this.globalDataQueries) {
             cacheService.delete(`global_${query.key}`)
         }
-        
+
         localStorage.removeItem('last_preload')
         console.log('🧹 Datos de precarga limpiados')
     }
