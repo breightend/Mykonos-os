@@ -118,7 +118,29 @@ class CacheService {
             clearTimeout(this.timeouts.get(key))
             this.timeouts.delete(key)
         }
+        if (this.persistentKeys.has(key)) {
+            this.persistentKeys.delete(key)
+            this.savePersistentCache()
+        }
         console.log(`🗑️ Cache DELETE: ${key}`)
+    }
+
+    /**
+     * Elimina múltiples valores del caché basado en un patrón regex
+     * @param {RegExp} pattern - Patrón regex para encontrar claves a eliminar
+     */
+    deleteByPattern(pattern) {
+        let deletedCount = 0
+
+        for (const key of this.cache.keys()) {
+            if (pattern.test(key)) {
+                this.delete(key)
+                deletedCount++
+            }
+        }
+
+        console.log(`🗑️ Cache DELETE BY PATTERN: ${pattern} (${deletedCount} keys deleted)`)
+        return deletedCount
     }
 
     /**

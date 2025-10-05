@@ -72,7 +72,7 @@ export async function fetchEmployeeStorages(employeeId) {
                 ],
                 message: 'Datos de sucursales de fallback'
             },
-            maxCacheAge: 60 * 60 * 1000 // 1 hora de cache de emergencia
+            maxCacheAge: 60 * 60 * 1000 
         }
     );
 }

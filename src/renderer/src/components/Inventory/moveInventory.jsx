@@ -689,7 +689,10 @@ export default function MoveInventory() {
   }
 
   const executeMovement = async () => {
-    if (!selectedDestination || selectedVariants.length === 0) return
+    if (!selectedDestination || selectedVariants.length === 0) {
+      toast.error('Por favor selecciona un destino y al menos una variante')
+      return
+    }
 
     try {
       console.log('🚚 Ejecutando movimiento de variantes:', selectedVariants)
@@ -710,17 +713,52 @@ export default function MoveInventory() {
         variants
       )
 
+      console.log('🔍 Respuesta del movimiento:', response)
+
       if (response.status === 'success') {
         toast.success('✅ Movimiento de variantes ejecutado exitosamente')
+        console.log('✅ Movimiento exitoso, limpiando selección...')
         resetSelection()
+
+        // Recargar variantes disponibles para reflejar el cambio
+        if (currentStorage?.id) {
+          console.log('🔄 Recargando variantes disponibles...')
+          await loadAvailableVariants()
+        }
       } else {
-        toast.error(
-          '❌ Error al ejecutar el movimiento: ' + (response.message || 'Error desconocido')
-        )
+        const errorMessage = response.message || 'Error desconocido'
+        console.error('❌ Error en respuesta del movimiento:', errorMessage)
+        toast.error(`❌ Error al ejecutar el movimiento: ${errorMessage}`)
       }
     } catch (error) {
       console.error('❌ Error ejecutando movimiento:', error)
-      alert('❌ Error al ejecutar el movimiento: ' + error.message)
+
+      // Manejar diferentes tipos de errores
+      let errorMessage = 'Error desconocido al ejecutar el movimiento'
+
+      if (error.response) {
+        // Error de respuesta HTTP
+        const status = error.response.status
+        const data = error.response.data
+
+        if (status === 400) {
+          errorMessage = data.message || 'Datos inválidos para el movimiento'
+        } else if (status === 404) {
+          errorMessage = 'Producto o sucursal no encontrada'
+        } else if (status === 500) {
+          errorMessage = 'Error interno del servidor'
+        } else {
+          errorMessage = data.message || `Error HTTP ${status}`
+        }
+      } else if (error.request) {
+        // Error de red
+        errorMessage = 'Error de conexión con el servidor'
+      } else if (error.message) {
+        // Error de JavaScript
+        errorMessage = error.message
+      }
+
+      toast.error(`❌ ${errorMessage}`)
     }
   }
 
@@ -1411,7 +1449,7 @@ export default function MoveInventory() {
                         Buscar por Código de Barras
                       </h4>
                       <div className="form-control">
-                        <div className="w-full flex">
+                        <div className="flex w-full">
                           <div className="relative flex-1">
                             <div className="absolute inset-y-0 left-0 flex items-center pl-4">
                               <ScanBarcode className="text-base-content/50 h-5 w-5" />
@@ -1458,9 +1496,7 @@ export default function MoveInventory() {
                             )}
                           </button>
                         </div>
-                        <div className="label">
-
-                        </div>
+                        <div className="label"></div>
                       </div>
                     </div>
                   </div>

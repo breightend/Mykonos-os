@@ -40,6 +40,10 @@ export default function PrintBarcodeModal({
   const [barcodePreview, setBarcodePreview] = useState(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
 
+  // Estados para impresión automática
+  const [printProgress, setPrintProgress] = useState(null)
+  const [isPrintingAutomatic, setIsPrintingAutomatic] = useState(false)
+
   const loadPrintSettings = async () => {
     try {
       setSettingsLoading(true)
@@ -439,8 +443,100 @@ export default function PrintBarcodeModal({
     }
   }
 
-  // Función para imprimir códigos de barras
+  // Función para imprimir códigos de barras con impresión automática
   const handlePrintBarcodes = async () => {
+    try {
+      setLoading(true)
+      setIsPrintingAutomatic(true)
+      setPrintProgress(null)
+
+      // Preparar variantes seleccionadas
+      const selectedVariantsList = Array.from(selectedVariants)
+        .map((variantId) => {
+          const variant = variants.find((v) => v.id.toString() === variantId.toString())
+          return variant
+            ? {
+                variant: variant,
+                quantity: 1 // Cada variante seleccionada = 1 diálogo de impresión
+              }
+            : null
+        })
+        .filter(Boolean) // Filtrar nulls
+
+      console.log('🔍 DEBUG: Selected variants set:', selectedVariants)
+      console.log('🔍 DEBUG: Processed variants list:', selectedVariantsList)
+
+      if (selectedVariantsList.length === 0) {
+        toast.error('Por favor selecciona al menos una variante para imprimir')
+        return
+      }
+
+      console.log('🏷️ Imprimiendo automáticamente:', {
+        variantsCount: selectedVariantsList.length,
+        variants: selectedVariantsList.map((v) => ({
+          variant: v.variant.size_name + ' - ' + v.variant.color_name,
+          variantId: v.variant.id
+        }))
+      })
+
+      // Mostrar mensaje inicial
+      toast.loading(
+        `Iniciando impresión automática de ${selectedVariantsList.length} código(s) de barras...`,
+        {
+          duration: 4000
+        }
+      )
+
+      // Usar el nuevo servicio de impresión automática
+      const result = await barcodePrintService.processAutomaticPrintRequest(
+        selectedVariantsList,
+        product,
+        printOptions,
+        (progressData) => {
+          // Callback de progreso
+          setPrintProgress(progressData)
+          console.log('� Progreso:', progressData)
+        }
+      )
+
+      if (result.success) {
+        const successMessage = `✅ Impresión automática completada: ${result.successCount} archivo(s) procesados correctamente${result.errorCount > 0 ? `, ${result.errorCount} error(es)` : ''}`
+
+        if (result.errorCount === 0) {
+          toast.success(successMessage, { duration: 6000 })
+        } else {
+          toast(successMessage, {
+            icon: '⚠️',
+            duration: 8000,
+            style: {
+              background: '#fef3c7',
+              color: '#92400e'
+            }
+          })
+        }
+
+        console.log('📊 Impresión automática exitosa:', result)
+
+        // Cerrar el modal después de una impresión exitosa
+        setTimeout(() => {
+          onClose()
+        }, 2000)
+      } else {
+        toast.error(`❌ ${result.message}`, { duration: 6000 })
+        console.error('❌ Error en impresión automática:', result.message)
+      }
+    } catch (err) {
+      console.error('Error en impresión automática:', err)
+      toast.error('Error inesperado durante la impresión automática', { duration: 4000 })
+    } finally {
+      setLoading(false)
+      setIsPrintingAutomatic(false)
+      setPrintProgress(null)
+    }
+  }
+
+  // Función para imprimir códigos de barras (versión original - servidor backend)
+  const handlePrintBarcodesOriginal = async () => {
     try {
       setLoading(true)
 
@@ -473,7 +569,7 @@ export default function PrintBarcodeModal({
         }))
       })
 
-      console.log('🚀 Enviando datos al backend:', {
+      console.log('�🚀 Enviando datos al backend:', {
         productId: product?.id,
         variants: selectedVariantsList.map((item) => ({
           variantId: item.variant.id,
@@ -487,7 +583,7 @@ export default function PrintBarcodeModal({
         duration: 3000
       })
 
-      // Usar el servicio de impresión de códigos de barras
+      // Usar el servicio de impresión de códigos de barras (versión original)
       const result = await barcodePrintService.processPrintRequest(
         selectedVariantsList,
         product,
@@ -533,6 +629,9 @@ export default function PrintBarcodeModal({
     setBarcodePreview(null)
     setLoadingPreview(false)
     setError(null)
+    // Limpiar estados de impresión automática
+    setPrintProgress(null)
+    setIsPrintingAutomatic(false)
     onClose()
   }
 
@@ -566,11 +665,101 @@ export default function PrintBarcodeModal({
 
         {/* Contenido con scroll */}
         <div className="print-modal-content space-y-6">
-          {/* Loading */}
-          {loading && (
+          {/* Loading y progreso de impresión automática */}
+          {(loading || isPrintingAutomatic) && (
             <div className="flex flex-col items-center justify-center py-8">
               <l-pinwheel size="40" stroke="3" speed="0.9" color="#570df8"></l-pinwheel>
-              <p className="mt-3 text-sm text-gray-600">Cargando variantes del producto...</p>
+
+              {isPrintingAutomatic && printProgress ? (
+                <div className="mt-4 w-full max-w-md">
+                  {/* Información de progreso */}
+                  <div className="mb-4 text-center">
+                    <h4 className="font-semibold text-primary">🖨️ Impresión Automática</h4>
+                    <p className="mt-1 text-sm text-gray-600">{printProgress.message}</p>
+                  </div>
+
+                  {/* Barra de progreso */}
+                  <div className="mb-3 h-3 overflow-hidden rounded-full bg-base-200">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 ease-out"
+                      style={{
+                        width: `${printProgress.total > 0 ? (printProgress.current / printProgress.total) * 100 : 0}%`
+                      }}
+                    ></div>
+                  </div>
+
+                  {/* Contador de progreso */}
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>
+                      Progreso: {printProgress.current}/{printProgress.total}
+                    </span>
+                    <span>
+                      {printProgress.total > 0
+                        ? Math.round((printProgress.current / printProgress.total) * 100)
+                        : 0}
+                      %
+                    </span>
+                  </div>
+
+                  {/* Indicador del paso actual */}
+                  <div className="mt-3 text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1">
+                      {printProgress.step === 'request' && (
+                        <>
+                          <div className="h-2 w-2 animate-pulse rounded-full bg-primary"></div>
+                          <span className="text-xs font-medium text-primary">
+                            Generando códigos...
+                          </span>
+                        </>
+                      )}
+                      {printProgress.step === 'urls_received' && (
+                        <>
+                          <div className="h-2 w-2 animate-pulse rounded-full bg-secondary"></div>
+                          <span className="text-xs font-medium text-secondary">URLs recibidas</span>
+                        </>
+                      )}
+                      {printProgress.step === 'processing' && (
+                        <>
+                          <div className="h-2 w-2 animate-pulse rounded-full bg-accent"></div>
+                          <span className="text-xs font-medium text-accent">
+                            Abriendo ventanas...
+                          </span>
+                        </>
+                      )}
+                      {printProgress.step === 'completed' && (
+                        <>
+                          <div className="h-2 w-2 rounded-full bg-success"></div>
+                          <span className="text-xs font-medium text-success">Completado</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Instrucciones para el usuario */}
+                  <div className="bg-info/10 border-info/20 mt-4 rounded-lg border p-3">
+                    <div className="flex items-start gap-2">
+                      <div className="text-lg text-info">ℹ️</div>
+                      <div className="text-xs text-info">
+                        <p className="mb-1 font-medium">
+                          Se están abriendo ventanas de impresión automáticamente:
+                        </p>
+                        <ul className="text-info/80 list-inside list-disc space-y-1">
+                          <li>Cada ventana mostrará un código de barras para imprimir</li>
+                          <li>El diálogo de impresión de Windows se abrirá automáticamente</li>
+                          <li>Especifica las cantidades necesarias en cada diálogo</li>
+                          <li>Las ventanas se cerrarán automáticamente después de imprimir</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-gray-600">
+                  {isPrintingAutomatic
+                    ? 'Iniciando impresión automática...'
+                    : 'Cargando variantes del producto...'}
+                </p>
+              )}
             </div>
           )}
 
@@ -1064,27 +1253,50 @@ export default function PrintBarcodeModal({
               {/* Botón principal para imprimir todas las variantes seleccionadas */}
               {variants.length > 0 && (
                 <div className="sticky border-t border-base-300 bg-base-100 pt-4">
-                  <div className="flex items-center justify-between gap-4 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 p-4">
+                  <div className="rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 p-4">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-primary">¿Listo para imprimir?</h4>
+                      <h4 className="font-semibold text-primary">
+                        ¿Listo para imprimir automáticamente?
+                      </h4>
                       <p className="text-sm text-gray-600">
-                        Se abrirán{' '}
+                        Se abrirán automáticamente{' '}
                         <span className="font-bold text-secondary">{selectedVariants.size}</span>{' '}
-                        diálogos de impresión para{' '}
+                        ventanas de impresión para{' '}
                         <span className="font-bold text-primary">{selectedVariants.size}</span>{' '}
-                        variantes
+                        variantes. No necesitas descargar archivos manualmente.
                       </p>
+
+                      {/* Información sobre métodos de impresión */}
+                      <div className="bg-info/10 border-info/20 mt-3 rounded-lg border p-3">
+                        <div className="flex items-start gap-2">
+                          <div className="text-sm text-info">💡</div>
+                          <div className="text-xs text-info">
+                            <p className="mb-1 font-medium">Métodos de impresión disponibles:</p>
+                            <ul className="text-info/80 list-inside list-disc space-y-1">
+                              <li>
+                                <strong>Automático:</strong> Se abren ventanas de impresión
+                                directamente
+                              </li>
+                              <li>
+                                <strong>Fallback:</strong> Si se bloquean ventanas, se descargan
+                                archivos PNG para imprimir manualmente
+                              </li>
+                              <li>Asegúrate de permitir ventanas popup para mejor experiencia</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="mt-4 flex gap-2">
                       <button onClick={handleClose} className="btn btn-ghost btn-sm">
                         Cancelar
                       </button>
                       <button
                         onClick={handlePrintBarcodes}
-                        disabled={loading || selectedVariants.size === 0}
+                        disabled={loading || isPrintingAutomatic || selectedVariants.size === 0}
                         className="btn btn-primary btn-sm"
                       >
-                        {loading ? (
+                        {loading || isPrintingAutomatic ? (
                           <>
                             <l-pinwheel
                               size="16"
@@ -1092,7 +1304,9 @@ export default function PrintBarcodeModal({
                               speed="0.9"
                               color="white"
                             ></l-pinwheel>
-                            Imprimiendo...
+                            {isPrintingAutomatic
+                              ? 'Imprimiendo automáticamente...'
+                              : 'Imprimiendo...'}
                           </>
                         ) : (
                           <>

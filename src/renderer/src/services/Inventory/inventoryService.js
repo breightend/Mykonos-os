@@ -159,20 +159,40 @@ export const inventoryService = {
      * @returns {Promise} Resultado del movimiento
      */
     async createVariantMovement(fromStorageId, toStorageId, variants) {
-        const response = await apiClient.post(`${API_URL}/variant-movements`, {
-            from_storage_id: fromStorageId,
-            to_storage_id: toStorageId,
-            variants: variants,
-            notes: '',
-            user_id: 1 // TODO: Obtener del contexto de sesión
-        })
+        try {
+            console.log('📤 Creando movimiento de variantes:', {
+                from: fromStorageId,
+                to: toStorageId,
+                variants: variants.length
+            })
 
-        // Invalidar caché de inventario para ambas sucursales
-        cacheService.deleteByPattern(/^products_by_storage_/)
-        cacheService.deleteByPattern(/^products_summary_/)
-        cacheService.deleteByPattern(/^variants_by_storage_/)
+            const response = await apiClient.post(`${API_URL}/variant-movements`, {
+                from_storage_id: fromStorageId,
+                to_storage_id: toStorageId,
+                variants: variants,
+                notes: '',
+                user_id: 1 // TODO: Obtener del contexto de sesión
+            })
 
-        return response.data
+            console.log('✅ Movimiento de variantes creado exitosamente')
+
+            // Invalidar caché de inventario para ambas sucursales de manera segura
+            try {
+                console.log('🧹 Limpiando caché de inventario...')
+                cacheService.deleteByPattern(/^products_by_storage_/)
+                cacheService.deleteByPattern(/^products_summary_/)
+                cacheService.deleteByPattern(/^variants_by_storage_/)
+                console.log('✅ Caché limpiado exitosamente')
+            } catch (cacheError) {
+                console.warn('⚠️ Error limpiando caché (no crítico):', cacheError)
+                // No fallar por errores de caché
+            }
+
+            return response.data
+        } catch (error) {
+            console.error('❌ Error creando movimiento de variantes:', error)
+            throw error
+        }
     },
 
     /**
