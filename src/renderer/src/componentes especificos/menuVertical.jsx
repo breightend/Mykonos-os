@@ -119,17 +119,19 @@ export default function MenuVertical({ currentPath }) {
             </button>
           </li>
         )}
-        <li>
-          <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/sucursales' ? 'active btn-active' : ''
-            }`}
-            onClick={() => setLocation('/sucursales')}
-          >
-            <Store size={20} className="flex-shrink-0" />
-            {isMenuOpen && <span className="ml-3 font-medium">Sucursales</span>}
-          </button>
-        </li>
+        {role === 'administrator' && (
+          <li>
+            <button
+              className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
+                currentPath === '/sucursales' ? 'active btn-active' : ''
+              }`}
+              onClick={() => setLocation('/sucursales')}
+            >
+              <Store size={20} className="flex-shrink-0" />
+              {isMenuOpen && <span className="ml-3 font-medium">Sucursales</span>}
+            </button>
+          </li>
+        )}
         {role === 'administrator' && (
           <div>
             <li>

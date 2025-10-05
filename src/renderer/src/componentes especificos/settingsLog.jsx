@@ -3,12 +3,17 @@ import { useTheme } from '../contexts/themeContext'
 import { useLocation } from 'wouter'
 import { useSettings } from '../contexts/settingsContext'
 import { useRef, useState, useEffect } from 'react'
+import { useSession } from '../contexts/SessionContext'
+import { ro } from 'react-day-picker/locale'
+
 
 export default function Settings({ isMenuOpen = true }) {
   const { isDarkMode, toggleDarkMode } = useTheme()
   const { settings, updateSettings } = useSettings()
   const dialogRef = useRef(null)
   const [, setLocation] = useLocation()
+  const { getCurrentUser } = useSession()
+  const role = getCurrentUser()?.role || 'user'
 
   const [localSettings, setLocalSettings] = useState(settings)
 
@@ -76,14 +81,31 @@ export default function Settings({ isMenuOpen = true }) {
                 </div>
               </label>
             </div>
-
+            {role === 'administrator' && (
+              <div className="flex flex-col items-center gap-4 text-base-content">
+                <button
+                  className="btn w-full rounded-xl"
+                  onClick={() => setLocation('/createUser')}
+                >
+                  Crear usuario
+                </button>
+              </div>
+            )}
+            {role === 'administrator' && (
+              <div className="flex flex-col items-center gap-4 text-base-content">
+                <button
+                  className="btn w-full rounded-xl"
+                  onClick={() => setLocation('/createUser')}
+                >
+                  Crear usuario
+                </button>
+              </div>
+            )}
             <div className="flex flex-col items-center gap-4 text-base-content">
-              <button className="btn w-full rounded-xl" onClick={() => setLocation('/createUser')}>
-                Crear usuario
-              </button>
-            </div>
-            <div className="flex flex-col items-center gap-4 text-base-content">
-              <button className="btn w-full rounded-xl" onClick={() => setLocation('/formasDePagoGestion')}>
+              <button
+                className="btn w-full rounded-xl"
+                onClick={() => setLocation('/formasDePagoGestion')}
+              >
                 Gestionar formas de pago
               </button>
             </div>

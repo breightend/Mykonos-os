@@ -663,6 +663,8 @@ export default function MoveInventory() {
 
   // Función para abrir el modal de productos
   const openProductModal = (shipment) => {
+    console.log('🔍 Abriendo modal de productos para envío:', shipment)
+    console.log('📦 Productos del envío:', shipment.products)
     setSelectedShipmentProducts(shipment.products)
     setSelectedShipmentInfo(shipment)
     setShowProductModal(true)
@@ -1829,16 +1831,30 @@ export default function MoveInventory() {
       {/* Modal de productos del envío */}
       {showProductModal && selectedShipmentInfo && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
           onClick={closeProductModal}
         >
+          {console.log('🎯 RENDERIZANDO MODAL:', {
+            showProductModal,
+            selectedShipmentInfo: selectedShipmentInfo?.id,
+            productsCount: selectedShipmentProducts?.length
+          })}
           <div
-            className="modal-box w-11/12 max-w-7xl bg-base-100 shadow-2xl"
+            className="relative max-h-[90vh] w-11/12 max-w-7xl overflow-y-auto rounded-lg bg-base-100 p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-4 text-lg font-bold">
-              Productos del Envío #{selectedShipmentInfo.id}
-            </h3>
+            <div className="flex items-center justify-between border-b border-base-300 pb-4">
+              <h3 className="text-lg font-bold">
+                📦 Productos del Envío #{selectedShipmentInfo.id}
+              </h3>
+              <button
+                onClick={closeProductModal}
+                className="btn btn-ghost btn-sm btn-circle"
+                title="Cerrar modal"
+              >
+                ✕
+              </button>
+            </div>
 
             <div className="mb-4 rounded-lg bg-base-200 p-3">
               <div className="flex items-center justify-between">
@@ -1885,76 +1901,91 @@ export default function MoveInventory() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="table table-zebra">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th>Marca</th>
-                    <th>Variante</th>
-                    <th>Color</th>
-                    <th>Cantidad</th>
-                    <th>Precio Venta</th>
-                    <th>Código</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedShipmentProducts.map((product, idx) => (
-                    <tr key={idx}>
-                      <td>
-                        <div className="font-medium">{product.name}</div>
-                      </td>
-                      <td>
-                        <span className="badge badge-outline">{product.brand}</span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <span className="badge badge-sm">{product.size}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1">
-                          <div
-                            className="h-4 w-4 rounded border"
-                            style={{ backgroundColor: getValidHexColor(product.color_hex) }}
-                          ></div>
-                          <span className="text-xs">{product.color}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="badge badge-primary">{product.quantity}</span>
-                      </td>
-                      <td>
-                        <span className="font-mono">
-                          ${(parseFloat(product.sale_price) || 0).toFixed(2)}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className="font-mono text-xs">{product.variant_barcode}</span>
-                      </td>
+              {selectedShipmentProducts && selectedShipmentProducts.length > 0 ? (
+                <table className="table table-zebra">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Marca</th>
+                      <th>Variante</th>
+                      <th>Color</th>
+                      <th>Cantidad</th>
+                      <th>Precio Venta</th>
+                      <th>Código</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {selectedShipmentProducts.map((product, idx) => (
+                      <tr key={idx}>
+                        <td>
+                          <div className="font-medium">{product.name}</div>
+                        </td>
+                        <td>
+                          <span className="badge badge-outline">{product.brand}</span>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <span className="badge badge-sm">{product.size}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1">
+                            <div
+                              className="h-4 w-4 rounded border"
+                              style={{ backgroundColor: getValidHexColor(product.color_hex) }}
+                            ></div>
+                            <span className="text-xs">{product.color}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge badge-primary">{product.quantity}</span>
+                        </td>
+                        <td>
+                          <span className="font-mono">
+                            ${(parseFloat(product.sale_price) || 0).toFixed(2)}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className="font-mono text-xs">{product.variant_barcode}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-8 text-center">
+                  <div className="mb-4 text-4xl">📦</div>
+                  <p className="text-lg font-medium">No hay productos para mostrar</p>
+                  <p className="text-sm opacity-70">
+                    Este envío no contiene productos o hay un error en los datos
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="mt-4 rounded-lg bg-base-200 p-3">
-              <div className="flex justify-between text-sm">
-                <span>
-                  <strong>Total productos:</strong> {selectedShipmentProducts.length}
-                </span>
-                <span>
-                  <strong>Total unidades:</strong>{' '}
-                  {selectedShipmentProducts.reduce((sum, p) => sum + p.quantity, 0)}
-                </span>
-                <span>
-                  <strong>Valor total:</strong> $
-                  {selectedShipmentProducts
-                    .reduce((sum, p) => sum + (parseFloat(p.sale_price) || 0) * p.quantity, 0)
-                    .toFixed(2)}
-                </span>
+            {selectedShipmentProducts && selectedShipmentProducts.length > 0 && (
+              <div className="mt-4 rounded-lg bg-base-200 p-3">
+                <div className="flex justify-between text-sm">
+                  <span>
+                    <strong>Total productos:</strong> {selectedShipmentProducts.length}
+                  </span>
+                  <span>
+                    <strong>Total unidades:</strong>{' '}
+                    {selectedShipmentProducts.reduce((sum, p) => sum + (p.quantity || 0), 0)}
+                  </span>
+                  <span>
+                    <strong>Valor total:</strong> $
+                    {selectedShipmentProducts
+                      .reduce(
+                        (sum, p) => sum + (parseFloat(p.sale_price) || 0) * (p.quantity || 0),
+                        0
+                      )
+                      .toFixed(2)}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="modal-action">
               {/* Solo mostrar botones de acción para envíos en tránsito */}
