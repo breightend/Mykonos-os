@@ -45,6 +45,9 @@ export default function Inventario() {
   const barcodeInputRef = useRef(null)
   const autoSearchTimeoutRef = useRef(null)
 
+  // Ref para trackear el último storage usado en el modal
+  const lastModalStorageRef = useRef(null)
+
   // Nuevo estado para el modal de detalles
   const [productDetailModalOpen, setProductDetailModalOpen] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(null)
@@ -210,6 +213,19 @@ export default function Inventario() {
   })
 
   const handleRowDoubleClick = (row) => {
+    const currentStorageId = currentStorage?.id
+    console.log('🎯 Opening modal for product:', row.id)
+    console.log('🏪 Current storage from session:', currentStorageId)
+    console.log('� Selected storage from inventory:', selectedStorage)
+    console.log('🔍 Full currentStorage object:', currentStorage)
+    console.log('💾 Modal will use storageId:', currentStorageId)
+
+    // Force cache clear if storage changed since last modal open
+    if (lastModalStorageRef.current && lastModalStorageRef.current !== currentStorageId) {
+      console.log('🔄 Storage changed since last modal, will force fresh data')
+    }
+
+    lastModalStorageRef.current = currentStorageId
     setSelectedProductId(row.id)
     setProductDetailModalOpen(true)
   }
@@ -369,7 +385,7 @@ export default function Inventario() {
           // Verificar que no cambió mientras esperábamos
           searchByBarcode(value.trim())
         }
-      }, 150) 
+      }, 150)
     }
   }
   const formatCurrency = (value) => {
@@ -818,9 +834,13 @@ export default function Inventario() {
 
         {/* Modal de detalles del producto */}
         <ProductDetailModal
+          key={`product-${selectedProductId}-storage-${selectedStorage || currentStorage?.id}`}
           isOpen={productDetailModalOpen}
-          onClose={() => setProductDetailModalOpen(false)}
+          onClose={() => {
+            setProductDetailModalOpen(false)
+          }}
           productId={selectedProductId}
+          storageId={selectedStorage || currentStorage?.id}
         />
 
         {/* Modal de impresión de códigos de barras */}
