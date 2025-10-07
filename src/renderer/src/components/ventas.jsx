@@ -1,16 +1,16 @@
 import { Trash2, Gift, Replace } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
-import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { useSellContext } from '../contexts/sellContext'
 import salesService from '../services/salesService'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 //TODO agregar el vendedor a la venta
 
 function Ventas() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [codigoInput, setCodigoInput] = useState('')
   const [productos, setProductos] = useState([])
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
@@ -37,34 +37,34 @@ function Ventas() {
   }, [])
 
   const agregarProductoDevolucion = async () => {
-    const codigo = codigoDevolucionInput.trim();
+    const codigo = codigoDevolucionInput.trim()
     if (!codigo) {
-      toast.error('Por favor ingrese un código de barras de variante', { duration: 2000 });
-      return;
+      toast.error('Por favor ingrese un código de barras de variante', { duration: 2000 })
+      return
     }
-    setLoadingDevolucion(true);
+    setLoadingDevolucion(true)
     try {
-      console.log('🔍 Buscando producto de devolución por código de variante:', codigo);
+      console.log('🔍 Buscando producto de devolución por código de variante:', codigo)
 
       const response = modoIntercambio
         ? await salesService.getProductByVariantBarcodeForExchange(codigo)
-        : await salesService.getProductByVariantBarcode(codigo);
+        : await salesService.getProductByVariantBarcode(codigo)
 
       if (response.status === 'success') {
-        const productData = response.data;
-        console.log('✅ Producto de devolución encontrado:', productData);
+        const productData = response.data
+        console.log('✅ Producto de devolución encontrado:', productData)
 
         const existingProductIndex = productosDevolucion.findIndex(
           (p) => p.variant_barcode === codigo
-        );
+        )
 
         if (existingProductIndex !== -1) {
-          const nuevosProductos = [...productosDevolucion];
-          nuevosProductos[existingProductIndex].cantidad += 1;
-          setProductosDevolucion(nuevosProductos);
+          const nuevosProductos = [...productosDevolucion]
+          nuevosProductos[existingProductIndex].cantidad += 1
+          setProductosDevolucion(nuevosProductos)
           toast.success(`Cantidad de devolución incrementada: ${productData.product_name}`, {
             duration: 2000
-          });
+          })
         } else {
           const nuevoProductoDevolucion = {
             variant_barcode: productData.variant_barcode,
@@ -84,37 +84,37 @@ function Ventas() {
             sucursal_nombre: productData.sucursal_nombre,
             tax: productData.tax || 0,
             discount: productData.discount || 0
-          };
+          }
 
-          setProductosDevolucion([...productosDevolucion, nuevoProductoDevolucion]);
+          setProductosDevolucion([...productosDevolucion, nuevoProductoDevolucion])
           toast.success(
             `Producto de devolución agregado: ${productData.product_name} - ${productData.size_name} - ${productData.color_name}`,
             {
               duration: 3000
             }
-          );
+          )
         }
 
-        setCodigoDevolucionInput('');
+        setCodigoDevolucionInput('')
       } else {
         toast.error(response.message || 'Producto de devolución no encontrado', {
           duration: 3000
-        });
+        })
       }
     } catch (error) {
-      console.error('❌ Error buscando producto de devolución:', error);
+      console.error('❌ Error buscando producto de devolución:', error)
 
       if (error.response?.status === 404) {
         toast.error('Producto de devolución no encontrado', {
           duration: 3000
-        });
+        })
       } else {
         toast.error('Error en la búsqueda del producto de devolución', {
           duration: 2000
-        });
+        })
       }
     } finally {
-      setLoadingDevolucion(false);
+      setLoadingDevolucion(false)
     }
   }
 
@@ -346,7 +346,6 @@ function Ventas() {
     0
   )
   const totalFinal = total - totalDevolucion
-
 
   return (
     <div>

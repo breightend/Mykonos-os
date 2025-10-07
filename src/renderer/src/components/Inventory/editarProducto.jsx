@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { Save, Calculator, Package, Upload, Camera, ArrowLeft, Plus, X } from 'lucide-react'
-import { useLocation, useSearchParams } from 'wouter'
+import { useSearchParams } from 'wouter'
 import { inventoryService } from '../../services/Inventory/inventoryService'
 import { useSession } from '../../contexts/SessionContext'
 import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
 import toast, { Toaster } from 'react-hot-toast'
 import { API_ENDPOINTS } from '../../config/apiConfig.js'
+import { useHashLocation } from 'wouter/use-hash-location'
 //TODO: Colocar que se redondee para arriba asi no maneja precios raros.
 
 const EditarProducto = () => {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [searchParams] = useSearchParams()
   const productId = searchParams.get('id')
   const [productData, setProductData] = useState(null)

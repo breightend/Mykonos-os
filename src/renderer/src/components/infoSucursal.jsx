@@ -1,6 +1,6 @@
 import { ArrowLeft, Edit2, Save, CircleX, Trash2, Plus, X, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation, useSearchParams } from 'wouter'
+import {  useSearchParams } from 'wouter'
 import {
   fetchSucursalById,
   fetchSucursalEmployees,
@@ -11,9 +11,10 @@ import {
 } from '../services/sucursales/sucursalesService'
 import { fetchEmployee } from '../services/employee/employeeService'
 import toast, { Toaster } from 'react-hot-toast'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 function InfoSucursal() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [searchParams] = useSearchParams()
   const sucursalId = searchParams.get('id')
   const [sucursal, setSucursal] = useState(null)

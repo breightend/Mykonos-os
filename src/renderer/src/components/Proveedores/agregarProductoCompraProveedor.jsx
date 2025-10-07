@@ -1,4 +1,4 @@
-import { useLocation, useSearchParams } from 'wouter'
+import { useSearchParams } from 'wouter'
 import { useState, useEffect } from 'react'
 import { useProductContext } from '../../contexts/ProductContext'
 import toast from 'react-hot-toast'
@@ -32,6 +32,7 @@ import ColorSelect from '../../components/ColorSelect'
 import { pinwheel } from 'ldrs'
 import ProductImageUploader from '../../componentes especificos/dropZone'
 import { Shirt, Boxes } from 'lucide-react'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 //TODO: conectar el contexto
 
@@ -214,7 +215,7 @@ export default function NuevoProductoDeProveedor() {
 
   // Estados para el formulario
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
 
   // Estados para datos de la BD

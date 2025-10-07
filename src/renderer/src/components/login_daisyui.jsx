@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
 import { fetchSucursales } from '../services/sucursales/sucursalesService'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function LoginDaisyUI() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const { login, loading, error } = useSession()
 
   const [formData, setFormData] = useState({

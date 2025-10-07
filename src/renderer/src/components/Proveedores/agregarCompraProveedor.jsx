@@ -26,16 +26,17 @@ import { fetchProviderById } from '../../services/proveedores/proveedorService'
 import { fetchSize } from '../../services/products/sizeService'
 import { fetchColor } from '../../services/products/colorService'
 import toast from 'react-hot-toast'
-import { useLocation, useSearchParams } from 'wouter'
+import {  useSearchParams } from 'wouter'
 import { useProductContext } from '../../contexts/ProductContext'
 import { DayPicker } from 'react-day-picker'
 import { es } from 'react-day-picker/locale'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function AgregarCompraProveedor() {
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState([])
   const [provider, setProvider] = useState(null)
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
 

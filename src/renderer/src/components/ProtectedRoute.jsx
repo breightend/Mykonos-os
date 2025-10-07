@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
-import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
 import { Loader2 } from 'lucide-react'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useSession()
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
 
   useEffect(() => {
     // Only redirect if we're not loading and user is not authenticated
@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <Loader2 className="text-primary mx-auto h-8 w-8 animate-spin" />
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
           <p className="mt-2 text-gray-600">Verificando sesión...</p>
         </div>
       </div>

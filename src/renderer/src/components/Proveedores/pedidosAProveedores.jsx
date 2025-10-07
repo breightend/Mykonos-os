@@ -10,7 +10,6 @@ import {
   Download,
   BarChart3
 } from 'lucide-react'
-import { useLocation } from 'wouter'
 import {
   fetchPurchases,
   fetchPurchaseById,
@@ -20,6 +19,7 @@ import {
   fetchProductStatistics
 } from '../../services/proveedores/purchaseService'
 import { useEffect, useState } from 'react'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function PedidosAProveedores() {
   const [purchases, setPurchases] = useState([])
@@ -29,7 +29,7 @@ export default function PedidosAProveedores() {
   const [summary, setSummary] = useState({})
   const [productStats, setProductStats] = useState({})
   const [showProductStats, setShowProductStats] = useState(false)
-  const [location, setLocation] = useLocation()
+  const [location, setLocation] = useHashLocation()
 
   const [showModal, setShowModal] = useState(false)
   const [selectedPurchase, setSelectedPurchase] = useState(null)

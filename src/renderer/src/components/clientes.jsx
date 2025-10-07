@@ -1,18 +1,18 @@
 import { Info, Search, UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'wouter'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { fetchCliente } from '../services/clientes/clientsService'
 import '../assets/modal-improvements.css'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 // Register the pinwheel loader
 pinwheel.register()
 
 //TODO: Modal de editar informacion del cliente.
 export default function Clientes() {
-  const [location, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [clientes, setClientes] = useState([])
   const [filteredClientes, setFilteredClientes] = useState([])
   const [selectedRow, setSelectedRow] = useState(null)

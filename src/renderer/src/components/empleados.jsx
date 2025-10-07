@@ -1,16 +1,16 @@
 import { Info, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'wouter'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { fetchEmployee } from '../services/employee/employeeService'
 import '../assets/modal-improvements.css'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 pinwheel.register()
 
 function Empleados() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [employee, setEmployee] = useState([])
   const [filteredEmployee, setFilteredEmployee] = useState([])
   const [selectedRow, setSelectedRow] = useState(null)

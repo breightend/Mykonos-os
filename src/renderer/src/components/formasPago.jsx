@@ -1,5 +1,4 @@
 import { ArrowLeft, CreditCard, Plus } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useEffect, useState } from 'react'
 import CuentaCorrienteClientesFP from '../componentes especificos/CuentaCorrienteClientesFP'
 import { useSellContext } from '../contexts/sellContext'
@@ -8,9 +7,10 @@ import { getBancos } from '../services/paymentsServices/banksService'
 import paymentMethodsService from '../services/paymentsServices/paymentMethodsService'
 import * as icon from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function FormasPago() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [metodosSeleccionados, setMetodosSeleccionados] = useState([])
   const [clienteCuentaCorriente, setClienteCuentaCorriente] = useState(null)
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false)

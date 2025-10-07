@@ -1,6 +1,6 @@
 import { ArrowLeft, Plus, X, Edit2, Save, CircleX } from 'lucide-react'
 import React, { useEffect } from 'react'
-import { useLocation, useSearchParams } from 'wouter'
+import {  useSearchParams } from 'wouter'
 import { useState } from 'react'
 import {
   fetchEmployeeById,
@@ -11,9 +11,10 @@ import {
 } from '../services/employee/employeeService'
 import { fetchSucursales } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 function InfoEmpleado() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [searchParams] = useSearchParams()
   const empleadoId = searchParams.get('id')
   const [empleado, setEmpleado] = useState(null)

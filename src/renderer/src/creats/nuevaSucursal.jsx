@@ -1,13 +1,13 @@
 import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
-import { useLocation } from 'wouter'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { postData as createSucursal } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
+import { useHashLocation } from 'wouter/use-hash-location'
 //BUG: no funciona la fecha de creacion 
 function NuevaSucursal() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({

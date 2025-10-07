@@ -1,17 +1,17 @@
-import { useLocation } from 'wouter'
-import { useSellContext } from '../contexts/sellContext'
+import { useSellContext } from '../contexts/sellContext.jsx'
 import toast, { Toaster } from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { Gift, Printer, Replace, RotateCcw, Shirt } from 'lucide-react'
-import { salesService } from '../services/salesService'
-import { getCurrentBranchId } from '../utils/posUtils'
-import { useSession } from '../contexts/SessionContext'
+import { salesService } from '../services/salesService.js'
+import { getCurrentBranchId } from '../utils/posUtils.js'
+import { useSession } from '../contexts/SessionContext.jsx'
 import { API_ENDPOINTS } from '../config/apiConfig.js'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function ConfirmacionDatosDeCompra() {
   const { saleData } = useSellContext()
   console.log('Información del contexto:', saleData)
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [isProcessing, setIsProcessing] = useState(false)
   const branchId = getCurrentBranchId()
   const userId = useSession().session.user_id

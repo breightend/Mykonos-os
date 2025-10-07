@@ -13,7 +13,7 @@ import {
   Handshake
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation, useSearchParams } from 'wouter'
+import {  useSearchParams } from 'wouter'
 import { fetchProviderById } from '../../services/proveedores/proveedorService'
 import {
   fetchBrandByProviders,
@@ -37,9 +37,10 @@ import PurchaseDetailsModal from '../PurchaseDetailsModal'
 import OperationDetailsModal from '../OperationDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
 import { useSession } from '../../contexts/SessionContext'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function InfoProvider() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [searchParams] = useSearchParams()
   const providerId = searchParams.get('id')
   const [provider, setProvider] = useState(null)

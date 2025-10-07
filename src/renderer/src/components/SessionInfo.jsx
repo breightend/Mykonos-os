@@ -1,10 +1,10 @@
 import { LogOut, User, Building2, Shield, Clock } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
-import { useLocation } from 'wouter'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 const SessionInfo = () => {
   const { session, logout, isAdmin } = useSession()
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
 
   const handleLogout = async () => {
     try {

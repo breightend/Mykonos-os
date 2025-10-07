@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useLocation } from 'wouter'
 import {
   User,
   ShoppingCart,
@@ -16,10 +15,11 @@ import {
 } from 'lucide-react'
 import SettingsLog from './settingsLog'
 import { useSession } from '../contexts/SessionContext'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function MenuVertical({ currentPath }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const { getCurrentUser } = useSession()
   const role = getCurrentUser()?.role || 'user'
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useLocation } from 'wouter'
 import {
   ArrowLeft,
   LoaderCircle,
@@ -28,6 +27,7 @@ import GroupTreePreviewModal from '../components/GroupTreePreviewModal'
 import ColorSelect from '../components/ColorSelect'
 import PrintBarcodeModal from '../modals/modalsInventory/printBarcodeModal'
 import { pinwheel } from 'ldrs'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function NuevoProducto() {
   pinwheel.register()
@@ -48,7 +48,7 @@ export default function NuevoProducto() {
   const [providerCode, setProviderCode] = useState('')
   const [useAutoCalculation, setUseAutoCalculation] = useState(settings.autoCalculatePrice)
   const [talles, setTalles] = useState([{ talle: '', colores: [{ color: '', cantidad: '' }] }])
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [cantidadTotal, setCantidadTotal] = useState(0)
 
   // Estados para datos de la BD

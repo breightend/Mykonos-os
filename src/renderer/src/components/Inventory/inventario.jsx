@@ -9,7 +9,6 @@ import {
   Loader,
   Scan
 } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../../componentes especificos/menuVertical'
@@ -24,11 +23,12 @@ import { salesService } from '../../services/salesService'
 import { useSession } from '../../contexts/SessionContext'
 import toast from 'react-hot-toast'
 import '../../assets/modal-improvements.css'
+import { useHashLocation } from 'wouter/use-hash-location'
 pinwheel.register()
 
 //TODO: agregar que si no hay una sucursal logueada no se pueda acceder a nuevos productos ni mover productos entre sucursales.
 export default function Inventario() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const { getCurrentStorage } = useSession()
   const [selectedRow, setSelectedRow] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)

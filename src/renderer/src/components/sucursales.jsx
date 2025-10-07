@@ -1,6 +1,5 @@
 import { Info, Search, Plus, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'wouter'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
@@ -11,12 +10,13 @@ import {
 } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
 import '../assets/modal-improvements.css'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 // Register the pinwheel loader
 pinwheel.register()
 
 function Sucursales() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [sucursales, setSucursales] = useState([])
   const [filteredSucursales, setFilteredSucursales] = useState([])
   const [selectedRow, setSelectedRow] = useState(null)

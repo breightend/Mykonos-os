@@ -1,5 +1,4 @@
 import { Search, Package, FileChartPie, HousePlus, CalendarClock } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { pinwheel } from 'ldrs'
 import MenuVertical from '../../componentes especificos/menuVertical'
 import Navbar from '../../componentes especificos/navbar'
@@ -9,11 +8,12 @@ import { fetchProviderJoinBrand } from '../../services/proveedores/brandService'
 import toast, { Toaster } from 'react-hot-toast'
 import { useSession } from '../../contexts/SessionContext'
 import '../../assets/modal-improvements.css'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 pinwheel.register()
 
 export default function Proveedores() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [proveedores, setProveedores] = useState([])
   const [filteredProveedores, setFilteredProveedores] = useState([])
   const [selectedRow, setSelectedRow] = useState(null)

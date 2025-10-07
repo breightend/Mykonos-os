@@ -15,12 +15,12 @@ import {
   Target,
   Sparkles
 } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useEffect, useState } from 'react'
 import { fetchProductStatistics } from '../../services/proveedores/purchaseService'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function ResumenProveedores() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [productStats, setProductStats] = useState({})
   const [loading, setLoading] = useState(true)
 

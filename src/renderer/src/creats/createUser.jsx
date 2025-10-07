@@ -3,11 +3,11 @@ import { enviarData } from '../services/usuario/usuarioService'
 import { fetchSucursales, assignEmployeeToSucursal } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
 import { ArrowLeft, Eye, EyeClosed } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useDropzone } from 'react-dropzone'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 function CreateUser() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',

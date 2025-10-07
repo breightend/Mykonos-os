@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { API_ENDPOINTS } from '../config/apiConfig.js'
+import { API_ENDPOINTS, checkServerConnectivity } from '../config/apiConfig.js'
 
 const SessionContext = createContext()
 
@@ -14,9 +14,7 @@ export const useSession = () => {
 export const SessionProvider = ({ children }) => {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  // Verificar sesión al inicializar
+  const [error, setError] = useState(null) // Verificar sesión al inicializar
   useEffect(() => {
     checkExistingSession()
   }, []) // Empty dependency array to run only once
@@ -28,19 +26,15 @@ export const SessionProvider = ({ children }) => {
 
       console.log('🔍 Checking session with server:', API_ENDPOINTS.AUTH)
 
-      // First, test basic connectivity to the server
-      try {
-        const healthResponse = await fetch(`${API_ENDPOINTS.HEALTH}`, {
-          method: 'GET',
-          signal: AbortSignal.timeout(5000) // 5 second timeout for health check
-        })
-        console.log('🏥 Health check status:', healthResponse.status)
-        if (healthResponse.ok) {
-          const healthData = await healthResponse.json()
-          console.log('🏥 Health check data:', healthData)
-        }
-      } catch (healthError) {
-        console.log('❌ Health check failed:', healthError.message)
+      // Check basic connectivity using a working endpoint
+      const connectivity = await checkServerConnectivity()
+      if (connectivity.connected) {
+        console.log('✅ Server connectivity confirmed via', connectivity.endpoint)
+      } else {
+        console.log('❌ Server connectivity failed:', connectivity.error)
+        setError('No se puede conectar al servidor')
+        setLoading(false)
+        return
       }
 
       if (!sessionToken) {

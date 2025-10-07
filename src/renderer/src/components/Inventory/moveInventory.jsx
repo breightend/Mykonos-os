@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { pinwheel } from 'ldrs'
 import inventoryService from '../../services/inventory/inventoryService'
 import { salesService } from '../../services/salesService'
-import { useLocation } from 'wouter'
 import toast from 'react-hot-toast'
 import {
   ArrowLeft,
@@ -24,13 +23,14 @@ import {
   ScanBarcode
 } from 'lucide-react'
 import { useSession } from '../../contexts/SessionContext'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 pinwheel.register()
 export default function MoveInventory() {
   const [storageList, setStorageList] = useState([])
   const [selectedVariants, setSelectedVariants] = useState([])
   const [selectedDestination, setSelectedDestination] = useState('')
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [loading, setLoading] = useState(true)
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [error, setError] = useState(null)

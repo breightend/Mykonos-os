@@ -1,6 +1,6 @@
 import { ArrowLeft, Pencil, Trash2, Package, RotateCcw, RefreshCw, Shirt } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation, useSearchParams } from 'wouter'
+import { useSearchParams } from 'wouter'
 import AgregarCompraModal from '../modals/modalsCliente/agregarCompraModal'
 import AgregarPagoModal from '../modals/modalsCliente/agregarPagoModal'
 import EditarClienteModal from '../modals/modalsCliente/editarClienteModal'
@@ -10,9 +10,10 @@ import EliminarClienteModal from '../modals/modalsCliente/eliminarClienteModal'
 import { accountMovementsService } from '../services/accountMovements/accountMovementsService'
 import { clientSalesService } from '../services/clientSales/clientSalesService'
 import { toast } from 'react-hot-toast'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function InfoClientes() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [searchParams] = useSearchParams()
   const clientId = searchParams.get('id')
   const [cliente, setCliente] = useState(null)

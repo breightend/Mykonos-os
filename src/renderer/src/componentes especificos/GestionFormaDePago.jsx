@@ -1,8 +1,8 @@
 import { ArrowLeft, Landmark, Trash2 } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useEffect, useState } from 'react'
 import { postNuevoBanco, getBancos, deleteBanco } from '../services/paymentsServices/banksService'
 import toast, { Toaster } from 'react-hot-toast'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function GestionFormaDePago() {
   const [isLoading, setIsLoading] = useState(false)
@@ -50,7 +50,7 @@ export default function GestionFormaDePago() {
     fetchBancos()
   }, [])
 
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   return (
     <div className="mx-auto max-w-2xl rounded-2xl bg-white p-6 shadow-lg">
       {/* Encabezado */}

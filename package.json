@@ -11,12 +11,15 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "clean": "rimraf dist out",
+    "rebuild": "npm run clean && npm run build",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux",
-    "dist": "electron-builder"
+    "build:unpack": "npm run rebuild && electron-builder --dir",
+    "build:win": "npm run rebuild && electron-builder --win",
+    "build:mac": "npm run rebuild && electron-builder --mac",
+    "build:linux": "npm run rebuild && electron-builder --linux",
+    "dist": "electron-builder",
+    "debug:build": "npm run rebuild && electron-builder --win --publish=never"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -55,14 +58,39 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "rimraf": "^6.0.1",
     "vite": "^6.1.0"
   },
   "build": {
     "appId": "com.mykonos.miapptienda",
-    "productName": "Mi Sistema de Tienda",
+    "productName": "Mi Mykonos app",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "server-config.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
+      "target": {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      },
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
     },
     "mac": {
       "target": "dmg",
@@ -71,7 +99,12 @@
     "linux": {
       "target": "AppImage",
       "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   }
-  
 }

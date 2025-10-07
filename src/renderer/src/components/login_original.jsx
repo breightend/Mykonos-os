@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye } from 'lucide-react'
 import Settings from '../componentes especificos/settings'
-import { useLocation } from 'wouter'
 import { useSession } from '../contexts/SessionContext'
 import { fetchSucursales } from '../services/sucursales/sucursalesService'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function Login() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const { login, loading, error } = useSession()
 
   const [formData, setFormData] = useState({

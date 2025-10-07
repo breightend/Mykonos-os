@@ -1,0 +1,16 @@
+{
+  "server": {
+    "url": "http://190.3.63.58:8000",
+    "timeout": 8000,
+    "retries": 3
+  },
+  "app": {
+    "name": "Mi Sistema de Tienda",
+    "version": "1.0.0",
+    "debug": false
+  },
+  "cache": {
+    "enabled": true,
+    "defaultTTL": 300000
+  }
+}

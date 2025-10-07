@@ -1,10 +1,10 @@
 import { ArrowLeft } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useState } from 'react'
 import { postData } from '../services/clientes/clientsService'
+import { useHashLocation } from 'wouter/use-hash-location'
 //Cambiar validaciones, adaptarlas mas al cliente
 function CreateClient() {
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const [formData, setFormData] = useState({
     entity_name: '',
     entity_type: 'client',
@@ -12,8 +12,8 @@ function CreateClient() {
     responsabilidad_iva: '',
     domicilio_comercial: '',
     cuit: '',
-    inicio_actividades: '', 
-    ingresos_brutos: '0', 
+    inicio_actividades: '',
+    ingresos_brutos: '0',
     contact_name: '',
     phone_number: '',
     email: '',
@@ -53,7 +53,6 @@ function CreateClient() {
         console.log(response)
         setLocation('/clientes')
 
-
         if (response.success || response.status === 200) {
           setLocation('/clientes')
         } else {
@@ -74,16 +73,16 @@ function CreateClient() {
   }
   return (
     <div className="flex flex-col items-center p-10">
-      <div className="bg-base-100 w-full max-w-4xl rounded-2xl p-8 shadow-xl">
+      <div className="w-full max-w-4xl rounded-2xl bg-base-100 p-8 shadow-xl">
         <div className="mb-6 flex items-center">
           <button
             onClick={() => setLocation('/clientes')}
-            className="btn btn-ghost btn-circle tooltip tooltip-bottom mr-4"
+            className="tooltip tooltip-bottom btn btn-ghost btn-circle mr-4"
             data-tip="Volver"
           >
             <ArrowLeft />
           </button>
-          <h2 className="text-warning text-3xl font-bold">Crear cliente</h2>
+          <h2 className="text-3xl font-bold text-warning">Crear cliente</h2>
         </div>
         <div className="space-y-6">
           {[
@@ -133,7 +132,7 @@ function CreateClient() {
                 name={field.name}
                 onChange={onChange}
                 type={field.type}
-                className={`w-full border px-4 py-2 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                className={`w-full border px-4 py-2 ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
                 placeholder={field.placeholder}
                 value={formData[field.name] || ''}
               />
@@ -145,13 +144,13 @@ function CreateClient() {
         </div>
         <div className="mt-8 flex justify-end gap-6">
           <button
-            className="btn btn-neutral hover:bg-neutral-focus rounded-xl px-6 py-2 transition"
+            className="hover:bg-neutral-focus btn btn-neutral rounded-xl px-6 py-2 transition"
             onClick={() => setLocation('/clientes')}
           >
             Cancelar
           </button>
           <button
-            className="btn btn-success hover:bg-success-focus rounded-xl px-6 py-2 transition"
+            className="hover:bg-success-focus btn btn-success rounded-xl px-6 py-2 transition"
             onClick={handleSubmit}
           >
             Agregar cliente

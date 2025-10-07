@@ -10,7 +10,7 @@ import {
 import { statisticsApi } from '../../services/statisticsApi'
 import { useSession } from '../../contexts/SessionContext'
 import { ArrowLeft } from 'lucide-react'
-import { useLocation } from 'wouter'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 const ComprehensiveStatistics = () => {
   // State for different data types
@@ -131,7 +131,7 @@ const ComprehensiveStatistics = () => {
     }
   }, [currentStorage?.id, dateRange]) 
 
-  const [locarion, setLocation] = useLocation()
+  const [locarion, setLocation] = useHashLocation()
 
   const handleVolver = () => {
     setLocation('/home')

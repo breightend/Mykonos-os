@@ -1,13 +1,14 @@
-import { Route, Switch } from 'wouter'
+import { Route, Router } from 'wouter'
+import { useHashLocation } from 'wouter/use-hash-location'
 import { SessionProvider } from './contexts/SessionContext'
 import { useGlobalData } from './contexts/GlobalDataContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import PreloadScreen from './components/PreloadScreen'
 import { useState } from 'react'
-import Clientes from './components/clientes'
-import ConfirmacionDatosDeCompra from './components/confirmacionDatosDeCompra'
-import Empleados from './components/empleados'
-import FormasPago from './components/formasPago'
+import Clientes from './components/Clientes'
+import ConfirmacionDatosDeCompra from './components/ConfirmacionDatosDeCompra'
+import Empleados from './components/Empleados'
+import FormasPago from './components/FormasPago'
 import InfoClientes from './components/infoCliente'
 import InfoProvider from './components/Proveedores/infoProvider'
 import Informe from './components/informe'
@@ -25,7 +26,6 @@ import Sucursales from './components/sucursales'
 import NuevaSucursal from './creats/nuevaSucursal'
 import InfoSucursal from './components/infoSucursal'
 import CreateUser from './creats/createUser'
-import InfoProducto from './components/inventory/infoInventory'
 import ComprehensiveStatistics from './components/stadistics/comprehensive-statistics'
 import MoveInventory from './components/Inventory/moveInventory'
 import TestColorPage from './test/TestColorPage'
@@ -49,7 +49,7 @@ function App() {
   }
   return (
     <SessionProvider>
-      <Switch>
+      <Router hook={useHashLocation}>
         <Route path="/" component={Login} />
         <Route path="/home">
           <ProtectedRoute>
@@ -64,11 +64,6 @@ function App() {
         <Route path="/inventario">
           <ProtectedRoute>
             <Inventario />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/infoInventory">
-          <ProtectedRoute>
-            <InfoProducto />
           </ProtectedRoute>
         </Route>
         <Route path="/nuevoProducto">
@@ -215,7 +210,7 @@ function App() {
             <PedidosAProveedores />
           </ProtectedRoute>
         </Route>
-      </Switch>
+      </Router>
     </SessionProvider>
   )
 }

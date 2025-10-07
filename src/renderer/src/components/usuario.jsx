@@ -1,5 +1,4 @@
 import MenuVertical from '../componentes especificos/menuVertical'
-import { useLocation } from 'wouter'
 import Navbar from '../componentes especificos/navbar'
 import { useSession } from '../contexts/SessionContext'
 import { useState, useEffect } from 'react'
@@ -7,10 +6,11 @@ import { toast, Toaster } from 'react-hot-toast'
 import { pinwheel } from 'ldrs'
 import { fetchEmployeeById, fetchEmployeeStorages } from '../services/employee/employeeService'
 import { fetchSucursalById } from '../services/sucursales/sucursalesService'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function Usuario() {
   pinwheel.register()
-  const [, setLocation] = useLocation()
+  const [, setLocation] = useHashLocation()
   const { session, logout, setCurrentStorage } = useSession()
 
   const [currentUser, setCurrentUser] = useState(null)

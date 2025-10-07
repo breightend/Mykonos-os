@@ -19,14 +19,14 @@ import {
   Coffee,
   Watch
 } from 'lucide-react'
-import { useLocation } from 'wouter'
 import { useEffect, useState } from 'react'
 import { fetchProductStatistics } from '../../services/proveedores/purchaseService'
+import { useHashLocation } from 'wouter/use-hash-location'
 
 export default function ResumenProveedores() {
   const [productStats, setProductStats] = useState({})
   const [loading, setLoading] = useState(true)
-  const [setLocation] = useLocation()
+  const [setLocation] = useHashLocation()
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-AR', {
