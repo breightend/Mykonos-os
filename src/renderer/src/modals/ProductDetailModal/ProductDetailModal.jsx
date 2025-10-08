@@ -540,7 +540,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId, storageId }) => {
                 <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
                   <h3 className="mb-6 flex items-center text-xl font-semibold text-gray-800">
                     <Package className="mr-3 h-6 w-6 text-blue-600" />
-                    📦 Inventario Detallado -{' '}
+                    Inventario Detallado -{' '}
                     {productDetails?.stock_por_sucursal?.find((s) => s.sucursal_id === branchId)
                       ?.sucursal_nombre || 'Sucursal Actual'}
                   </h3>
@@ -553,13 +553,13 @@ const ProductDetailModal = ({ isOpen, onClose, productId, storageId }) => {
                 <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
                   <h3 className="mb-6 flex items-center text-xl font-semibold text-gray-800">
                     <Package className="mr-3 h-6 w-6 text-blue-600" />
-                    📦 Inventario Detallado -{' '}
+                    Inventario Detallado -{' '}
                     {productDetails?.stock_por_sucursal?.find((s) => s.sucursal_id === branchId)
                       ?.sucursal_nombre || 'Sucursal Actual'}
                   </h3>
 
                   <div className="space-y-6">
-                    {console.log('🎨 RENDERIZANDO VARIANTES:', currentBranchVariants)}
+                    {console.log(' RENDERIZANDO VARIANTES:', currentBranchVariants)}
                     {/* Agrupar variantes por talle */}
                     {Object.entries(
                       currentBranchVariants.reduce((acc, variant) => {
@@ -583,7 +583,7 @@ const ProductDetailModal = ({ isOpen, onClose, productId, storageId }) => {
                           className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
                         >
                           <h4 className="mb-4 text-lg font-semibold text-gray-800">
-                            👕 Talle: {sizeName}
+                              Talle: {sizeName}
                           </h4>
 
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
