@@ -153,7 +153,6 @@ export default function FormasPago() {
           actual_debt: result.actual_debt
         })
 
-        // Actualizar el contexto de venta
         setSaleData((prev) => ({
           ...prev,
           payments: paymentData,
@@ -556,11 +555,11 @@ export default function FormasPago() {
           <div className="space-y-4">
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-950">
               <h3 className="mb-4 text-xl font-semibold text-blue-800 dark:text-blue-200">
-                💳 Pago a Cuenta Corriente
+                Pago a Cuenta Corriente
               </h3>
 
               {/* Información de la venta */}
-              <div className="mb-4 rounded-lg bg-white p-4 dark:bg-gray-800">
+              <div className="mb-4 rounded-lg bg-base-100 p-4 ">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium text-gray-600 dark:text-gray-300">

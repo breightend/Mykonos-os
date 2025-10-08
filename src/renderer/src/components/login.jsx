@@ -53,12 +53,12 @@ export default function Login() {
           let storageList = []
           if (Array.isArray(data) && data.length > 0) {
             // Si data es un array con elementos, usar ese array
-            storageList = data.filter(item => item && typeof item === 'object' && item.id)
+            storageList = data.filter((item) => item && typeof item === 'object' && item.id)
           } else if (data && data.data && Array.isArray(data.data)) {
             // Fallback a la propiedad data si existe
             storageList = data.data
           }
-          
+
           setStorages(storageList)
           console.log('Lista de sucursales:', storageList)
           // Auto-seleccionar la sucursal si solo hay una disponible
@@ -154,7 +154,9 @@ export default function Login() {
             // Priorizar el array principal sobre la propiedad data
             if (Array.isArray(storagesData) && storagesData.length > 0) {
               // Si storagesData es un array con elementos válidos, usar ese array
-              availableStorages = storagesData.filter(item => item && typeof item === 'object' && item.id)
+              availableStorages = storagesData.filter(
+                (item) => item && typeof item === 'object' && item.id
+              )
               console.log('🏪 Usando array principal de la respuesta')
             } else if (storagesData && storagesData.data && Array.isArray(storagesData.data)) {
               availableStorages = storagesData.data
