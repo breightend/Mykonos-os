@@ -49,9 +49,18 @@ export default function Login() {
           console.log('data storages', data)
 
           // Validación segura de la respuesta de sucursales
-          const storageList = data && data.data && Array.isArray(data.data) ? data.data : []
+          // Priorizar el array principal sobre la propiedad data
+          let storageList = []
+          if (Array.isArray(data) && data.length > 0) {
+            // Si data es un array con elementos, usar ese array
+            storageList = data.filter(item => item && typeof item === 'object' && item.id)
+          } else if (data && data.data && Array.isArray(data.data)) {
+            // Fallback a la propiedad data si existe
+            storageList = data.data
+          }
+          
           setStorages(storageList)
-
+          console.log('Lista de sucursales:', storageList)
           // Auto-seleccionar la sucursal si solo hay una disponible
           if (storageList.length === 1) {
             console.log('🏪 Auto-seleccionando única sucursal disponible:', storageList[0])
@@ -142,12 +151,14 @@ export default function Login() {
             console.log('🏪 Propiedades:', Object.keys(storagesData || {}))
 
             // Manejar diferentes estructuras de respuesta con validación segura
-            if (storagesData && storagesData.data && Array.isArray(storagesData.data)) {
+            // Priorizar el array principal sobre la propiedad data
+            if (Array.isArray(storagesData) && storagesData.length > 0) {
+              // Si storagesData es un array con elementos válidos, usar ese array
+              availableStorages = storagesData.filter(item => item && typeof item === 'object' && item.id)
+              console.log('🏪 Usando array principal de la respuesta')
+            } else if (storagesData && storagesData.data && Array.isArray(storagesData.data)) {
               availableStorages = storagesData.data
               console.log('🏪 Usando storagesData.data')
-            } else if (Array.isArray(storagesData)) {
-              availableStorages = storagesData
-              console.log('🏪 Usando respuesta directa como array')
             } else if (storagesData && typeof storagesData === 'object') {
               // Si es un objeto, intentar extraer el array
               availableStorages =

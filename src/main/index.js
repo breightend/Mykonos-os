@@ -38,7 +38,6 @@ function loadServerConfig() {
 }
 
 function createWindow() {
-  // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -56,20 +55,15 @@ function createWindow() {
 
   updateAppIcon()
 
-  // Debug logging for production
   console.log('Creating window...')
   console.log('Is development:', is.dev)
   console.log('__dirname:', __dirname)
   console.log('Process env ELECTRON_RENDERER_URL:', process.env['ELECTRON_RENDERER_URL'])
 
-  // Enable debugging in production - always open DevTools for troubleshooting
-  mainWindow.webContents.openDevTools()
-
   mainWindow.on('ready-to-show', () => {
     console.log('Window ready to show')
     mainWindow.show()
 
-    // Force focus and bring to front
     mainWindow.focus()
     mainWindow.moveTop()
   })
