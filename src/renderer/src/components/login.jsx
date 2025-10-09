@@ -8,6 +8,10 @@ import NetworkHealthMonitor from './NetworkHealthMonitor'
 import '../assets/login-only.css'
 import { useHashLocation } from 'wouter/use-hash-location'
 
+
+import userIcon from '../assets/images/user_icon.webp'
+import sunset2 from '../assets/images/sunset2.jpg'
+
 export default function Login() {
   const [, setLocation] = useHashLocation()
   const { login, loading, error } = useSession()
@@ -243,19 +247,14 @@ export default function Login() {
 
       {/* Background */}
       <div className="login-background">
-        <img src="./src/images/sunset2.jpg" alt="Background" className="dark:hidden" />
-        <img
-          src="./src/images/night-wallpaper.jpg"
-          alt="Background"
-          className="hidden dark:block"
-        />
+        <img src={sunset2} alt="Background" />
       </div>
 
       {/* Login Card */}
       <div className="login-card">
         <div className="login-header">
           <div className="login-avatar">
-            <img src="./src/images/user_icon.webp" alt="User" />
+            <img src={userIcon} alt="User" />
           </div>
           <h1 className="login-title">Iniciar Sesión</h1>
         </div>
