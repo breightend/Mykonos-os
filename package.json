@@ -28,6 +28,7 @@
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.6.2",
     "ldrs": "^1.1.7",
     "lucide-react": "^0.475.0",
     "pikaday": "^1.8.2",
@@ -66,6 +67,11 @@
     "productName": "Mi Mykonos app",
     "directories": {
       "output": "dist"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "breightend",
+      "repo": "Mykonos-os"
     },
     "files": [
       "out/**/*",

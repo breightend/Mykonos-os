@@ -251,7 +251,7 @@ export default function ConfirmacionDatosDeCompra() {
           : null,
         payments: saleData.payments.map((payment) => ({
           method: payment.method,
-          payment_method_id: payment.id || null,
+          payment_method_id: payment.payment_method_id || payment.id || null,
           amount: parseFloat(payment.amount),
           method_name: payment.method_name || payment.label || payment.type,
           bank_id: payment.bank_id || null,
@@ -269,6 +269,9 @@ export default function ConfirmacionDatosDeCompra() {
         cashier_user_id: userId
       }
 
+      console.log('🔍 Datos de venta que se enviarán al backend:', saleDataForBackend)
+      console.log('🔍 Payments structure:', saleDataForBackend.payments)
+
       const result = await salesService.createSale(saleDataForBackend)
       if (result.status === 'success') {
         toast.success(
@@ -283,7 +286,9 @@ export default function ConfirmacionDatosDeCompra() {
       }
     } catch (error) {
       console.error('❌ Error al finalizar venta:', error)
-      toast.error(`Error al finalizar la venta: ${error.message}`, { duration: 4000 })
+      console.error('❌ Error details:', error.response?.data)
+      const errorMessage = error.response?.data?.message || error.message
+      toast.error(`Error al finalizar la venta: ${errorMessage}`, { duration: 4000 })
     } finally {
       setIsProcessing(false)
     }
@@ -480,6 +485,8 @@ export default function ConfirmacionDatosDeCompra() {
     calculateChange()
     calculateDiscount()
   }, [totalAbonado, totalVenta])
+
+  console.log('Venta a procesar:', saleData)
 
   return (
     <div className="container mx-auto max-w-4xl p-4">
