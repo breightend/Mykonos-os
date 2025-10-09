@@ -72,6 +72,20 @@ export const paymentMethodsService = {
     },
 
     /**
+     * Gets the payment method for "Cuenta Corriente"
+     * @returns {Promise<Object>} API response with cuenta corriente payment method
+     */
+    async getPaymentMethodCuentaCorriente() {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/cuenta_corriente`)
+            return response.data
+        } catch (error) {
+            console.error('Error getting cuenta corriente payment method:', error)
+            throw error
+        }
+    },
+
+    /**
      * Creates a new payment method
      * @param {Object} paymentMethodData - Payment method data
      * @param {string} paymentMethodData.method_name - Internal name (required)
@@ -186,6 +200,8 @@ export const paymentMethodsService = {
             return methodName
         }
     }
+
+
 }
 
 export default paymentMethodsService

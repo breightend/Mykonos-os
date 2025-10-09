@@ -47,6 +47,7 @@ export default function FormasPago() {
       e.preventDefault()
     }
   }
+  console.log('Metodos seleccionados: ', metodosSeleccionados)
 
   useEffect(() => {
     const fetchPaymentMethods = async () => {
@@ -54,11 +55,15 @@ export default function FormasPago() {
         const data = await paymentMethodsService.getClientPaymentMethods()
         if (Array.isArray(data.payment_methods)) {
           setMetodosPago(data.payment_methods)
+          // Also set client payment methods for cuenta corriente
+          setClientPaymentMethodsCC(data.payment_methods)
         } else {
           setMetodosPago([])
+          setClientPaymentMethodsCC([])
         }
       } catch (err) {
         setMetodosPago([])
+        setClientPaymentMethodsCC([])
       }
     }
     fetchPaymentMethods()
@@ -70,11 +75,14 @@ export default function FormasPago() {
       if (existe) {
         if (metodo.method_name === 'cuenta_corriente') {
           setClienteCuentaCorriente(null)
+          setCuentaCorrienteMethod(null)
         }
         return prev.filter((m) => m.id !== metodo.id)
       } else {
         if (metodo.method_name === 'cuenta_corriente') {
           setMostrarModalCliente(true)
+          // Get the cuenta corriente payment method when selected
+          getCuentaCorrientePaymentMethod()
         }
         if (metodo.method_name && metodo.method_name.toLowerCase().includes('tarjeta')) {
           fetchBancos()
@@ -105,10 +113,32 @@ export default function FormasPago() {
       )
     )
   }
-  //Esto es para la cuenta corriente
+
+  const [clientPaymentMethodsCC, setClientPaymentMethodsCC] = useState([])
+  const [cuentaCorrienteMethod, setCuentaCorrienteMethod] = useState(null)
+
   const getPaymentMethodName = (id) => {
     const metodo = metodosPago.find((m) => m.id === id || m.method_name === id)
     return metodo ? metodo.display_name : id
+  }
+
+  // Function to get cuenta corriente payment method
+  const getCuentaCorrientePaymentMethod = async () => {
+    try {
+      const response = await paymentMethodsService.getPaymentMethodCuentaCorriente()
+      if (response.success) {
+        setCuentaCorrienteMethod(response.payment_method)
+        return response.payment_method
+      } else {
+        console.error('Error getting cuenta corriente payment method:', response.message)
+        toast.error('Error al obtener método de pago de cuenta corriente')
+        return null
+      }
+    } catch (error) {
+      console.error('Error getting cuenta corriente payment method:', error)
+      toast.error('Error al obtener método de pago de cuenta corriente')
+      return null
+    }
   }
   const handleAgregarPagoCuentaCorriente = async () => {
     if (!clienteCuentaCorriente) {
@@ -118,6 +148,8 @@ export default function FormasPago() {
 
     try {
       setCargandoPago(true)
+      const formasDePagoCC = await paymentMethodsService.getClientPaymentMethods()
+      setClientPaymentMethodsCC(formasDePagoCC.payment_methods || [])
 
       const deudaReal = totalVenta - pagoInicial
 
@@ -134,16 +166,26 @@ export default function FormasPago() {
         const paymentData = []
 
         if (pagoInicial > 0) {
+          // Encontrar el payment_method_id para el método de pago inicial
+          const metodoPagoInicialObj = metodosPago.find((m) => m.method_name === metodoPagoInicial)
+
           paymentData.push({
             method: metodoPagoInicial,
+            payment_method_id: metodoPagoInicialObj?.id || null,
             amount: pagoInicial,
             description: `Pago inicial (${metodoPagoInicial})`
           })
         }
 
+        // Encontrar el payment_method_id para cuenta corriente
+        const cuentaCorrienteMethodId =
+          cuentaCorrienteMethod?.id ||
+          metodosPago.find((m) => m.method_name === 'cuenta_corriente')?.id
+
         // Agregar la cuenta corriente con la deuda restante
         paymentData.push({
           method: 'cuenta_corriente',
+          payment_method_id: cuentaCorrienteMethodId,
           amount: deudaReal,
           costumer: { cliente: clienteCuentaCorriente },
           movement_id: result.movement_id,
@@ -214,16 +256,17 @@ export default function FormasPago() {
         // Card payment
         if (m.method_name && m.method_name.toLowerCase().includes('tarjeta')) {
           return {
-            id: methodInfo?.id || m.id,
+            method: methodInfo?.method_name || m.method_name,
+            payment_method_id: methodInfo?.id || m.id,
             method_name: methodInfo?.method_name || m.method_name,
             label: methodInfo?.display_name || m.label,
             amount: m.monto,
             bank_id: m.banco_id || bancoSeleccionado || null
           }
         }
-        // Other payment (efectivo, transferencia, etc)
         return {
-          id: methodInfo?.id || m.id,
+          method: methodInfo?.method_name || m.method_name,
+          payment_method_id: methodInfo?.id || m.id,
           method_name: methodInfo?.method_name || m.method_name,
           label: methodInfo?.display_name || m.label,
           amount: m.monto,
@@ -232,7 +275,6 @@ export default function FormasPago() {
         }
       })
 
-      // Save to context
       setSaleData((prev) => ({
         ...prev,
         payments: payments,
@@ -242,14 +284,13 @@ export default function FormasPago() {
       setLocation('/confirmacionDatosDeCompra')
     }
   }
-  // const LucideIcon = (icon as any)[metodo.icon_name];
   const totalVenta = saleData.exchange?.hasExchange ? saleData.exchange.finalAmount : saleData.total
 
-  // Helper to render Lucide icon dynamically by icon_name (string)
   const renderIcon = (iconName, className = 'h-10 w-10 text-primary') => {
     const IconComponent = icon[iconName]
     return IconComponent ? <IconComponent className={className} /> : null
   }
+
   return (
     <div className="formas-pago mx-auto max-w-4xl p-6">
       {/* Encabezado */}
@@ -559,7 +600,7 @@ export default function FormasPago() {
               </h3>
 
               {/* Información de la venta */}
-              <div className="mb-4 rounded-lg bg-base-100 p-4 ">
+              <div className="mb-4 rounded-lg bg-base-100 p-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium text-gray-600 dark:text-gray-300">
@@ -614,11 +655,12 @@ export default function FormasPago() {
                         onChange={(e) => setMetodoPagoInicial(e.target.value)}
                         className="w-full rounded-lg border border-green-300 p-2 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                       >
-                        <option value="efectivo">💵 Efectivo</option>
-                        <option value="transferencia">🏦 Transferencia</option>
-                        <option value="tarjeta_debito">💳 Tarjeta de Débito</option>
-                        <option value="tarjeta_credito">💳 Tarjeta de Crédito</option>
-                        <option value="cheque">📄 Cheque</option>
+                        {clientPaymentMethodsCC &&
+                          clientPaymentMethodsCC.map((method) => (
+                            <option key={method.id} value={method.method_name}>
+                              {method.display_name}
+                            </option>
+                          ))}
                       </select>
                     </div>
 
