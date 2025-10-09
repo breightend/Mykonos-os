@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { existsSync, readFileSync } from 'fs'
 import lightIcon from '../../resources/light.png?asset'
 import darkIcon from '../../resources/dark.png?asset'
+import { autoUpdater } from 'electron-updater'
 
 let mainWindow;
 let serverConfig = null;
@@ -289,6 +290,8 @@ app.whenReady().then(() => {
     // Use a short debounce or setTimeout if updates fire too rapidly (optional)
     // setTimeout(updateAppIcon, 100); // e.g., wait 100ms
     updateAppIcon(); // Call the update function when the theme changes
+
+  autoUpdater.checkForUpdatesAndNotify();
   });
 
 
