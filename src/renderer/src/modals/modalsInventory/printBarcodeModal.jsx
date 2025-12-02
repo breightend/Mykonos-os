@@ -5,7 +5,6 @@ import { barcodePrintService } from '../../services/barcodePrintService'
 import printSettingsService from '../../services/printSettingsService'
 import { pinwheel } from 'ldrs'
 import toast from 'react-hot-toast'
-import '../../assets/modal-improvements.css'
 
 pinwheel.register()
 
@@ -641,10 +640,10 @@ export default function PrintBarcodeModal({
     <div className="print-modal-container">
       <div className="print-modal-box">
         {/* Header mejorado con gradiente */}
-        <div className="print-modal-header bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10">
+        <div className="print-modal-header from-primary/10 via-primary/5 to-secondary/10 bg-gradient-to-r">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
+              <div className="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full">
                 <Printer className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -703,7 +702,7 @@ export default function PrintBarcodeModal({
 
                   {/* Indicador del paso actual */}
                   <div className="mt-3 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1">
+                    <div className="bg-primary/10 inline-flex items-center gap-2 rounded-full px-3 py-1">
                       {printProgress.step === 'request' && (
                         <>
                           <div className="h-2 w-2 animate-pulse rounded-full bg-primary"></div>
@@ -775,9 +774,9 @@ export default function PrintBarcodeModal({
             <div className="space-y-6">
               {/* Información del producto mejorada */}
               <div className="overflow-hidden rounded-xl border border-base-300 bg-gradient-to-br from-base-100 to-base-200 shadow-lg">
-                <div className="border-b border-base-300 bg-primary/5 px-6 py-4">
+                <div className="bg-primary/5 border-b border-base-300 px-6 py-4">
                   <h4 className="flex items-center gap-3 text-lg font-bold text-primary">
-                    <div className="rounded-full bg-primary/20 p-2">
+                    <div className="bg-primary/20 rounded-full p-2">
                       <Package className="h-5 w-5 text-primary" />
                     </div>
                     Producto Seleccionado
@@ -927,10 +926,10 @@ export default function PrintBarcodeModal({
 
               {/* Opciones de impresión mejoradas */}
               <div className="overflow-hidden rounded-xl border border-base-300 bg-gradient-to-br from-base-100 to-base-200 shadow-lg">
-                <div className="flex justify-between border-b border-base-300 bg-secondary/5 px-6 py-4">
+                <div className="bg-secondary/5 flex justify-between border-b border-base-300 px-6 py-4">
                   <div>
                     <h4 className="flex items-center gap-3 text-lg font-bold text-secondary">
-                      <div className="rounded-full bg-secondary/20 p-2">
+                      <div className="bg-secondary/20 rounded-full p-2">
                         <Tag className="h-5 w-5 text-secondary" />
                       </div>
                       Configuración de Etiquetas
@@ -966,7 +965,7 @@ export default function PrintBarcodeModal({
                             />
                             <div>
                               <div className="flex items-center gap-2">
-                                <div className="rounded-full bg-primary/20 p-1">
+                                <div className="bg-primary/20 rounded-full p-1">
                                   <Package className="h-4 w-4 text-primary" />
                                 </div>
                                 <span className="font-semibold text-primary">
@@ -993,7 +992,7 @@ export default function PrintBarcodeModal({
                             />
                             <div>
                               <div className="flex items-center gap-2">
-                                <div className="rounded-full bg-secondary/20 p-1">
+                                <div className="bg-secondary/20 rounded-full p-1">
                                   <Palette className="h-4 w-4 text-secondary" />
                                 </div>
                                 <span className="font-semibold text-secondary">Color</span>
@@ -1018,7 +1017,7 @@ export default function PrintBarcodeModal({
                             />
                             <div>
                               <div className="flex items-center gap-2">
-                                <div className="rounded-full bg-accent/20 p-1">
+                                <div className="bg-accent/20 rounded-full p-1">
                                   <Ruler className="h-4 w-4 text-accent" />
                                 </div>
                                 <span className="font-semibold text-accent">Talle</span>
@@ -1253,7 +1252,7 @@ export default function PrintBarcodeModal({
               {/* Botón principal para imprimir todas las variantes seleccionadas */}
               {variants.length > 0 && (
                 <div className="sticky border-t border-base-300 bg-base-100 pt-4">
-                  <div className="rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 p-4">
+                  <div className="from-primary/10 to-secondary/10 rounded-lg bg-gradient-to-r p-4">
                     <div className="flex-1">
                       <h4 className="font-semibold text-primary">
                         ¿Listo para imprimir automáticamente?

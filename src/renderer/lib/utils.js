@@ -1,12 +1,4 @@
-import { clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-
-// Utilidad para componentes de Shadcn/UI (solo gráficos)
-export function cn(...inputs) {
-    return twMerge(clsx(inputs))
-}
-
-// Utilidades para DaisyUI (resto de componentes)
+// Utilidades para DaisyUI
 export const themes = {
     cupcake: 'cupcake',
     night: 'night'
@@ -14,4 +6,9 @@ export const themes = {
 
 export function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme)
+}
+
+// Utilidad simple para combinar clases (reemplazo de cn sin dependencias)
+export function cn(...classes) {
+    return classes.filter(Boolean).join(' ')
 }

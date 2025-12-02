@@ -4,7 +4,6 @@ import { pinwheel } from 'ldrs'
 import MenuVertical from '../componentes especificos/menuVertical'
 import Navbar from '../componentes especificos/navbar'
 import { fetchEmployee } from '../services/employee/employeeService'
-import '../assets/modal-improvements.css'
 import { useHashLocation } from 'wouter/use-hash-location'
 
 pinwheel.register()

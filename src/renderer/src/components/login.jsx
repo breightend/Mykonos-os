@@ -5,9 +5,7 @@ import { useSession } from '../contexts/SessionContext'
 import { useEmployeeApi } from '../hooks/useRobustApi'
 import SmartLoadingOverlay from './SmartLoadingOverlay'
 import NetworkHealthMonitor from './NetworkHealthMonitor'
-import '../assets/login-only.css'
 import { useHashLocation } from 'wouter/use-hash-location'
-
 
 import userIcon from '../assets/images/user_icon.webp'
 import sunset2 from '../assets/images/sunset2.jpg'

@@ -22,7 +22,6 @@ import { fetchSucursales } from '../../services/sucursales/sucursalesService'
 import { salesService } from '../../services/salesService'
 import { useSession } from '../../contexts/SessionContext'
 import toast from 'react-hot-toast'
-import '../../assets/modal-improvements.css'
 import { useHashLocation } from 'wouter/use-hash-location'
 pinwheel.register()
 
@@ -612,7 +611,7 @@ export default function Inventario() {
               </label>
 
               {/* Búsqueda por código de barras */}
-              <label className="input-bordered input flex items-center gap-2 border-primary/30 bg-primary/10">
+              <label className="input-bordered border-primary/30 bg-primary/10 input flex items-center gap-2">
                 <input
                   ref={barcodeInputRef}
                   type="text"

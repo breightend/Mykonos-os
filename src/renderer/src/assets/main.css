@@ -2,15 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
 /* Estilos personalizados para el árbol */
 .tree,
 .tree ul {
@@ -139,93 +130,4 @@
   background-color: hsl(var(--er) / 0.1);
 }
 
-:root {
-  /* Variables DaisyUI */
-  --p: 31 78% 70%;
-  --pc: 31 34% 20%;
-  --s: 235 61% 74%;
-  --sc: 231 19% 26%;
-  --a: 185 100% 64%;
-  --ac: 185 15% 19%;
-  --n: 210 9% 31%;
-  --nc: 212 13% 93%;
-  --b1: 0 0% 100%;
-  --b2: 0 0% 95%;
-  --b3: 0 0% 87%;
-  --bc: 215 28% 17%;
-  --in: 198 93% 60%;
-  --inc: 198 100% 12%;
-  --su: 158 64% 52%;
-  --suc: 158 100% 10%;
-  --wa: 43 96% 56%;
-  --wac: 43 100% 11%;
-  --er: 0 91% 71%;
-  --erc: 0 100% 14%;
-
-  /* Variables Shadcn UI que mapean a DaisyUI */
-  --background: var(--b1);
-  --foreground: var(--bc);
-  --card: var(--b1);
-  --card-foreground: var(--bc);
-  --popover: var(--b1);
-  --popover-foreground: var(--bc);
-  --primary: var(--p);
-  --primary-foreground: var(--pc);
-  --secondary: var(--s);
-  --secondary-foreground: var(--sc);
-  --muted: var(--b2);
-  --muted-foreground: var(--bc);
-  --accent: var(--a);
-  --accent-foreground: var(--ac);
-  --destructive: var(--er);
-  --destructive-foreground: var(--erc);
-  --border: var(--b3);
-  --input: var(--b1);
-  --ring: var(--p);
-}
-
-/* Tema oscuro */
-[data-theme='night'] {
-  /* Variables DaisyUI para tema oscuro */
-  --p: 31 78% 70%;
-  --pc: 31 34% 20%;
-  --s: 235 61% 74%;
-  --sc: 231 19% 26%;
-  --a: 185 100% 64%;
-  --ac: 185 15% 19%;
-  --n: 210 9% 31%;
-  --nc: 212 13% 93%;
-  --b1: 213 18% 10%;
-  --b2: 212 17% 12%;
-  --b3: 210 9% 17%;
-  --bc: 212 13% 93%;
-  --in: 198 93% 60%;
-  --inc: 198 100% 12%;
-  --su: 158 64% 52%;
-  --suc: 158 100% 10%;
-  --wa: 43 96% 56%;
-  --wac: 43 100% 11%;
-  --er: 0 91% 71%;
-  --erc: 0 100% 14%;
-
-  /* Variables Shadcn UI para tema oscuro */
-  --background: var(--b1);
-  --foreground: var(--bc);
-  --card: var(--b1);
-  --card-foreground: var(--bc);
-  --popover: var(--b1);
-  --popover-foreground: var(--bc);
-  --primary: var(--p);
-  --primary-foreground: var(--pc);
-  --secondary: var(--s);
-  --secondary-foreground: var(--sc);
-  --muted: var(--b2);
-  --muted-foreground: var(--bc);
-  --accent: var(--a);
-  --accent-foreground: var(--ac);
-  --destructive: var(--er);
-  --destructive-foreground: var(--erc);
-  --border: var(--b3);
-  --input: var(--b1);
-  --ring: var(--p);
-}
+/* DaisyUI maneja las variables CSS automáticamente a través de tailwind.config.js */

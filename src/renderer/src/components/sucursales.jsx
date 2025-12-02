@@ -9,7 +9,6 @@ import {
   postData as createSucursal
 } from '../services/sucursales/sucursalesService'
 import toast, { Toaster } from 'react-hot-toast'
-import '../assets/modal-improvements.css'
 import { useHashLocation } from 'wouter/use-hash-location'
 
 // Register the pinwheel loader

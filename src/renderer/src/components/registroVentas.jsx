@@ -19,7 +19,6 @@ import { useSession } from '../contexts/SessionContext'
 import { salesService } from '../services/salesService'
 import { API_ENDPOINTS, API_BASE_URL } from '../config/apiConfig.js'
 import toast, { Toaster } from 'react-hot-toast'
-import '../assets/modal-improvements.css'
 import StatCard from '../componentes especificos/statRegistro'
 
 export default function RegistroVentas() {

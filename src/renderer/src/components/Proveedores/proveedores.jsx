@@ -7,7 +7,6 @@ import { fetchProvider } from '../../services/proveedores/proveedorService'
 import { fetchProviderJoinBrand } from '../../services/proveedores/brandService'
 import toast, { Toaster } from 'react-hot-toast'
 import { useSession } from '../../contexts/SessionContext'
-import '../../assets/modal-improvements.css'
 import { useHashLocation } from 'wouter/use-hash-location'
 
 pinwheel.register()

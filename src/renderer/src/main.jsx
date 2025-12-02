@@ -1,5 +1,4 @@
 import './assets/main.css'
-import './assets/shadcn-fixes-clean.css'
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
