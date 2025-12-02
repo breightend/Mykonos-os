@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useEffect } from 'react'
-import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye } from 'lucide-react'
+import { KeyRound, UserRound, AlertCircle, Loader2, EyeOff, Eye, Info } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
 import { useEmployeeApi } from '../hooks/useRobustApi'
 import SmartLoadingOverlay from './SmartLoadingOverlay'
@@ -42,7 +42,6 @@ export default function Login() {
         const data_user = await fetchEmployeeByUsername(formData.username)
         console.log('data_user', data_user)
 
-        // Validación segura de la respuesta del usuario
         if (data_user && data_user.data && data_user.data.id) {
           setUserId(data_user.data.id)
 
@@ -50,14 +49,10 @@ export default function Login() {
           const data = await fetchEmployeeStorages(data_user.data.id)
           console.log('data storages', data)
 
-          // Validación segura de la respuesta de sucursales
-          // Priorizar el array principal sobre la propiedad data
           let storageList = []
           if (Array.isArray(data) && data.length > 0) {
-            // Si data es un array con elementos, usar ese array
             storageList = data.filter((item) => item && typeof item === 'object' && item.id)
           } else if (data && data.data && Array.isArray(data.data)) {
-            // Fallback a la propiedad data si existe
             storageList = data.data
           }
 
@@ -132,7 +127,6 @@ export default function Login() {
     setProgressMessage('Iniciando sesión...')
 
     try {
-      // Obtener las sucursales disponibles para el usuario directamente
       let availableStorages = []
       let storageId = null
 
@@ -152,8 +146,6 @@ export default function Login() {
             console.log('🏪 Tipo de respuesta:', typeof storagesData)
             console.log('🏪 Propiedades:', Object.keys(storagesData || {}))
 
-            // Manejar diferentes estructuras de respuesta con validación segura
-            // Priorizar el array principal sobre la propiedad data
             if (Array.isArray(storagesData) && storagesData.length > 0) {
               // Si storagesData es un array con elementos válidos, usar ese array
               availableStorages = storagesData.filter(
@@ -246,128 +238,200 @@ export default function Login() {
 
   useEffect(() => {
     getStorage()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flag, formData.username, formData.password])
 
   return (
-    <div className="login-page">
-      {/* Network Health Monitor */}
-      <div className="login-settings">
+    <div className="hero relative min-h-screen overflow-hidden">
+      {/* Network Health Monitor - Posición absoluta */}
+      <div className="absolute right-4 top-4 z-50">
         <NetworkHealthMonitor />
       </div>
 
-      {/* Background */}
-      <div className="login-background">
-        <img src={sunset2} alt="Background" />
+      {/* Background con overlay y gradiente */}
+      <div className="absolute inset-0 -z-10">
+        <img src={sunset2} alt="Background" className="h-full w-full object-cover brightness-75" />
+        <div className="from-primary/30 to-secondary/30 absolute inset-0 bg-gradient-to-br via-transparent"></div>
       </div>
 
-      {/* Login Card */}
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-avatar">
-            <img src={userIcon} alt="User" />
-          </div>
-          <h1 className="login-title">Iniciar Sesión</h1>
+      {/* Logo/Branding Superior */}
+      <div className="absolute left-4 top-0 w-full text-left">
+        <div className="mb-2 flex items-center gap-3">
+          <h1 className="text-5xl font-black text-white drop-shadow-2xl">Mykonos</h1>
         </div>
+        <p className="justify-start text-sm font-medium tracking-wider text-white/80">
+          Sistema de Gestión
+        </p>
+      </div>
 
-        <div className="login-form">
-          {(error || formError) && (
-            <div className="login-alert login-alert-error">
-              <AlertCircle className="h-4 w-4" />
-              {error || formError}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="login-input-group">
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                placeholder="Usuario"
-                className="login-input"
-                required
-                minLength="3"
-                maxLength="30"
-                pattern="[A-Za-z][A-Za-z0-9\-]*"
-                disabled={isSubmitting || loading}
-              />
-              <UserRound className="login-input-icon" />
-            </div>
-
-            <div className="login-input-group">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Contraseña"
-                className="login-input"
-                required
-                minLength="8"
-                disabled={isSubmitting || loading}
-              />
-              <KeyRound className="login-input-icon" />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+      {/* Contenido Principal */}
+      <div className="hero-content relative z-10 flex-col gap-8 py-12">
+        {/* Card de Login */}
+        <div className="border-base-300/50 card w-full max-w-md border bg-[#232125]/60 shadow-2xl backdrop-blur-xl">
+          <div className="card-body">
+            {/* Avatar y Título */}
+            <div className="mb-4 flex flex-col items-center gap-3">
+              <div className="online placeholder avatar">
+                <div className="bg-primary/10 w-20 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-base-100">
+                  <img src={userIcon} alt="User" className="object-cover" />
+                </div>
+              </div>
+              <div className="text-center">
+                <h2 className="text-primary bg-clip-text text-2xl font-bold ">
+                  Bienvenido
+                </h2>
+                <p className="text-base-content/60 mt-1 text-sm text-white">
+                  Ingresa tus credenciales
+                </p>
+              </div>
             </div>
 
-            {/* Sucursal */}
-            {storages && storages.length > 0 ? (
-              <div className="login-input-group">
-                <select
-                  name="storageId"
-                  value={formData.storageId}
-                  onChange={handleInputChange}
-                  className="login-select"
-                  required
-                  disabled={isSubmitting || loading}
-                >
-                  <option value="" disabled>
-                    Seleccionar Sucursal
-                  </option>
-                  {storages.map((storage) => (
-                    <option key={storage.id} value={storage.id}>
-                      {storage.name} {storage.address && `- ${storage.address}`}
+            {/* Alertas de Error */}
+            {(error || formError) && (
+              <div role="alert" className="alert alert-error">
+                <AlertCircle className="h-5 w-5" />
+                <span>{error || formError}</span>
+              </div>
+            )}
+
+            {/* Formulario */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Campo Usuario */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="font-semibold text-white/80">Usuario</span>
+                </label>
+                <label className="input-bordered input flex w-full items-center gap-3 transition-all focus-within:input-primary">
+                  <UserRound className="h-5 w-5 text-primary" />
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    placeholder="Ingrese su usuario"
+                    className="grow"
+                    required
+                    minLength="3"
+                    maxLength="30"
+                    pattern="[A-Za-z][A-Za-z0-9\-]*"
+                    disabled={isSubmitting || loading}
+                  />
+                </label>
+              </div>
+
+              {/* Campo Contraseña */}
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text  font-semibold text-white/80">Contraseña</span>
+                </label>
+                <label className="input-bordered input flex w-full items-center gap-3 transition-all focus-within:input-primary">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Ingrese su contraseña"
+                    className="grow"
+                    required
+                    minLength="8"
+                    disabled={isSubmitting || loading}
+                  />
+                  <button
+                    type="button"
+                    className="hover:bg-primary/10 btn btn-ghost btn-sm btn-circle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="text-base-content/60 h-5 w-5" />
+                    ) : (
+                      <Eye className="text-base-content/60 h-5 w-5" />
+                    )}
+                  </button>
+                </label>
+              </div>
+
+              {/* Campo Sucursal */}
+              {storages && storages.length > 0 ? (
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text text-base-content/80 font-semibold">Sucursal</span>
+                  </label>
+                  <select
+                    name="storageId"
+                    value={formData.storageId}
+                    onChange={handleInputChange}
+                    className="select-bordered select w-full transition-all focus:select-primary"
+                    required
+                    disabled={isSubmitting || loading}
+                  >
+                    <option value="" disabled>
+                      Seleccionar Sucursal
                     </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="login-alert login-alert-warning">
-                ⚠️ Ingrese sus credenciales para seleccionar la sucursal.
-              </div>
-            )}
-
-            {/* Botón */}
-            <button
-              type="submit"
-              className="login-button"
-              disabled={isSubmitting || loading || apiLoading}
-            >
-              {isSubmitting || apiLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {progressMessage || 'Iniciando...'}
-                </>
+                    {storages.map((storage) => (
+                      <option key={storage.id} value={storage.id}>
+                        {storage.name} {storage.address && `- ${storage.address}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               ) : (
-                'Iniciar Sesión'
+                <div role="alert" className="alert alert-warning">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 shrink-0 stroke-current"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <span>Ingrese sus credenciales para seleccionar la sucursal.</span>
+                </div>
               )}
-            </button>
 
-            {/* Mostrar fallback info si existe */}
-            {apiError?.fallbackUsed && (
-              <div className="login-alert login-alert-info">
-                ℹ️ Conexión lenta - usando datos guardados
+              {/* Info de Fallback */}
+              {apiError?.fallbackUsed && (
+                <div role="alert" className="alert alert-info">
+                  <Info className="h-5 w-5" />
+                  <span>Conexión lenta - usando datos guardados</span>
+                </div>
+              )}
+
+              {/* Botón de Submit */}
+              <div className="form-control mt-8">
+                <button
+                  type="submit"
+                  className="group btn btn-primary btn-lg btn-block shadow-lg transition-all duration-300 hover:shadow-xl bg-gradient-to-r from-primary to-secondary"
+                  disabled={isSubmitting || loading || apiLoading}
+                >
+                  {isSubmitting || apiLoading ? (
+                    <>
+                      <span className="loading loading-spinner loading-md"></span>
+                      <span className="font-semibold">{progressMessage || 'Iniciando...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="h-5 w-5 transition-transform group-hover:rotate-12 " />
+                      <span className="font-semibold">Iniciar Sesión</span>
+                    </>
+                  )}
+                </button>
               </div>
-            )}
-          </form>
+            </form>
+
+            {/* Divider decorativo */}
+            <div className=" divider mt-6 text-xs text-white/80">Sistema Seguro</div>
+
+            {/* Footer info */}
+            <div className="text-white/50 text-center text-xs">
+              <p>Versión 1.3 • © 2025 Mykonos</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -382,9 +446,6 @@ export default function Login() {
           }}
         />
       )}
-
-      {/* Logo */}
-      <div className="login-logo">Mykonos-OS</div>
     </div>
   )
 }
