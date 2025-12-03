@@ -42,7 +42,7 @@ export default function Settings({ isMenuOpen = true }) {
   return (
     <div className="w-full">
       <button
-        className="btn btn-ghost w-full justify-start rounded-lg px-3 py-2 text-white/90 transition-all duration-200 hover:bg-white/10 hover:text-white"
+        className="btn btn-ghost w-full justify-start rounded-lg px-3 py-2 text-black/90 transition-all duration-200 hover:bg-white/10"
         onClick={() => dialogRef.current.showModal()}
       >
         <Cog size={20} className="flex-shrink-0 transition-transform hover:rotate-180" />

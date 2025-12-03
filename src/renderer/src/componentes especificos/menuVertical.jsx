@@ -26,13 +26,13 @@ export default function MenuVertical({ currentPath }) {
 
   return (
     <div
-      className={`fixed left-0 top-0 z-40 h-screen bg-base-200 shadow-lg transition-all duration-300 ${isMenuOpen ? 'w-48' : 'w-16'} backdrop-blur-sm`}
+      className={`bg-primary/60 fixed left-0 top-0 z-40 h-screen shadow-lg transition-all duration-300 ${isMenuOpen ? 'w-48' : 'w-16'} backdrop-blur-md`}
       data-menu="vertical"
       onMouseEnter={() => setIsMenuOpen(true)}
       onMouseLeave={() => setIsMenuOpen(false)}
     >
       <div className="flex items-center justify-center p-4">
-        <button className="btn btn-ghost btn-circle" onClick={toggleMenu}>
+        <button className="btn btn-ghost btn-circle border-0" onClick={toggleMenu}>
           {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
@@ -40,8 +40,8 @@ export default function MenuVertical({ currentPath }) {
       <ul className="mt-2 flex flex-col space-y-1 p-2">
         <li>
           <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/usuario' ? 'active btn-active' : ''
+            className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary ${
+              currentPath === '/usuario' ? 'bg-primary/70' : ''
             }`}
             onClick={() => setLocation('/usuario')}
           >
@@ -51,8 +51,8 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li>
           <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/home' ? 'active btn-active' : ''
+            className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary ${
+              currentPath === '/home' ? 'bg-primary/70' : ''
             }`}
             onClick={() => setLocation('/home')}
           >
@@ -62,8 +62,8 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li>
           <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/ventas' ? 'active btn-active' : ''
+            className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary hover:shadow-lg ${
+              currentPath === '/ventas' ? 'bg-primary/70' : ''
             }`}
             onClick={() => setLocation('/ventas')}
           >
@@ -73,8 +73,8 @@ export default function MenuVertical({ currentPath }) {
         </li>
         <li>
           <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/inventario' ? 'active btn-active' : ''
+            className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary ${
+              currentPath === '/inventario' ? 'bg-primary/70' : ''
             }`}
             onClick={() => setLocation('/inventario')}
           >
@@ -85,8 +85,8 @@ export default function MenuVertical({ currentPath }) {
         {role === 'administrator' && (
           <li>
             <button
-              className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-                currentPath === '/proveedores' ? 'active btn-active' : ''
+              className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary ${
+                currentPath === '/proveedores' ? 'bg-primary/70' : ''
               }`}
               onClick={() => setLocation('/proveedores')}
             >
@@ -97,8 +97,8 @@ export default function MenuVertical({ currentPath }) {
         )}
         <li>
           <button
-            className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-              currentPath === '/clientes' ? 'active btn-active' : ''
+            className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary ${
+              currentPath === '/clientes' ? 'bg-primary/70' : ''
             }`}
             onClick={() => setLocation('/clientes')}
           >
@@ -109,8 +109,8 @@ export default function MenuVertical({ currentPath }) {
         {role === 'administrator' && (
           <li>
             <button
-              className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-                currentPath === '/empleados' ? 'active btn-active' : ''
+              className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary ${
+                currentPath === '/empleados' ? 'bg-primary/70' : ''
               }`}
               onClick={() => setLocation('/empleados')}
             >
@@ -122,8 +122,8 @@ export default function MenuVertical({ currentPath }) {
         {role === 'administrator' && (
           <li>
             <button
-              className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-                currentPath === '/sucursales' ? 'active btn-active' : ''
+              className={`btn btn-ghost w-full justify-start rounded-lg border-0 px-3 py-2 hover:bg-primary ${
+                currentPath === '/sucursales' ? 'bg-primary/70' : ''
               }`}
               onClick={() => setLocation('/sucursales')}
             >
@@ -136,8 +136,8 @@ export default function MenuVertical({ currentPath }) {
           <div>
             <li>
               <button
-                className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-                  currentPath === '/estadisticas' ? 'active btn-active' : ''
+                className={`btn btn-ghost w-full hover:bg-primary justify-start rounded-lg border-0 px-3 py-2 ${
+                  currentPath === '/estadisticas' ? 'bg-primary/70' : ''
                 }`}
                 onClick={() => setLocation('/estadisticas')}
               >
@@ -147,8 +147,8 @@ export default function MenuVertical({ currentPath }) {
             </li>
             <li>
               <button
-                className={`btn btn-ghost w-full justify-start rounded-lg px-3 py-2 ${
-                  currentPath === '/informes' ? 'active btn-active' : ''
+                className={`btn btn-ghost w-full hover:bg-primary justify-start rounded-lg border-0 px-3 py-2 ${
+                  currentPath === '/informes' ? 'bg-primary/70' : ''
                 }`}
                 onClick={() => setLocation('/informes')}
               >

@@ -221,10 +221,14 @@ export default function Usuario() {
                     </p>
                   )}
                 </div>
-
-                <button className="btn btn-accent btn-wide shadow-md" onClick={handleLogout}>
-                  Cerrar sesión
-                </button>
+                <div className='w-full'>
+                  <button
+                    className="btn btn-accent btn-wide justify-center shadow-md"
+                    onClick={handleLogout}
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
               </div>
             </div>
           </div>
