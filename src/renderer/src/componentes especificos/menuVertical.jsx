@@ -26,16 +26,16 @@ export default function MenuVertical({ currentPath }) {
 
   return (
     <div
-      className={`menu-vertical ${isMenuOpen ? 'w-48' : 'w-16'} backdrop-blur-sm`}
+      className={`fixed left-0 top-0 z-40 h-screen bg-base-200 shadow-lg transition-all duration-300 ${isMenuOpen ? 'w-48' : 'w-16'} backdrop-blur-sm`}
       data-menu="vertical"
       onMouseEnter={() => setIsMenuOpen(true)}
       onMouseLeave={() => setIsMenuOpen(false)}
     >
-      <label className="btn-icon swap swap-rotate btn m-2 border-none">
-        <input type="checkbox" checked={isMenuOpen} onChange={toggleMenu} />
-        <Menu className="swap-off h-5 w-5 fill-current text-white" />
-        <X className="swap-on h-5 w-5 fill-current text-white" />
-      </label>
+      <div className="flex items-center justify-center p-4">
+        <button className="btn btn-ghost btn-circle" onClick={toggleMenu}>
+          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      </div>
 
       <ul className="mt-2 flex flex-col space-y-1 p-2">
         <li>

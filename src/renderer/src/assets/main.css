@@ -1,3 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Tema claro personalizado Mykonos */
+[data-theme='light'] {
+  --p: 25 100% 63%; /* #ff8c42 - Naranja vibrante */
+  --pc: 0 0% 100%; /* Blanco */
+  --s: 239 68% 68%; /* #6366f1 - Índigo */
+  --sc: 0 0% 100%;
+  --a: 188 94% 43%; /* #06b6d4 - Cian */
+  --ac: 0 0% 100%;
+  --n: 216 18% 31%; /* #374151 - Gris carbón */
+  --nc: 0 0% 100%;
+  --b1: 0 0% 100%; /* Blanco puro */
+  --b2: 210 40% 98%; /* #f8fafc */
+  --b3: 214 32% 91%; /* #e2e8f0 */
+  --bc: 215 25% 27%; /* #1e293b - Texto oscuro */
+}
+
+/* Tema oscuro personalizado Mykonos */
+[data-theme='dark'] {
+  --p: 25 100% 63%; /* #ff8c42 - Naranja (consistente) */
+  --pc: 0 0% 100%;
+  --s: 238 77% 77%; /* #818cf8 - Índigo claro */
+  --sc: 239 42% 20%;
+  --a: 187 85% 53%; /* #22d3ee - Cian brillante */
+  --ac: 189 54% 16%;
+  --n: 216 28% 23%; /* #1f2937 */
+  --nc: 210 20% 98%;
+  --b1: 220 18% 10%; /* #111827 - Muy oscuro */
+  --b2: 216 28% 23%; /* #1f2937 */
+  --b3: 216 18% 31%; /* #374151 */
+  --bc: 210 20% 98%; /* #f9fafb - Texto claro */
+}
