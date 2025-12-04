@@ -214,51 +214,40 @@ export default function RegistroVentas() {
     }
   }
 
-  // Enhanced unified search handler
   const handleUnifiedSearch = (value) => {
     if (isGiftSearch) {
       setGiftBarcode(value)
       setSearchTerm('')
-      // Clear other search results when switching to gift search
       if (value.length === 0) {
         setGiftSearchResult(null)
       }
-      // Auto-search for gift when format is complete
       if (value.length === 12 && value.startsWith('GIFT')) {
         searchGiftByBarcode(value)
       } else if (value.length > 0 && value.length < 12) {
-        // Clear results while typing incomplete gift code
         setGiftSearchResult(null)
       }
     } else if (isProductSearch) {
-      setSearchTerm(value) // Keep the value for product search
+      setSearchTerm(value) 
       setGiftBarcode('')
       setGiftSearchResult(null)
-      // Search for products in sales
       searchProductsInSales(value)
     } else {
       setSearchTerm(value)
       setGiftBarcode('')
       setGiftSearchResult(null)
       setProductSearchResults([])
-      // Regular search happens in useEffect
     }
   }
 
-  // Handle search mode toggle
   const handleSearchModeToggle = (mode) => {
-    // Reset all search modes
     setIsGiftSearch(false)
     setIsProductSearch(false)
 
-    // Set the selected mode
     if (mode === 'gift') {
       setIsGiftSearch(true)
     } else if (mode === 'product') {
       setIsProductSearch(true)
     }
-
-    // Clear all search states when toggling
     setSearchTerm('')
     setGiftBarcode('')
     setGiftSearchResult(null)
@@ -364,16 +353,13 @@ export default function RegistroVentas() {
         console.log('🔍 DEBUG: Filtros utilizados para la búsqueda:', filters)
         console.log('📊 DEBUG: Respuesta range:', range)
 
-        // Manejar respuesta de stats
         if (statsResponse.status === 'success') {
           setStats(statsResponse.data)
         } else {
           console.warn('⚠️ Fallo al cargar stats:', statsResponse)
-          // Opcional: mostrar un toast de error para las stats
           setStats({ total_revenue: 0, total_products_sold: 0, total_sales: 0 })
         }
 
-        // Manejar respuesta de la lista de ventas
         if (salesResponse.status === 'success') {
           setSalesList(salesResponse.data)
         } else {
@@ -383,7 +369,6 @@ export default function RegistroVentas() {
       } catch (error) {
         console.error('❌ Error general al cargar datos:', error)
         toast.error('Ocurrió un error al cargar los datos.')
-        // Reseteamos ambos estados en caso de error
         setStats({ total_revenue: 0, total_products_sold: 0, total_sales: 0 })
         setSalesList([])
       } finally {
@@ -391,12 +376,10 @@ export default function RegistroVentas() {
       }
     }
 
-    // Usamos un debounce para no llamar a la API en cada tecla presionada
     const debounceTimer = setTimeout(() => {
       fetchData()
-    }, 500) // Espera 500ms antes de ejecutar la búsqueda
+    }, 500) 
 
-    // Limpiamos el timer si el usuario sigue escribiendo o cambiando filtros
     return () => clearTimeout(debounceTimer)
   }, [currentStorage?.id, range, searchTerm])
 
