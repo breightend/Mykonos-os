@@ -167,7 +167,7 @@ export const useEmployeeApi = () => {
         try {
             const result = await execute(
                 async ({ signal }) => {
-                    const response = await fetch(`${window.API_BASE_URL || 'http://190.3.63.58:8000'}/api/user/employee/username/${username}`, {
+                    const response = await fetch(`${window.API_BASE_URL || 'https://api.mykonosboutique.com.ar'}/api/user/employee/username/${username}`, {
                         signal,
                         headers: {
                             'Content-Type': 'application/json',
@@ -222,7 +222,7 @@ export const useEmployeeApi = () => {
         try {
             const result = await execute(
                 async ({ signal }) => {
-                    const response = await fetch(`${window.API_BASE_URL || 'http://190.3.63.58:8000'}/api/user/employee/${employeeId}/storages`, {
+                    const response = await fetch(`${window.API_BASE_URL || 'https://api.mykonosboutique.com.ar'}/api/user/employee/${employeeId}/storages`, {
                         signal,
                         headers: {
                             'Content-Type': 'application/json',

@@ -18,7 +18,7 @@ const NetworkHealthMonitor = () => {
 
       // Usar un endpoint que sabemos que funciona - employees retorna algo incluso sin auth
       const response = await fetch(
-        `${window.API_BASE_URL || 'http://190.3.63.58:8000'}/api/user/employees`,
+        `${window.API_BASE_URL || 'https://api.mykonosboutique.com.ar'}/api/user/employees`,
         {
           method: 'GET',
           signal: controller.signal,

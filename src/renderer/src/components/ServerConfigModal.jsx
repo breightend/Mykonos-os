@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 
 const ServerConfigModal = ({ isOpen, onClose }) => {
   const [config, setConfig] = useState({
-    url: 'http://190.3.63.58:8000',
+    url: 'https://api.mykonosboutique.com.ar',
     timeout: 8000,
     retries: 3
   })

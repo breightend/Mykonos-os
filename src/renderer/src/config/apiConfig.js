@@ -7,6 +7,22 @@ import axios from 'axios'
 import { performanceMonitor } from '../services/performanceMonitor.js'
 import { configureRetries, RETRY_CONFIG } from '../utils/retryLogic.js'
 
+// Función para obtener la URL del servidor según el entorno
+const GET_ENV_URL = () => {
+    // En Vite, solo import.meta.env está disponible (process.env NO funciona en el navegador)
+    if (import.meta.env && import.meta.env.VITE_API_URL) {
+        console.log('🔧 Using VITE_API_URL:', import.meta.env.VITE_API_URL)
+        return import.meta.env.VITE_API_URL
+    }
+
+    // SI FALLA TODO LO ANTERIOR: Usamos el subdominio API de Cloudflare
+    console.log('🔧 Using default API subdomain URL')
+    return 'https://api.mykonosboutique.com.ar'
+}
+
+// Obtener la URL base del servidor
+export const API_BASE_URL = GET_ENV_URL()
+
 // Función para obtener la configuración del servidor
 const getServerConfig = async () => {
     // En Electron, usar la API expuesta desde el main process
@@ -23,7 +39,7 @@ const getServerConfig = async () => {
     // Configuración por defecto
     console.log('⚙️ Usando configuración por defecto del servidor')
     return {
-        url: 'http://190.3.63.58:8000',
+        url: API_BASE_URL,
         timeout: 8000,
         retries: 3
     }
@@ -31,7 +47,7 @@ const getServerConfig = async () => {
 
 // Obtener configuración del servidor (será async al principio)
 let serverConfig = {
-    url: 'http://190.3.63.58:8000',
+    url: API_BASE_URL,
     timeout: 8000,
     retries: 3
 }
@@ -48,12 +64,6 @@ initServerConfig().catch(console.error)
 // Determinar la URL base según el entorno
 const isProduction = process.env.NODE_ENV === 'production'
 const isDevelopment = !isProduction
-
-// URL del servidor backend con configuración flexible
-export const API_BASE_URL = serverConfig.url || (isDevelopment
-    ? 'http://190.3.63.58:8000'  // Puerto 8000 donde está corriendo el backend en el servidor
-    : 'http://190.3.63.58:8000'  // Puerto 8000 para producción
-)
 
 console.log(`🌐 API configurada para: ${API_BASE_URL} (${isProduction ? 'production' : 'development'})`)
 

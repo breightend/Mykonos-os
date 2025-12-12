@@ -153,12 +153,9 @@ function createWindow() {
         console.log('Any React components rendered:', document.querySelector('[data-reactroot]') !== null);
         console.log('CSS loaded:', document.styleSheets.length);
         
-        // If root is still empty, try to force some content for testing
+        // If root is still empty, log for debugging
         if (root.innerHTML.length === 0) {
-          console.log('🔧 FORCING TEST CONTENT INTO ROOT');
-          root.innerHTML = '<div style="background: red; color: white; padding: 20px; position: fixed; top: 0; left: 0; z-index: 9999;">TEST: If you see this, HTML/CSS works but React failed to mount</div>';
-          
-          // Also check if React is available globally
+          console.error('⚠️ React failed to mount - root is empty after 3 seconds');
           console.log('Available global variables:', Object.keys(window).filter(k => k.toLowerCase().includes('react')));
         }
       `)
@@ -291,7 +288,7 @@ app.whenReady().then(() => {
     // setTimeout(updateAppIcon, 100); // e.g., wait 100ms
     updateAppIcon(); // Call the update function when the theme changes
 
-  autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdatesAndNotify();
   });
 
 
@@ -304,7 +301,7 @@ app.whenReady().then(() => {
       serverConfig = loadServerConfig()
     }
     return serverConfig?.server || {
-      url: 'http://190.3.63.58:8000',
+      url: 'https://api.mykonosboutique.com.ar',
       timeout: 8000,
       retries: 3
     }
